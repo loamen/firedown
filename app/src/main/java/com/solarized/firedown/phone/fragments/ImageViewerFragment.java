@@ -163,6 +163,7 @@ public class ImageViewerFragment extends Fragment {
                         .set(GlideRequestOptions.MIMETYPE, mimeType).set(GlideRequestOptions.FILEPATH, filePath);
                 Glide.with(App.getAppContext())
                         .load(filePath)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
                         .apply(options)
                         .listener(mRequestListener)
                         .fallback(R.drawable.ic_baseline_image_24)
