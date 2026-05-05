@@ -83,7 +83,7 @@
             app:indicatorColor="?attr/colorPrimary"
             app:trackColor="@android:color/transparent"
             app:trackThickness="2dp"
-            app:layout_constraintBottom_toTopOf="@id/speed_label"
+            app:layout_constraintBottom_toTopOf="@id/speed_header"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
