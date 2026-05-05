@@ -45,6 +45,13 @@
 #define MIN_WIDTH 16
 #define MAX_WIDTH 1024
 
+/* Source-side frame sampling rate. Fixed because varying it doesn't
+ * change playback speed — only smoothness — and 12 fps is the sweet
+ * spot for GIF size vs motion quality. The user's "speed" selection
+ * controls the per-frame delay on the output side instead, so the
+ * GIF's wall-clock duration scales with the chosen playback fps. */
+#define SAMPLING_FPS 12
+
 
 struct GifMaker {
     AVFormatContext *input_format_ctx;
@@ -73,6 +80,12 @@ struct GifMaker {
 
     int fps;
     int width;
+
+    /* Counts frames as they leave the filter graph and enter the
+     * encoder. Used to derive each frame's PTS in the encoder's 1/100
+     * time_base directly, so the per-frame delay reflects the user's
+     * playback fps regardless of the filter's sampling rate. */
+    int64_t out_frame_count;
 
     int header_written;
 
@@ -426,12 +439,18 @@ static int gifmaker_init_filters(struct GifMaker *gif) {
      * accumulates statistics and emits a single palette frame on EOF; the
      * other feeds paletteuse which buffers frames until that palette
      * arrives, then maps each frame onto it. Output is PAL8 — exactly what
-     * the GIF encoder consumes. */
+     * the GIF encoder consumes.
+     *
+     * Sampling fps is fixed at SAMPLING_FPS regardless of the user's
+     * speed selection. Playback speed comes from the per-frame delay
+     * we set on the encoder side (gif->fps cs/frame), so changing fps
+     * here would just change smoothness without affecting wall-clock
+     * duration. */
     snprintf(filter_desc, sizeof(filter_desc),
              "fps=%d,scale=%d:%d:flags=lanczos,split[s0][s1];"
              "[s0]palettegen=stats_mode=full[p];"
              "[s1][p]paletteuse=dither=sierra2_4a",
-             gif->fps, enc_ctx->width, enc_ctx->height);
+             SAMPLING_FPS, enc_ctx->width, enc_ctx->height);
 
     LOGI(1, "gifmaker filter chain: %s", filter_desc);
 
@@ -600,8 +619,8 @@ static int gifmaker_drain_filter(JNIEnv *env, struct GifMaker *gif) {
         gif->filtered_frame->pict_type = AV_PICTURE_TYPE_NONE;
 
         /* Progress for the encode burst: the filter graph re-stamps frames
-         * to the buffersink's output time_base (1/fps for our fps filter),
-         * so rescale from there before we overwrite pts for the encoder. */
+         * to its own output time_base (1/SAMPLING_FPS), so rescale from
+         * there before we overwrite pts for the encoder. */
         AVRational filter_tb = av_buffersink_get_time_base(gif->buffersink_ctx);
         gifmaker_publish_progress(env, gif,
                                   gif->start_us +
@@ -610,16 +629,22 @@ static int gifmaker_drain_filter(JNIEnv *env, struct GifMaker *gif) {
                                                AV_TIME_BASE_Q),
                                   PROGRESS_PHASE_ENCODE);
 
-        /* Rescale frame pts from the filter's time_base (1/fps) to the
-         * encoder's (1/100, GIF-native centiseconds). The GIF encoder
-         * uses these PTS values directly to compute the per-frame delay
-         * tag in the GIF stream — without this conversion every fps
-         * setting produces ~the same playback speed because the encoder
-         * sees frames at PTS 0,1,2,... regardless of fps and emits the
-         * minimum delay (1 cs) between them. */
-        gif->filtered_frame->pts = av_rescale_q(gif->filtered_frame->pts,
-                                                filter_tb,
-                                                gif->output_codec_ctx->time_base);
+        /* Set the frame's PTS in the encoder's 1/100 cs time_base
+         * directly from the output frame counter, spaced by 100/fps cs.
+         * This decouples sampling fps (fixed in the filter chain at
+         * SAMPLING_FPS, controls smoothness) from playback fps
+         * (gif->fps, controls per-frame delay).
+         *
+         * Earlier versions just rescaled the filter's PTS to the encoder
+         * time_base — that produced different per-frame delays for
+         * different fps settings, but since the filter was *also* set to
+         * sample at gif->fps, every speed produced (frames × delay) =
+         * (source_duration), so all GIFs played for the same wall clock.
+         * The user saw "no speed difference between medium and very
+         * fast" because there genuinely wasn't one. */
+        gif->filtered_frame->pts =
+                av_rescale(gif->out_frame_count, 100, gif->fps);
+        gif->out_frame_count++;
 
         if ((ret = gifmaker_drain_encoder(gif, gif->filtered_frame)) < 0) {
             av_frame_unref(gif->filtered_frame);
@@ -940,6 +965,7 @@ int jni_gifmaker_start(JNIEnv *env, jobject thiz, jstring filePath, jstring outp
     gifmaker_release_pipeline(gif);
     gif->interrupt = FALSE;
     gif->last_progress_us = 0;
+    gif->out_frame_count = 0;
 
     gif->fps = fps > 0 ? fps : DEFAULT_FPS;
     if (gif->fps > MAX_FPS) gif->fps = MAX_FPS;

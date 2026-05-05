@@ -3,7 +3,6 @@ package com.solarized.firedown.phone.fragments;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -39,8 +38,6 @@ public class ImageViewerFragment extends Fragment {
 
     private static final String TAG = ImageViewerFragment.class.getSimpleName();
 
-    private static final int GIF_DELAY = 1500;
-
     private DownloadEntity mDownloadEntity;
 
     private PlayerActivity mActivity;
@@ -48,8 +45,6 @@ public class ImageViewerFragment extends Fragment {
     private ZoomableImageView mPhotoView;
 
     private CircularProgressIndicator mProgress;
-
-    private Handler mHandler;
 
     @Override
     public void onDestroyView() {
@@ -76,8 +71,6 @@ public class ImageViewerFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mHandler = new Handler();
-
         Bundle bundle = getArguments();
 
         if (bundle == null)
@@ -86,12 +79,6 @@ public class ImageViewerFragment extends Fragment {
         mDownloadEntity = bundle.getParcelable(Keys.ITEM_ID);
 
 
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        mHandler.removeCallbacksAndMessages(null);
     }
 
     @Override
@@ -156,22 +143,23 @@ public class ImageViewerFragment extends Fragment {
         long interval = mDownloadEntity.getThumbnailDuration();
 
         if(FileUriHelper.isGIF(mimeType)) {
-            mProgress.setVisibility(View.VISIBLE);
-            mPhotoView.setVisibility(View.GONE);
-            mHandler.postDelayed(() -> {
-                RequestOptions options = new RequestOptions().frame(interval)
-                        .set(GlideRequestOptions.MIMETYPE, mimeType).set(GlideRequestOptions.FILEPATH, filePath);
-                Glide.with(App.getAppContext())
-                        .load(filePath)
-                        .diskCacheStrategy(DiskCacheStrategy.NONE)
-                        .apply(options)
-                        .listener(mRequestListener)
-                        .fallback(R.drawable.ic_baseline_image_24)
-                        .error(R.drawable.ic_baseline_image_24)
-                        .into(mPhotoView);
-                mPhotoView.setVisibility(View.VISIBLE);
-                mProgress.setVisibility(View.GONE);
-            }, GIF_DELAY);
+            /* Pass MIMETYPE so FFmpegUriDecoder.handles() can skip GIFs
+             * and let Glide's built-in animated-GIF decoder run. The
+             * old code wrapped this in a 1500 ms postDelayed because
+             * routing GIFs through FFmpegThumbnailer was flaky on
+             * freshly-written files; with the FFmpegUriDecoder change
+             * that's no longer needed. */
+            RequestOptions options = new RequestOptions().frame(interval)
+                    .set(GlideRequestOptions.MIMETYPE, mimeType)
+                    .set(GlideRequestOptions.FILEPATH, filePath);
+            Glide.with(App.getAppContext())
+                    .load(filePath)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .apply(options)
+                    .listener(mRequestListener)
+                    .fallback(R.drawable.ic_baseline_image_24)
+                    .error(R.drawable.ic_baseline_image_24)
+                    .into(mPhotoView);
         }else if ((FileUriHelper.isSVG(mimeType)  ||
                 FileUriHelper.isWEP(mimeType)) && !mDownloadEntity.isFileEncrypted()) {
             RequestOptions options = new RequestOptions().frame(interval)

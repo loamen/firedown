@@ -38,6 +38,18 @@ public class FFmpegUriDecoder implements ResourceDecoder<Uri, Bitmap> {
 
     @Override
     public boolean handles(@NonNull Uri source, @NonNull Options options) throws IOException {
+        /* Don't intercept GIFs. Glide's built-in StreamGifDecoder /
+         * ByteBufferGifDecoder produce a GifDrawable that animates;
+         * routing GIFs through FFmpegThumbnailer here would only get
+         * a single static frame, AND on freshly-written GIFs the
+         * native side fails until the file system fully syncs (which
+         * is what the 1500 ms delay in ImageViewerFragment was working
+         * around). Falling through to Glide's built-in path fixes
+         * both — animation works and there's no flaky timing. */
+        String mime = options.get(GlideRequestOptions.MIMETYPE);
+        if (mime != null && FileUriHelper.isGIF(mime)) {
+            return false;
+        }
         return true;
     }
 
