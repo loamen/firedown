@@ -3,6 +3,8 @@ package com.solarized.firedown.phone.fragments;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,6 +62,27 @@ public class GifMakerFragment extends Fragment {
     private long mLastStartMs;
     private long mLastEndMs;
 
+    /* Live preview: poll the player position and snap it back to the
+     * start thumb whenever it crosses the end thumb, so the user always
+     * sees exactly what's going to land in the GIF. ExoPlayer doesn't
+     * have a "loop between A and B" primitive — ClippingMediaSource
+     * exists but re-prepares the pipeline on every range change, which
+     * is way too costly for a slider that updates 10×/second. */
+    private static final long PREVIEW_LOOP_INTERVAL_MS = 250L;
+    private final Handler mLoopHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mLoopTask = new Runnable() {
+        @Override
+        public void run() {
+            if (mExoPlayer != null && mLastEndMs > mLastStartMs) {
+                long pos = mExoPlayer.getCurrentPosition();
+                if (pos >= mLastEndMs || pos < mLastStartMs) {
+                    mExoPlayer.seekTo(mLastStartMs);
+                }
+            }
+            mLoopHandler.postDelayed(this, PREVIEW_LOOP_INTERVAL_MS);
+        }
+    };
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -110,7 +133,8 @@ public class GifMakerFragment extends Fragment {
 
         mExoPlayer.setMediaSource(source);
         mExoPlayer.prepare();
-        mExoPlayer.setPlayWhenReady(false);
+        mExoPlayer.setPlayWhenReady(true);
+        mLoopHandler.postDelayed(mLoopTask, PREVIEW_LOOP_INTERVAL_MS);
 
         mExoPlayer.addListener(new Player.Listener() {
             @Override
@@ -228,6 +252,7 @@ public class GifMakerFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mLoopHandler.removeCallbacks(mLoopTask);
         if (mPlayerView != null) mPlayerView.setPlayer(null);
         if (mExoPlayer != null) mExoPlayer.release();
         mExoPlayer = null;
