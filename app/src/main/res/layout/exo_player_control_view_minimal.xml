@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Custom controller for the GIF maker screen.
+
+  media3's default exo_player_control_view layout includes prev / next /
+  rewind / fast-forward / repeat / shuffle / settings / subtitle / scrubber.
+  All of them are noise for the trim flow — the range slider already covers
+  position selection, and the live-preview loop handles playback range. The
+  only useful control is play/pause, so this layout exposes that and
+  nothing else.
+
+  IDs preserved from media3's vocabulary: the controller looks up
+  exo_play_pause by id and won't bind to any other name.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+
+    <ImageButton
+        android:id="@id/exo_play_pause"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:scaleType="fitCenter" />
+
+</FrameLayout>

@@ -24,10 +24,10 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.extractor.ExtractorsFactory;
 import androidx.media3.ui.PlayerView;
-import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.slider.RangeSlider;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.IntentActions;
@@ -51,6 +51,7 @@ public class GifMakerFragment extends BaseFocusFragment {
     private RangeSlider mRangeSlider;
     private ChipGroup mSpeedChipGroup;
     private TextView mRangeLabel;
+    private LinearProgressIndicator mPlayheadIndicator;
 
     /* Cached duration in ms — populated from the player once it's ready.
      * Until then the slider operates on the placeholder 0..100 range from
@@ -76,11 +77,13 @@ public class GifMakerFragment extends BaseFocusFragment {
     private final Runnable mLoopTask = new Runnable() {
         @Override
         public void run() {
-            if (mExoPlayer != null && mLastEndMs > mLastStartMs) {
+            if (mExoPlayer != null) {
                 long pos = mExoPlayer.getCurrentPosition();
-                if (pos >= mLastEndMs || pos < mLastStartMs) {
+                if (mLastEndMs > mLastStartMs && (pos >= mLastEndMs || pos < mLastStartMs)) {
                     mExoPlayer.seekTo(mLastStartMs);
+                    pos = mLastStartMs;
                 }
+                updatePlayhead(pos);
             }
             mLoopHandler.postDelayed(this, PREVIEW_LOOP_INTERVAL_MS);
         }
@@ -112,6 +115,8 @@ public class GifMakerFragment extends BaseFocusFragment {
         mRangeSlider = view.findViewById(R.id.range_slider);
         mSpeedChipGroup = view.findViewById(R.id.speed_chip_group);
         mRangeLabel = view.findViewById(R.id.range_label);
+        mPlayheadIndicator = view.findViewById(R.id.playhead_indicator);
+        mPlayheadIndicator.setMax(10000);
 
         return view;
     }
@@ -119,8 +124,10 @@ public class GifMakerFragment extends BaseFocusFragment {
     @OptIn(markerClass = UnstableApi.class)
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        /* super attaches the inset listeners on mToolbar / mNavScrim
+         * (BaseFocusFragment handles top + bottom system bars), so the
+         * field bindings have to happen in onCreateView before this. */
         super.onViewCreated(view, savedInstanceState);
-
 
         mToolbar.setNavigationOnClickListener(v ->
                 NavigationUtils.popBackStackSafe(mNavController, R.id.gif_maker));
@@ -133,6 +140,19 @@ public class GifMakerFragment extends BaseFocusFragment {
         configureSpeedChips();
 
         mLoopHandler.postDelayed(mLoopTask, PREVIEW_LOOP_INTERVAL_MS);
+    }
+
+    /* Maps the player position onto the same horizontal axis as the range
+     * slider, so the user sees the playhead sweep across the trim region
+     * during the live preview. Indicator's max is 10 000 (~0.01% steps);
+     * mDurationMs may not be set yet during the first few ticks before
+     * the player reports STATE_READY. */
+    private void updatePlayhead(long positionMs) {
+        if (mPlayheadIndicator == null || mDurationMs <= 0) return;
+        int progress = (int) ((positionMs * 10000L) / mDurationMs);
+        if (progress < 0) progress = 0;
+        if (progress > 10000) progress = 10000;
+        mPlayheadIndicator.setProgressCompat(progress, true);
     }
 
     @OptIn(markerClass = UnstableApi.class)
@@ -167,15 +187,6 @@ public class GifMakerFragment extends BaseFocusFragment {
                 }
             }
         });
-
-        /* The settings (gear) button is built into media3's default
-         * controller layout and there's no public attribute to suppress
-         * it — find it by id and hide. show_subtitle_button and
-         * show_shuffle_button are handled via XML attributes; the repeat
-         * (loop) button is hidden by simply not setting
-         * app:repeat_toggle_modes (the default is "none"). */
-        View settings = mPlayerView.findViewById(androidx.media3.ui.R.id.exo_settings);
-        if (settings != null) settings.setVisibility(View.GONE);
     }
 
     private void configureRangeSlider() {
@@ -281,7 +292,7 @@ public class GifMakerFragment extends BaseFocusFragment {
 
         /* Hand control back to the downloads list so the bottom progress
          * view shows the encode in progress. */
-        NavHostFragment.findNavController(this).popBackStack();
+        NavigationUtils.popBackStackSafe(mNavController, R.id.gif_maker);
     }
 
     @Override
@@ -298,5 +309,6 @@ public class GifMakerFragment extends BaseFocusFragment {
         if (mExoPlayer != null) mExoPlayer.release();
         mExoPlayer = null;
         mPlayerView = null;
+        mPlayheadIndicator = null;
     }
 }

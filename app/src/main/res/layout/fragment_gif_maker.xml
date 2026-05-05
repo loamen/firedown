@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/gif_maker_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar_layout"
@@ -15,7 +14,7 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="wrap_content"
             android:theme="@style/ThemeOverlay.FireDown.Toolbar"
             app:title="@string/gif_maker_title"
             app:navigationIcon="@drawable/ic_arrow_back_24"
@@ -23,110 +22,158 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- The player owns the full leftover height so the trim controls stay
-         pinned to the bottom of the screen no matter the device size. -->
-    <androidx.media3.ui.PlayerView
-        android:id="@+id/player_view"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@android:color/black"
-        app:resize_mode="fit"
-        app:show_subtitle_button="false"
-        app:show_shuffle_button="false"
-        app:surface_type="texture_view" />
+        android:layout_height="match_parent"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 
-    <TextView
-        android:id="@+id/range_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="12dp"
-        android:textAppearance="?attr/textAppearanceTitleSmall"
-        android:textColor="?attr/colorOnSurface"
-        tools:text="00:00 → 00:30 (30s)" />
+        <!-- Player gets all the leftover height between toolbar and the
+             trim controls. Custom controller keeps it to play/pause only. -->
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/player_view"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/black"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/range_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:resize_mode="fit"
+            app:show_subtitle_button="false"
+            app:show_shuffle_button="false"
+            app:show_buffering="never"
+            app:controller_layout_id="@layout/exo_player_control_view_minimal"
+            app:surface_type="texture_view" />
 
-    <com.google.android.material.slider.RangeSlider
-        android:id="@+id/range_slider"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
-        android:valueFrom="0"
-        android:valueTo="100"
-        android:stepSize="1" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
-        android:paddingTop="12dp"
-        android:text="@string/gif_maker_speed_label"
-        android:textAppearance="?attr/textAppearanceTitleSmall"
-        android:textColor="?attr/colorOnSurface" />
-
-    <HorizontalScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:paddingHorizontal="16dp">
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/speed_chip_group"
-            android:layout_width="wrap_content"
+        <TextView
+            android:id="@+id/range_label"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            app:singleSelection="true"
-            app:selectionRequired="true">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintBottom_toTopOf="@id/range_slider"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="00:00 → 00:30 (30s)" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/speed_very_slow"
-                style="@style/Widget.Material3.Chip.Filter"
+        <com.google.android.material.slider.RangeSlider
+            android:id="@+id/range_slider"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:valueFrom="0"
+            android:valueTo="100"
+            android:stepSize="1"
+            app:layout_constraintBottom_toTopOf="@id/playhead_indicator"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- A thin progress line visualises the playhead within the
+             trim range as the live-preview loop runs. Uses the slider's
+             horizontal padding so the indicator track aligns visually
+             with the slider's track. -->
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/playhead_indicator"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="32dp"
+            app:indicatorColor="?attr/colorPrimary"
+            app:trackColor="@android:color/transparent"
+            app:trackThickness="2dp"
+            app:layout_constraintBottom_toTopOf="@id/speed_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <TextView
+            android:id="@+id/speed_label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:text="@string/gif_maker_speed_label"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintBottom_toTopOf="@id/speed_scroll"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <HorizontalScrollView
+            android:id="@+id/speed_scroll"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingHorizontal="16dp"
+            app:layout_constraintBottom_toTopOf="@id/create_button"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/speed_chip_group"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/gif_maker_speed_very_slow" />
+                app:singleSelection="true"
+                app:selectionRequired="true">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/speed_slow"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/gif_maker_speed_slow" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/speed_very_slow"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/gif_maker_speed_very_slow" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/speed_medium"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="@string/gif_maker_speed_medium" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/speed_slow"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/gif_maker_speed_slow" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/speed_fast"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/gif_maker_speed_fast" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/speed_medium"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="@string/gif_maker_speed_medium" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/speed_very_fast"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/gif_maker_speed_very_fast" />
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/speed_fast"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/gif_maker_speed_fast" />
 
-        </com.google.android.material.chip.ChipGroup>
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/speed_very_fast"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/gif_maker_speed_very_fast" />
 
-    </HorizontalScrollView>
+            </com.google.android.material.chip.ChipGroup>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/create_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
-        android:text="@string/gif_maker_create" />
+        </HorizontalScrollView>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/create_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/gif_maker_create"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Sized to bottom system inset by the inset listener in
+         GifMakerFragment, matching the navigation_scrim used by
+         BaseFocusFragment for the downloads list. -->
     <View
         android:id="@+id/navigation_scrim"
         android:layout_width="match_parent"
@@ -134,4 +181,4 @@
         android:layout_gravity="bottom"
         android:background="?android:attr/colorBackground" />
 
-</LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
