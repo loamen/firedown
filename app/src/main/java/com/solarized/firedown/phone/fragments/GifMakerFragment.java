@@ -13,8 +13,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
-import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
@@ -38,11 +36,12 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.ffmpegutils.FFmpegGifMaker;
 import com.solarized.firedown.manager.tasks.TaskManager;
+import com.solarized.firedown.utils.NavigationUtils;
 
 import java.util.ArrayList;
 import java.util.Locale;
 
-public class GifMakerFragment extends Fragment {
+public class GifMakerFragment extends BaseFocusFragment {
 
     private DownloadEntity mDownloadEntity;
 
@@ -105,7 +104,16 @@ public class GifMakerFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_gif_maker, container, false);
+        View view = inflater.inflate(R.layout.fragment_gif_maker, container, false);
+
+        mToolbar = view.findViewById(R.id.toolbar);
+        mAppBarLayout = view.findViewById(R.id.appbar_layout);
+        mPlayerView = view.findViewById(R.id.player_view);
+        mRangeSlider = view.findViewById(R.id.range_slider);
+        mSpeedChipGroup = view.findViewById(R.id.speed_chip_group);
+        mRangeLabel = view.findViewById(R.id.range_label);
+
+        return view;
     }
 
     @OptIn(markerClass = UnstableApi.class)
@@ -113,17 +121,12 @@ public class GifMakerFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Toolbar toolbar = view.findViewById(R.id.toolbar);
-        toolbar.setNavigationOnClickListener(v ->
-                NavHostFragment.findNavController(this).popBackStack());
+
+        mToolbar.setNavigationOnClickListener(v ->
+                NavigationUtils.popBackStackSafe(mNavController, R.id.gif_maker));
 
         MaterialButton createButton = view.findViewById(R.id.create_button);
         createButton.setOnClickListener(v -> startGifMakerTask());
-
-        mPlayerView = view.findViewById(R.id.player_view);
-        mRangeSlider = view.findViewById(R.id.range_slider);
-        mSpeedChipGroup = view.findViewById(R.id.speed_chip_group);
-        mRangeLabel = view.findViewById(R.id.range_label);
 
         configurePlayer();
         configureRangeSlider();
