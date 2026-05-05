@@ -386,15 +386,25 @@ static int gifmaker_init_filters(struct GifMaker *gif) {
         goto end;
     }
 
-    if ((ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out",
-                                            NULL, NULL, filter_graph)) < 0) {
-        LOGE(1, "gifmaker_init_filters create buffersink failed");
+    /* Buffersink needs pix_fmts set BEFORE init. avfilter_graph_create_filter
+     * allocates and inits in one call, so the option is no longer settable
+     * by the time it returns. Use the alloc → set → init pattern instead so
+     * we can constrain the sink to PAL8, matching the GIF encoder. */
+    buffersink_ctx = avfilter_graph_alloc_filter(filter_graph, buffersink, "out");
+    if (buffersink_ctx == NULL) {
+        ret = AVERROR(ENOMEM);
+        LOGE(1, "gifmaker_init_filters alloc buffersink failed");
         goto end;
     }
 
     if ((ret = av_opt_set_int_list(buffersink_ctx, "pix_fmts", pix_fmts,
                                    AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN)) < 0) {
         LOGE(1, "gifmaker_init_filters set pix_fmts failed");
+        goto end;
+    }
+
+    if ((ret = avfilter_init_str(buffersink_ctx, NULL)) < 0) {
+        LOGE(1, "gifmaker_init_filters init buffersink failed");
         goto end;
     }
 
