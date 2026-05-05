@@ -397,8 +397,19 @@ public class GifMakerFragment extends BaseFocusFragment {
     }
 
     private static String formatDuration(long ms) {
-        long s = (ms + 500L) / 1000L;
-        return s + "s";
+        /* "500s" reads as nonsense in the trim label — switch to clock
+         * format so the duration matches the start/end markers above
+         * it. Sub-minute durations stay readable as 0:30 (with the
+         * leading zero on seconds), and we fall through to H:MM:SS for
+         * very long clips. */
+        long totalSeconds = (ms + 500L) / 1000L;
+        long h = totalSeconds / 3600L;
+        long m = (totalSeconds % 3600L) / 60L;
+        long s = totalSeconds % 60L;
+        if (h > 0) {
+            return String.format(Locale.getDefault(), "%d:%02d:%02d", h, m, s);
+        }
+        return String.format(Locale.getDefault(), "%d:%02d", m, s);
     }
 
     private int currentFps() {

@@ -310,7 +310,18 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
         } else if (action == ServiceActions.MAKE_GIF) {
             mBottomProgressView.setProgress(100);
             mBottomProgressView.setTitle(R.string.task_gif_finished);
-            mBottomProgressView.setActionButtonVisibility(View.GONE);
+            /* GifMakerTask passes the just-created entity through the
+             * Finished event so we can offer a one-tap View action that
+             * launches PlayerActivity directly — same shape as the
+             * Vault encryption/decryption finish UIs. */
+            DownloadEntity gifEntity = obj instanceof DownloadEntity ? (DownloadEntity) obj : null;
+            if (gifEntity != null) {
+                mBottomProgressView.setActionButtonVisibility(View.VISIBLE);
+                mBottomProgressView.setActionButtonText(R.string.file_view);
+                mBottomProgressView.setActionButtonListener(v -> startPlayerActivity(gifEntity));
+            } else {
+                mBottomProgressView.setActionButtonVisibility(View.GONE);
+            }
         } else if (action == ServiceActions.ENCRYPTION) {
             setupEncryptionFinishUI((int) obj);
         } else if(action == ServiceActions.DECRYPTION) {

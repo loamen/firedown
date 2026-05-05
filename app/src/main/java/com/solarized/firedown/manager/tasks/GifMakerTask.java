@@ -117,7 +117,10 @@ public class GifMakerTask extends TaskRunnable implements FFmpegListener {
 
             mDownloadRepository.addSync(mDownloadEntity);
 
-            deliverMessage(new TaskEvent.Finished(ServiceActions.MAKE_GIF, null));
+            /* Pass the entity through the Finished event so the UI can
+             * offer a "View" action that launches PlayerActivity on the
+             * just-created GIF without re-querying the repository. */
+            deliverMessage(new TaskEvent.Finished(ServiceActions.MAKE_GIF, mDownloadEntity));
 
         } catch (IllegalArgumentException e) {
             Log.e(TAG, "IOException ", e);
