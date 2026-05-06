@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -297,34 +298,53 @@ public class GifMakerFragment extends BaseFocusFragment {
      *  decode starts cleanly from the file head and produces one valid
      *  frame. Better than an empty grey strip.
      *
+     *  Each successful MMR frame is posted to the filmstrip
+     *  individually instead of batched, so the user sees the strip
+     *  fill in left-to-right rather than stay grey for the whole
+     *  extraction window. setThumbnailCount pre-allocates the slots
+     *  with nulls; the view renders them as placeholder cells until
+     *  setThumbnailAt replaces each one.
+     *
      *  Failures are logged but never crash — the filmstrip falls
      *  back to grey placeholder cells if both paths fail. */
     private void extractThumbnailsBlocking(String filePath, long durationMs, int count) {
-        List<Bitmap> bitmaps = extractWithMediaMetadataRetriever(filePath, durationMs, count);
-
-        if (bitmaps.isEmpty() && !mDestroyed) {
-            Log.w(TAG, "MediaMetadataRetriever returned no frames; falling back to FFmpegThumbnailer");
-            Bitmap fallback = extractWithFFmpegThumbnailer(filePath);
-            if (fallback != null) bitmaps.add(fallback);
-        }
-
-        if (mDestroyed || bitmaps.isEmpty()) return;
-
+        /* Tell the strip how many slots to reserve before extraction
+         * starts so it can render placeholders for the cells that
+         * haven't been filled yet. */
         mLoopHandler.post(() -> {
             if (mDestroyed || mFilmstrip == null) return;
-            mFilmstrip.setThumbnails(bitmaps);
+            mFilmstrip.setThumbnailCount(count);
         });
+
+        boolean anyMmr = extractWithMediaMetadataRetriever(filePath, durationMs, count);
+
+        if (!anyMmr && !mDestroyed) {
+            Log.w(TAG, "MediaMetadataRetriever returned no frames; falling back to FFmpegThumbnailer");
+            Bitmap fallback = extractWithFFmpegThumbnailer(filePath);
+            if (fallback != null) {
+                /* Single bitmap covers the whole strip — drawFilmstrip
+                 * partitions width by list size, so size=1 means one
+                 * cell spanning everything. */
+                List<Bitmap> single = new ArrayList<>(1);
+                single.add(fallback);
+                mLoopHandler.post(() -> {
+                    if (mDestroyed || mFilmstrip == null) return;
+                    mFilmstrip.setThumbnails(single);
+                });
+            }
+        }
     }
 
-    private List<Bitmap> extractWithMediaMetadataRetriever(String filePath, long durationMs, int count) {
-        List<Bitmap> bitmaps = new ArrayList<>(count);
+    /** @return true if at least one frame was extracted and posted. */
+    private boolean extractWithMediaMetadataRetriever(String filePath, long durationMs, int count) {
+        boolean anySuccess = false;
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
             retriever.setDataSource(filePath);
 
             long durationUs = durationMs * 1000L;
             for (int i = 0; i < count; i++) {
-                if (mDestroyed) return bitmaps;
+                if (mDestroyed) return anySuccess;
 
                 /* Anchor at 5% into the clip and stop at 95% so we don't
                  * pick black frames at the very start/end of fade-in /
@@ -338,27 +358,48 @@ public class GifMakerFragment extends BaseFocusFragment {
                     posUs = startUs + (long) i * (endUs - startUs) / (count - 1);
                 }
 
-                /* OPTION_CLOSEST decodes from the previous keyframe up to
-                 * the requested time, which is exactly what we want for a
-                 * mid-clip filmstrip. Slower than OPTION_CLOSEST_SYNC
-                 * (which jumps to the nearest keyframe) but the difference
-                 * matters: SYNC on a clip with sparse keyframes gives all
-                 * thumbnails the same handful of frames. */
-                Bitmap frame = retriever.getFrameAtTime(posUs,
-                        MediaMetadataRetriever.OPTION_CLOSEST);
+                Bitmap frame = extractFrame(retriever, posUs);
                 if (frame == null) {
                     Log.w(TAG, "thumbnail null at pos " + posUs);
                     continue;
                 }
 
-                bitmaps.add(scaleDown(frame));
+                Bitmap small = scaleDown(frame);
+                anySuccess = true;
+                final int slot = i;
+                mLoopHandler.post(() -> {
+                    if (mDestroyed || mFilmstrip == null) return;
+                    mFilmstrip.setThumbnailAt(slot, small);
+                });
             }
         } catch (Throwable t) {
             Log.e(TAG, "MediaMetadataRetriever extraction failed", t);
         } finally {
             try { retriever.release(); } catch (Throwable ignored) { }
         }
-        return bitmaps;
+        return anySuccess;
+    }
+
+    /** OPTION_CLOSEST_SYNC instead of OPTION_CLOSEST: jumps to the
+     *  nearest keyframe directly instead of decoding forward from the
+     *  previous keyframe to the exact time. Typical speedup on H.264
+     *  with 2-second keyframe intervals is 5–10× per frame. The
+     *  filmstrip is a navigation aid showing "what's around here", so
+     *  exact frame precision isn't worth the cost.
+     *
+     *  getScaledFrameAtTime (API 27+) decodes at the target resolution
+     *  internally, saving a full-res allocation and a downstream
+     *  scaleDown pass. The output bitmap is at least the target
+     *  dimensions in both axes (Android sizing contract), so we still
+     *  run scaleDown afterwards as a safety cap. */
+    private static Bitmap extractFrame(MediaMetadataRetriever retriever, long posUs) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            return retriever.getScaledFrameAtTime(posUs,
+                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+                    THUMB_MAX_DIM, THUMB_MAX_DIM);
+        }
+        return retriever.getFrameAtTime(posUs,
+                MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
     }
 
     /** Single-frame fallback via the project's FFmpeg-based decoder.
