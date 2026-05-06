@@ -181,7 +181,7 @@ public class BottomNavigationBar extends FrameLayout implements View.OnClickList
 
     private void applyWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(this, (v, windowInsets) -> {
-            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemGestures() |
+            Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() |
                     WindowInsetsCompat.Type.displayCutout());
             // Apply the insets as padding to the view. Here, set all the dimensions
             // as appropriate to your layout. You can also update the view's margin if
