@@ -172,6 +172,26 @@ public class FilmstripTrimSlider extends View {
         invalidate();
     }
 
+    /** Pre-allocates {@code count} null slots so the strip can render
+     *  placeholder cells while bitmaps stream in via
+     *  {@link #setThumbnailAt}. Pairs with the host's per-frame extract
+     *  loop — view shows a meaningful skeleton instead of one monolith
+     *  rendered after the whole batch finishes. */
+    public void setThumbnailCount(int count) {
+        mThumbnails.clear();
+        for (int i = 0; i < count; i++) mThumbnails.add(null);
+        invalidate();
+    }
+
+    /** Replaces a single slot by index. No-op if out of range so
+     *  callers don't have to coordinate against view recreation
+     *  exactly — a stale post is harmless. */
+    public void setThumbnailAt(int index, @Nullable Bitmap bitmap) {
+        if (index < 0 || index >= mThumbnails.size()) return;
+        mThumbnails.set(index, bitmap);
+        invalidate();
+    }
+
     public void setPlayhead(long ms) {
         if (ms != mPlayheadMs) {
             mPlayheadMs = ms;
