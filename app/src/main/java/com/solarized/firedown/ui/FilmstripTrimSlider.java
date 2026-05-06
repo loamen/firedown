@@ -110,7 +110,7 @@ public class FilmstripTrimSlider extends View {
         mThumbnailDp = (int) (THUMBNAIL_DP * density);
 
         int primary = MaterialColors.getColor(this,
-                com.google.android.material.R.attr.colorPrimary, Color.MAGENTA);
+                android.R.attr.colorPrimary, Color.MAGENTA);
         int placeholder = MaterialColors.getColor(this,
                 com.google.android.material.R.attr.colorSurfaceContainerHigh, Color.DKGRAY);
 
