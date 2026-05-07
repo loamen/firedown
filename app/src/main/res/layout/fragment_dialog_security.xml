@@ -163,11 +163,10 @@
 
                         <TextView
                             android:id="@+id/ads_subtext"
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:maxLines="1"
                             android:ellipsize="end"
+                            android:maxLines="1"
                             android:text="@string/security_blocked_in_this_page"
                             android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp" />
@@ -175,19 +174,16 @@
                         <TextView
                             android:id="@+id/ads_counter"
                             style="@style/TextAppearance.Material3.TitleSmall.Emphasized"
-                            android:layout_width="wrap_content"
+                            android:layout_width="24dp"
                             android:layout_height="wrap_content"
-                            android:minWidth="28dp"
                             android:gravity="center"
                             android:layout_marginStart="8dp"
                             android:background="@drawable/rounded_primary"
                             android:maxLines="1"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
                             android:paddingTop="2dp"
                             android:paddingBottom="2dp"
                             android:textColor="?attr/colorOnPrimaryContainer"
-                            android:textSize="12sp" />
+                            android:textSize="11sp" />
 
                     </LinearLayout>
 
