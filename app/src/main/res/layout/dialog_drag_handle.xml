@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Reusable bottom-sheet drag handle. Three dialogs render this same
+  60dp×4dp pill at the top edge — extracted so visual tweaks (size,
+  colour, margin) only need to land in one file. Consumers can still
+  override layout_marginBottom at the include site if their next
+  child needs a different gap (the security sheet does).
+-->
+<View xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/divider"
+    android:layout_width="60dp"
+    android:layout_height="4dp"
+    android:layout_gravity="top|center_horizontal"
+    android:layout_marginTop="6dp"
+    android:background="@drawable/dialog_rounded_divider" />
