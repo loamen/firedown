@@ -26,7 +26,7 @@
         android:title="@string/settings_enhanced_tracking_protection_custom"
         android:summary="@string/settings_enhanced_tracking_protection_custom_description_1"
         app:enabled="true"
-        app:icon="@drawable/footprint_24" />
+        app:icon="@drawable/ic_shield_person_24" />
 
 
     <EditTextPreference

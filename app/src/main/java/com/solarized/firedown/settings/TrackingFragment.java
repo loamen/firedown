@@ -11,7 +11,9 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.settings.ui.RadioButtonPreference;
 import org.mozilla.geckoview.ContentBlocking;
 
+import dagger.hilt.android.AndroidEntryPoint;
 
+@AndroidEntryPoint
 public class TrackingFragment extends BasePreferenceFragment implements Preference.OnPreferenceClickListener {
 
     private static final String TAG = TrackingFragment.class.getName();
