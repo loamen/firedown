@@ -59,6 +59,18 @@ public class Preferences {
 
     public static final String SETTINGS_ANTI_TRACKING_STRICT = "com.solarized.firedown.preferences.browser.tracking.strict";
 
+    public static final String SETTINGS_ANTI_TRACKING_CUSTOM = "com.solarized.firedown.preferences.browser.tracking.custom";
+
+    public static final String SETTINGS_ANTI_TRACKING_STRIP_LIST = "com.solarized.firedown.preferences.browser.tracking.strip.list";
+
+    // Default tracking query parameter list, mirrored from Firefox's
+    // privacy.query_stripping.strip_list. Whitespace-separated.
+    public static final String DEFAULT_QUERY_STRIP_LIST =
+            "__hsfp __hssc __hstc __s _hsenc _openstat dclid fbclid gbraid gclid hsCtaTracking " +
+            "igshid mc_eid ml_subscriber ml_subscriber_hash msclkid oft_c oft_ck oft_d oft_id " +
+            "oft_ids oft_k oft_lk oft_sk oly_anon_id oly_enc_id rb_clickid s_cid twclid vero_conv " +
+            "vero_id wbraid wickedid yclid utm_source utm_medium utm_campaign utm_term utm_content";
+
     public static final String SETTINGS_CLEAR_DATA = "com.solarized.firedown.preferences.browser.clear";
 
     public static final String SETTINGS_DOWNLOADS = "com.solarized.firedown.preferences.downloads.location";
@@ -169,20 +181,22 @@ public class Preferences {
     }
 
     public static int getAntiTrackingCategories(SharedPreferences sharedPreferences){
-        if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_DEFAULT, true)){
-            return ContentBlocking.AntiTracking.DEFAULT;
-        }else if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_STRICT, false)){
+        if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_STRICT, false)){
             return ContentBlocking.AntiTracking.STRICT;
+        }else if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_DEFAULT, true)
+                || sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_CUSTOM, false)){
+            return ContentBlocking.AntiTracking.DEFAULT;
         }else{
             return ContentBlocking.AntiTracking.NONE;
         }
     }
 
     public static int getEnhancedTrackingProtectionLevel(SharedPreferences sharedPreferences){
-        if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_DEFAULT, true)){
-            return ContentBlocking.EtpLevel.DEFAULT;
-        }else if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_STRICT, false)){
+        if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_STRICT, false)){
             return ContentBlocking.EtpLevel.STRICT;
+        }else if(sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_DEFAULT, true)
+                || sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_CUSTOM, false)){
+            return ContentBlocking.EtpLevel.DEFAULT;
         }else{
             return ContentBlocking.EtpLevel.NONE;
         }
@@ -194,6 +208,18 @@ public class Preferences {
         }else{
             return ContentBlocking.EtpCategory.STANDARD;
         }
+    }
+
+    public static boolean getQueryParameterStrippingEnabled(SharedPreferences sharedPreferences){
+        return sharedPreferences.getBoolean(SETTINGS_ANTI_TRACKING_CUSTOM, false);
+    }
+
+    public static String[] getQueryParameterStripList(SharedPreferences sharedPreferences){
+        String raw = sharedPreferences.getString(SETTINGS_ANTI_TRACKING_STRIP_LIST, DEFAULT_QUERY_STRIP_LIST);
+        if(raw == null) return new String[0];
+        String trimmed = raw.trim();
+        if(trimmed.isEmpty()) return new String[0];
+        return trimmed.split("\\s+");
     }
 
 
