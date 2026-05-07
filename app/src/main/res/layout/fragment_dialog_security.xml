@@ -6,13 +6,12 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <View
-        android:id="@+id/divider"
+    <include
+        layout="@layout/dialog_drag_handle"
         android:layout_width="60dp"
         android:layout_height="4dp"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="6dp"
-        android:background="@drawable/dialog_rounded_divider" />
+        android:layout_marginBottom="0dp" />
 
 
     <!-- Site header. Stays as a separate block above the controls card —
