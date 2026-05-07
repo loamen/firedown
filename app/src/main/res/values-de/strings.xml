@@ -273,11 +273,11 @@
     <string name="remove_top_site">Entfernen</string>
     <string name="rename">Umbenennen</string>
     <string name="rename_file">Datei umbenennen</string>
-    <string name="request_geolocation">Ihren Gerätestandort mit &lt;b&gt;%s/b&gt; teilen?</string>
-    <string name="request_media_key_system_access">&lt;b&gt;%s/b&gt; erlauben, DRM-kontrollierte Inhalte abzuspielen?</string>
+    <string name="request_geolocation">Ihren Gerätestandort mit &lt;b&gt;%s&lt;/b&gt; teilen?</string>
+    <string name="request_media_key_system_access">&lt;b&gt;%s&lt;/b&gt; erlauben, DRM-kontrollierte Inhalte abzuspielen?</string>
     <string name="request_media_key_system_access_subtitle">Beachten Sie, dass DRM-geschützte Dateien nicht von Firedown heruntergeladen werden können</string>
-    <string name="request_storage">Zugriff auf den Gerätespeicher für &lt;b&gt;%s/b&gt; erlauben?</string>
-    <string name="request_storage_access">Dritten Zugriff auf First-Party-Speicher für &lt;b&gt;%s/b&gt; gewähren?</string>
+    <string name="request_storage">Zugriff auf den Gerätespeicher für &lt;b&gt;%s&lt;/b&gt; erlauben?</string>
+    <string name="request_storage_access">Dritten Zugriff auf First-Party-Speicher für &lt;b&gt;%s&lt;/b&gt; gewähren?</string>
     <string name="restart_origin">Neu starten</string>
     <string name="save_file">Datei speichern als</string>
     <string name="save_file_name">Dateiname</string>

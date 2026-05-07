@@ -183,11 +183,11 @@
     <string name="remove_top_site">Вилучити</string>
     <string name="rename">Перейменувати</string>
     <string name="rename_file">Перейменувати файл</string>
-    <string name="request_geolocation">Поділитися геоданими свого пристрою з &lt;b&gt;%s/b&gt;?</string>
-    <string name="request_media_key_system_access">Дозволити &lt;b&gt;%s/b&gt; відтворювати вміст, керований DRM?</string>
+    <string name="request_geolocation">Поділитися геоданими свого пристрою з &lt;b&gt;%s&lt;/b&gt;?</string>
+    <string name="request_media_key_system_access">Дозволити &lt;b&gt;%s&lt;/b&gt; відтворювати вміст, керований DRM?</string>
     <string name="request_media_key_system_access_subtitle">Зверніть увагу, що Firedown не може завантажити файли, захищені DRM</string>
-    <string name="request_storage">Надати доступ до пам’яті пристрою для &lt;b&gt;%s/b&gt;?</string>
-    <string name="request_storage_access">Дозволити третім сторонам отримувати доступ до основного сховища для &lt;b&gt;%s/b&gt;?</string>
+    <string name="request_storage">Надати доступ до пам’яті пристрою для &lt;b&gt;%s&lt;/b&gt;?</string>
+    <string name="request_storage_access">Дозволити третім сторонам отримувати доступ до основного сховища для &lt;b&gt;%s&lt;/b&gt;?</string>
     <string name="restart_origin">Перезапустити</string>
     <string name="save_file">Зберегти файл як</string>
     <string name="save_file_name">Ім\'я файлу</string>

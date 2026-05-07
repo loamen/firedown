@@ -166,11 +166,11 @@
     <string name="remove_top_site">ہٹائیں</string>
     <string name="rename">نام تبدیل کریں۔</string>
     <string name="rename_file">فائل کا نام تبدیل کریں۔</string>
-    <string name="request_geolocation">&lt;b&gt; %s /b&gt; کے ساتھ اپنے آلے کے مقام کا اشتراک کریں؟</string>
-    <string name="request_media_key_system_access">&lt;b&gt; %s /b&gt; کو DRM کے زیر کنٹرول مواد چلانے کی اجازت دیں؟</string>
+    <string name="request_geolocation">&lt;b&gt; %s &lt;/b&gt; کے ساتھ اپنے آلے کے مقام کا اشتراک کریں؟</string>
+    <string name="request_media_key_system_access">&lt;b&gt; %s &lt;/b&gt; کو DRM کے زیر کنٹرول مواد چلانے کی اجازت دیں؟</string>
     <string name="request_media_key_system_access_subtitle">نوٹ کریں کہ DRM محفوظ فائلوں کو فائر ڈاؤن کے ذریعے ڈاؤن لوڈ نہیں کیا جا سکتا</string>
-    <string name="request_storage">&lt;b&gt; %s /b&gt; کے لیے ڈیوائس اسٹوریج تک رسائی کی اجازت دیں؟</string>
-    <string name="request_storage_access">فریق ثالث کو &lt;b&gt; %s /b&gt; کے لیے فرسٹ پارٹی اسٹوریج تک رسائی کی اجازت دیں؟</string>
+    <string name="request_storage">&lt;b&gt; %s &lt;/b&gt; کے لیے ڈیوائس اسٹوریج تک رسائی کی اجازت دیں؟</string>
+    <string name="request_storage_access">فریق ثالث کو &lt;b&gt; %s &lt;/b&gt; کے لیے فرسٹ پارٹی اسٹوریج تک رسائی کی اجازت دیں؟</string>
     <string name="restart_origin">دوبارہ شروع کریں</string>
     <string name="save_file">فائل کو بطور محفوظ کریں۔</string>
     <string name="save_file_name">فائل کا نام</string>
