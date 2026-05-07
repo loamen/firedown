@@ -195,11 +195,11 @@
     <string name="remove_top_site">Odebrat</string>
     <string name="rename">Přejmenovat</string>
     <string name="rename_file">Přejmenuj soubor</string>
-    <string name="request_geolocation">Sdílet polohu svého zařízení s uživatelem &lt;b&gt;%s/b&gt;?</string>
-    <string name="request_media_key_system_access">Povolit aplikaci &lt;b&gt;%s/b&gt; přehrávat obsah řízený DRM?</string>
+    <string name="request_geolocation">Sdílet polohu svého zařízení s uživatelem &lt;b&gt;%s&lt;/b&gt;?</string>
+    <string name="request_media_key_system_access">Povolit aplikaci &lt;b&gt;%s&lt;/b&gt; přehrávat obsah řízený DRM?</string>
     <string name="request_media_key_system_access_subtitle">Upozorňujeme, že pomocí Firedown nelze stahovat soubory chráněné DRM</string>
-    <string name="request_storage">Povolit aplikaci &lt;b&gt;%s/b&gt; přístup k úložišti zařízení?</string>
-    <string name="request_storage_access">Povolit třetím stranám přístup k úložišti první strany pro doménu &lt;b&gt;%s/b&gt;?</string>
+    <string name="request_storage">Povolit aplikaci &lt;b&gt;%s&lt;/b&gt; přístup k úložišti zařízení?</string>
+    <string name="request_storage_access">Povolit třetím stranám přístup k úložišti první strany pro doménu &lt;b&gt;%s&lt;/b&gt;?</string>
     <string name="restart_origin">Restartujte</string>
     <string name="save_file">Uložit soubor jako</string>
     <string name="save_file_name">Název souboru</string>

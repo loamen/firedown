@@ -174,11 +174,11 @@
     <string name="remove_top_site">አስወግድ</string>
     <string name="rename">እንደገና ይሰይሙ</string>
     <string name="rename_file">ፋይል እንደገና ይሰይሙ</string>
-    <string name="request_geolocation">የመሣሪያዎ አካባቢ ለ&lt;b&gt;%s/b&gt; ይጋራ?</string>
-    <string name="request_media_key_system_access">&lt;b&gt;%s/b&gt; በDRM የሚቆጣጠረውን ይዘት እንዲያጫውት ይፈቀድለት?</string>
+    <string name="request_geolocation">የመሣሪያዎ አካባቢ ለ&lt;b&gt;%s&lt;/b&gt; ይጋራ?</string>
+    <string name="request_media_key_system_access">&lt;b&gt;%s&lt;/b&gt; በDRM የሚቆጣጠረውን ይዘት እንዲያጫውት ይፈቀድለት?</string>
     <string name="request_media_key_system_access_subtitle">ማስታወሻ፣ በDRM የተጠበቁ ፋይሎች በFiredown ሊወርዱ አይችሉም</string>
-    <string name="request_storage">ለ&lt;b&gt;%s/b&gt; የመሣሪያ ማከማቻ መዳረሻ ይፈቀድ?</string>
-    <string name="request_storage_access">ለ&lt;b&gt;%s/b&gt; ሶስተኛ ወገኖች የመጀመሪያ ወገን ማከማቻ እንዲደርሱ ይፈቀድላቸው?</string>
+    <string name="request_storage">ለ&lt;b&gt;%s&lt;/b&gt; የመሣሪያ ማከማቻ መዳረሻ ይፈቀድ?</string>
+    <string name="request_storage_access">ለ&lt;b&gt;%s&lt;/b&gt; ሶስተኛ ወገኖች የመጀመሪያ ወገን ማከማቻ እንዲደርሱ ይፈቀድላቸው?</string>
     <string name="restart_origin">እንደገና ጀምር</string>
     <string name="save_file">ፋይሉን አስቀምጥ እንደ</string>
     <string name="save_file_name">የፋይል ስም</string>

@@ -154,11 +154,11 @@
     <string name="settings_webrtc_enabled">WebRTC सक्षम करें</string>
     <string name="rename">नाम बदलें</string>
     <string name="rename_file">फ़ाइल का नाम बदलें</string>
-    <string name="request_geolocation">अपने डिवाइस का स्थान &lt;b&gt;%s/b&gt; के साथ साझा करें?</string>
-    <string name="request_media_key_system_access">&lt;b&gt;%s/b&gt; को DRM-नियंत्रित सामग्री चलाने की अनुमति दें?</string>
+    <string name="request_geolocation">अपने डिवाइस का स्थान &lt;b&gt;%s&lt;/b&gt; के साथ साझा करें?</string>
+    <string name="request_media_key_system_access">&lt;b&gt;%s&lt;/b&gt; को DRM-नियंत्रित सामग्री चलाने की अनुमति दें?</string>
     <string name="request_media_key_system_access_subtitle">ध्यान दें, DRM संरक्षित फ़ाइलें Firedown द्वारा डाउनलोड नहीं की जा सकतीं</string>
-    <string name="request_storage">&lt;b&gt;%s/b&gt; के लिए डिवाइस संग्रहण तक पहुंच की अनुमति दें?</string>
-    <string name="request_storage_access">तीसरे पक्ष को &lt;b&gt;%s/b&gt; के लिए प्रथम पक्ष संग्रहण तक पहुंचने की अनुमति दें?</string>
+    <string name="request_storage">&lt;b&gt;%s&lt;/b&gt; के लिए डिवाइस संग्रहण तक पहुंच की अनुमति दें?</string>
+    <string name="request_storage_access">तीसरे पक्ष को &lt;b&gt;%s&lt;/b&gt; के लिए प्रथम पक्ष संग्रहण तक पहुंचने की अनुमति दें?</string>
     <string name="restart_origin">पुनः आरंभ करें</string>
     <string name="save_file">फ़ाइल को इस रूप में सहेजें</string>
     <string name="save_file_name">फ़ाइल का नाम</string>

@@ -273,11 +273,11 @@
     <string name="remove_top_site">Supprimer</string>
     <string name="rename">Renommer</string>
     <string name="rename_file">Renommer le fichier</string>
-    <string name="request_geolocation">Partager la position de votre appareil avec &lt;b&gt;%s/b&gt; ?</string>
-    <string name="request_media_key_system_access">Autoriser &lt;b&gt;%s/b&gt; à lire du contenu contrôlé par DRM ?</string>
+    <string name="request_geolocation">Partager la position de votre appareil avec &lt;b&gt;%s&lt;/b&gt; ?</string>
+    <string name="request_media_key_system_access">Autoriser &lt;b&gt;%s&lt;/b&gt; à lire du contenu contrôlé par DRM ?</string>
     <string name="request_media_key_system_access_subtitle">Notez que les fichiers protégés par DRM ne peuvent pas être téléchargés par Firedown</string>
-    <string name="request_storage">Autoriser l’accès au stockage de l’appareil pour &lt;b&gt;%s/b&gt; ?</string>
-    <string name="request_storage_access">Autoriser des tiers à accéder au stockage propriétaire pour &lt;b&gt;%s/b&gt; ?</string>
+    <string name="request_storage">Autoriser l’accès au stockage de l’appareil pour &lt;b&gt;%s&lt;/b&gt; ?</string>
+    <string name="request_storage_access">Autoriser des tiers à accéder au stockage propriétaire pour &lt;b&gt;%s&lt;/b&gt; ?</string>
     <string name="restart_origin">Redémarrage</string>
     <string name="save_file">Enregistrer le fichier sous</string>
     <string name="save_file_name">Nom de fichier</string>
