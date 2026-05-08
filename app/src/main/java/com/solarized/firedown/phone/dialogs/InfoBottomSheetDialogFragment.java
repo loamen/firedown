@@ -29,7 +29,7 @@ import com.solarized.firedown.utils.Utils;
 
 import java.util.ArrayList;
 
-public class InfoBottomSheetDialogFragment extends BaseBottomResizedDialogFragment implements View.OnClickListener, OnItemClickListener {
+public class InfoBottomSheetDialogFragment extends BaseBottomSheetDialogFragment implements View.OnClickListener, OnItemClickListener {
 
     private DownloadEntity mDownloadEntity;
 

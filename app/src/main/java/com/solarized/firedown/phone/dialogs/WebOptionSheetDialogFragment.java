@@ -2,7 +2,10 @@ package com.solarized.firedown.phone.dialogs;
 
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Intent;
 import android.content.res.TypedArray;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class WebOptionSheetDialogFragment extends BaseBottomResizedDialogFragment implements OptionsAdapter.OnItemClickListener {
+public class WebOptionSheetDialogFragment extends BaseBottomSheetDialogFragment implements OptionsAdapter.OnItemClickListener {
 
     private WebBookmarkViewModel mWebBookmarkViewModel;
 
@@ -103,7 +106,10 @@ public class WebOptionSheetDialogFragment extends BaseBottomResizedDialogFragmen
             return;
         int id = item.getIconRes();
         if (id == R.drawable.ic_web_24) {
-            setSessionResult(mCurrentUrl);
+            Intent resultIntent = new Intent(Intent.ACTION_VIEW);
+            resultIntent.setData(Uri.parse(mCurrentUrl));
+            mActivity.setResult(Activity.RESULT_OK, resultIntent);
+            mActivity.finish();
         } else if (id == R.drawable.ic_baseline_delete_24) {
             mWebBookmarkViewModel.delete(mId);
             mWebHistoryViewModel.delete(mId);

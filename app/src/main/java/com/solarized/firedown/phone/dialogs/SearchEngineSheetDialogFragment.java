@@ -34,7 +34,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 
 @AndroidEntryPoint
-public class SearchEngineSheetDialogFragment extends BaseBottomResizedDialogFragment implements OnItemClickListener{
+public class SearchEngineSheetDialogFragment extends BaseBottomSheetDialogFragment implements OnItemClickListener{
 
     private static final String TAG = SearchEngineSheetDialogFragment.class.getName();
 

@@ -38,7 +38,7 @@ import javax.inject.Inject;
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
-public class PopupBrowserSheetDialogFragment extends BaseBottomResizedDialogFragment implements OnItemClickListener, View.OnClickListener {
+public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragment implements OnItemClickListener, View.OnClickListener {
 
     private BrowserDialogViewModel mBrowserDialogViewModel;
     private boolean mHasBookmark;

@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class NewTabSheetDialogFragment extends BaseBottomResizedDialogFragment implements OptionsAdapter.OnItemClickListener {
+public class NewTabSheetDialogFragment extends BaseBottomSheetDialogFragment implements OptionsAdapter.OnItemClickListener {
 
 
     private BrowserDialogViewModel mBrowserDialogViewModel;

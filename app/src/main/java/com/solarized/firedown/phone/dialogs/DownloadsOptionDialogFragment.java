@@ -25,7 +25,7 @@ import com.solarized.firedown.Keys;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DownloadsOptionDialogFragment extends BaseBottomResizedDialogFragment implements View.OnClickListener, OptionsAdapter.OnItemClickListener {
+public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment implements View.OnClickListener, OptionsAdapter.OnItemClickListener {
 
 
     private DownloadEntity mDownloadEntity;

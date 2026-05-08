@@ -36,7 +36,7 @@ import com.solarized.firedown.utils.WebUtils;
 
 import java.util.Map;
 
-public class SecurityStateSheetDialogFragment extends BaseBottomResizedDialogFragment
+public class SecurityStateSheetDialogFragment extends BaseBottomSheetDialogFragment
         implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
 
     private GeckoStateViewModel mGeckoStateViewModel;

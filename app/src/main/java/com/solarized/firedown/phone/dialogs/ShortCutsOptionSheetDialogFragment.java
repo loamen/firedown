@@ -29,7 +29,7 @@ import com.solarized.firedown.utils.WebUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ShortCutsOptionSheetDialogFragment extends BaseBottomResizedDialogFragment {
+public class ShortCutsOptionSheetDialogFragment extends BaseBottomSheetDialogFragment {
 
     private ShortCutsViewModel mShortCutsViewModel;
 

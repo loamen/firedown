@@ -24,7 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint;
 
 
 @AndroidEntryPoint
-public class DownloadsSortDialogFragment extends BaseBottomResizedDialogFragment implements View.OnClickListener {
+public class DownloadsSortDialogFragment extends BaseBottomSheetDialogFragment implements View.OnClickListener {
 
     private static final String TAG = DownloadsSortDialogFragment.class.getName();
 

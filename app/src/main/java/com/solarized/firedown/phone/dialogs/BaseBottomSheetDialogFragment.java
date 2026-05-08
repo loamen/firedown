@@ -21,7 +21,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.BaseActivity;
 import com.solarized.firedown.R;
-import com.solarized.firedown.data.entity.BrowserDownloadEntity;
+import com.solarized.firedown.geckoview.GeckoRuntimeHelper;
 import com.solarized.firedown.manager.DownloadRequest;
 import com.solarized.firedown.manager.RunnableManager;
 import com.solarized.firedown.phone.DownloadsActivity;
@@ -33,20 +33,22 @@ import com.solarized.firedown.ui.IncognitoColors;
 import java.util.ArrayList;
 import java.util.Optional;
 
+import javax.inject.Inject;
+
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
 public class BaseBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
     private static final String TAG = BaseBottomSheetDialogFragment.class.getName();
-
     protected BaseActivity mActivity;
-
     protected View mView;
     protected int mActionBarSize;
     protected boolean mIsIncognito;
-
     protected NavController mNavController;
+
+    @Inject
+    protected GeckoRuntimeHelper mGeckoRuntimeHelper;
 
     protected final ActivityResultLauncher<Intent> mStartForResult = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<>() {

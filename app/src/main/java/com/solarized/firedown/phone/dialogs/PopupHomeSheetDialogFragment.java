@@ -29,7 +29,7 @@ import android.content.res.TypedArray;
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
-public class PopupHomeSheetDialogFragment extends BaseBottomResizedDialogFragment
+public class PopupHomeSheetDialogFragment extends BaseBottomSheetDialogFragment
         implements OptionsAdapter.OnItemClickListener {
 
     private BrowserDialogViewModel mBrowserDialogViewModel;

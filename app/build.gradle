@@ -92,7 +92,7 @@ android {
 
 ext {
     geckoviewChannel = "lite"
-    geckoviewVersion = "150.0.20260427013024"
+    geckoviewVersion = "150.0.20260506140522"
 }
 
 
@@ -101,7 +101,7 @@ dependencies {
 
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
-    def paging_version = "3.4.2"
+    def paging_version = "3.5.0"
 
     def work_version = "2.11.2"
 
@@ -152,7 +152,7 @@ dependencies {
 
     implementation 'commons-io:commons-io:2.22.0'
 
-    implementation 'commons-codec:commons-codec:1.21.0'
+    implementation 'commons-codec:commons-codec:1.22.0'
 
     implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.3.2"
 

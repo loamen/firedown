@@ -24,7 +24,7 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.data.entity.CertificateInfoEntity;
 
-public class CertDialogFragment extends BaseBottomResizedDialogFragment {
+public class CertDialogFragment extends BaseBottomSheetDialogFragment {
 
 
     private static final String TAG = CertDialogFragment.class.getSimpleName();
