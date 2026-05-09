@@ -745,21 +745,44 @@ public class GeckoRuntimeHelper {
     /**
      * Toggle DRM (Encrypted Media Extensions).
      *
-     * Only the Widevine plugin is gated. {@code media.eme.enabled} stays
-     * on unconditionally so that {@code navigator.requestMediaKeySystemAccess}
-     * remains a callable JavaScript API — turning it off entirely makes
-     * any DASH/HLS player (or any page that probes EME defensively at
-     * load) throw before playback can start, breaking even non-DRM video
-     * on hybrid sites like Max where the manifest offers both encrypted
-     * and clear renditions.
+     * {@code media.eme.enabled} stays on unconditionally so
+     * {@code navigator.requestMediaKeySystemAccess} remains callable —
+     * turning EME off entirely makes any DASH/HLS player (or any page
+     * that probes EME defensively at load) throw before playback can
+     * start, breaking even non-DRM video on hybrid sites like Max where
+     * the manifest offers both encrypted and clear renditions.
      *
-     * With DRM disabled, requestMediaKeySystemAccess('com.widevine.alpha')
-     * resolves to a rejection (no key system available), so:
-     *   - Sites with a non-DRM fallback rendition play the clear stream.
-     *   - Pure-DRM sites (Netflix, Spotify Web) still fail, which is the
-     *     intended behaviour — Firedown can't download those anyway.
-     *   - The "request_media_key_system_access" prompt is suppressed
-     *     because Widevine isn't there to be granted.
+     * What we *do* gate when DRM is off, in addition to the obvious
+     * Widevine plugin enable, is the rest of the GMP install/discovery
+     * cluster — without these, a site requesting Widevine still triggers
+     * the install-consent prompt ("This site needs Widevine. Allow?")
+     * even though we have no intention of letting it install. IronFox /
+     * Mull / Tor Browser for Android take the same shape, with the
+     * single difference that they also flip {@code media.eme.enabled}
+     * off; we don't, because we want the EME API itself to remain
+     * callable for hybrid players.
+     *
+     *   media.eme.enabled                = true (always)
+     *   media.gmp-widevinecdm.enabled    = !disable
+     *   media.gmp-widevinecdm.visible    = !disable  (hide from JS when off)
+     *   media.gmp-manager.updateEnabled  = !disable  (don't run GMP update poll)
+     *   media.gmp-provider.enabled       = !disable  (no plugin discovery)
+     *   browser.eme.ui.enabled           = !disable  (no install prompt)
+     *
+     * Net effect with the toggle OFF:
+     *   - requestMediaKeySystemAccess('com.widevine.alpha') rejects
+     *     (no key system available) — clean, no prompt.
+     *   - Hybrid sites fall back to their clear rendition.
+     *   - Pure-DRM sites (Netflix, Spotify Web) fail, as intended.
+     *   - No "would you like to install Widevine?" prompts surface.
+     *
+     * Net effect with the toggle ON: every pref above flips back, the
+     * full GMP install path is enabled, and a request from a Widevine
+     * site triggers the standard install/consent flow. (Note: stock
+     * GeckoView for Android doesn't actually fetch the binary even
+     * when allowed — Widevine on Android usually requires a build
+     * with MediaDrm-backed EME compiled in. The prefs become inert
+     * there but stay correct.)
      */
     @OptIn(markerClass = ExperimentalGeckoViewApi.class)
     public void setDRM(boolean disable) {
@@ -767,7 +790,12 @@ public class GeckoRuntimeHelper {
         boolean enable = !disable;
 
         Log.d(TAG, "setDRM: enter disable=" + disable
-                + " → media.eme.enabled=true media.gmp-widevinecdm.enabled=" + enable);
+                + " → media.eme.enabled=true"
+                + " widevinecdm.enabled=" + enable
+                + " widevinecdm.visible=" + enable
+                + " gmp-manager.updateEnabled=" + enable
+                + " gmp-provider.enabled=" + enable
+                + " browser.eme.ui.enabled=" + enable);
 
         List<GeckoPreferenceController.SetGeckoPreference<?>> preferenceList = new ArrayList<>();
 
@@ -776,6 +804,32 @@ public class GeckoRuntimeHelper {
 
         preferenceList.add(GeckoPreferenceController.SetGeckoPreference
                 .setBoolPref("media.gmp-widevinecdm.enabled", enable, GeckoPreferenceController.PREF_BRANCH_USER));
+
+        // Hide the Widevine GMP from JavaScript discovery when off, so
+        // a site doesn't even see it as a candidate key system to ask
+        // about — that's what fires the install-consent prompt.
+        preferenceList.add(GeckoPreferenceController.SetGeckoPreference
+                .setBoolPref("media.gmp-widevinecdm.visible", enable, GeckoPreferenceController.PREF_BRANCH_USER));
+
+        // Stop the GMP manager from polling Mozilla's plugin update
+        // server. With this off the install-consent prompt has nothing
+        // to drive — no manager run, no plugin offered, no UI surfaced.
+        preferenceList.add(GeckoPreferenceController.SetGeckoPreference
+                .setBoolPref("media.gmp-manager.updateEnabled", enable, GeckoPreferenceController.PREF_BRANCH_USER));
+
+        // Disable plugin discovery itself. media.gmp-provider gates the
+        // wider GMP runtime that EME calls into when it asks "what key
+        // systems do you support?" — disabling it makes that probe
+        // return nothing without going through the install path.
+        preferenceList.add(GeckoPreferenceController.SetGeckoPreference
+                .setBoolPref("media.gmp-provider.enabled", enable, GeckoPreferenceController.PREF_BRANCH_USER));
+
+        // Suppress the Firefox-style "This site uses Widevine, install?"
+        // prompt entirely. Belt-and-braces with the manager/provider
+        // disables above; on builds where those don't fully cover the
+        // prompt path this one does.
+        preferenceList.add(GeckoPreferenceController.SetGeckoPreference
+                .setBoolPref("browser.eme.ui.enabled", enable, GeckoPreferenceController.PREF_BRANCH_USER));
 
         GeckoResult<Map<String, Boolean>> geckoResult = GeckoPreferenceController.setGeckoPrefs(preferenceList);
 
