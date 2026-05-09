@@ -410,8 +410,6 @@
     <string name="settings_save_file_title">Vor dem Herunterladen umbenennen</string>
     <string name="settings_search_engine">Suchmaschine</string>
     <string name="settings_search_engine_select">Dieses Mal suchen in:</string>
-    <string name="settings_solarized_donate">https://firedown.app/donate</string>
-    <string name="settings_solarized_support">https://github.com/firedown-app/firedown/issues</string>
     <string name="settings_storage_manager_button_decline">NICHT JETZT</string>
     <string name="settings_storage_manager_button_ok">EINSTELLUNGEN ÖFFNEN</string>
     <string name="settings_tabs_archive_interval_title">Inaktive Tabs schließen</string>

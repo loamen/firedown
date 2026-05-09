@@ -410,8 +410,6 @@
     <string name="settings_save_file_title">Renommer avant de télécharger</string>
     <string name="settings_search_engine">Moteur de recherche</string>
     <string name="settings_search_engine_select">Pour cette recherche :</string>
-    <string name="settings_solarized_donate">https://firedown.app/donate</string>
-    <string name="settings_solarized_support">https://github.com/firedown-app/firedown/issues</string>
     <string name="settings_storage_manager_button_decline">PAS MAINTENANT</string>
     <string name="settings_storage_manager_button_ok">PARAMÈTRES OUVERTS</string>
     <string name="settings_tabs_archive_interval_title">Fermer les onglets inactifs</string>

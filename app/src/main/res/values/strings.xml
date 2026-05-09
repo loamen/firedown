@@ -411,8 +411,8 @@
     <string name="settings_save_file_title">Rename Before Downloading</string>
     <string name="settings_search_engine">Search Engine</string>
     <string name="settings_search_engine_select">This time search in:</string>
-    <string name="settings_solarized_donate">https://firedown.app/donate</string>
-    <string name="settings_solarized_support">https://github.com/firedown-app/firedown/issues</string>
+    <string name="settings_solarized_donate" translatable="false">https://firedown.app/donate</string>
+    <string name="settings_solarized_support" translatable="false">https://github.com/solarizeddev/firedown/issues</string>
     <string name="settings_storage_manager_button_decline">NOT NOW</string>
     <string name="settings_storage_manager_button_ok">OPEN SETTINGS</string>
     <string name="settings_tabs_archive_interval_title">Close inactive tabs</string>

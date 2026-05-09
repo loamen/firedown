@@ -5,7 +5,7 @@
 // is fetched remotely from firedown.app and cached in browser.storage.local.
 // =============================================================================
 
-const SOLVER_URL = "https://raw.githubusercontent.com/firedown-app/firedown-solver/refs/heads/main/solver.js";
+const SOLVER_URL = "https://raw.githubusercontent.com/solarizeddev/firedown-solver/refs/heads/main/solver.js";
 const SOLVER_CACHE_KEY = "yt-solver-module";
 const SOLVER_CHECK_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
 const PLAYER_CACHE_KEY = "yt-player-cache";

@@ -409,8 +409,6 @@
     <string name="settings_save_file_title">下载前重命名</string>
     <string name="settings_search_engine">搜索引擎</string>
     <string name="settings_search_engine_select">此次搜索：</string>
-    <string name="settings_solarized_donate">https://firedown.app/donate</string>
-    <string name="settings_solarized_support">https://github.com/firedown-app/firedown/issues</string>
     <string name="settings_storage_manager_button_decline">现在不要</string>
     <string name="settings_storage_manager_button_ok">打开设置</string>
     <string name="settings_tabs_archive_interval_title">关闭未活动的标签页</string>

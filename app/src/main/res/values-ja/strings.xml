@@ -409,8 +409,6 @@
     <string name="settings_save_file_title">ダウンロードする前に名前を変更してください</string>
     <string name="settings_search_engine">検索エンジン</string>
     <string name="settings_search_engine_select">今回だけ使う検索エンジン:</string>
-    <string name="settings_solarized_donate">https://firedown.app/donate</string>
-    <string name="settings_solarized_support">https://github.com/firedown-app/firedown/issues</string>
     <string name="settings_storage_manager_button_decline">今じゃない</string>
     <string name="settings_storage_manager_button_ok">設定を開く</string>
     <string name="settings_tabs_archive_interval_title">非アクティブなタブを閉じる</string>
