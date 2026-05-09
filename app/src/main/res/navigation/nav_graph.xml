@@ -140,9 +140,6 @@
         android:id="@+id/dialog_save_file"
         android:name="com.solarized.firedown.phone.dialogs.SaveFileDialog" />
     <dialog
-        android:id="@+id/dialog_save_login"
-        android:name="com.solarized.firedown.phone.dialogs.LoginBottomSheetDialog" />
-    <dialog
         android:id="@+id/dialog_delete_clipboard"
         android:name="com.solarized.firedown.phone.dialogs.ClipboardDialogFragment" />
     <dialog
