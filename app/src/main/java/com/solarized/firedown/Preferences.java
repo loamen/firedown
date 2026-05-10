@@ -199,6 +199,16 @@ public class Preferences {
     public static final String SETTINGS_TABS_ARCHIVE_LAST_RUN = "com.solarized.firedown.preferences.tabs.archive.last.run";
     public static final String SETTINGS_TABS_ARCHIVE_INTERVAL = "com.solarized.firedown.preferences.tabs.archive.interval";
 
+    /**
+     * Snapshot of the archived-tab count at the moment the user last
+     * dismissed the archive banner. The banner re-appears when the live
+     * archived count exceeds this snapshot; tapping dismiss writes the
+     * current count back so the banner stays gone until *more* tabs land
+     * in the archive. Matches the count-driven inactive-tabs UX in
+     * Fennec / Chrome / Edge.
+     */
+    public static final String SETTINGS_TABS_ARCHIVE_BANNER_DISMISSED_AT = "com.solarized.firedown.preferences.tabs.archive.banner.dismissed.at";
+
     public static final String SETTINGS_BLOCK_COOKIE_NOTICES = "com.solarized.firedown.preferences.ublock.block.cookie.notices";
     public static final boolean DEFAULT_BLOCK_COOKIE_NOTICES = false;
 

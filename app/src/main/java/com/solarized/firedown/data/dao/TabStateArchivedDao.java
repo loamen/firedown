@@ -19,6 +19,15 @@ public interface TabStateArchivedDao {
     List<TabStateArchivedEntity> getAllRaw();
 
     /**
+     * Live count of archived tabs. Drives the persistent archive banner —
+     * see TabsFragment.observeArchiveBanner. Updates whenever
+     * archiveInactiveTabs (or any other path) inserts / deletes from
+     * tabstate.
+     */
+    @Query("SELECT COUNT(*) FROM tabstate")
+    LiveData<Integer> getCountLive();
+
+    /**
      * PagingSource for Paging 3.
      * Uses file_date DESC to show the most recent tabs first.
      */
