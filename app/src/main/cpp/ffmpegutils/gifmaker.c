@@ -554,6 +554,13 @@ static void gifmaker_publish_progress(JNIEnv *env, struct GifMaker *gif,
     if (gif->thiz != NULL) {
         (*env)->CallVoidMethod(env, gif->thiz, gif->gifmaker_on_progress_method,
                                (jlong) elapsed, (jlong) total);
+        /* [BUG FIX] Java callbacks may throw; clear so subsequent JNI
+         * calls don't abort with "JNI ERROR (app bug): accessed stale
+         * Object" on a pending exception. */
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            LOGE(1, "gifmaker exception in progress callback");
+        }
     }
 }
 
@@ -732,6 +739,13 @@ static int gifmaker_run(JNIEnv *env, struct GifMaker *gif) {
 
     if (gif->thiz != NULL) {
         (*env)->CallVoidMethod(env, gif->thiz, gif->gifmaker_on_started_method);
+        /* [BUG FIX] Clear pending exception so subsequent JNI calls
+         * (avformat_write_header itself doesn't, but the encode loop
+         * has many) don't abort. */
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            LOGE(1, "gifmaker exception in started callback");
+        }
     }
 
     if (avformat_write_header(gif->output_format_ctx, NULL) < 0) {
@@ -821,7 +835,19 @@ static int gifmaker_run(JNIEnv *env, struct GifMaker *gif) {
                                                     : gif->duration_us;
         (*env)->CallVoidMethod(env, gif->thiz, gif->gifmaker_on_progress_method,
                                (jlong) total, (jlong) total);
+        /* [BUG FIX] Each Java callback needs its own exception check.
+         * Without one between progress and finished, a throw in
+         * progress would make the finished call abort with
+         * "JNI ERROR (app bug): accessed stale Object". */
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            LOGE(1, "gifmaker exception in finish-progress callback");
+        }
         (*env)->CallVoidMethod(env, gif->thiz, gif->gifmaker_on_finished_method);
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            LOGE(1, "gifmaker exception in finished callback");
+        }
     }
 
     return err;
