@@ -14,6 +14,7 @@ import com.solarized.firedown.data.di.Qualifiers;
 import com.solarized.firedown.data.entity.CertificateInfoEntity;
 import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.data.repository.GeckoStateDataRepository;
+import com.solarized.firedown.data.repository.TabStateArchivedRepository;
 import com.solarized.firedown.data.repository.TrackingPermissionRepository;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.GeckoUblockHelper;
@@ -34,8 +35,8 @@ public class GeckoStateViewModel extends ViewModel {
 
     private static final String TAG = GeckoStateViewModel.class.getSimpleName();
 
-    private final MutableLiveData<Integer> mArchivedCountEvent = new MutableLiveData<>();
     private final GeckoStateDataRepository mRepository;
+    private final TabStateArchivedRepository mArchivedRepository;
     private final GeckoUblockHelper mGeckoUblockHelper;
     private final TrackingPermissionRepository mTrackingRepository;
     private final Executor mDiskIOExecutor;
@@ -44,11 +45,13 @@ public class GeckoStateViewModel extends ViewModel {
     @Inject
     public GeckoStateViewModel(GeckoUblockHelper geckoUblockHelper,
                                GeckoStateDataRepository repository,
+                               TabStateArchivedRepository archivedRepository,
                                TrackingPermissionRepository trackingRepository,
                                @Qualifiers.DiskIO Executor diskExecutor,
                                @ApplicationContext Context context) {
         this.mGeckoUblockHelper = geckoUblockHelper;
         this.mRepository = repository;
+        this.mArchivedRepository = archivedRepository;
         this.mTrackingRepository = trackingRepository;
         this.mDiskIOExecutor = diskExecutor;
         this.mContext = context;
@@ -208,34 +211,28 @@ public class GeckoStateViewModel extends ViewModel {
     }
 
     /**
-     * Returns a LiveData that emits the number of tabs archived by the
-     * most recent {@link #archiveInactiveTabs} call.  Observed by
-     * TabsFragment to show the info banner.
-     */
-    public LiveData<Integer> getArchivedCountEvent() {
-        return mArchivedCountEvent;
-    }
-
-    /**
-     * Clears the archived-count event so the banner is dismissed.
-     */
-    public void clearArchivedCountEvent() {
-        mArchivedCountEvent.setValue(null);
-    }
-
-    /**
-     * Archives tabs inactive for longer than {@code maxInactiveMillis}
-     * and posts the result count to {@link #getArchivedCountEvent()}.
+     * Live count of archived tabs in the database. TabsFragment observes
+     * this and shows the archive banner whenever the count exceeds the
+     * "dismissed at" snapshot the user last cleared.
      *
-     * <p>Runs on the disk I/O executor so it never blocks the main thread.</p>
+     * <p>Driven by Room: archives, deletes, and clear-all all update
+     * this LiveData automatically. Doesn't depend on whether the
+     * archive operation just ran or happened in a previous app session.</p>
+     */
+    public LiveData<Integer> getArchivedTabCount() {
+        return mArchivedRepository.getArchivedCountLive();
+    }
+
+    /**
+     * Archives tabs inactive for longer than {@code maxInactiveMillis}.
+     * Runs on the disk I/O executor so it never blocks the main thread.
+     * Banner visibility is now driven by the live archived-tab count
+     * (see {@link #getArchivedTabCount()}); no event posting needed.
      *
      * @param maxInactiveMillis inactivity threshold in milliseconds
      */
     public void archiveInactiveTabs(long maxInactiveMillis) {
-        mDiskIOExecutor.execute(() -> {
-            int count = mRepository.archiveInactiveTabs(maxInactiveMillis);
-            mArchivedCountEvent.postValue(count);
-        });
+        mDiskIOExecutor.execute(() -> mRepository.archiveInactiveTabs(maxInactiveMillis));
     }
 
 

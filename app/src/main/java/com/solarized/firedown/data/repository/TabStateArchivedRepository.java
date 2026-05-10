@@ -1,6 +1,7 @@
 package com.solarized.firedown.data.repository;
 
 import android.webkit.URLUtil;
+import androidx.lifecycle.LiveData;
 import androidx.paging.PagingSource;
 
 import com.solarized.firedown.data.dao.TabStateArchivedDao;
@@ -35,6 +36,15 @@ public class TabStateArchivedRepository {
      */
     public PagingSource<Integer, TabStateArchivedEntity> getTabsArchive() {
         return mTabStateDao.getArchive();
+    }
+
+    /**
+     * Live count of archived tabs. TabsFragment observes this to drive
+     * the archive banner: visible whenever {@code count} exceeds the
+     * "dismissed at" snapshot the user last cleared.
+     */
+    public LiveData<Integer> getArchivedCountLive() {
+        return mTabStateDao.getCountLive();
     }
 
     /**

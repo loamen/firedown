@@ -118,19 +118,22 @@ public class TabsFragment extends BaseTabsFragment {
 
     @Override
     protected void setupRecyclerView() {
-        // Banner adapter
+        // Banner adapter — count-driven, persistent until dismissed
+        // (matches Fennec / Chrome / Edge inactive-tabs UX). Dismiss
+        // writes the current archived-tab count to a shared-pref so
+        // the banner stays gone until *more* tabs are archived.
         mBannerAdapter = new ArchiveBannerAdapter(new ArchiveBannerAdapter.OnBannerActionListener() {
             @Override
             public void onViewArchive() {
+                snapshotDismissedAt();
                 mBannerAdapter.dismiss();
-                mGeckoStateViewModel.clearArchivedCountEvent();
                 NavigationUtils.navigateSafe(mNavController, R.id.tabs_archive);
             }
 
             @Override
             public void onDismiss() {
+                snapshotDismissedAt();
                 mBannerAdapter.dismiss();
-                mGeckoStateViewModel.clearArchivedCountEvent();
             }
         });
 
@@ -163,10 +166,17 @@ public class TabsFragment extends BaseTabsFragment {
 
         Log.d(TAG, "onViewCreated");
 
-        // Archive banner observer
-        mGeckoStateViewModel.getArchivedCountEvent().observe(getViewLifecycleOwner(), count -> {
-            if (count != null && count > 0) {
-                mBannerAdapter.show(count);
+        // Archive banner observer — count-driven. Show whenever the
+        // current archived-tab count exceeds the user's last "I saw
+        // this" snapshot; hide once they catch up to it.
+        mGeckoStateViewModel.getArchivedTabCount().observe(getViewLifecycleOwner(), count -> {
+            int current = count != null ? count : 0;
+            int dismissedAt = mSharedPreferences.getInt(
+                    Preferences.SETTINGS_TABS_ARCHIVE_BANNER_DISMISSED_AT, 0);
+            if (current > dismissedAt) {
+                mBannerAdapter.show(current);
+            } else {
+                mBannerAdapter.dismiss();
             }
         });
 
@@ -189,6 +199,20 @@ public class TabsFragment extends BaseTabsFragment {
         }
     }
 
+
+    /**
+     * Persists the current archived-tab count as the "I've seen this"
+     * snapshot. The banner observer compares the live count against
+     * this value, so the banner only re-appears if more tabs land in
+     * the archive after dismissal.
+     */
+    private void snapshotDismissedAt() {
+        Integer live = mGeckoStateViewModel.getArchivedTabCount().getValue();
+        int current = live != null ? live : 0;
+        mSharedPreferences.edit()
+                .putInt(Preferences.SETTINGS_TABS_ARCHIVE_BANNER_DISMISSED_AT, current)
+                .apply();
+    }
 
     // ── Snackbar helper ─────────────────────────────────────────────
 
