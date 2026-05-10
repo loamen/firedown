@@ -1239,6 +1239,14 @@ void *encoder_transcode(void *data) {
             encoder->last_updated_time = current_time;
             (*env)->CallVoidMethod(env, encoder->thiz, encoder->encoder_on_progress_update_method,
                                    encoder->current_recording_time[stream_no], recording_time);
+            /* [BUG FIX] Java callbacks may throw; clear so the next JNI
+             * call (next loop iteration's CallVoidMethod) doesn't get
+             * "JNI ERROR (app bug): accessed stale Object" on a pending
+             * exception. */
+            if ((*env)->ExceptionCheck(env)) {
+                (*env)->ExceptionClear(env);
+                LOGE(1, "encoder_transcode exception in progress callback");
+            }
         }
 
         goto end_loop;
@@ -1288,8 +1296,20 @@ void *encoder_transcode(void *data) {
     if (encoder->interrupt == FALSE && encoder->thiz != NULL) {
         (*env)->CallVoidMethod(env, encoder->thiz,
                                encoder->encoder_on_progress_update_method, recording_time, recording_time);
+        /* [BUG FIX] Each Java callback needs its own exception check.
+         * Without one between progress and finished, a throw in
+         * progress would make the finished call abort with
+         * "JNI ERROR (app bug): accessed stale Object". */
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            LOGE(1, "encoder_transcode exception in finish-progress callback");
+        }
         (*env)->CallVoidMethod(env, encoder->thiz,
                                encoder->encoder_on_download_finished_method);
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionClear(env);
+            LOGE(1, "encoder_transcode exception in finished callback");
+        }
     }
 
     LOGI (3, "encoder_transcode finish");
@@ -1704,6 +1724,13 @@ int encoder_set_data_source(struct State *state, AVDictionary **dictionary, AVDi
     //Call Start Method
     (*state->env)->CallVoidMethod(state->env, encoder->thiz,
                                   encoder->encoder_on_download_started_method);
+    /* [BUG FIX] Java callback may throw; clear so the subsequent JNI
+     * calls in this pipeline (utils, alloc, etc.) don't abort on a
+     * pending exception. */
+    if ((*state->env)->ExceptionCheck(state->env)) {
+        (*state->env)->ExceptionClear(state->env);
+        LOGE(2, "encoder_set_data_source exception in started callback");
+    }
 
 
     if (encoder->interrupt || (err = encoder_alloc_input_context(encoder)) < 0)

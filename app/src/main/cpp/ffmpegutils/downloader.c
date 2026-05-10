@@ -1082,6 +1082,15 @@ void *downloader_mux(void *data) {
             (*env)->CallVoidMethod(env, downloader->thiz,
                                    downloader->downloader_on_progress_update_method,
                                    recording_time, recording_time);
+            /* [BUG FIX] Each Java callback needs its own exception
+             * check. The single check at the bottom only covered the
+             * finished method — if progress throws, finished was
+             * issued with a pending exception, which JNI escalates
+             * to "JNI ERROR (app bug): accessed stale Object". */
+            if ((*env)->ExceptionCheck(env)) {
+                (*env)->ExceptionClear(env);
+                LOGE(1, "downloader_mux exception in progress callback");
+            }
         }
         (*env)->CallVoidMethod(env, downloader->thiz,
                                downloader->downloader_on_download_finished_method);
