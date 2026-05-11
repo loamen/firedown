@@ -157,8 +157,20 @@
         <item name="bottomSheetDialogTheme">@style/Theme.FireDown.BottomSheetDialogTheme</item>
         <item name="android:windowAllowReturnTransitionOverlap">true</item>
         <item name="android:windowAllowEnterTransitionOverlap">true</item>
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
+        <!-- Transparent system bars via the modern API.
+             windowTranslucentStatus / windowTranslucentNavigation used
+             to be set here but they make WindowInsets dispatch report
+             bottom=0 to child views (the framework treats those flags
+             as "the app will handle the system bars itself"), which
+             broke every inset-based attempt to position the PlayerView
+             controller above the nav bar. statusBarColor /
+             navigationBarColor transparent achieves the same
+             edge-to-edge look while letting WindowInsetsControllerCompat
+             remain the single source of truth for system-bar
+             visibility, and lets WindowInsets listeners receive correct
+             values. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="windowActionBarOverlay">true</item>
         <item name="windowActionModeOverlay">true</item>

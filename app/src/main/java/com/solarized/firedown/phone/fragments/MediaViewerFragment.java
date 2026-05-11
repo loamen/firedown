@@ -18,7 +18,6 @@ import androidx.annotation.OptIn;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -193,47 +192,32 @@ public class MediaViewerFragment extends Fragment {
         );
 
 
-        // Apply system-bar insets as bottom padding to the fragment ROOT
-        // (the AspectRatioFrameLayout that wraps photo_view + player_view),
-        // not to mPlayerView individually. Reasons:
-        //
-        //  - The Play theme sets android:windowTranslucentNavigation=true
-        //    (legacy edge-to-edge flag). Combined with the modern
-        //    WindowInsetsControllerCompat path the listener can fire
-        //    with bottom=0 because the legacy flag tells the framework
-        //    the app is "handling" the nav bar — so requestApplyInsets
-        //    on the child doesn't reliably restore the inset.
-        //  - Per-view setOnApplyWindowInsetsListener also races against
-        //    the async FragmentTransaction.replace().commit(): on cold
-        //    launch the dispatch can fire before the fragment's view is
-        //    attached, and the listener never sees the initial insets.
-        //
-        // Reading insets straight from the decor view via
-        // ViewCompat.getRootWindowInsets bypasses both problems —
-        // getRootWindowInsets returns the window's CURRENT insets
-        // regardless of per-view consumption / dispatch state. Applying
-        // padding to the fragment root also makes the controller bar
-        // sit above the nav bar even though it lives inside PlayerView's
-        // internal layout (which used to ignore the padding on the
-        // outer PlayerView on some devices).
-        final View root = v;
-        Runnable applyInsetsToRoot = () -> {
-            if (root == null || mActivity == null) return;
-            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(
-                    mActivity.getWindow().getDecorView());
-            if (insets == null) return;
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            root.setPadding(0, 0, 0, systemBars.bottom);
-        };
-        ViewCompat.setOnApplyWindowInsetsListener(root, (rv, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            rv.setPadding(0, 0, 0, systemBars.bottom);
+        // Pad the fragment root by the bottom system-bar inset so the
+        // PlayerView controller (and the thumbnail on the cold-launch
+        // path) stays clear of the navigation bar. Theme.FireDown.Play
+        // now uses transparent navigationBarColor / statusBarColor
+        // instead of the legacy windowTranslucent{Status,Navigation}
+        // flags, so WindowInsets dispatch reports the real values —
+        // navigationBars().bottom is the nav bar height when 3-button
+        // nav is at the bottom, the gesture-pill height on full gesture
+        // nav, and 0 in landscape with a side-edge nav bar. When the
+        // user taps to hide chrome we call hide(systemBars()) below —
+        // that re-dispatches insets with bottom=0 and the listener
+        // automatically removes the padding so the video reclaims the
+        // full screen.
+        ViewCompat.setOnApplyWindowInsetsListener(v, (rv, insets) -> {
+            int bottom = insets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars()).bottom;
+            rv.setPadding(0, 0, 0, bottom);
             return insets;
         });
-        // Initial apply — covers the cold-launch case where the listener
-        // would otherwise wait until the next system-bar visibility
-        // change.
-        root.post(applyInsetsToRoot);
+        // Force a dispatch once the view is attached. WindowInsets are
+        // dispatched during the activity's first layout, which races
+        // against the async FragmentTransaction.replace().commit() — on
+        // cold launch the fragment view is attached after that dispatch,
+        // so the listener wouldn't fire until the next system-bar
+        // visibility change. post() defers until after attachment.
+        v.post(() -> ViewCompat.requestApplyInsets(v));
 
 
         // Single sink for the chrome-visibility decision: PlayerView's

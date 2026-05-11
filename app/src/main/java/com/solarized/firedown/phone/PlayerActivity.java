@@ -24,6 +24,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ShareCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.view.WindowCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +86,17 @@ public class PlayerActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Opt into edge-to-edge BEFORE setContentView so the content
+        // hierarchy is laid out with the correct insets dispatch from
+        // the start. Replaces android:windowTranslucentNavigation /
+        // windowTranslucentStatus on Theme.FireDown.Play (those legacy
+        // flags made WindowInsets.systemBars().bottom report 0 to
+        // child listeners, which broke every inset-based attempt to
+        // keep the PlayerView controller above the nav bar).
+        // statusBarColor / navigationBarColor are set transparent in
+        // the theme so the bars stay see-through over the video.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         setContentView(R.layout.activity_player);
 
