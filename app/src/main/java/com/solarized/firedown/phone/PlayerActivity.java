@@ -102,6 +102,25 @@ public class PlayerActivity extends AppCompatActivity {
             getWindow().getAttributes().layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
 
+        loadFromIntent();
+    }
+
+    /**
+     * Re-route singleTask re-launches into the same fragment-replacement
+     * path onCreate uses. Without this override the activity is reused
+     * with the original intent / fragment / player — visibly showing
+     * the previous video at the position it was paused at when PiP was
+     * dismissed. setIntent updates getIntent() so {@link #getDownloadEntity()}
+     * reads the freshly supplied entity.
+     */
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        loadFromIntent();
+    }
+
+    private void loadFromIntent() {
         mDownloadEntity = getDownloadEntity();
 
         String fileMimeType = mDownloadEntity.getFileMimeType();
@@ -147,7 +166,10 @@ public class PlayerActivity extends AppCompatActivity {
 
         }
 
-
+        // Menu visibility depends on the new entity's encrypted flag, so
+        // re-inflate after the replacement. No-op if menu wasn't created
+        // yet (the framework will call onCreateOptionsMenu naturally).
+        invalidateOptionsMenu();
     }
 
 
@@ -292,6 +314,15 @@ public class PlayerActivity extends AppCompatActivity {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
 
         if (isInPictureInPictureMode) {
+            // Defensive: some OEM ROMs deliver onPictureInPictureModeChanged(true)
+            // twice in a row without an intervening (false). Without this
+            // unregister the previous BroadcastReceiver would stay registered
+            // with the system but no longer be reachable from mPipReceiver —
+            // a slow leak of the activity until process death.
+            if (mPipReceiver != null) {
+                unregisterReceiver(mPipReceiver);
+                mPipReceiver = null;
+            }
             mPipReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {

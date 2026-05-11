@@ -322,12 +322,15 @@ public class MediaViewerFragment extends Fragment {
     public void onStop() {
         super.onStop();
         Glide.with(App.getAppContext()).clear(mPhotoView);
-        // Same guard as onPause: PiP keeps the activity in started state
-        // for as long as the floating window is visible, but Android can
-        // still fire onStop on some OEM ROMs when the launcher recents
-        // takes focus. Skip the stop if we're still in PiP — onDestroy
-        // does the real cleanup.
-        if (mExoPlayer != null && !isActivityInPip())
+        // No PiP guard here: while the floating window is visible the
+        // activity sits in PAUSED, not STOPPED — onStop only fires when
+        // PiP is being torn down (X button or another app covers it),
+        // and in both cases we want playback to stop. The earlier guard
+        // also broke the X-close path because isInPictureInPictureMode()
+        // can still report true at onStop time on the finish path, so
+        // the guard skipped stop() and the player kept emitting audio
+        // until release().
+        if (mExoPlayer != null)
             mExoPlayer.stop();
     }
 
