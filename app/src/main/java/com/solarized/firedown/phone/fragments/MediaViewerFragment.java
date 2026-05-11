@@ -458,6 +458,7 @@ public class MediaViewerFragment extends Fragment {
      * Android renders separately inside the PiP window.
      */
     @OptIn(markerClass = UnstableApi.class)
+    @OptIn(markerClass = UnstableApi.class)
     public void onPipModeChanged(boolean inPip) {
         Log.d(TAG, "[onPipModeChanged] inPip=" + inPip);
         if (mPlayerView == null) return;
@@ -465,55 +466,69 @@ public class MediaViewerFragment extends Fragment {
             mPlayerView.hideController();
             setChromeVisible(false);
         } else {
-            // PiP exit. The previous log proved the inner LinearLayout
-            // inside exo_bottom_bar comes back ~146 px taller than it
-            // went in (102 → 248), with the same child count, so the
-            // growth is inside one of the LinearLayout's children
-            // (exo_position / exo_progress / exo_duration). The
-            // declared XML heights are wrap_content / 28dp / wrap_content,
-            // so the likely culprit is DefaultTimeBar (exo_progress)
-            // holding an inflated measured height after the small PiP
-            // window. Re-assigning the LayoutParams here forces a
-            // fresh measure pass with the original 28dp constraint.
-            resetTimeBarLayoutParams();
+            // #102's log proved the inner LinearLayout reports
+            // measuredH=247 while its three children sum to max=78 —
+            // mathematically impossible for a wrap_content horizontal
+            // LinearLayout unless something has set minimumHeight on
+            // it (or its parent FrameLayout). Media3's PlayerControlView
+            // appears to apply that during PiP transitions and not
+            // reset it on return to fullscreen. Aggressively clear it
+            // on both the bar and the LinearLayout, plus re-assert
+            // wrap_content LayoutParams to force a fresh measure pass.
+            resetBottomBarSizing();
         }
         dumpBottomBarStructure("[onPipModeChanged inPip=" + inPip + "]");
     }
 
     /**
-     * Force exo_progress (DefaultTimeBar) and its parent row back to
-     * the XML-declared sizing after PiP exit. setLayoutParams is the
-     * cheapest way to invalidate Media3's cached measure state — it
-     * triggers requestLayout on the parent chain and the next pass
-     * uses the LayoutParams we just wrote.
+     * Aggressive reset for the bar-grew-after-PiP-exit bug. Wipes
+     * minimumHeight on exo_bottom_bar AND its inner LinearLayout,
+     * re-asserts LayoutParams.height = WRAP_CONTENT, and requests a
+     * layout pass. setLayoutParams is the cheapest way to invalidate
+     * cached measure state.
      */
-    private void resetTimeBarLayoutParams() {
+    private void resetBottomBarSizing() {
         if (mPlayerView == null) return;
-        View timeBar = mPlayerView.findViewById(R.id.exo_progress);
-        if (timeBar != null) {
-            int target28dp = (int) (28 * getResources().getDisplayMetrics().density);
-            android.view.ViewGroup.LayoutParams lp = timeBar.getLayoutParams();
-            if (lp != null) {
-                Log.d(TAG, "[resetTimeBar] before lpH="
-                        + (lp.height == android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                                ? "WRAP"
-                                : String.valueOf(lp.height))
-                        + " measuredH=" + timeBar.getMeasuredHeight()
-                        + " writing lpH=" + target28dp);
-                lp.height = target28dp;
-                timeBar.setLayoutParams(lp);
-            }
-            // Walk up to the LinearLayout that holds the row and force
-            // it to remeasure too — without this the bar's parent
-            // FrameLayout keeps the stale wrap_content height it
-            // computed before the PiP-state measurement leaked.
-            View parent = (timeBar.getParent() instanceof View)
-                    ? (View) timeBar.getParent() : null;
-            if (parent != null) parent.requestLayout();
-            View grandparent = (parent != null && parent.getParent() instanceof View)
-                    ? (View) parent.getParent() : null;
-            if (grandparent != null) grandparent.requestLayout();
+        View bottomBar = mPlayerView.findViewById(R.id.exo_bottom_bar);
+        if (!(bottomBar instanceof android.view.ViewGroup)) return;
+        android.view.ViewGroup bottomBarGroup = (android.view.ViewGroup) bottomBar;
+
+        int barMinHbefore = bottomBar.getMinimumHeight();
+        bottomBar.setMinimumHeight(0);
+        android.view.ViewGroup.LayoutParams barLp = bottomBar.getLayoutParams();
+        int barLpHbefore = (barLp != null) ? barLp.height : Integer.MIN_VALUE;
+        if (barLp != null) {
+            barLp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+            bottomBar.setLayoutParams(barLp);
         }
+
+        View inner = bottomBarGroup.getChildCount() > 0
+                ? bottomBarGroup.getChildAt(0) : null;
+        int innerMinHbefore = -1;
+        int innerLpHbefore = Integer.MIN_VALUE;
+        if (inner != null) {
+            innerMinHbefore = inner.getMinimumHeight();
+            inner.setMinimumHeight(0);
+            android.view.ViewGroup.LayoutParams innerLp = inner.getLayoutParams();
+            if (innerLp != null) {
+                innerLpHbefore = innerLp.height;
+                innerLp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+                inner.setLayoutParams(innerLp);
+            }
+        }
+
+        Log.d(TAG, "[resetBottomBarSizing]"
+                + " bar minH " + barMinHbefore + " → 0"
+                + " bar lpH " + lpHName(barLpHbefore) + " → WRAP"
+                + " | inner minH " + innerMinHbefore + " → 0"
+                + " inner lpH " + lpHName(innerLpHbefore) + " → WRAP");
+    }
+
+    private String lpHName(int v) {
+        if (v == android.view.ViewGroup.LayoutParams.MATCH_PARENT) return "MATCH";
+        if (v == android.view.ViewGroup.LayoutParams.WRAP_CONTENT) return "WRAP";
+        if (v == Integer.MIN_VALUE) return "n/a";
+        return String.valueOf(v);
     }
 
     /**
@@ -535,10 +550,15 @@ public class MediaViewerFragment extends Fragment {
         android.view.ViewGroup bottomBarGroup = (android.view.ViewGroup) bottomBar;
         StringBuilder sb = new StringBuilder();
         sb.append(tag).append(" exo_bottom_bar h=").append(bottomBar.getHeight())
+                .append(" measuredH=").append(bottomBar.getMeasuredHeight())
+                .append(" minH=").append(bottomBar.getMinimumHeight())
                 .append(" topY=").append(bottomBar.getTop())
                 .append(" bottomY=").append(bottomBar.getBottom())
                 .append(" pT=").append(bottomBar.getPaddingTop())
                 .append(" pB=").append(bottomBar.getPaddingBottom())
+                .append(" lpH=").append(lpHName(
+                        bottomBar.getLayoutParams() == null ? Integer.MIN_VALUE
+                                : bottomBar.getLayoutParams().height))
                 .append(" cc=").append(bottomBarGroup.getChildCount());
         for (int i = 0; i < bottomBarGroup.getChildCount(); i++) {
             View c = bottomBarGroup.getChildAt(i);
@@ -558,7 +578,8 @@ public class MediaViewerFragment extends Fragment {
                 .append(v.getClass().getSimpleName())
                 .append(" id=").append(idName(v.getId()))
                 .append(" h=").append(v.getHeight())
-                .append(" measuredH=").append(v.getMeasuredHeight());
+                .append(" measuredH=").append(v.getMeasuredHeight())
+                .append(" minH=").append(v.getMinimumHeight());
         android.view.ViewGroup.LayoutParams lp = v.getLayoutParams();
         if (lp != null) {
             sb.append(" lpH=").append(lp.height == android.view.ViewGroup.LayoutParams.MATCH_PARENT
