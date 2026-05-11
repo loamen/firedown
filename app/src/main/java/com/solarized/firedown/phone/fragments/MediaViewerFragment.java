@@ -125,7 +125,6 @@ public class MediaViewerFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        Log.d(TAG, "[flash-trace] onCreateView enter → postponeEnterTransition()");
         postponeEnterTransition();
 
         // Inflate the layout for this fragment
@@ -156,14 +155,14 @@ public class MediaViewerFragment extends Fragment {
         mPlayerView.setVisibility(View.VISIBLE);
 
         mPhotoView.setVisibility(!mAvoidTransition ? View.VISIBLE : View.GONE);
-        Log.d(TAG, "[flash-trace] onCreateView/visibility set"
-                + " mAvoidTransition=" + mAvoidTransition
-                + " player.visibility=" + visName(mPlayerView.getVisibility())
-                + " player.alpha=" + mPlayerView.getAlpha()
-                + " photo.visibility=" + visName(mPhotoView.getVisibility())
-                + " photo.hasDrawable=" + (mPhotoView.getDrawable() != null));
 
-        ViewCompat.setTransitionName(mPhotoView, "video_view");
+        // No setTransitionName on photo_view: BaseFocusFragment.openItem
+        // no longer launches PlayerActivity with a "video_view"
+        // shared-element option, so there is nothing on the source
+        // side that would match. photo_view is now purely a static
+        // poster image — Glide loads the thumbnail into it during
+        // onViewCreated; onRenderedFirstFrame hides it once the
+        // player has a frame.
 
         String fileMime = mDownloadEntity.getFileMimeType();
 
@@ -320,23 +319,13 @@ public class MediaViewerFragment extends Fragment {
             }
 
             /**
-             * Hide the thumbnail placeholder once the video surface has
-             * actually painted a frame. We keep PlayerView at alpha=0
-             * from onCreateView until this fires, so the brief window
-             * between TextureView attaching its surface and the
-             * shared-element transition completing doesn't leak a
-             * full-screen frame in front of photo_view. Flipping
-             * alpha + hiding photo_view in the same callback keeps
-             * the swap atomic from the user's perspective.
+             * Hide the thumbnail placeholder once the video surface
+             * has actually painted a frame, so the swap from poster
+             * image to live video is atomic from the user's
+             * perspective.
              */
             @Override
             public void onRenderedFirstFrame() {
-                Log.d(TAG, "[flash-trace] onRenderedFirstFrame"
-                        + " player.alpha=" + (mPlayerView != null ? mPlayerView.getAlpha() : -1)
-                        + " photo.visibility="
-                        + (mPhotoView != null ? visName(mPhotoView.getVisibility()) : "null")
-                        + " photo.attachedToWindow="
-                        + (mPhotoView != null && mPhotoView.isAttachedToWindow()));
                 if (mPhotoView != null) mPhotoView.setVisibility(View.GONE);
             }
         });
@@ -355,90 +344,8 @@ public class MediaViewerFragment extends Fragment {
 
         mExoPlayer.prepare();
 
-        // Surface-attachment is deferred until the shared-element
-        // enter transition ends. Why: #108's trace proved that
-        // Android sets photo_view to INVISIBLE between
-        // startPostponedEnterTransition and the animation finishing,
-        // and onRenderedFirstFrame fires ~150 ms in — well before
-        // the animation ends. Without a visible photo_view to mask
-        // it, the user sees PlayerView's first frame leaking through
-        // around the still-animating transition overlay.
-        //
-        // ExoPlayer.prepare() above starts buffering immediately,
-        // but the player has no video Surface yet because
-        // mPlayerView.setPlayer hasn't been called. Decoded frames
-        // are held in the pipeline. When the transition ends and we
-        // attach the player to PlayerView, the held frame is pushed
-        // to the now-visible TextureView surface in a single step,
-        // photo_view turns GONE in onRenderedFirstFrame, and the
-        // swap is clean.
-        //
-        // Two trigger paths for the deferred attach:
-        //   1. Shared-element enter transition's onTransitionEnd /
-        //      onTransitionCancel (cold launch path).
-        //   2. A fallback 800 ms postDelayed for the onNewIntent
-        //      singleTask reuse path where the framework doesn't
-        //      schedule a fresh shared-element animation (#83 / #84
-        //      symptom) — without the timer the player would never
-        //      get a surface in that case.
-        //
-        // The encrypted / safe-folder path (mAvoidTransition=true)
-        // and audio files skip the deferral and attach immediately
-        // — there's no thumbnail / no transition to wait for.
-        final java.util.concurrent.atomic.AtomicBoolean attached =
-                new java.util.concurrent.atomic.AtomicBoolean(false);
-        final Runnable attachPlayer = () -> {
-            if (!attached.compareAndSet(false, true)) return;
-            if (mPlayerView == null || mExoPlayer == null) return;
-            Log.d(TAG, "[flash-trace] attachPlayer fires"
-                    + " photo.visibility=" + visName(mPhotoView.getVisibility()));
-            mPlayerView.setPlayer(mExoPlayer);
-            mExoPlayer.setPlayWhenReady(true);
-        };
-
-        if (mAvoidTransition || FileUriHelper.isAudio(mimeType)) {
-            Log.d(TAG, "[flash-trace] attaching player immediately"
-                    + " (mAvoidTransition=" + mAvoidTransition
-                    + " isAudio=" + FileUriHelper.isAudio(mimeType) + ")");
-            attachPlayer.run();
-        } else {
-            android.transition.Transition sharedEnter = (mActivity != null)
-                    ? mActivity.getWindow().getSharedElementEnterTransition()
-                    : null;
-            Log.d(TAG, "[flash-trace] deferring attach"
-                    + " sharedEnter=" + sharedEnter);
-            if (sharedEnter != null) {
-                sharedEnter.addListener(new android.transition.Transition.TransitionListener() {
-                    @Override
-                    public void onTransitionStart(@NonNull android.transition.Transition transition) {
-                        Log.d(TAG, "[flash-trace] sharedEnter onTransitionStart");
-                    }
-                    @Override
-                    public void onTransitionEnd(@NonNull android.transition.Transition transition) {
-                        Log.d(TAG, "[flash-trace] sharedEnter onTransitionEnd → attach");
-                        transition.removeListener(this);
-                        attachPlayer.run();
-                    }
-                    @Override
-                    public void onTransitionCancel(@NonNull android.transition.Transition transition) {
-                        Log.d(TAG, "[flash-trace] sharedEnter onTransitionCancel → attach");
-                        transition.removeListener(this);
-                        attachPlayer.run();
-                    }
-                    @Override
-                    public void onTransitionPause(@NonNull android.transition.Transition transition) {}
-                    @Override
-                    public void onTransitionResume(@NonNull android.transition.Transition transition) {}
-                });
-            }
-            // Fallback for the onNewIntent / no-transition path.
-            mPlayerView.postDelayed(() -> {
-                if (!attached.get()) {
-                    Log.d(TAG, "[flash-trace] fallback timer → attach");
-                    attachPlayer.run();
-                }
-            }, 800);
-        }
+        mPlayerView.setPlayer(mExoPlayer);
+        mExoPlayer.setPlayWhenReady(true);
 
         if(!mAvoidTransition){
             if (FileUriHelper.isAudio(mimeType)) {
@@ -645,15 +552,6 @@ public class MediaViewerFragment extends Fragment {
         }
     }
 
-    private static String visName(int v) {
-        switch (v) {
-            case View.VISIBLE:   return "VISIBLE";
-            case View.INVISIBLE: return "INVISIBLE";
-            case View.GONE:      return "GONE";
-            default:             return String.valueOf(v);
-        }
-    }
-
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -689,17 +587,7 @@ public class MediaViewerFragment extends Fragment {
 
         @Override
         public boolean onResourceReady(@NonNull Drawable resource, @NonNull Object model, Target<Drawable> target, @NonNull com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
-            Log.d(TAG, "[flash-trace] Glide.onResourceReady dataSource=" + dataSource
-                    + " isFirstResource=" + isFirstResource
-                    + " photo.visibility="
-                    + (mPhotoView != null ? visName(mPhotoView.getVisibility()) : "null")
-                    + " photo.attached="
-                    + (mPhotoView != null && mPhotoView.isAttachedToWindow())
-                    + " player.alpha="
-                    + (mPlayerView != null ? mPlayerView.getAlpha() : -1)
-                    + " player.attached="
-                    + (mPlayerView != null && mPlayerView.isAttachedToWindow())
-                    + " → startPostponedEnterTransition");
+            Log.d(TAG, "onResourceReady");
             if(mActivity == null)
                 return false;
             startPostponedEnterTransition();
