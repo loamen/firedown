@@ -314,6 +314,15 @@ public class PlayerActivity extends AppCompatActivity {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
 
         if (isInPictureInPictureMode) {
+            // Defensive: some OEM ROMs deliver onPictureInPictureModeChanged(true)
+            // twice in a row without an intervening (false). Without this
+            // unregister the previous BroadcastReceiver would stay registered
+            // with the system but no longer be reachable from mPipReceiver —
+            // a slow leak of the activity until process death.
+            if (mPipReceiver != null) {
+                unregisterReceiver(mPipReceiver);
+                mPipReceiver = null;
+            }
             mPipReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
