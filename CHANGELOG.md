@@ -1,8 +1,8 @@
-## [1.1.69] - 2026-05-12
+## [1.1.69] - 2026-05-13
 
 - Fix video playback transition
 - Added option to disable WebAssembly
-- Bump Gecko to version 150.0.20260511200624
+- Bump Gecko to version 150.0.20260511200624 (Mozilla Security Advisory 2026-45)
 
 ## [1.1.68] - 2026-05-11
 
