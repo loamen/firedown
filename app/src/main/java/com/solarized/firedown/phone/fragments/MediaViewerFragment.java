@@ -8,6 +8,7 @@ import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
+import android.transition.Transition;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,9 +44,13 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.App;
+import com.solarized.firedown.BuildConfig;
+import com.solarized.firedown.GlideRequestOptions;
 import com.solarized.firedown.glide.MimeTypeThumbnail;
 import com.solarized.firedown.phone.PlayerActivity;
 import com.solarized.firedown.R;
@@ -116,6 +121,12 @@ public class MediaViewerFragment extends Fragment {
             mDownloadEntity = new DownloadEntity();
 
         mAvoidTransition = mDownloadEntity.isFileEncrypted() || mDownloadEntity.isFileSafe();
+
+        if (!mAvoidTransition) {
+            addTransitionListener();
+        }
+
+
     }
 
 
@@ -239,7 +250,6 @@ public class MediaViewerFragment extends Fragment {
                 int leftInset = Math.max(navBars.left, cutout.left);
                 int rightInset = Math.max(navBars.right, cutout.right);
                 int bottomInset = Math.max(navBars.bottom, cutout.bottom);
-
                 Log.d(TAG, "[exo_bottom_bar inset] navBars=" + navBars
                         + " cutout=" + cutout
                         + " writing padding L=" + leftInset
@@ -249,9 +259,10 @@ public class MediaViewerFragment extends Fragment {
                         + " | barH(pre)=" + v1.getHeight()
                         + " topY(pre)=" + v1.getTop()
                         + " bottomY(pre)=" + v1.getBottom());
-
                 v1.setPadding(leftInset, xmlPaddingTop, rightInset, bottomInset);
-                dumpBottomBarStructure("[inset-post]");
+                if(BuildConfig.DEBUG){
+                    dumpBottomBarStructure("[inset-post]");
+                }
                 return windowInsets;
             });
         }
@@ -357,26 +368,23 @@ public class MediaViewerFragment extends Fragment {
                         .listener(mRequestListener)
                         .into(mPhotoView);
             } else {
-                // Video: no thumbnail poster behind the morph
-                // (user preference, #115 re-dropped the Glide
-                // load that #114 had restored). photo_view stays
-                // VISIBLE — with transitionName "video_view" set
-                // in onCreateView — so the shared-element morph
-                // from BaseFocusFragment's list thumbnail has a
-                // measurable destination view to animate to.
-                // ImageViewerFragment does the same: photo_view
-                // is the destination, never set GONE before the
-                // transition starts; only Glide finishing flips
-                // postponeEnterTransition → startPostponed.
-                //
-                // Without a poster the destination is transparent
-                // during the morph, so what the user sees is the
-                // list thumbnail expanding to full-screen bounds,
-                // and the video frame appearing through it as the
-                // decoder produces it. photo_view itself is
-                // hidden by onRenderedFirstFrame so it stops
-                // occupying the layout once playback starts.
-                startPostponedEnterTransition();
+                long interval = mDownloadEntity.getThumbnailDuration();
+                String url = mDownloadEntity.getFileUrl();
+                RequestOptions options =
+                        new RequestOptions().frame(interval)
+                                .set(GlideRequestOptions.MIMETYPE, mDownloadEntity.getFileMimeType())
+                                .set(GlideRequestOptions.FILEPATH, mDownloadEntity.getFilePath())
+                                .set(GlideRequestOptions.LENGTH, mDownloadEntity.getFileSize())
+                                .set(GlideRequestOptions.FRAME, mDownloadEntity.getThumbnailDuration());
+
+                Glide.with(App.getAppContext()).load(mDownloadEntity)
+                        .dontTransform()
+                        .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
+                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .signature(new ObjectKey(interval + url.hashCode()))
+                        .listener(mRequestListener)
+                        .apply(options)
+                        .into(mPhotoView);
             }
         }else{
             if (FileUriHelper.isAudio(mimeType)) {
@@ -499,8 +507,7 @@ public class MediaViewerFragment extends Fragment {
     private void dumpBottomBarStructure(@NonNull String tag) {
         if (mPlayerView == null) return;
         final View bottomBar = mPlayerView.findViewById(R.id.exo_bottom_bar);
-        if (!(bottomBar instanceof android.view.ViewGroup)) return;
-        android.view.ViewGroup bottomBarGroup = (android.view.ViewGroup) bottomBar;
+        if (!(bottomBar instanceof ViewGroup bottomBarGroup)) return;
         StringBuilder sb = new StringBuilder();
         sb.append(tag).append(" exo_bottom_bar h=").append(bottomBar.getHeight())
                 .append(" measuredH=").append(bottomBar.getMeasuredHeight())
@@ -648,5 +655,44 @@ public class MediaViewerFragment extends Fragment {
         }
     };
 
+    private void addTransitionListener() {
+        final Transition transition = mActivity.getWindow().getSharedElementEnterTransition();
+
+        if (transition != null) {
+            // There is an entering shared element transition so add a listener to it
+            transition.addListener(new Transition.TransitionListener() {
+                @Override
+                public void onTransitionEnd(Transition transition) {
+                    // As the transition has ended, we can now load the full-size image
+                    if(mPlayerView != null) {
+                        mPlayerView.post(() -> mPlayerView.setVisibility(View.VISIBLE));
+                    }
+                    // Make sure we remove ourselves as a listener
+                    transition.removeListener(this);
+                }
+
+                @Override
+                public void onTransitionStart(Transition transition) {
+                    // No-op
+                }
+
+                @Override
+                public void onTransitionCancel(Transition transition) {
+                    // Make sure we remove ourselves as a listener
+                    transition.removeListener(this);
+                }
+
+                @Override
+                public void onTransitionPause(Transition transition) {
+                    // No-op
+                }
+
+                @Override
+                public void onTransitionResume(Transition transition) {
+                    // No-op
+                }
+            });
+        }
+    }
 
 }
