@@ -17,6 +17,16 @@ import com.solarized.firedown.R;
 
 public class TabsBrowserButton extends FrameLayout {
 
+    /**
+     * Tab counts up to this value render verbatim ("1"–"99"). Anything
+     * beyond renders the {@link #LOTS_OF_TABS_GLYPH} easter egg —
+     * matching Chrome / Fenix's "stop trying to fit more digits, you
+     * have too many tabs" UX while keeping the 22dp×20dp button shape
+     * intact. The fire glyph doubles as a brand wink (Firedown).
+     */
+    private static final int MAX_DISPLAYED_COUNT = 99;
+    private static final String LOTS_OF_TABS_GLYPH = "🔥"; // 🔥
+
     private AppCompatButton mButton;
 
 
@@ -77,7 +87,9 @@ public class TabsBrowserButton extends FrameLayout {
     }
 
     public void setTabsCount(int count){
-        mButton.setText(String.valueOf(count));
+        mButton.setText(count > MAX_DISPLAYED_COUNT
+                ? LOTS_OF_TABS_GLYPH
+                : String.valueOf(count));
     }
 
     public Drawable getTabsBackground() {
