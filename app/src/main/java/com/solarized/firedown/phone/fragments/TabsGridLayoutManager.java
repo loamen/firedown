@@ -41,8 +41,24 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 public class TabsGridLayoutManager extends GridLayoutManager {
 
-    private int mInitialPosition = RecyclerView.NO_POSITION;
+    /**
+     * Number of consecutive {@code onLayoutCompleted} passes with an
+     * unchanged {@code findFirstVisibleItemPosition()} after which we
+     * accept that the LM physically cannot reach {@link #mScrollTarget}
+     * and fire the callback anyway. Catches the case where
+     * {@code scrollTarget} sits past the LM's natural scroll clamp
+     * (e.g. active tab is near the end of a short list, so there
+     * aren't enough rows below it to fill the viewport when the LM
+     * tries to place the target row at the top).
+     */
+    private static final int STABILITY_GIVE_UP_PASSES = 3;
+
+    private int mScrollTarget = RecyclerView.NO_POSITION;
+    private int mVisibleAnchor = RecyclerView.NO_POSITION;
     @Nullable private Runnable mOnReached;
+
+    private int mLastFirstVisible = RecyclerView.NO_POSITION;
+    private int mStableCount = 0;
 
     public TabsGridLayoutManager(Context context, int spanCount) {
         super(context, spanCount);
@@ -54,47 +70,98 @@ public class TabsGridLayoutManager extends GridLayoutManager {
     }
 
     /**
-     * Request a one-shot scroll to {@code position}. The LM keeps
-     * re-issuing the scroll on every post-layout pass until
-     * {@code findFirstVisibleItemPosition()} reports the row is the
-     * first visible (or gives up if the data set shrinks below the
-     * target). Fires {@code onReached} the first time that condition
-     * is observed.
+     * Request a one-shot scroll to {@code scrollTarget}, with
+     * {@code visibleAnchor} as a fallback success condition: if the
+     * LM clamps the scroll short of {@code scrollTarget} but
+     * {@code visibleAnchor} ends up inside the visible range, that
+     * counts as "reached" too — the user can see the row we actually
+     * cared about (typically the active tab) even if the exact
+     * "scroll to row above" placement is impossible for this dataset.
      *
-     * <p>Passing {@code NO_POSITION} cancels any pending request.</p>
+     * <p>Self-clears on item-count mismatch ({@code state.getItemCount() <=
+     * scrollTarget}) and gives up after a few stable layouts where
+     * {@code findFirstVisibleItemPosition()} doesn't advance — so the
+     * caller's {@code onReached} callback always fires eventually,
+     * even when the LM can't honor the requested target.</p>
+     *
+     * <p>Pass {@code scrollTarget == NO_POSITION} to cancel a pending
+     * request without firing the callback.</p>
      */
-    public void setInitialPosition(int position, @Nullable Runnable onReached) {
-        mInitialPosition = position;
+    public void setInitialPosition(int scrollTarget, int visibleAnchor,
+                                   @Nullable Runnable onReached) {
+        mScrollTarget = scrollTarget;
+        mVisibleAnchor = visibleAnchor;
         mOnReached = onReached;
-        if (position != RecyclerView.NO_POSITION) {
-            scrollToPositionWithOffset(position, 0);
+        mLastFirstVisible = RecyclerView.NO_POSITION;
+        mStableCount = 0;
+        if (scrollTarget != RecyclerView.NO_POSITION) {
+            scrollToPositionWithOffset(scrollTarget, 0);
         }
+    }
+
+    /** Cancel any pending request without firing the callback. */
+    public void cancelInitialPosition() {
+        mScrollTarget = RecyclerView.NO_POSITION;
+        mVisibleAnchor = RecyclerView.NO_POSITION;
+        mOnReached = null;
+        mLastFirstVisible = RecyclerView.NO_POSITION;
+        mStableCount = 0;
     }
 
     @Override
     public void onLayoutCompleted(RecyclerView.State state) {
         super.onLayoutCompleted(state);
-        if (mInitialPosition == RecyclerView.NO_POSITION) return;
+        if (mScrollTarget == RecyclerView.NO_POSITION) return;
         if (state.isPreLayout()) return;
 
-        if (state.getItemCount() <= mInitialPosition) {
-            Runnable cb = mOnReached;
-            mInitialPosition = RecyclerView.NO_POSITION;
-            mOnReached = null;
-            if (cb != null) cb.run();
+        if (state.getItemCount() <= mScrollTarget) {
+            fireReached();
             return;
         }
 
-        if (findFirstVisibleItemPosition() == mInitialPosition) {
-            Runnable cb = mOnReached;
-            mInitialPosition = RecyclerView.NO_POSITION;
-            mOnReached = null;
-            if (cb != null) cb.run();
-        } else {
-            // Some intermediate layout pass (postpone release, view
-            // attach, …) discarded mPendingScrollPosition. Re-issue it
-            // — the next onLayoutCompleted will re-check.
-            scrollToPositionWithOffset(mInitialPosition, 0);
+        int firstVis = findFirstVisibleItemPosition();
+        int lastVis = findLastVisibleItemPosition();
+
+        boolean exactHit = firstVis == mScrollTarget;
+        boolean anchorVisible = mVisibleAnchor != RecyclerView.NO_POSITION
+                && firstVis != RecyclerView.NO_POSITION
+                && lastVis != RecyclerView.NO_POSITION
+                && firstVis <= mVisibleAnchor && mVisibleAnchor <= lastVis;
+
+        if (exactHit || anchorVisible) {
+            fireReached();
+            return;
         }
+
+        // Defensive: if firstVisible hasn't moved across several
+        // consecutive layouts, the LM has clamped and won't reach the
+        // target. Give up and fire the callback anyway — keeps the
+        // holder's postpone from being held forever and the page from
+        // staying invisible.
+        if (firstVis == mLastFirstVisible) {
+            mStableCount++;
+            if (mStableCount >= STABILITY_GIVE_UP_PASSES) {
+                fireReached();
+                return;
+            }
+        } else {
+            mStableCount = 0;
+            mLastFirstVisible = firstVis;
+        }
+
+        // Some intermediate layout pass (postpone release, view attach,
+        // …) discarded mPendingScrollPosition. Re-issue it — the next
+        // onLayoutCompleted will re-check.
+        scrollToPositionWithOffset(mScrollTarget, 0);
+    }
+
+    private void fireReached() {
+        Runnable cb = mOnReached;
+        mScrollTarget = RecyclerView.NO_POSITION;
+        mVisibleAnchor = RecyclerView.NO_POSITION;
+        mOnReached = null;
+        mLastFirstVisible = RecyclerView.NO_POSITION;
+        mStableCount = 0;
+        if (cb != null) cb.run();
     }
 }

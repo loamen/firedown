@@ -267,11 +267,13 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
             final int scrollTarget = Math.max(0, adapterTarget - spanCount);
             final RecyclerView target = mRecyclerView;
             // Sticky initial-position request: the LM re-issues the scroll
-            // on each onLayoutCompleted until findFirstVisibleItemPosition
-            // confirms the row is in view, then fires this callback. That's
-            // when we release the postponed holder transition — so the
-            // first frame the user actually sees is already at the target.
-            mGridLayoutManager.setInitialPosition(scrollTarget, () -> {
+            // on each onLayoutCompleted until either findFirstVisibleItem
+            // == scrollTarget OR the active row sits inside the visible
+            // range (handles the "active is near the end so the LM
+            // clamps short of scrollTarget" case — without the
+            // visibleAnchor escape the LM would spin forever and the
+            // postpone would never release).
+            mGridLayoutManager.setInitialPosition(scrollTarget, adapterTarget, () -> {
                 if (target != mRecyclerView) return;
                 Fragment parent = getParentFragment();
                 if (parent instanceof TabsHolderFragment holder) {
@@ -327,7 +329,7 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         // can be garbage-collected if the user navigates away before
         // convergence.
         if (mGridLayoutManager != null) {
-            mGridLayoutManager.setInitialPosition(RecyclerView.NO_POSITION, null);
+            mGridLayoutManager.cancelInitialPosition();
         }
         mLCEERecyclerView = null;
         mRecyclerView = null;
