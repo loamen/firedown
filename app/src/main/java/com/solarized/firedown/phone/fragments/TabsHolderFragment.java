@@ -250,7 +250,17 @@ public class TabsHolderFragment extends BaseFocusFragment {
         // child will normally release it as soon as its RecyclerView is
         // positioned, but if the tab list is empty, the page never becomes
         // visible, or the child errors out, we must still render the holder.
-        view.postDelayed(() -> markChildReadyToShow(null), 300);
+        //
+        // Captured TabsScrollDbg logs put the LM's setInitialPosition
+        // convergence at ~330 ms after TabsFragment.onCreateView, which is
+        // ~400 ms after this holder is laid out. Any fallback shorter than
+        // that ends up firing *before* convergence — bypassing the
+        // visibility check (caller=null) and releasing the postpone while
+        // the visible page is still showing firstVis=0, producing the
+        // visible "scroll after open" the user reports. 1 s is comfortably
+        // past observed convergence and short enough that genuinely-stuck
+        // cases (no insets ever dispatched, etc) still render quickly.
+        view.postDelayed(() -> markChildReadyToShow(null), 1000);
 
         return view;
     }
