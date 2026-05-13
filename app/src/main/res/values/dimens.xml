@@ -62,4 +62,13 @@
     <dimen name="tab_icon_width">18dp</dimen>
     <dimen name="tab_icon_height">18dp</dimen>
     <dimen name="tab_height">205dp</dimen>
+
+    <!-- Media-viewer double-tap-to-seek feedback. Burst is a circle
+         whose centre sits off the screen edge so only the inner
+         half-disc is visible inside the viewport (mirroring
+         YouTube's seek feedback). -->
+    <dimen name="seek_feedback_burst_size">560dp</dimen>
+    <dimen name="seek_feedback_burst_offset_start">-280dp</dimen>
+    <dimen name="seek_feedback_burst_offset_end">280dp</dimen>
+    <dimen name="seek_feedback_label_margin">72dp</dimen>
 </resources>

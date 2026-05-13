@@ -10,9 +10,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.transition.Transition;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -84,11 +87,24 @@ public class MediaViewerFragment extends Fragment {
     private static final int CONTROLLER_TIMEOUT_MS = 5000;
 
     /**
+     * How many ms to seek per double-tap. Matches the YouTube / VLC
+     * convention; small enough that a single tap is meaningful, large
+     * enough that repeated taps cover ground quickly.
+     */
+    private static final long SEEK_DELTA_MS = 10_000L;
+
+    /**
      * Cached so {@link #setChromeVisible(boolean)} can fire without
      * re-resolving from the activity each time. Nulled out by the
      * view-creation path being re-entered on configuration change.
      */
     private WindowInsetsControllerCompat mWindowInsetsController;
+
+    private View mSeekBurstLeft;
+    private View mSeekBurstRight;
+    private TextView mSeekLabelLeft;
+    private TextView mSeekLabelRight;
+    private GestureDetector mPlayerGestureDetector;
 
 
 
@@ -193,8 +209,21 @@ public class MediaViewerFragment extends Fragment {
         // "auto-hide doesn't work" symptom reported on #95/#96.
         mPlayerView.setUseController(true);
         mPlayerView.setControllerAutoShow(false);
-        mPlayerView.setControllerHideOnTouch(true);
+        // Double-tap-to-seek needs to win over the default
+        // tap-toggles-controller behaviour. We turn the built-in
+        // toggle off and reproduce it via onSingleTapConfirmed in
+        // mPlayerGestureDetector below, which only fires once the
+        // GestureDetector has ruled out a double-tap. Net UX is the
+        // same single-tap controller toggle with a ~300 ms delay
+        // (one DOUBLE_TAP_TIMEOUT) — imperceptible in practice.
+        mPlayerView.setControllerHideOnTouch(false);
         mPlayerView.setControllerShowTimeoutMs(CONTROLLER_TIMEOUT_MS);
+
+        mSeekBurstLeft = v.findViewById(R.id.seek_burst_left);
+        mSeekBurstRight = v.findViewById(R.id.seek_burst_right);
+        mSeekLabelLeft = v.findViewById(R.id.seek_label_left);
+        mSeekLabelRight = v.findViewById(R.id.seek_label_right);
+        setupDoubleTapSeek();
 
         mWindowInsetsController = WindowCompat.getInsetsController(
                 mActivity.getWindow(), mActivity.getWindow().getDecorView());
@@ -453,6 +482,111 @@ public class MediaViewerFragment extends Fragment {
         if (mExoPlayer == null) return;
         if (mExoPlayer.isPlaying()) mExoPlayer.pause();
         else mExoPlayer.play();
+    }
+
+    // ── Double-tap-to-seek ───────────────────────────────────────────
+
+    /**
+     * Wire a GestureDetector on the PlayerView so a double-tap on the
+     * left half seeks back {@value #SEEK_DELTA_MS} ms and a double-tap
+     * on the right half seeks forward by the same amount, with a
+     * YouTube-style burst + label as visual feedback. A single
+     * confirmed tap toggles the playback controller (replacing the
+     * built-in PlayerView behaviour we disabled).
+     *
+     * <p>The listener returns {@code false} from
+     * {@code onTouch} so PlayerView's children (notably the scrubber
+     * inside the controller) keep receiving touches — only the
+     * top-level tap/double-tap decisions are routed through the
+     * GestureDetector.</p>
+     */
+    private void setupDoubleTapSeek() {
+        mPlayerGestureDetector = new GestureDetector(mActivity,
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onDoubleTap(@NonNull MotionEvent e) {
+                        if (mPlayerView == null || mExoPlayer == null) return false;
+                        boolean leftHalf = e.getX() < mPlayerView.getWidth() / 2f;
+                        seekByDelta(leftHalf ? -SEEK_DELTA_MS : SEEK_DELTA_MS, leftHalf);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onSingleTapConfirmed(@NonNull MotionEvent e) {
+                        if (mPlayerView == null) return false;
+                        if (mPlayerView.isControllerFullyVisible()) {
+                            mPlayerView.hideController();
+                        } else {
+                            mPlayerView.showController();
+                        }
+                        return true;
+                    }
+                });
+
+        mPlayerView.setOnTouchListener((view, event) -> {
+            mPlayerGestureDetector.onTouchEvent(event);
+            return false;
+        });
+    }
+
+    /**
+     * Apply {@code deltaMs} to the current playback position, clamped
+     * to {@code [0, duration]}, and animate the seek-feedback burst
+     * on the side the tap landed on.
+     */
+    private void seekByDelta(long deltaMs, boolean leftSide) {
+        if (mExoPlayer == null) return;
+        long pos = mExoPlayer.getCurrentPosition();
+        long dur = mExoPlayer.getDuration();
+        long upper = dur > 0 ? dur : Long.MAX_VALUE;
+        long target = Math.max(0L, Math.min(upper, pos + deltaMs));
+        mExoPlayer.seekTo(target);
+        showSeekFeedback(leftSide);
+    }
+
+    /**
+     * Animate the half-disc burst + ±10 s label on the requested side.
+     * Burst fades in to ~25 % alpha while scaling 0.6 → 1.0, then fades
+     * back out. Label fades in to full alpha, holds briefly, fades out.
+     * Pending animations are cancelled and the views reset so rapid
+     * re-taps always start from the at-rest state.
+     */
+    private void showSeekFeedback(boolean leftSide) {
+        View burst = leftSide ? mSeekBurstLeft : mSeekBurstRight;
+        TextView label = leftSide ? mSeekLabelLeft : mSeekLabelRight;
+        if (burst == null || label == null) return;
+
+        int seconds = (int) (SEEK_DELTA_MS / 1000L);
+        label.setText(getString(leftSide
+                ? R.string.media_seek_backward_label
+                : R.string.media_seek_forward_label, seconds));
+
+        burst.animate().cancel();
+        label.animate().cancel();
+
+        burst.setAlpha(0f);
+        burst.setScaleX(0.6f);
+        burst.setScaleY(0.6f);
+        label.setAlpha(0f);
+
+        burst.animate()
+                .alpha(0.25f)
+                .scaleX(1f).scaleY(1f)
+                .setDuration(200L)
+                .withEndAction(() -> {
+                    if (burst.getParent() == null) return;
+                    burst.animate().alpha(0f).setDuration(300L).start();
+                })
+                .start();
+
+        label.animate()
+                .alpha(1f)
+                .setDuration(150L)
+                .withEndAction(() -> {
+                    if (label.getParent() == null) return;
+                    label.animate().alpha(0f).setStartDelay(150L).setDuration(200L).start();
+                })
+                .start();
     }
 
     /**
