@@ -124,9 +124,19 @@ public class TabsGridLayoutManager extends GridLayoutManager {
                     && firstVis >= 0
                     && firstVis < state.getItemCount()) {
                 View firstView = findViewByPosition(firstVis);
+                // scrollToPositionWithOffset's offset is measured to the
+                // child's *decorated* edge (LinearLayoutManager stores
+                // anchorInfo.mCoordinate = decoratedStart). view.getTop()
+                // returns the raw view top, EXCLUDING the item-decoration
+                // inset that sits above it — so using getTop() here was
+                // double-counting the decoration height and shifting the
+                // anchor by one decoration's worth (~5 px) on every
+                // re-pin. getDecoratedTop on the LayoutManager subtracts
+                // the top decoration so it matches the LM's anchor
+                // coordinate space.
                 int offset = firstView == null
                         ? 0
-                        : firstView.getTop() - getPaddingTop();
+                        : getDecoratedTop(firstView) - getPaddingTop();
                 scrollToPositionWithOffset(firstVis, offset);
             }
         }
