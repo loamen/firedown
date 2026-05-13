@@ -1,9 +1,6 @@
 package com.solarized.firedown.phone.fragments;
 
 import android.content.Context;
-import android.os.SystemClock;
-import android.util.Log;
-import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -11,31 +8,38 @@ import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * GridLayoutManager that exposes a "scroll to this position on first
- * paint, and tell me when it has actually stuck" hook.
+ * paint, and tell me when it has actually stuck" hook, and disables
+ * predictive item animations.
  *
- * <p>Background: a plain {@code scrollToPositionWithOffset(...)} sets
- * {@code mPendingScrollPosition} and requests a layout — but during the
- * tabs page's first paint the layout passes triggered by inset
- * dispatch, fragment-postpone release, view attach, etc. can consume or
- * discard that pending scroll before the row actually becomes
- * visible. Captured logs show {@code findFirstVisibleItemPosition()}
- * stuck at 0 for ~100 ms after the call, then jumping to the target —
- * a visible scroll the user reports as a bug.
+ * <p><b>Why disable predictive animations:</b> The tabs grid doesn't
+ * visually animate insertions or removals — cards just appear or
+ * disappear. With predictive animations on,
+ * {@code notifyItemRangeChanged} with a payload (e.g. an active tab's
+ * thumbnail loading after the page is already on screen) triggers a
+ * pre-layout pass followed by a real layout pass. Between the two
+ * passes the LM resets {@code mAnchorInfo.mValid} to false, so the
+ * post-layout pass re-runs {@code updateAnchorFromChildren} — which
+ * iterates {@code mChildHelper} indices, not adapter positions. The
+ * scrap/reattach of the changed view holder shuffles those indices,
+ * so the "first reference child" picked during step 2 isn't the same
+ * child step 1 anchored on. Result: the viewport drifts by one row.
+ * Returning {@code false} from {@code supportsPredictiveItemAnimations}
+ * tells RecyclerView to skip step 1 entirely — single layout pass,
+ * no anchor drift, no need to fight the LM with a custom override.</p>
  *
- * <p>This subclass turns the one-shot pending-scroll into a sticky
- * target: every {@code onLayoutCompleted} re-checks whether the target
- * row is actually the first visible. If not, it re-issues the scroll
- * for the next layout pass. Once {@code findFirstVisibleItemPosition()}
- * matches, the target clears and the {@code onReached} callback fires
- * — that's the cue to release a postponed enter transition.</p>
+ * <p><b>Sticky initial-position hook:</b> a plain
+ * {@code scrollToPositionWithOffset} sets {@code mPendingScrollPosition}
+ * and requests a layout, but during the tabs page's first paint a
+ * layout pass triggered by inset dispatch or the postpone release can
+ * discard that pending scroll before the row becomes visible. The
+ * sticky version re-issues the scroll on each {@code onLayoutCompleted}
+ * until {@code findFirstVisibleItemPosition} matches; once it does,
+ * the {@code onReached} callback fires (the cue to release the
+ * postponed enter transition).</p>
  *
- * <p>Self-clears on item-count mismatch ({@code state.getItemCount() <=
- * mInitialPosition}) and skips pre-layout passes (where pending scroll
- * is ignored by the superclass anyway).</p>
+ * <p>Self-clears on item-count mismatch and skips pre-layout passes.</p>
  */
 public class TabsGridLayoutManager extends GridLayoutManager {
-
-    private static final String DBG = "TabsScrollDbg";
 
     private int mInitialPosition = RecyclerView.NO_POSITION;
     @Nullable private Runnable mOnReached;
@@ -44,117 +48,20 @@ public class TabsGridLayoutManager extends GridLayoutManager {
         super(context, spanCount);
     }
 
-    // ── Debug instrumentation ────────────────────────────────────────
-    // Temporary: log every external scroll request and every
-    // onLayoutChildren entry so we can find why firstVis shifts on
-    // notifyItemRangeChanged for the active tab. Strip once root-cause
-    // is identified.
-
-    private void logCaller(String label, int position) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[LM] ").append(label).append(" pos=").append(position)
-                .append(" firstVis=").append(findFirstVisibleItemPosition())
-                .append(" lastVis=").append(findLastVisibleItemPosition())
-                .append("\n  callers:");
-        StackTraceElement[] stack = new Throwable().getStackTrace();
-        // Skip the first frame (this method) — keep the next 8 so we
-        // can see who called us without flooding logs.
-        for (int i = 1; i < Math.min(stack.length, 9); i++) {
-            StackTraceElement el = stack[i];
-            sb.append("\n    ").append(el.getClassName())
-                    .append('.').append(el.getMethodName())
-                    .append('(').append(el.getFileName()).append(':')
-                    .append(el.getLineNumber()).append(')');
-        }
-        Log.d(DBG, sb.toString());
-    }
-
     @Override
-    public void scrollToPosition(int position) {
-        logCaller("scrollToPosition", position);
-        super.scrollToPosition(position);
-    }
-
-    @Override
-    public void scrollToPositionWithOffset(int position, int offset) {
-        logCaller("scrollToPositionWithOffset(offset=" + offset + ")", position);
-        super.scrollToPositionWithOffset(position, offset);
-    }
-
-    @Override
-    public void smoothScrollToPosition(RecyclerView recyclerView,
-            RecyclerView.State state, int position) {
-        logCaller("smoothScrollToPosition", position);
-        super.smoothScrollToPosition(recyclerView, state, position);
-    }
-
-    @Override
-    public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
-        Log.d(DBG, "[LM] onLayoutChildren ENTER preLayout=" + state.isPreLayout()
-                + " itemCount=" + state.getItemCount()
-                + " willRunSimpleAnimations=" + state.willRunSimpleAnimations()
-                + " willRunPredictiveAnimations=" + state.willRunPredictiveAnimations()
-                + " firstVis(before)=" + findFirstVisibleItemPosition()
-                + " uptime=" + SystemClock.uptimeMillis());
-
-        // Preserve anchor across the predictive-animations pre/post-layout
-        // dance. Background: at the end of every onLayoutChildren the
-        // superclass calls mAnchorInfo.reset() (sets mValid=false). The
-        // next call (post-layout step 2) therefore re-runs
-        // updateAnchorInfoForLayout, which falls through to
-        // updateAnchorFromChildren — and that method iterates
-        // mChildHelper indices (NOT adapter positions). Predictive
-        // animations scrap/reattach the changed view holder, which
-        // shuffles the mChildHelper order, so the "first reference
-        // child" returned isn't necessarily the position-4 child that
-        // pre-layout settled on. Captured logs show firstVis sliding
-        // from 4 to 2 on every notifyItemRangeChanged with payload.
-        //
-        // Force the anchor by pre-seeding mPendingScrollPosition with
-        // the current firstVisible. updateAnchorFromPendingData runs
-        // first in updateAnchorInfoForLayout and wins, so the broken
-        // children-based pick is bypassed entirely. Skip during the
-        // gated initial flow (mInitialPosition set) so setInitialPosition
-        // still controls that pass, and skip during pre-layout because
-        // updateAnchorFromPendingData ignores pending data when
-        // state.isPreLayout() is true anyway.
-        if (!state.isPreLayout() && mInitialPosition == RecyclerView.NO_POSITION) {
-            int firstVis = findFirstVisibleItemPosition();
-            if (firstVis != RecyclerView.NO_POSITION
-                    && firstVis >= 0
-                    && firstVis < state.getItemCount()) {
-                View firstView = findViewByPosition(firstVis);
-                // scrollToPositionWithOffset's offset is measured to the
-                // child's *decorated* edge (LinearLayoutManager stores
-                // anchorInfo.mCoordinate = decoratedStart). view.getTop()
-                // returns the raw view top, EXCLUDING the item-decoration
-                // inset that sits above it — so using getTop() here was
-                // double-counting the decoration height and shifting the
-                // anchor by one decoration's worth (~5 px) on every
-                // re-pin. getDecoratedTop on the LayoutManager subtracts
-                // the top decoration so it matches the LM's anchor
-                // coordinate space.
-                int offset = firstView == null
-                        ? 0
-                        : getDecoratedTop(firstView) - getPaddingTop();
-                scrollToPositionWithOffset(firstVis, offset);
-            }
-        }
-
-        super.onLayoutChildren(recycler, state);
-        Log.d(DBG, "[LM] onLayoutChildren EXIT firstVis(after)="
-                + findFirstVisibleItemPosition()
-                + " lastVis=" + findLastVisibleItemPosition());
+    public boolean supportsPredictiveItemAnimations() {
+        return false;
     }
 
     /**
-     * Request that the LayoutManager scroll to {@code position} and keep
-     * re-issuing the scroll on every post-layout pass until the row is
-     * actually the first visible. Fires {@code onReached} the first time
-     * that condition is observed.
+     * Request a one-shot scroll to {@code position}. The LM keeps
+     * re-issuing the scroll on every post-layout pass until
+     * {@code findFirstVisibleItemPosition()} reports the row is the
+     * first visible (or gives up if the data set shrinks below the
+     * target). Fires {@code onReached} the first time that condition
+     * is observed.
      *
-     * <p>Calling again with a different position cancels the previous
-     * request.</p>
+     * <p>Passing {@code NO_POSITION} cancels any pending request.</p>
      */
     public void setInitialPosition(int position, @Nullable Runnable onReached) {
         mInitialPosition = position;
@@ -170,9 +77,7 @@ public class TabsGridLayoutManager extends GridLayoutManager {
         if (mInitialPosition == RecyclerView.NO_POSITION) return;
         if (state.isPreLayout()) return;
 
-        // If the data set is now too small for the target, give up.
         if (state.getItemCount() <= mInitialPosition) {
-            int reached = mInitialPosition;
             Runnable cb = mOnReached;
             mInitialPosition = RecyclerView.NO_POSITION;
             mOnReached = null;

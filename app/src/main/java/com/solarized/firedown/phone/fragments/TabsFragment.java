@@ -171,10 +171,6 @@ public class TabsFragment extends BaseTabsFragment {
             int current = count != null ? count : 0;
             int dismissedAt = mSharedPreferences.getInt(
                     Preferences.SETTINGS_TABS_ARCHIVE_BANNER_DISMISSED_AT, 0);
-            android.util.Log.d("TabsScrollDbg",
-                    "[TabsFragment] archivedTabCount observer count=" + current
-                            + " dismissedAt=" + dismissedAt
-                            + " action=" + (current > dismissedAt ? "show" : "dismiss"));
             if (current > dismissedAt) {
                 mBannerAdapter.show(current);
             } else {

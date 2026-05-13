@@ -479,18 +479,9 @@ public class TabsHolderFragment extends BaseFocusFragment {
             boolean isVisible =
                     (currentPage == PAGE_REGULAR && caller instanceof TabsFragment)
                             || (currentPage == PAGE_INCOGNITO && caller instanceof TabsIncognitoFragment);
-            if (!isVisible) {
-                android.util.Log.d("TabsScrollDbg",
-                        "[TabsHolderFragment] markChildReadyToShow ignored: caller="
-                                + caller.getClass().getSimpleName()
-                                + " currentPage=" + currentPage);
-                return;
-            }
+            if (!isVisible) return;
         }
         mEnterTransitionStarted = true;
-        android.util.Log.d("TabsScrollDbg",
-                "+? [TabsHolderFragment] markChildReadyToShow -> startPostponedEnterTransition() caller="
-                        + (caller == null ? "fallback" : caller.getClass().getSimpleName()));
         startPostponedEnterTransition();
     }
 
