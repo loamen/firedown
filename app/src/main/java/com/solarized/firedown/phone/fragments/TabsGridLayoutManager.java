@@ -3,6 +3,7 @@ package com.solarized.firedown.phone.fragments;
 import android.content.Context;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -95,6 +96,41 @@ public class TabsGridLayoutManager extends GridLayoutManager {
                 + " willRunPredictiveAnimations=" + state.willRunPredictiveAnimations()
                 + " firstVis(before)=" + findFirstVisibleItemPosition()
                 + " uptime=" + SystemClock.uptimeMillis());
+
+        // Preserve anchor across the predictive-animations pre/post-layout
+        // dance. Background: at the end of every onLayoutChildren the
+        // superclass calls mAnchorInfo.reset() (sets mValid=false). The
+        // next call (post-layout step 2) therefore re-runs
+        // updateAnchorInfoForLayout, which falls through to
+        // updateAnchorFromChildren — and that method iterates
+        // mChildHelper indices (NOT adapter positions). Predictive
+        // animations scrap/reattach the changed view holder, which
+        // shuffles the mChildHelper order, so the "first reference
+        // child" returned isn't necessarily the position-4 child that
+        // pre-layout settled on. Captured logs show firstVis sliding
+        // from 4 to 2 on every notifyItemRangeChanged with payload.
+        //
+        // Force the anchor by pre-seeding mPendingScrollPosition with
+        // the current firstVisible. updateAnchorFromPendingData runs
+        // first in updateAnchorInfoForLayout and wins, so the broken
+        // children-based pick is bypassed entirely. Skip during the
+        // gated initial flow (mInitialPosition set) so setInitialPosition
+        // still controls that pass, and skip during pre-layout because
+        // updateAnchorFromPendingData ignores pending data when
+        // state.isPreLayout() is true anyway.
+        if (!state.isPreLayout() && mInitialPosition == RecyclerView.NO_POSITION) {
+            int firstVis = findFirstVisibleItemPosition();
+            if (firstVis != RecyclerView.NO_POSITION
+                    && firstVis >= 0
+                    && firstVis < state.getItemCount()) {
+                View firstView = findViewByPosition(firstVis);
+                int offset = firstView == null
+                        ? 0
+                        : firstView.getTop() - getPaddingTop();
+                scrollToPositionWithOffset(firstVis, offset);
+            }
+        }
+
         super.onLayoutChildren(recycler, state);
         Log.d(DBG, "[LM] onLayoutChildren EXIT firstVis(after)="
                 + findFirstVisibleItemPosition()
