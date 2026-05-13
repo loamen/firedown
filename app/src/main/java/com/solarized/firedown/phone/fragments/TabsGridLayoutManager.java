@@ -1,6 +1,8 @@
 package com.solarized.firedown.phone.fragments;
 
 import android.content.Context;
+import android.os.SystemClock;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -32,11 +34,71 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 public class TabsGridLayoutManager extends GridLayoutManager {
 
+    private static final String DBG = "TabsScrollDbg";
+
     private int mInitialPosition = RecyclerView.NO_POSITION;
     @Nullable private Runnable mOnReached;
 
     public TabsGridLayoutManager(Context context, int spanCount) {
         super(context, spanCount);
+    }
+
+    // ── Debug instrumentation ────────────────────────────────────────
+    // Temporary: log every external scroll request and every
+    // onLayoutChildren entry so we can find why firstVis shifts on
+    // notifyItemRangeChanged for the active tab. Strip once root-cause
+    // is identified.
+
+    private void logCaller(String label, int position) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[LM] ").append(label).append(" pos=").append(position)
+                .append(" firstVis=").append(findFirstVisibleItemPosition())
+                .append(" lastVis=").append(findLastVisibleItemPosition())
+                .append("\n  callers:");
+        StackTraceElement[] stack = new Throwable().getStackTrace();
+        // Skip the first frame (this method) — keep the next 8 so we
+        // can see who called us without flooding logs.
+        for (int i = 1; i < Math.min(stack.length, 9); i++) {
+            StackTraceElement el = stack[i];
+            sb.append("\n    ").append(el.getClassName())
+                    .append('.').append(el.getMethodName())
+                    .append('(').append(el.getFileName()).append(':')
+                    .append(el.getLineNumber()).append(')');
+        }
+        Log.d(DBG, sb.toString());
+    }
+
+    @Override
+    public void scrollToPosition(int position) {
+        logCaller("scrollToPosition", position);
+        super.scrollToPosition(position);
+    }
+
+    @Override
+    public void scrollToPositionWithOffset(int position, int offset) {
+        logCaller("scrollToPositionWithOffset(offset=" + offset + ")", position);
+        super.scrollToPositionWithOffset(position, offset);
+    }
+
+    @Override
+    public void smoothScrollToPosition(RecyclerView recyclerView,
+            RecyclerView.State state, int position) {
+        logCaller("smoothScrollToPosition", position);
+        super.smoothScrollToPosition(recyclerView, state, position);
+    }
+
+    @Override
+    public void onLayoutChildren(RecyclerView.Recycler recycler, RecyclerView.State state) {
+        Log.d(DBG, "[LM] onLayoutChildren ENTER preLayout=" + state.isPreLayout()
+                + " itemCount=" + state.getItemCount()
+                + " willRunSimpleAnimations=" + state.willRunSimpleAnimations()
+                + " willRunPredictiveAnimations=" + state.willRunPredictiveAnimations()
+                + " firstVis(before)=" + findFirstVisibleItemPosition()
+                + " uptime=" + SystemClock.uptimeMillis());
+        super.onLayoutChildren(recycler, state);
+        Log.d(DBG, "[LM] onLayoutChildren EXIT firstVis(after)="
+                + findFirstVisibleItemPosition()
+                + " lastVis=" + findLastVisibleItemPosition());
     }
 
     /**
