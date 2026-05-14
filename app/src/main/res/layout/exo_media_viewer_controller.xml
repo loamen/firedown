@@ -17,10 +17,13 @@
     - @id/exo_top_controls — top-end. PiP + rotate. App-defined
       child IDs (media_viewer_btn_pip, media_viewer_btn_rotate);
       MediaViewerFragment wires the click handlers in onCreateView.
-    - @id/exo_center_controls — centre. Just exo_play_pause; Media3
-      finds it by reflection and wires playback behaviour
-      automatically. prev / next were removed (this is a single-
-      file viewer with no playlist to navigate).
+    - @id/exo_center_controls — centre. exo_play_pause flanked by
+      ±10s seek buttons (media_viewer_btn_seek_back /
+      media_viewer_btn_seek_forward). MediaViewerFragment wires
+      the seek-button click handlers in onCreateView; Media3 finds
+      exo_play_pause by reflection and wires playback behaviour
+      automatically. Media3's playlist-navigation prev / next
+      buttons are intentionally absent (single-file viewer).
     - @id/exo_bottom_bar — bottom. Time text + DefaultTimeBar +
       duration, all wrapped so the gradient background covers the
       whole row. Bottom padding is applied dynamically by
@@ -49,22 +52,44 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <!-- exo_prev / exo_next removed: this viewer plays one file
-             at a time, so Media3's playlist-navigation buttons have
-             nothing to navigate to. exo_prev was just seeking to 0
-             (a confusing "restart" gesture) and exo_next was always
-             disabled. Their absence also frees up the centre row so
-             the double-tap-to-seek labels can sit in their natural
-             position inside the half-disc burst without overlapping
-             a button. -->
+        <!--
+          Two ±10s seek buttons flank the play/pause button as the
+          discoverable form of the seek action. Double-tap on either
+          half of the player is the gesture shortcut for the same
+          thing (see MediaViewerFragment.setupDoubleTapSeek). The
+          button path seeks silently — the button itself is the
+          feedback, no need for the big half-disc burst (which is
+          reserved for the gestural double-tap where the user needs
+          reassurance that their tap registered).
+        -->
+        <ImageButton
+            android:id="@+id/media_viewer_btn_seek_back"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/media_seek_back_10s_desc"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_media_replay_10_24" />
+
         <ImageButton
             android:id="@id/exo_play_pause"
             android:layout_width="72dp"
             android:layout_height="72dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/play"
             android:scaleType="centerInside"
             android:src="@drawable/media_action_play" />
+
+        <ImageButton
+            android:id="@+id/media_viewer_btn_seek_forward"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/media_seek_forward_10s_desc"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_media_forward_10_24" />
     </LinearLayout>
 
     <FrameLayout

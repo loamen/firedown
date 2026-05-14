@@ -507,6 +507,10 @@
          it renders aligned with the +; ASCII "-" looks lighter. -->
     <string name="media_seek_backward_label">− %d s</string>
     <string name="media_seek_forward_label">+ %d s</string>
+    <!-- Content descriptions for the ±10 s skip buttons in
+         MediaViewerFragment's controller. Used by TalkBack. -->
+    <string name="media_seek_back_10s_desc">Skip back 10 seconds</string>
+    <string name="media_seek_forward_10s_desc">Skip forward 10 seconds</string>
     <string name="previous">Previous</string>
     <string name="next">Next</string>
     <string name="play">Play</string>

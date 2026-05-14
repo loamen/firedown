@@ -358,6 +358,8 @@
     <string name="settings_disk_cache_disabled">Wyłącz pamięć podręczną dysku</string>
     <string name="settings_disk_cache_disabled_summary">Buforuj strony tylko w pamięci. Niweluje odcisk pamięci podręcznej między witrynami i nie zostawia niczego na dysku, ale spowalnia ponowne odwiedziny</string>
     <string name="settings_safe_browsing_disabled">Wyłącz bezpieczne przeglądanie</string>
-    <string name="settings_safe_browsing_disabled_summary">Przestań wysyłać prefiksy skrótów URL do Google. Utracisz ostrzeżenia o znanych witrynach ze złośliwym oprogramowaniem i phishingiem</string>    <string name="pip_enter">Obraz w obrazie</string>
+    <string name="settings_safe_browsing_disabled_summary">Przestań wysyłać prefiksy skrótów URL do Google. Utracisz ostrzeżenia o znanych witrynach ze złośliwym oprogramowaniem i phishingiem</string>    <string name="pip_enter">Obraz w obrazie</string>    <string name="media_seek_back_10s_desc">Cofnij o 10 sekund</string>
+    <string name="media_seek_forward_10s_desc">Przewiń o 10 sekund</string>
+
 
 </resources>
