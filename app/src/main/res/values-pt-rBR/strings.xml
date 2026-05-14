@@ -97,6 +97,8 @@
     <string name="top_sites_edit_dialog_url_title">URL</string>
     <string name="top_sites_max_limit_confirmation_button">OK, entendi</string>
     <string name="top_sites_rename_dialog_title">Nome</string>
-    <string name="bookmark_name">Nome</string>    <string name="pip_enter">Picture in picture</string>
+    <string name="bookmark_name">Nome</string>    <string name="pip_enter">Picture in picture</string>    <string name="media_seek_back_10s_desc">Voltar 10 segundos</string>
+    <string name="media_seek_forward_10s_desc">Avançar 10 segundos</string>
+
 
 </resources>

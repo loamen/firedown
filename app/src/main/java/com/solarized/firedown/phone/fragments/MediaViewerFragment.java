@@ -224,6 +224,7 @@ public class MediaViewerFragment extends Fragment {
         mSeekLabelLeft = v.findViewById(R.id.seek_label_left);
         mSeekLabelRight = v.findViewById(R.id.seek_label_right);
         setupDoubleTapSeek();
+        setupSeekButtons();
 
         mWindowInsetsController = WindowCompat.getInsetsController(
                 mActivity.getWindow(), mActivity.getWindow().getDecorView());
@@ -540,17 +541,45 @@ public class MediaViewerFragment extends Fragment {
     }
 
     /**
-     * Apply {@code deltaMs} to the current playback position, clamped
-     * to {@code [0, duration]}, and animate the seek-feedback burst
-     * on the side the tap landed on.
+     * Wire the ±10 s seek buttons that flank exo_play_pause in the
+     * controller. Button taps seek silently — the button itself is
+     * the feedback. The half-disc burst is reserved for the
+     * double-tap gesture path.
      */
-    private void seekByDelta(long deltaMs, boolean leftSide) {
+    private void setupSeekButtons() {
+        View btnBack = mPlayerView.findViewById(R.id.media_viewer_btn_seek_back);
+        View btnForward = mPlayerView.findViewById(R.id.media_viewer_btn_seek_forward);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> applySeek(-SEEK_DELTA_MS));
+        }
+        if (btnForward != null) {
+            btnForward.setOnClickListener(v -> applySeek(SEEK_DELTA_MS));
+        }
+    }
+
+    /**
+     * Apply {@code deltaMs} to the current playback position, clamped
+     * to {@code [0, duration]}. The actual seek; visual feedback (if
+     * any) is the caller's responsibility.
+     */
+    private void applySeek(long deltaMs) {
         if (mExoPlayer == null) return;
         long pos = mExoPlayer.getCurrentPosition();
         long dur = mExoPlayer.getDuration();
         long upper = dur > 0 ? dur : Long.MAX_VALUE;
         long target = Math.max(0L, Math.min(upper, pos + deltaMs));
         mExoPlayer.seekTo(target);
+    }
+
+    /**
+     * Seek + animate the half-disc burst on the indicated side.
+     * Used by the gestural double-tap path where the user needs
+     * visual reassurance that their tap registered. The button path
+     * uses {@link #applySeek} directly — the button itself is the
+     * feedback.
+     */
+    private void seekByDelta(long deltaMs, boolean leftSide) {
+        applySeek(deltaMs);
         showSeekFeedback(leftSide);
     }
 
