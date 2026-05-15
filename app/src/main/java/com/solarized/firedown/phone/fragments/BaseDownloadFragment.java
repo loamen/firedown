@@ -166,6 +166,12 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
         snackbar.show();
     }
 
+    protected void showErrorSnackbar(int textResId) {
+        if (mActivity == null) return;
+        makeSnackbar(mActivity.getSnackAnchorView(), textResId,
+                mCurrentDestinationId == R.id.vault).show();
+    }
+
     protected void setupNavigationResultObserver() {
         NavDestination navDestination = mNavController.getCurrentDestination();
 
@@ -336,6 +342,19 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
             } else {
                 mBottomProgressView.setActionButtonVisibility(View.GONE);
             }
+        } else if (action == ServiceActions.ERROR_AUDIO_ENCODE) {
+            /* Native encoder rejected the input (jni_encoder_start
+             * prepare error) — most commonly because the source has no
+             * audio stream or uses a codec FFmpeg can't decode. Flip
+             * the strip's title so it doesn't slide away mid-progress,
+             * and pop a snackbar so the failure is actually noticed. */
+            mBottomProgressView.setTitle(R.string.task_audio_failed);
+            mBottomProgressView.setActionButtonVisibility(View.GONE);
+            showErrorSnackbar(R.string.task_audio_failed);
+        } else if (action == ServiceActions.ERROR_MAKE_GIF) {
+            mBottomProgressView.setTitle(R.string.task_gif_failed);
+            mBottomProgressView.setActionButtonVisibility(View.GONE);
+            showErrorSnackbar(R.string.task_gif_failed);
         } else if (action == ServiceActions.ENCRYPTION) {
             setupEncryptionFinishUI((int) obj);
         } else if(action == ServiceActions.DECRYPTION) {

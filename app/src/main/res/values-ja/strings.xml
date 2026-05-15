@@ -472,11 +472,13 @@
     <string name="tabs_incognito">プライベート</string>
     <string name="tabs_incognito_empty">プライベートタブはありません</string>
     <string name="tabs_regular">タブ</string>
+    <string name="task_audio_failed">音声を抽出できませんでした</string>
     <string name="task_audio_finished">音声を抽出しました</string>
     <string name="task_cancel_operation">現在の操作を停止しますか？</string>
     <string name="task_decryption_finished">復号化が完了しました</string>
     <string name="task_dismiss">閉じる</string>
     <string name="task_encryption_finished">暗号化が完了しました</string>
+    <string name="task_gif_failed">GIFを作成できませんでした</string>
     <string name="task_gif_finished">GIFを作成しました</string>
     <string name="task_stop">停止</string>
     <string name="top_sites_edit_dialog_save">保存</string>

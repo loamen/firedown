@@ -473,11 +473,13 @@
     <string name="tabs_incognito">Privadas</string>
     <string name="tabs_incognito_empty">No hay pestañas privadas</string>
     <string name="tabs_regular">Pestañas</string>
+    <string name="task_audio_failed">No se pudo extraer el audio</string>
     <string name="task_audio_finished">Audio extraído</string>
     <string name="task_cancel_operation">¿Quieres detener la operación actual?</string>
     <string name="task_decryption_finished">Descifrado finalizado</string>
     <string name="task_dismiss">Descartar</string>
     <string name="task_encryption_finished">Cifrado finalizado</string>
+    <string name="task_gif_failed">No se pudo crear el GIF</string>
     <string name="task_gif_finished">GIF creado</string>
     <string name="task_stop">Detener</string>
     <string name="top_sites_edit_dialog_save">Guardar</string>

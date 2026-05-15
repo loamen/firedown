@@ -472,11 +472,13 @@
     <string name="tabs_incognito">隐私</string>
     <string name="tabs_incognito_empty">没有隐私标签页</string>
     <string name="tabs_regular">标签页</string>
+    <string name="task_audio_failed">无法提取音频</string>
     <string name="task_audio_finished">音频已提取</string>
     <string name="task_cancel_operation">要停止当前操作吗？</string>
     <string name="task_decryption_finished">解密完成</string>
     <string name="task_dismiss">忽略</string>
     <string name="task_encryption_finished">加密完成</string>
+    <string name="task_gif_failed">无法创建GIF</string>
     <string name="task_gif_finished">已创建GIF</string>
     <string name="task_stop">停止</string>
     <string name="top_sites_edit_dialog_save">保存</string>
