@@ -154,11 +154,13 @@ public class TabsFragment extends BaseTabsFragment {
     @Override
     protected boolean awaitsBannerSignal() {
         // The archived-tab-count LiveData is a separate Room query
-        // that lands after the tab-list LiveData, so the initial
-        // scroll has to hold until we know whether the banner row
-        // will be present at adapter position 0 — otherwise we
-        // place the active row, then the banner inserts, then every
-        // tab shifts down by one and the user sees a one-row jump.
+        // that lands after the tab-list LiveData. We need to know
+        // whether the banner row will be present at adapter position 0
+        // BEFORE the first setAdapter / submitList — otherwise the
+        // banner would have to insert later via notifyItemInserted(0),
+        // shifting every tab and causing a one-row visual jump.
+        // tryApplyFirstSnapshot waits for signalBannerReady before
+        // attaching the adapter.
         return true;
     }
 
@@ -185,33 +187,42 @@ public class TabsFragment extends BaseTabsFragment {
                     int current = count != null ? count : 0;
                     int dismissedAt = mSharedPreferences.getInt(
                             Preferences.SETTINGS_TABS_ARCHIVE_BANNER_DISMISSED_AT, 0);
+                    boolean force = BuildConfig.DEBUG && FORCE_BANNER_FOR_DEBUG;
+                    boolean shouldShow = force || current > dismissedAt;
+                    int effectiveCount = force ? Math.max(current, 7) : current;
                     Log.d("TabsJump", "[TabsFragment] banner observer emitted count="
-                            + current + " dismissedAt=" + dismissedAt
-                            + " force=" + (BuildConfig.DEBUG && FORCE_BANNER_FOR_DEBUG));
-                    // Debug-only forced banner: stripped from release
-                    // builds by the constant-folding R8 does on
-                    // BuildConfig.DEBUG. Floors the count to 7 so the
-                    // banner shows even when the archive is empty.
-                    if (BuildConfig.DEBUG && FORCE_BANNER_FOR_DEBUG) {
-                        mBrowserTabsAdapter.showBanner(
-                                Math.max(current, 7), titlePluralsRes, mBannerListener);
-                    } else if (current > dismissedAt) {
-                        mBrowserTabsAdapter.showBanner(current, titlePluralsRes, mBannerListener);
+                            + current + " dismissedAt=" + dismissedAt + " force=" + force
+                            + " shouldShow=" + shouldShow);
+
+                    if (mBrowserTabsAdapter.isBannerVisible() == shouldShow
+                            && !shouldShow) {
+                        // No state change, no need to notify. Still signal
+                        // the snapshot gate on first emission.
+                    } else if (!isFirstSnapshotApplied()) {
+                        // Pre-snapshot: set banner state silently so the
+                        // adapter carries it into setAdapter without
+                        // triggering a separate notify event after
+                        // attach. Chrome's tab-switcher pattern: include
+                        // the header row in the very first bind so the
+                        // first layout pass is the final layout pass.
+                        mBrowserTabsAdapter.setBannerSilently(shouldShow,
+                                effectiveCount, titlePluralsRes, mBannerListener);
                     } else {
-                        mBrowserTabsAdapter.dismissBanner();
+                        // Post-snapshot: animate-style toggle. Adapter is
+                        // attached; notify events go through. Predictive
+                        // animations are off (see TabsGridLayoutManager)
+                        // so this snaps without anchor drift.
+                        if (shouldShow) {
+                            mBrowserTabsAdapter.showBanner(effectiveCount,
+                                    titlePluralsRes, mBannerListener);
+                        } else {
+                            mBrowserTabsAdapter.dismissBanner();
+                        }
+                        refreshEmptyVisibility();
                     }
-                    // The empty-state check has to be re-run whenever the
-                    // banner toggles: with no tabs and the banner showing
-                    // the recycler still has content (just the banner row),
-                    // and dismissing the banner with no tabs flips us back
-                    // to the empty placeholder.
-                    refreshEmptyVisibility();
-                    // Release the initial-scroll gate now that the banner
-                    // state is known. Idempotent — only the first emission
-                    // here actually opens the gate; later changes (banner
-                    // dismissed via tap, count refreshed) skip the gate
-                    // path entirely.
-                    markBannerResolved();
+                    // Release the snapshot gate; idempotent. First call
+                    // opens it; later ones are no-ops.
+                    signalBannerReady();
                 });
 
         // Debounced auto-archive trigger

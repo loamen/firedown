@@ -132,6 +132,27 @@ public class BrowserTabsAdapter extends GridListBaseAdapter<GeckoStateEntity, Re
         notifyItemRemoved(0);
     }
 
+    /**
+     * Set banner state without dispatching any notify event. Used by
+     * the fragment's first-snapshot application path so the adapter
+     * carries the banner row from the moment it's attached to the
+     * RecyclerView — the first layout pass sees the banner via
+     * {@link #getItemCount} / {@link #getItemViewType} and lays it out
+     * together with the tabs in a single pass. After the adapter is
+     * attached use {@link #showBanner} / {@link #dismissBanner} which
+     * dispatch proper {@code notifyItem*} events.
+     */
+    public void setBannerSilently(boolean visible, int count,
+                                  @PluralsRes int titleResId,
+                                  @Nullable OnBannerActionListener listener) {
+        mBannerVisible = visible && count > 0;
+        mBannerCount = mBannerVisible ? count : 0;
+        if (mBannerVisible) mBannerTitleResId = titleResId;
+        if (listener != null) mBannerListener = listener;
+        Log.d("TabsJump", "[BrowserTabsAdapter] setBannerSilently visible=" + mBannerVisible
+                + " count=" + mBannerCount);
+    }
+
     public boolean isBannerVisible() {
         return mBannerVisible;
     }

@@ -137,14 +137,13 @@ public class TabsHolderFragment extends BaseFocusFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Hold the enter transition until the visible child tabs page has
-        // scrolled to the active tab. Without this, RecyclerView paints
-        // position 0 first and then jumps to the active row, which the
-        // user perceives as a visible scroll. The visible child calls
-        // markChildReadyToShow() once it has placed itself; a fallback
-        // posted on the next frame releases the postpone if the child
-        // never reports back (empty list, error path, etc).
-        postponeEnterTransition();
+        // No postponeEnterTransition: the child tabs fragments now follow
+        // Chrome's pattern — they attach the adapter, submit the list,
+        // and call scrollToPositionWithOffset all on the same call stack
+        // (see BaseTabsFragment#applyFirstSnapshot). The RecyclerView's
+        // very first layout pass uses the pending scroll position as
+        // its anchor, so frame 1 is already at the active row. There's
+        // no "draw top, then jump" race left to hide.
 
         mEnabledGrid = mSharedPreferences.getBoolean(Preferences.SORT_TABS_LIST, false);
 
@@ -470,20 +469,9 @@ public class TabsHolderFragment extends BaseFocusFragment {
      * the {@code onCreateView} timeout fallback so the page still
      * renders if no child ever reports.</p>
      */
-    private boolean mEnterTransitionStarted = false;
-    void markChildReadyToShow(@Nullable Fragment caller) {
-        if (mEnterTransitionStarted) return;
-        if (!isAdded()) return;
-        if (caller != null && mViewPager != null) {
-            int currentPage = mViewPager.getCurrentItem();
-            boolean isVisible =
-                    (currentPage == PAGE_REGULAR && caller instanceof TabsFragment)
-                            || (currentPage == PAGE_INCOGNITO && caller instanceof TabsIncognitoFragment);
-            if (!isVisible) return;
-        }
-        mEnterTransitionStarted = true;
-        startPostponedEnterTransition();
-    }
+    /** No-op since postponeEnterTransition was dropped. Kept for API
+     *  compatibility with BaseTabsFragment callsites pending cleanup. */
+    void markChildReadyToShow(@Nullable Fragment caller) { /* no-op */ }
 
     /** Kept for API compatibility with child fragment callsites. No-ops. */
     void suspendAppBarLift() { /* no-op */ }

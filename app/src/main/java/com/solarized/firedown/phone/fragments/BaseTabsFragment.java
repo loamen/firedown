@@ -13,7 +13,6 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -82,57 +81,36 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
     protected TabsGridLayoutManager mGridLayoutManager;
     protected boolean mEnableGrid;
 
-    /** Tracks the most recently seen active tab id so onTabListSubmitted can
-     *  detect when the active tab identity changes (new tab created, user
-     *  switched tabs elsewhere, etc.) versus when the list is just being
-     *  re-submitted for unrelated reasons (title updates, thumb loads). */
+    /** Tracks the most recently seen active tab id so the tab-list
+     *  observer can detect when the active tab identity changes (new
+     *  tab created, user switched tabs elsewhere) versus an unrelated
+     *  re-submission (title updates, thumb loads). */
     protected int mLastTabActive;
 
-    /** True until the first non-empty list submission completes. Drives the
-     *  one-time hand-off that releases the holder's postponed enter
-     *  transition: we only want to wait on the *initial* positioning, not
-     *  on subsequent diffs (title changes, thumbs, etc). */
-    private boolean mInitialScrollPending = true;
-
-    // ── Initial-scroll gate ──────────────────────────────────────────
-    // The initial scroll-to-active waits for three asynchronous signals
-    // before running, so it executes exactly once with the viewport in
-    // its final shape:
-    //   • mTabsArrived  — tab list has been diffed into the adapter
-    //   • mInsetsApplied — first window-insets dispatch has applied the
-    //                      bottom system-bar padding to mRecyclerView
-    //   • mBannerResolved — subclasses that show a banner row (only
-    //                      regular tabs today) signal once they know
-    //                      whether the banner is going to occupy
-    //                      adapter position 0. Without this gate the
-    //                      scroll runs against an adapter with no
-    //                      banner, then the banner LiveData fires
-    //                      half a frame later, shifts every row down
-    //                      by one, and the active row ends up one row
-    //                      below where the LM placed it. Default is
-    //                      true (incognito has no banner — no signal
-    //                      to wait for); subclasses with a banner
-    //                      override {@link #awaitsBannerSignal()} and
-    //                      call {@link #markBannerResolved()} when the
-    //                      observer first fires.
-    // Without these gates, the scroll runs against the pre-inset / pre-
-    // banner viewport and any later change drags the just-placed row.
-    private boolean mTabsArrived = false;
-    private boolean mInsetsApplied = false;
-    private boolean mBannerResolved = false;
-    @Nullable private List<GeckoStateEntity> mPendingInitialTabs = null;
-
-    /**
-     * Hard ceiling on how long we'll wait for the banner LiveData before
-     * giving up and running the initial scroll without it. Sized to
-     * cover the slow path of an archived-count query against a fresh
-     * Room database; on a populated install the observer typically
-     * fires in &lt; 50 ms. After the timeout the gate opens and the
-     * scroll proceeds — if the banner subsequently materializes it'll
-     * cause a one-row shift, which is no worse than what we had before
-     * the gate existed.
-     */
-    private static final long BANNER_GATE_TIMEOUT_MS = 500L;
+    // ── First-snapshot machinery (Chromium tab-switcher pattern) ─────
+    // Architecture (see PR following #158): the recycler's adapter is
+    // NOT attached in setupRecyclerView. Both LiveData sources (tab
+    // list + archive banner) feed their first emissions into a pending
+    // snapshot. When the snapshot is "ready" (tabs non-null, banner
+    // signal arrived if the subclass needs one), applyFirstSnapshot()
+    // runs synchronously on the main thread:
+    //   1. set the banner state in the adapter (silently)
+    //   2. setAdapter on the RecyclerView
+    //   3. submitList(tabs) — the FIRST call dispatches inserts
+    //      synchronously per AsyncListDiffer contract
+    //   4. scrollToPositionWithOffset(activeIdx + banner - spanCount, 0)
+    //   5. LCEE hideAll / showEmpty
+    // RecyclerView's very first onLayoutChildren pass sees both the
+    // inserted items AND the pending scroll position; the LM uses the
+    // pending position as its initial anchor. One layout pass, items
+    // anchored at the active row, no flash, no post-layout scroll.
+    //
+    // After mFirstSnapshotApplied flips to true, subsequent LiveData
+    // emissions take the normal path (submitList / showBanner /
+    // dismissBanner with their notify events).
+    private boolean mFirstSnapshotApplied = false;
+    @Nullable private List<GeckoStateEntity> mPendingTabs = null;
+    private boolean mPendingBannerSignalled = false;
 
     @Inject
     GeckoRuntimeHelper mGeckoRuntimeHelper;
@@ -210,32 +188,15 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
      * <p>Subclasses may override to add additional behavior but should
      * typically still call {@code super}.</p>
      */
-    protected void onTabListSubmitted(List<GeckoStateEntity> tabs) {
-        jlog("submitList committed: size=" + (tabs == null ? -1 : tabs.size())
-                + " initialPending=" + mInitialScrollPending
-                + " adapterCount=" + (mBrowserTabsAdapter == null ? -1 : mBrowserTabsAdapter.getItemCount())
-                + " bannerVisible=" + (mBrowserTabsAdapter != null && mBrowserTabsAdapter.isBannerVisible()));
-        if (mRecyclerView == null) {
-            mLastTabActive = 0;
-            return;
-        }
-
-        // First populated submission of this view lifecycle: route through
-        // the initial-scroll gate. The scroll itself only runs once both
-        // gates (tabs + insets) have opened — see runGatedInitialScroll.
-        if (mInitialScrollPending) {
-            mPendingInitialTabs = tabs;
-            mTabsArrived = true;
-            jlog("gate: tabs arrived (size=" + (tabs == null ? -1 : tabs.size()) + ")");
-            runGatedInitialScroll();
-            return;
-        }
-
-        // Subsequent submission (after the initial scroll has happened):
-        // small re-emissions for title / thumb updates or active-tab
-        // changes triggered while the user is on the tabs page. Scroll
-        // immediately when the active id actually changes and the user
-        // isn't currently dragging.
+    /**
+     * Called when a subsequent (post-snapshot) tab list arrives. Scrolls
+     * to the active tab if its identity changed (new tab created, user
+     * switched tabs elsewhere) and the user isn't actively scrolling.
+     * Title / thumb updates that keep the same active id don't trigger
+     * a scroll.
+     */
+    private void onSubsequentTabsSubmitted(@Nullable List<GeckoStateEntity> tabs) {
+        if (mRecyclerView == null || mGridLayoutManager == null) return;
         if (tabs == null || tabs.isEmpty()) {
             mLastTabActive = 0;
             return;
@@ -253,11 +214,8 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         boolean activeChanged = activeId != -1 && activeId != mLastTabActive;
         boolean userTouching =
                 mRecyclerView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE;
-        if (activeId != -1) {
-            mLastTabActive = activeId;
-        }
-        if (activeChanged && !userTouching && activePosition >= 0
-                && mGridLayoutManager != null) {
+        if (activeId != -1) mLastTabActive = activeId;
+        if (activeChanged && !userTouching && activePosition >= 0) {
             int spanCount = mGridLayoutManager.getSpanCount();
             int adapterTarget = activePosition + getLeadingAdapterCount();
             int scrollTarget = Math.max(0, adapterTarget - spanCount);
@@ -265,67 +223,90 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         }
     }
 
-    /** Marks insets as applied; runs the gated initial scroll if the tab
-     *  list has already arrived. Idempotent. */
-    private void markInsetsApplied() {
-        if (mInsetsApplied) return;
-        mInsetsApplied = true;
-        jlog("gate: insets applied (rvPaddingBottom="
-                + (mRecyclerView != null ? mRecyclerView.getPaddingBottom() : -1) + ")");
-        runGatedInitialScroll();
-    }
+    // ── First-snapshot application (Chromium pattern) ────────────────
 
     /**
-     * Subclasses with a banner row (TabsFragment) override to return
-     * true; the base then holds the initial scroll until
-     * {@link #markBannerResolved()} fires. Incognito has no banner so
-     * the default false skips the wait entirely.
+     * Subclasses that show a banner row (TabsFragment) override to
+     * return true; the first snapshot won't be applied until that
+     * subclass has called {@link #signalBannerReady}. Incognito
+     * (default false) skips the wait — its snapshot is just the tab
+     * list.
      */
     protected boolean awaitsBannerSignal() {
         return false;
     }
 
-    /** Subclasses call this from their banner observer's first
-     *  emission. Idempotent — subsequent banner state changes don't
-     *  re-trigger the gate. */
-    protected void markBannerResolved() {
-        if (mBannerResolved) return;
-        mBannerResolved = true;
-        jlog("gate: banner resolved (visible="
-                + (mBrowserTabsAdapter != null && mBrowserTabsAdapter.isBannerVisible()) + ")");
-        runGatedInitialScroll();
+    /** Subclass calls this from its banner observer's first emission
+     *  (after configuring the banner state on the adapter via
+     *  {@link BrowserTabsAdapter#setBannerSilently}). Idempotent —
+     *  subsequent banner changes go through the regular
+     *  {@code showBanner}/{@code dismissBanner} path. */
+    protected void signalBannerReady() {
+        if (mPendingBannerSignalled) return;
+        mPendingBannerSignalled = true;
+        jlog("banner signal received");
+        tryApplyFirstSnapshot();
+    }
+
+    /** True after the first-snapshot setAdapter/submitList/scroll has
+     *  run; subclasses use it to route banner LiveData emissions
+     *  between the pre-snapshot setBannerSilently path and the
+     *  post-snapshot showBanner/dismissBanner path. */
+    protected boolean isFirstSnapshotApplied() {
+        return mFirstSnapshotApplied;
     }
 
     /**
-     * Executes the one-time initial scroll once both the tab list and
-     * first window-insets dispatch have landed. After this runs, the
-     * holder fragment's postponed enter transition is released so the
-     * user sees a single fully-positioned frame — no visible reflow.
+     * Apply the first-snapshot atomically when both signals are in:
+     * tabs LiveData has fired and (if the subclass needs one) the
+     * banner observer has reported. Per the Chromium tab-switcher
+     * pattern, the order is:
+     *
+     * <ol>
+     *   <li>Banner state is already set on the adapter via
+     *       {@link BrowserTabsAdapter#setBannerSilently} (subclass
+     *       did that before calling signalBannerReady).</li>
+     *   <li>Attach the adapter to the RecyclerView.</li>
+     *   <li>{@code submitList(tabs)} — first call dispatches inserts
+     *       synchronously (AsyncListDiffer contract for null→non-null
+     *       transitions).</li>
+     *   <li>{@code scrollToPositionWithOffset(target, 0)} — sets
+     *       {@code mPendingScrollPosition} on the LM.</li>
+     *   <li>LCEE {@code hideAll()} / {@code showEmpty()}.</li>
+     * </ol>
+     *
+     * <p>RecyclerView's <em>first</em> {@code onLayoutChildren} pass
+     * after this sees the inserted items AND the pending scroll
+     * position together — the LM uses the pending position as its
+     * initial anchor. One layout pass, items anchored at the active
+     * row, no flash, no post-layout scroll-to-active.</p>
      */
-    private void runGatedInitialScroll() {
-        jlog("runGatedInitialScroll check: tabs=" + mTabsArrived
-                + " insets=" + mInsetsApplied
-                + " bannerResolved=" + mBannerResolved
-                + " awaitsBanner=" + awaitsBannerSignal()
-                + " pending=" + mInitialScrollPending);
-        if (!mInitialScrollPending) return;
-        if (!mTabsArrived || !mInsetsApplied) return;
-        if (awaitsBannerSignal() && !mBannerResolved) return;
-        if (mRecyclerView == null) return;
-        jlog("runGatedInitialScroll PROCEED");
+    private void tryApplyFirstSnapshot() {
+        if (mFirstSnapshotApplied) return;
+        if (mPendingTabs == null) return;
+        if (awaitsBannerSignal() && !mPendingBannerSignalled) return;
+        if (mRecyclerView == null || mBrowserTabsAdapter == null
+                || mGridLayoutManager == null) return;
 
-        List<GeckoStateEntity> tabs = mPendingInitialTabs;
-        mPendingInitialTabs = null;
-        mInitialScrollPending = false;
+        final List<GeckoStateEntity> tabs = mPendingTabs;
+        mPendingTabs = null;
+        mFirstSnapshotApplied = true;
 
-        if (tabs == null || tabs.isEmpty()) {
-            // Empty list — nothing to scroll, just reveal the page.
-            mLastTabActive = 0;
-            updateEmptyVisibility(tabs);
-            releaseHolderPostpone();
-            return;
-        }
+        // 1. Attach the adapter. Until this point the RV had no
+        //    adapter, so no layout pass ran with an empty data set
+        //    (which would have consumed the pending-scroll slot).
+        mRecyclerView.setAdapter(mBrowserTabsAdapter);
 
+        // 2. First submitList — AsyncListDiffer's null-to-non-null
+        //    fast path dispatches onInserted(0, N) synchronously on
+        //    this thread, before submitList returns. The notifies
+        //    queue up in the RV without triggering layout yet.
+        mBrowserTabsAdapter.submitList(tabs);
+
+        // 3. Compute scroll target and set the pending position. The
+        //    RV's first onLayoutChildren (scheduled by the inserts +
+        //    setAdapter above) will pick this up as its initial
+        //    anchor — no second layout.
         int activePosition = -1;
         int activeId = -1;
         for (int i = 0; i < tabs.size(); i++) {
@@ -336,75 +317,23 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
                 break;
             }
         }
-        if (activeId != -1) {
-            mLastTabActive = activeId;
-        }
-
-        boolean userTouching =
-                mRecyclerView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE;
-
-        if (activeId != -1 && !userTouching && activePosition >= 0
-                && mGridLayoutManager != null) {
-            final int spanCount = mGridLayoutManager.getSpanCount();
-            final int adapterTarget = activePosition + getLeadingAdapterCount();
-            // Keep one row of context above the active tab so it doesn't
-            // read as "flush to the top". For lists spanCount is 1.
-            final int scrollTarget = Math.max(0, adapterTarget - spanCount);
-            final RecyclerView target = mRecyclerView;
-            jlog("setInitialPosition: activeIdx=" + activePosition
+        if (activeId != -1) mLastTabActive = activeId;
+        if (activePosition >= 0) {
+            int spanCount = mGridLayoutManager.getSpanCount();
+            int adapterTarget = activePosition + getLeadingAdapterCount();
+            int scrollTarget = Math.max(0, adapterTarget - spanCount);
+            jlog("applyFirstSnapshot: activeIdx=" + activePosition
                     + " leading=" + getLeadingAdapterCount()
                     + " adapterTarget=" + adapterTarget
-                    + " spanCount=" + spanCount
-                    + " scrollTarget=" + scrollTarget
-                    + " rvHeight=" + target.getHeight()
-                    + " rvPadBottom=" + target.getPaddingBottom());
-            // One-shot initial-position request: the LM queues the
-            // scroll and fires the callback on the very next
-            // non-pre-layout pass. With predictive item animations
-            // disabled (see {@link TabsGridLayoutManager}) there's
-            // only one layout per scroll request, so whatever
-            // placement comes out is the final one — release the
-            // postpone, don't loop.
-            mGridLayoutManager.setInitialPosition(scrollTarget, () -> {
-                if (target != mRecyclerView) return;
-                jlog("setInitialPosition CALLBACK: firstVisible="
-                        + mGridLayoutManager.findFirstVisibleItemPosition()
-                        + " firstCompletelyVisible="
-                        + mGridLayoutManager.findFirstCompletelyVisibleItemPosition()
-                        + " lastVisible="
-                        + mGridLayoutManager.findLastVisibleItemPosition()
-                        + " adapterCount=" + mBrowserTabsAdapter.getItemCount()
-                        + " bannerVisible=" + mBrowserTabsAdapter.isBannerVisible());
-                // First reveal: LCEE was in loading state up to now so
-                // the user never saw the unsorted top of the list. Now
-                // the LM has placed the active row, flip LCEE to show
-                // the recycler — what the user sees is the final
-                // layout, not a top-of-list flash followed by a scroll.
-                updateEmptyVisibility(tabs);
-                Fragment parent = getParentFragment();
-                if (parent instanceof TabsHolderFragment holder) {
-                    holder.refreshAppBarLiftFor(target);
-                    holder.markChildReadyToShow(this);
-                    jlog("markChildReadyToShow called");
-                }
-            });
+                    + " scrollTarget=" + scrollTarget);
+            mGridLayoutManager.scrollToPositionWithOffset(scrollTarget, 0);
         } else {
-            // No active tab to scroll to (or user is already interacting):
-            // reveal the page and release the postpone.
-            jlog("runGatedInitialScroll: empty-or-touching branch (activeId="
-                    + activeId + " userTouching=" + userTouching + ")");
-            updateEmptyVisibility(tabs);
-            releaseHolderPostpone();
+            jlog("applyFirstSnapshot: no active tab");
         }
-    }
 
-    /** Releases the postponed enter transition on the parent holder, if
-     *  any. Safe to call multiple times — the holder de-duplicates. */
-    private void releaseHolderPostpone() {
-        Fragment parent = getParentFragment();
-        if (parent instanceof TabsHolderFragment holder) {
-            holder.markChildReadyToShow(this);
-        }
+        // 4. Reveal LCEE state. hideAll if there's content (tab rows
+        //    or just a banner row); showEmpty if both are absent.
+        updateEmptyVisibility(tabs);
     }
 
 
@@ -436,26 +365,16 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Cancel any pending sticky initial-position request held by the
-        // LM so its onReached callback (which references this fragment)
-        // can be garbage-collected if the user navigates away before
-        // convergence.
-        if (mGridLayoutManager != null) {
-            mGridLayoutManager.cancelInitialPosition();
-        }
         mLCEERecyclerView = null;
         mRecyclerView = null;
         mGridLayoutManager = null;
         mBrowserTabsAdapter = null;
-        // Reset the initial-scroll gate so a re-created view (config
-        // change, ViewPager2 page recycle) runs the gate again on its
-        // own first inset + tab + banner signals rather than firing
-        // immediately.
-        mInitialScrollPending = true;
-        mTabsArrived = false;
-        mInsetsApplied = false;
-        mBannerResolved = false;
-        mPendingInitialTabs = null;
+        // Reset the first-snapshot state so a re-created view (config
+        // change, ViewPager2 page recycle) goes through the snapshot
+        // flow again on its own LiveData re-emissions.
+        mFirstSnapshotApplied = false;
+        mPendingTabs = null;
+        mPendingBannerSignalled = false;
     }
 
     @Nullable
@@ -471,20 +390,12 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         mLCEERecyclerView.setEmptyImageView(R.drawable.ill_small_tabs2);
 
         mRecyclerView = mLCEERecyclerView.getRecyclerView();
-        // LCEE's showLoading() (called from its constructor) sets the
-        // recycler to GONE, which makes Android skip onMeasure /
-        // onLayout for it entirely — and that means the LM never runs
-        // onLayoutCompleted, so setInitialPosition's callback never
-        // fires and the gate's terminal path (which calls
-        // markChildReadyToShow and updateEmptyVisibility) never
-        // executes. The fragment ends up stuck behind the holder's
-        // postponed enter transition and the user sees nothing.
-        //
-        // Switch to INVISIBLE so the RV stays measured / laid-out (LM
-        // runs, callback fires) while still being invisible behind
-        // LCEE's loading view. updateEmptyVisibility's eventual call
-        // to hideAll() will flip it to VISIBLE at the right moment.
-        mRecyclerView.setVisibility(View.INVISIBLE);
+        // LCEE starts in showLoading() — RV is GONE, loading view
+        // visible. We deliberately leave the RV with no adapter
+        // attached at this point (see setupRecyclerView); the
+        // first-snapshot flow attaches it later. With no adapter the
+        // LM doesn't try to lay anything out and the GONE visibility
+        // is harmless.
 
         mBrowserTabsAdapter = new BrowserTabsAdapter(mActivity, new GeckoStateDiffCallback(), this, mEnableGrid);
 
@@ -519,7 +430,16 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
             }
         });
         mRecyclerView.setLayoutManager(mGridLayoutManager);
-        mRecyclerView.setAdapter(mBrowserTabsAdapter);
+        // NOTE: setAdapter is deliberately deferred to tryApplyFirstSnapshot().
+        // Attaching an empty adapter here would trigger an empty
+        // layout pass on the RV, which "consumes" the pending-scroll
+        // slot — any later scrollToPositionWithOffset would then need
+        // a second layout pass to take effect, and the user sees the
+        // first frame (unscrolled) before the second (scrolled). By
+        // not attaching until we have data + banner state in hand,
+        // the very first layout pass already has both items and a
+        // pending scroll position, and the LM uses the position as
+        // its initial anchor.
         mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(
                 getResources().getDimensionPixelSize(R.dimen.list_item_margin)));
 
@@ -571,15 +491,12 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         }
     }
 
-    /** Re-check empty state using the adapter's current tab list — used
-     *  by subclasses after the banner shows / dismisses. No-op while
-     *  the initial-scroll gate is still pending so an early banner
-     *  emission can't flip LCEE to VISIBLE before the LM has placed
-     *  the active row (would cause a top-of-list flash). The gate's
-     *  terminal paths handle the first reveal. */
+    /** Re-check empty state using the adapter's current tab list. No-op
+     *  before the first snapshot is applied — the snapshot path owns
+     *  the first reveal. */
     protected void refreshEmptyVisibility() {
         if (mBrowserTabsAdapter == null) return;
-        if (mInitialScrollPending) return;
+        if (!mFirstSnapshotApplied) return;
         updateEmptyVisibility(mBrowserTabsAdapter.getCurrentList());
     }
 
@@ -587,65 +504,40 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Wrap the RecyclerView's inset listener registered by super so we
-        // know when the bottom system-bar padding has been applied. The
-        // padding application itself mirrors BaseFocusFragment exactly;
-        // the addition is the markInsetsApplied() call that opens the
-        // initial-scroll gate. Replacing the listener is intentional —
-        // there can only be one onApplyWindowInsetsListener per view.
-        final RecyclerView gatedRv = mRecyclerView;
-        if (gatedRv != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(gatedRv, (v, windowInsets) -> {
+        // Bottom-inset padding — no gate hook anymore. The Chromium-style
+        // first-snapshot flow doesn't depend on insets being applied
+        // before the scroll: scrollToPositionWithOffset(target, 0)
+        // anchors the target at paddingTop regardless of paddingBottom.
+        // Late inset application just adds bottom padding; the LM
+        // keeps the anchor in view.
+        if (mRecyclerView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(mRecyclerView, (v, windowInsets) -> {
                 Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                         | WindowInsetsCompat.Type.displayCutout());
                 v.setPadding(insets.left, 0, insets.right, insets.bottom);
-                markInsetsApplied();
                 return WindowInsetsCompat.CONSUMED;
             });
-            // Belt-and-suspenders: if the system never dispatches insets
-            // to the RV (e.g. unusual window-attach paths, no system bars
-            // such as some TV / fullscreen contexts), release the gate
-            // after a short delay so the page still renders. By 200 ms
-            // every real-device first dispatch we've measured has landed.
-            gatedRv.postDelayed(() -> {
-                if (gatedRv == mRecyclerView) {
-                    markInsetsApplied();
-                }
-            }, 200L);
-            // Banner-gate timeout — if the subclass advertises it'll
-            // signal but the LiveData never produces (cold Room cache,
-            // empty archive, observer racing fragment destruction)
-            // release the gate so the scroll still runs. See
-            // {@link #BANNER_GATE_TIMEOUT_MS} for the rationale.
-            if (awaitsBannerSignal()) {
-                gatedRv.postDelayed(() -> {
-                    if (gatedRv == mRecyclerView) {
-                        markBannerResolved();
-                    }
-                }, BANNER_GATE_TIMEOUT_MS);
-            }
         }
 
         // Media indicator
         mGeckoMediaController.getActiveSessionIdsLiveData().observe(getViewLifecycleOwner(),
                 sessionIds -> mBrowserTabsAdapter.setMediaSessionIds(sessionIds));
 
-        // Tab list. While the initial-scroll gate is still closed we
-        // intentionally do NOT touch LCEE visibility: the recycler
-        // stays hidden behind LCEE's initial loading view so the user
-        // can't see tabs render at positions 0..N-1 before the gate
-        // releases and scrolls to the active tab. The gate's terminal
-        // paths (runGatedInitialScroll callback and the empty / no-
-        // active branches) call updateEmptyVisibility once the layout
-        // has settled, which is the first time the RV becomes
-        // visible. Subsequent emissions go through the normal path.
+        // Tab list. Before the first snapshot is applied, we just store
+        // the latest tabs and try to apply (which gates on banner
+        // signal for subclasses that need one). After the snapshot has
+        // been applied, this falls through to the regular
+        // submitList + active-changed scroll path.
         getTabsLiveData().observe(getViewLifecycleOwner(), tabs -> {
-            if (!mInitialScrollPending) {
-                updateEmptyVisibility(tabs);
+            if (!mFirstSnapshotApplied) {
+                mPendingTabs = tabs;
+                tryApplyFirstSnapshot();
+                return;
             }
+            updateEmptyVisibility(tabs);
             mBrowserTabsAdapter.submitList(tabs, () -> {
                 if (mRecyclerView == null) return;
-                onTabListSubmitted(tabs);
+                onSubsequentTabsSubmitted(tabs);
             });
         });
     }
