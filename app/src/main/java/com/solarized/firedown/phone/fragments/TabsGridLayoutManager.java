@@ -7,26 +7,43 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 /**
- * GridLayoutManager that exposes a "scroll to this position on first
- * paint" hook for the initial active-tab placement.
+ * GridLayoutManager for the tabs grid that:
  *
- * <p>Predictive item animations are left enabled (the default). The
- * earlier anchor-drift workaround that disabled them was unblocking
- * the {@code ConcatAdapter(banner, tabs)} setup — banner show/hide
- * forced an insert/remove at adapter position 0 while the LM was
- * mid-layout, and the pre/post-layout anchor recomputation drifted
- * by one row. Now that the banner lives inside the tabs adapter as a
- * view type, banner toggles dispatch through the same diff pipeline
- * as everything else and the two-pass animation runs cleanly.
+ * <ol>
+ *   <li><b>Disables predictive item animations</b>. The tab list LiveData
+ *       re-emits on any per-tab state change (thumb decoded, title
+ *       updated, active flag flipped) — DiffUtil produces partial-bind
+ *       {@code notifyItemChanged} events with payloads. With predictive
+ *       animations on, RecyclerView runs a pre-layout pass with the
+ *       <em>old</em> state followed by a real layout with the new
+ *       state. Between the two passes the LM resets
+ *       {@code mAnchorInfo.mValid}, so the post-layout pass re-runs
+ *       {@code updateAnchorFromChildren} — which iterates
+ *       {@code mChildHelper} indices, not adapter positions. The
+ *       scrap/reattach of the changed view holder shuffles those
+ *       indices, the "first reference child" picked during the second
+ *       pass isn't the same one the first pass anchored on, and the
+ *       viewport drifts by one row. Returning {@code false} from
+ *       {@link #supportsPredictiveItemAnimations()} tells RecyclerView
+ *       to skip the pre-layout pass entirely — single layout per
+ *       notify, no anchor drift. Cost: insert / remove / move events
+ *       no longer animate (changes are still cross-faded since that
+ *       doesn't need predictive). The tabs grid doesn't visually
+ *       need slide-in animations, and the original anchor-drift bug
+ *       (PR #134) was exactly this — see logs in PR #155 confirming
+ *       the second submitList commit causes {@code firstVisible} to
+ *       drift from 9 to 7.</li>
  *
- * <p><b>Trust-the-first-layout hook.</b>
- * {@code scrollToPositionWithOffset} queued from
- * {@link #setInitialPosition(int, Runnable)} arms a one-shot waiting
- * flag; the very next non-pre {@code onLayoutCompleted} fires the
- * {@code onReached} callback regardless of where the LM ended up
- * placing the row. If the LM has to clamp (target near the end of a
- * short list), clamping still leaves the active row in view, which
- * is the only invariant the caller cares about.
+ *   <li><b>Trust-the-first-layout hook.</b>
+ *       {@code scrollToPositionWithOffset} queued from
+ *       {@link #setInitialPosition(int, Runnable)} arms a one-shot
+ *       waiting flag; the very next non-pre {@code onLayoutCompleted}
+ *       fires the {@code onReached} callback regardless of where the
+ *       LM ended up placing the row. If the LM has to clamp (target
+ *       near the end of a short list), clamping still leaves the
+ *       active row in view, which is the only invariant the caller
+ *       cares about.</li>
+ * </ol>
  */
 public class TabsGridLayoutManager extends GridLayoutManager {
 
@@ -36,6 +53,11 @@ public class TabsGridLayoutManager extends GridLayoutManager {
 
     public TabsGridLayoutManager(Context context, int spanCount) {
         super(context, spanCount);
+    }
+
+    @Override
+    public boolean supportsPredictiveItemAnimations() {
+        return false;
     }
 
     /**
