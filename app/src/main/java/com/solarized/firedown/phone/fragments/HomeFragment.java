@@ -29,6 +29,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
+import com.solarized.firedown.data.Download;
+import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.data.entity.AutoCompleteEntity;
 import com.solarized.firedown.autocomplete.AutoCompleteViewModel;
@@ -37,6 +39,7 @@ import com.solarized.firedown.data.models.BrowserDialogViewModel;
 import com.solarized.firedown.data.models.BrowserURIViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
+import com.solarized.firedown.data.models.RecentDownloadsViewModel;
 import com.solarized.firedown.data.models.TaskViewModel;
 import com.solarized.firedown.data.models.ShortCutsViewModel;
 import com.solarized.firedown.geckoview.GeckoResources;
@@ -51,6 +54,7 @@ import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.autocomplete.AutoCompleteEditText;
 import com.solarized.firedown.autocomplete.AutoCompleteView;
+import com.solarized.firedown.phone.dialogs.DownloadsQuickAccessSheet;
 import com.solarized.firedown.ui.HomeViewpager;
 import com.solarized.firedown.ui.OnBoardingCard;
 import com.solarized.firedown.ui.adapters.ShortCutsAdapter;
@@ -71,7 +75,8 @@ import dagger.hilt.android.AndroidEntryPoint;
 public class HomeFragment extends BaseBrowserFragment implements BottomNavigationBar.OnBottomBarListener,
         AutoCompleteEditText.OnCommitListener, AutoCompleteEditText.OnFilterListener, AutoCompleteEditText.OnFocusChangedListener,
         AutoCompleteEditText.OnTextChangedListener, AutoCompleteEditText.OnSearchStateChangeListener,
-        GeckoToolbar.OnToolbarListener , OnBoardingCard.OnBoardingCardListener, OnItemClickListener {
+        GeckoToolbar.OnToolbarListener , OnBoardingCard.OnBoardingCardListener, OnItemClickListener,
+        DownloadsQuickAccessSheet.Host {
 
 
     private static final String TAG = HomeFragment.class.getName();
@@ -81,6 +86,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private GeckoStateViewModel mGeckoStateViewModel;
     private IncognitoStateViewModel mIncognitoStateViewModel;
     private TaskViewModel mTaskViewModel;
+    private RecentDownloadsViewModel mRecentDownloadsViewModel;
     private AutoCompleteEditText mAutoCompleteEditText;
     private AutoCompleteView mAutoCompleteView;
     private ShortCutsAdapter mShortCutsAdapter;
@@ -112,6 +118,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mAutoCompleteViewModel = new ViewModelProvider(this).get(AutoCompleteViewModel.class);
         mShortCutsViewModel = new ViewModelProvider(this).get(ShortCutsViewModel.class);
         mTaskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+        mRecentDownloadsViewModel = new ViewModelProvider(this).get(RecentDownloadsViewModel.class);
         mGeckoStateViewModel = new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
         mIncognitoStateViewModel = new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
         mBrowserURIViewModel = new ViewModelProvider(mActivity).get(BrowserURIViewModel.class);
@@ -226,6 +233,14 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
         mShortCutsViewModel.getShortCuts().observe(getViewLifecycleOwner(), mObservableShortCuts ->
                 mShortCutsAdapter.submitList(mObservableShortCuts));
+
+        // Keep the recent-downloads LiveData hot so the long-press
+        // quick-access popup has a value to read synchronously on
+        // first invocation. Room's LiveData stays cold until it has
+        // an active observer, so without this the popup's
+        // getValue() returns null on first long-press and we fall
+        // back to DownloadsActivity instead of showing the popup.
+        mRecentDownloadsViewModel.getRecent().observe(getViewLifecycleOwner(), list -> { /* warm only */ });
 
         // NOTE: HomeFragment intentionally does NOT observe
         // BrowserURIViewModel.getEvents().  IntentHandler owns all tab
@@ -380,8 +395,36 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         if (id == R.id.new_tab_button) {
             NavigationUtils.navigateSafe(mNavController, R.id.dialog_new_tabs, R.id.home);
             return true;
+        } else if (id == R.id.downloads_button) {
+            // If we already know there's nothing recent (LiveData has
+            // been warmed by the observer below), skip the sheet and
+            // jump straight to DownloadsActivity so the long-press
+            // still feels responsive on a fresh install. Otherwise
+            // open the bottom sheet; the sheet self-dismisses if the
+            // list goes empty after it's already on screen.
+            java.util.List<DownloadEntity> cached =
+                    mRecentDownloadsViewModel.getRecent().getValue();
+            if (cached == null || cached.isEmpty()) {
+                mStartForResult.launch(new Intent(mActivity, DownloadsActivity.class));
+            } else {
+                new DownloadsQuickAccessSheet().show(getChildFragmentManager(),
+                        DownloadsQuickAccessSheet.TAG);
+            }
+            return true;
         }
         return false;
+    }
+
+    @Override
+    public void onQuickAccessFileTap(@NonNull DownloadEntity entity) {
+        // Match DownloadFragment's row tap: errored downloads jump to
+        // the source URL, everything else hits openItem (which is a
+        // no-op for not-yet-completed files but at least consistent).
+        if (entity.getFileStatus() == Download.ERROR) {
+            openSourceUrl(entity);
+        } else {
+            openItem(entity, null);
+        }
     }
 
 

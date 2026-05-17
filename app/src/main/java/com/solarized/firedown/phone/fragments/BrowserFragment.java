@@ -42,6 +42,8 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.autocomplete.AutoCompleteView;
 import com.solarized.firedown.data.entity.CertificateInfoEntity;
 import com.solarized.firedown.data.entity.ContextElementEntity;
+import com.solarized.firedown.data.Download;
+import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.entity.AutoCompleteEntity;
 import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.data.models.BrowserDialogViewModel;
@@ -49,6 +51,7 @@ import com.solarized.firedown.data.models.BrowserDownloadViewModel;
 import com.solarized.firedown.data.models.BrowserURIViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
+import com.solarized.firedown.data.models.RecentDownloadsViewModel;
 import com.solarized.firedown.data.models.ShortCutsViewModel;
 import com.solarized.firedown.data.models.TaskViewModel;
 import com.solarized.firedown.data.models.WebBookmarkViewModel;
@@ -69,6 +72,7 @@ import com.solarized.firedown.phone.DownloadsActivity;
 import com.solarized.firedown.phone.HistoryActivity;
 import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.phone.VaultActivity;
+import com.solarized.firedown.phone.dialogs.DownloadsQuickAccessSheet;
 import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.ui.adapters.SearchAutocompleteAdapter;
 import com.solarized.firedown.geckoview.GeckoToolbar;
@@ -100,7 +104,8 @@ import java.util.Locale;
 import javax.annotation.Nullable;
 
 
-public class BrowserFragment extends BaseBrowserFragment implements OnItemClickListener {
+public class BrowserFragment extends BaseBrowserFragment
+        implements OnItemClickListener, DownloadsQuickAccessSheet.Host {
 
     private static final String TAG = BrowserFragment.class.getSimpleName();
 
@@ -158,6 +163,7 @@ public class BrowserFragment extends BaseBrowserFragment implements OnItemClickL
     private WebBookmarkViewModel mWebBookmarkViewModel;
     private BrowserURIViewModel mBrowserURIViewModel;
     private TaskViewModel mTaskViewModel;
+    private RecentDownloadsViewModel mRecentDownloadsViewModel;
 
     // ── Layout sizing ─────────────────────────────────────────────────────────────────────────────
 
@@ -196,6 +202,7 @@ public class BrowserFragment extends BaseBrowserFragment implements OnItemClickL
 
         mIncognitoStateViewModel = new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
         mTaskViewModel          = new ViewModelProvider(this).get(TaskViewModel.class);
+        mRecentDownloadsViewModel = new ViewModelProvider(this).get(RecentDownloadsViewModel.class);
         mShortCutsViewModel     = new ViewModelProvider(this).get(ShortCutsViewModel.class);
         mWebBookmarkViewModel   = new ViewModelProvider(this).get(WebBookmarkViewModel.class);
         mGeckoStateViewModel    = new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
@@ -392,6 +399,12 @@ public class BrowserFragment extends BaseBrowserFragment implements OnItemClickL
         mTaskViewModel.getSafeCount().observe(getViewLifecycleOwner(), count -> {
             if (mIsIncognitoThemed) mBottomNavigationBar.onBadgeCount(count);
         });
+
+        // Keep the recent-downloads LiveData hot so the long-press
+        // quick-access popup has a value to read synchronously on
+        // first invocation (Room's LiveData stays cold until it has
+        // an active observer).
+        mRecentDownloadsViewModel.getRecent().observe(getViewLifecycleOwner(), list -> { /* warm only */ });
 
         mGeckoStateViewModel.getTabsCount().observe(getViewLifecycleOwner(), count -> {
             if (!mIsIncognitoThemed) mBottomNavigationBar.onTabsCount(count);
@@ -963,8 +976,31 @@ public class BrowserFragment extends BaseBrowserFragment implements OnItemClickL
         if (id == R.id.new_tab_button) {
             NavigationUtils.navigateSafe(mNavController, R.id.dialog_new_tabs, R.id.browser);
             return true;
+        } else if (id == R.id.downloads_button && !mIsIncognitoThemed) {
+            // Skip in incognito-themed mode: the bottom-bar Downloads
+            // glyph is swapped for a vault lock and the quick-access
+            // sheet would leak public download filenames into a
+            // surface that's currently representing private browsing.
+            java.util.List<DownloadEntity> cached =
+                    mRecentDownloadsViewModel.getRecent().getValue();
+            if (cached == null || cached.isEmpty()) {
+                mStartForResult.launch(new Intent(mActivity, DownloadsActivity.class));
+            } else {
+                new DownloadsQuickAccessSheet().show(getChildFragmentManager(),
+                        DownloadsQuickAccessSheet.TAG);
+            }
+            return true;
         }
         return false;
+    }
+
+    @Override
+    public void onQuickAccessFileTap(@NonNull DownloadEntity entity) {
+        if (entity.getFileStatus() == Download.ERROR) {
+            openSourceUrl(entity);
+        } else {
+            openItem(entity, null);
+        }
     }
 
     @Override
