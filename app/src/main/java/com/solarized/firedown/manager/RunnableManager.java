@@ -46,6 +46,7 @@ import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.repository.DownloadDataRepository;
 import com.solarized.firedown.data.repository.TaskRepository;
 import com.solarized.firedown.phone.DownloadsActivity;
+import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.utils.FileUriHelper;
 import com.solarized.firedown.Keys;
@@ -318,8 +319,27 @@ public class RunnableManager extends Service {
 
 
 	private void startNotification( ) {
-		// The PendingIntent to launch our activity if the user selects this notification
-		Intent intent = new Intent(this, DownloadsActivity.class);
+		// Route the notification click to whichever Activity actually
+		// has content to show: VaultActivity if only incognito-tab
+		// (vault) downloads are in flight, DownloadsActivity otherwise.
+		// Mixed-mode falls through to DownloadsActivity — the
+		// DownloadFragment hint banner surfaces the vault count so the
+		// user can hop over. Recomputed every time this method runs
+		// (called from publishTaskCounts on add / resume / recycle),
+		// so when the last regular download completes leaving only
+		// vault ones, the next click correctly opens Vault.
+		int safeCount = 0;
+		int regularCount = 0;
+		for (DownloadTask t : mActiveTasks) {
+			if (t.isFileSafe()) safeCount++; else regularCount++;
+		}
+		for (DownloadTask t : mQueueTasks) {
+			if (t.isFileSafe()) safeCount++; else regularCount++;
+		}
+		Class<?> target = (safeCount > 0 && regularCount == 0)
+				? VaultActivity.class
+				: DownloadsActivity.class;
+		Intent intent = new Intent(this, target);
 		intent.setAction(IntentActions.DOWNLOAD_FINISH);
 		// Create the TaskStackBuilder and add the intent, which inflates the back
 		// stack.
@@ -921,6 +941,17 @@ public class RunnableManager extends Service {
 			if (t.isFileSafe()) safe++; else regular++;
 		}
 		mTaskRepository.updateCount(regular, safe);
+
+		// Re-route the foreground notification's click PendingIntent
+		// to whichever Activity actually has content. Without this, the
+		// "regular finishes, only vault remains" case would still open
+		// the empty DownloadsActivity because the PendingIntent set
+		// when the regular task started is stale. Rebuilding via
+		// startForeground(same id) just replaces the contentIntent —
+		// no flicker, no duplicate notification.
+		if (safe > 0 || regular > 0) {
+			startNotification();
+		}
 	}
 
 	private boolean isTaskInLists(int id) {

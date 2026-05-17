@@ -274,6 +274,11 @@
         <item quantity="one">%d blocked on this page</item>
         <item quantity="other">%d blocked on this page</item>
     </plurals>
+    <plurals name="incognito_downloads_in_progress_title">
+        <item quantity="one">%d incognito download in progress</item>
+        <item quantity="other">%d incognito downloads in progress</item>
+    </plurals>
+    <string name="incognito_downloads_in_progress_subtitle">Tap to view in Vault</string>
     <string name="blocked_trackers_cross_site_cookies">Cross-site tracking cookies</string>
     <string name="blocked_trackers_social_media">Social media trackers</string>
     <string name="blocked_trackers_fingerprinters">Fingerprinters</string>
