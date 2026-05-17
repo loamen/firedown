@@ -46,6 +46,7 @@ import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.repository.DownloadDataRepository;
 import com.solarized.firedown.data.repository.TaskRepository;
 import com.solarized.firedown.phone.DownloadsActivity;
+import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.utils.FileUriHelper;
 import com.solarized.firedown.Keys;
@@ -318,8 +319,27 @@ public class RunnableManager extends Service {
 
 
 	private void startNotification( ) {
-		// The PendingIntent to launch our activity if the user selects this notification
-		Intent intent = new Intent(this, DownloadsActivity.class);
+		// Route the notification click to whichever Activity actually
+		// has content to show: VaultActivity if only incognito-tab
+		// (vault) downloads are in flight, DownloadsActivity otherwise.
+		// Mixed-mode falls through to DownloadsActivity — the
+		// DownloadFragment hint banner surfaces the vault count so the
+		// user can hop over. Recomputed every time this method runs
+		// (called from publishTaskCounts on add / resume / recycle),
+		// so when the last regular download completes leaving only
+		// vault ones, the next click correctly opens Vault.
+		int safeCount = 0;
+		int regularCount = 0;
+		for (DownloadTask t : mActiveTasks) {
+			if (t.isFileSafe()) safeCount++; else regularCount++;
+		}
+		for (DownloadTask t : mQueueTasks) {
+			if (t.isFileSafe()) safeCount++; else regularCount++;
+		}
+		Class<?> target = (safeCount > 0 && regularCount == 0)
+				? VaultActivity.class
+				: DownloadsActivity.class;
+		Intent intent = new Intent(this, target);
 		intent.setAction(IntentActions.DOWNLOAD_FINISH);
 		// Create the TaskStackBuilder and add the intent, which inflates the back
 		// stack.
@@ -650,7 +670,7 @@ public class RunnableManager extends Service {
 
 		Log.d(TAG, "addDownloadToExecutor count: " + (mActiveTasks.size() + mQueueTasks.size()));
 
-		mTaskRepository.updateCount(mActiveTasks.size() + mQueueTasks.size());
+		publishTaskCounts();
 
 	}
 
@@ -688,7 +708,7 @@ public class RunnableManager extends Service {
 		}
 
 		Log.d(TAG, "addDownloadToExecutor count: " + (mActiveTasks.size() + mQueueTasks.size()));
-		mTaskRepository.updateCount(mActiveTasks.size() + mQueueTasks.size());
+		publishTaskCounts();
 	}
 
 
@@ -895,12 +915,43 @@ public class RunnableManager extends Service {
 
 		Log.d(TAG, "recycleTask count: " + (mActiveTasks.size() + mQueueTasks.size()));
 
-		mTaskRepository.updateCount(mActiveTasks.size() + mQueueTasks.size());
+		publishTaskCounts();
 
 		// Stop service if empty
 		Message message = serviceHandler.obtainMessage();
 		message.arg2 = MSG_STOP;
 		serviceHandler.sendMessage(message);
+	}
+
+	/**
+	 * Walk active+queued task lists and bucket-count by vault status,
+	 * then push the split to {@link TaskRepository#updateCount(int, int)}.
+	 * Separates the bottom-bar badge for regular vs incognito browsing
+	 * so an incognito-tab download doesn't surface in the regular
+	 * BrowserFragment / HomeFragment chrome (privacy: don't advertise
+	 * private downloads in the public UI).
+	 */
+	private void publishTaskCounts() {
+		int safe = 0;
+		int regular = 0;
+		for (DownloadTask t : mActiveTasks) {
+			if (t.isFileSafe()) safe++; else regular++;
+		}
+		for (DownloadTask t : mQueueTasks) {
+			if (t.isFileSafe()) safe++; else regular++;
+		}
+		mTaskRepository.updateCount(regular, safe);
+
+		// Re-route the foreground notification's click PendingIntent
+		// to whichever Activity actually has content. Without this, the
+		// "regular finishes, only vault remains" case would still open
+		// the empty DownloadsActivity because the PendingIntent set
+		// when the regular task started is stale. Rebuilding via
+		// startForeground(same id) just replaces the contentIntent —
+		// no flicker, no duplicate notification.
+		if (safe > 0 || regular > 0) {
+			startNotification();
+		}
 	}
 
 	private boolean isTaskInLists(int id) {

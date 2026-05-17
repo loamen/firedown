@@ -1,5 +1,6 @@
 package com.solarized.firedown.phone.fragments;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -21,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.paging.LoadState;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.color.MaterialColors;
 import com.solarized.firedown.Preferences;
@@ -31,6 +33,7 @@ import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.models.DownloadsViewModel;
 import com.solarized.firedown.data.models.TaskViewModel;
 import com.solarized.firedown.manager.ServiceActions;
+import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.ui.adapters.DownloadItemAdapter;
 import com.solarized.firedown.ui.OnItemClickListener;
 import com.solarized.firedown.ui.diffs.DownloadDiffCallback;
@@ -47,6 +50,13 @@ public class DownloadFragment extends BaseDownloadFragment implements
 
     private static final String TAG = DownloadFragment.class.getSimpleName();
     private ChipGroup mChipGroup;
+
+    /** Bottom-anchored card surfaced when the user has vault
+     *  (incognito-tab) downloads in flight while looking at the regular
+     *  Downloads page. Tap → open VaultActivity. Visibility driven by
+     *  TaskViewModel#getSafeCount LiveData. */
+    private MaterialCardView mIncognitoInProgressCard;
+    private TextView mIncognitoInProgressTitle;
 
     /** Set when a new query has been dispatched; consumed on the next successful refresh. */
     private boolean mPendingScrollToTop = false;
@@ -99,6 +109,11 @@ public class DownloadFragment extends BaseDownloadFragment implements
         mLCEERecyclerView = view.findViewById(R.id.list_recycler_lcee);
         mChipGroup = view.findViewById(R.id.chip_group);
         mToolbar = view.findViewById(R.id.toolbar);
+        mIncognitoInProgressCard = view.findViewById(R.id.incognito_in_progress_card);
+        mIncognitoInProgressTitle = view.findViewById(R.id.incognito_in_progress_title);
+
+        mIncognitoInProgressCard.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), VaultActivity.class)));
 
         mChipGroup.setOnCheckedStateChangeListener(this);
     }
@@ -166,6 +181,23 @@ public class DownloadFragment extends BaseDownloadFragment implements
     }
 
     private void observeViewModelData() {
+        // Surface ongoing vault (incognito-tab) downloads via the
+        // bottom-anchored hint card. When the user has only vault
+        // downloads in flight the in-progress notification already
+        // routes them to VaultActivity directly (see
+        // RunnableManager#startNotification); this card covers the
+        // mixed case where they end up here looking for a vault file.
+        mTaskViewModel.getSafeCount().observe(getViewLifecycleOwner(), count -> {
+            int n = count != null ? count : 0;
+            if (n > 0) {
+                mIncognitoInProgressTitle.setText(getResources().getQuantityString(
+                        R.plurals.incognito_downloads_in_progress_title, n, n));
+                mIncognitoInProgressCard.setVisibility(View.VISIBLE);
+            } else {
+                mIncognitoInProgressCard.setVisibility(View.GONE);
+            }
+        });
+
         mTaskViewModel.getObservableEvent().observe(getViewLifecycleOwner(), event -> {
             if (event instanceof TaskEvent.Started started) {
                 if (started.getAction() == ServiceActions.DECRYPTION) return;

@@ -195,8 +195,11 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
         Log.d(TAG, "onViewCreated");
 
-        mTaskViewModel.getObservableCount().observe(getViewLifecycleOwner(),
-                mObservableCount -> mBottomNavigationBar.onBadgeCount(mObservableCount));
+        // Regular home shows only the regular (non-vault) download
+        // count — incognito-tab downloads stay off this badge so the
+        // public chrome doesn't advertise private activity.
+        mTaskViewModel.getRegularCount().observe(getViewLifecycleOwner(),
+                count -> mBottomNavigationBar.onBadgeCount(count));
 
         mGeckoStateViewModel.getTabsCount().observe(getViewLifecycleOwner(), mObservableEntities
                 -> mBottomNavigationBar.onTabsCount(mObservableEntities));
@@ -317,7 +320,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             } else if (Lifecycle.Event.ON_RESUME.equals(event)) {
                 Log.d(TAG, "onResume");
                 mStop = false;
-                // Badge count is updated reactively via TaskRepository.getObservableCount()
+                // Badge count is updated reactively via TaskRepository.getRegularCount()
                 // which is already observed in onViewCreated — no need to poll the service.
             }
         });

@@ -21,7 +21,20 @@ import javax.inject.Singleton;
 @Singleton
 public class TaskRepository {
 
-    private final MutableLiveData<Integer> mObservableCount = new MutableLiveData<>(0);
+    /**
+     * Active+queued count of regular (non-vault) downloads. Surfaced as
+     * the bottom-bar badge for {@code HomeFragment} and the regular-mode
+     * {@code BrowserFragment} — keeping vault downloads out of this
+     * count so an incognito-tab download doesn't advertise itself in
+     * the regular browsing chrome (privacy + matches what the user
+     * expects when they're on a regular page).
+     */
+    private final MutableLiveData<Integer> mRegularCount = new MutableLiveData<>(0);
+
+    /** Active+queued count of vault (incognito-tab / save-to-vault)
+     *  downloads. Surfaced as the bottom-bar badge for the
+     *  incognito-mode {@code BrowserFragment}. */
+    private final MutableLiveData<Integer> mSafeCount = new MutableLiveData<>(0);
 
     private final MutableLiveData<TaskEvent> mObservableEvent = new MutableLiveData<>();
 
@@ -30,12 +43,23 @@ public class TaskRepository {
 
     // --- Count ---
 
-    public LiveData<Integer> getObservableCount() {
-        return mObservableCount;
+    public LiveData<Integer> getRegularCount() {
+        return mRegularCount;
     }
 
-    public void updateCount(int count) {
-        mObservableCount.postValue(count);
+    public LiveData<Integer> getSafeCount() {
+        return mSafeCount;
+    }
+
+    /**
+     * Update both regular and vault counts in a single call so observers
+     * downstream see a consistent snapshot. {@link RunnableManager}
+     * walks its active+queue task lists and bucket-counts by
+     * {@link com.solarized.firedown.manager.DownloadTask#isFileSafe()}.
+     */
+    public void updateCount(int regular, int safe) {
+        mRegularCount.postValue(regular);
+        mSafeCount.postValue(safe);
     }
 
     // --- Type-safe events (new) ---
