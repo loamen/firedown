@@ -22,6 +22,14 @@
             android:text="@string/sort_by_type_video"
             android:checkable="true" />
 
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_audio"
+            style="@style/Theme.FireDown.Download.Chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/sort_by_type_audio"
+            android:checkable="true"/>
+
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_image"
@@ -45,14 +53,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/sort_by_type_svg"
-            android:checkable="true"/>
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_audio"
-            style="@style/Theme.FireDown.Download.Chip"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/sort_by_type_audio"
             android:checkable="true"/>
 
         <com.google.android.material.chip.Chip

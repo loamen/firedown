@@ -150,7 +150,7 @@ public class BrowserTabsAdapter extends GridListBaseAdapter<GeckoStateEntity, Re
     }
 
     @Override
-    protected int getPositionOffset() {
+    public int getPositionOffset() {
         return mBannerVisible ? 1 : 0;
     }
 

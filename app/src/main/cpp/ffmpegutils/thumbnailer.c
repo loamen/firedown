@@ -1100,7 +1100,7 @@ int jni_extract_bitmap (JNIEnv * env, jobject thiz, jlong stream_pos){
                 break;
             }
 
-            LOGI(1, "jni_extract_bitmap packet index: %d index: %d" ,packet->stream_index, video_stream_index );
+            LOGI(6, "jni_extract_bitmap packet index: %d index: %d" ,packet->stream_index, video_stream_index );
 
             if (packet->stream_index == video_stream_index) {
 
