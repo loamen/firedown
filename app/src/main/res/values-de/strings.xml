@@ -135,7 +135,7 @@
     <string name="download_quality">Download-Qualität</string>
     <string name="download_queued">Ausstehend…</string>
     <string name="download_rename_error">Der Dateiname wird bereits verwendet.</string>
-    <string name="download_saved_to_vault">Im Tresor gespeichert</string>
+    <string name="download_saved_to_vault">Im sicheren Ordner gespeichert</string>
     <string name="download_saving_audio">Audio wird extrahiert, bitte warten…</string>
     <string name="download_saving_gif">GIF wird erstellt, bitte warten…</string>
     <string name="downloading">Wird heruntergeladen…</string>
@@ -275,7 +275,7 @@
         <item quantity="one">%d Inkognito-Download läuft</item>
         <item quantity="other">%d Inkognito-Downloads laufen</item>
     </plurals>
-    <string name="incognito_downloads_in_progress_subtitle">Tippen, um im Tresor anzuzeigen</string>
+    <string name="incognito_downloads_in_progress_subtitle">Tippen, um im sicheren Ordner anzuzeigen</string>
     <string name="blocked_trackers_cross_site_cookies">Site-übergreifende Tracking-Cookies</string>
     <string name="blocked_trackers_social_media">Social-Media-Tracker</string>
     <string name="blocked_trackers_fingerprinters">Fingerprinter</string>
