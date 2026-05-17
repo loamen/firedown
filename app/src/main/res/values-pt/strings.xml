@@ -275,4 +275,12 @@
     <string name="media_seek_forward_10s_desc">Avançar 10 segundos</string>
 
 
+    <string name="play">Reproduzir</string>
+    <string name="pip_play">Reproduzir</string>
+    <string name="pip_pause">Pausar</string>
+    <plurals name="incognito_downloads_in_progress_title">
+        <item quantity="one">%d transferência anónima em curso</item>
+        <item quantity="other">%d transferências anónimas em curso</item>
+    </plurals>
+    <string name="incognito_downloads_in_progress_subtitle">Toque para ver na Pasta Segura</string>
 </resources>

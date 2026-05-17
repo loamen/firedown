@@ -313,4 +313,7 @@
     <string name="vault_encrypting">يتم الآن تشفير الملف، الرجاء الانتظار…</string>
     <string name="vault_unsupported">لا يمكن فتح هذا الملف. لفتحه، انقله خارج المجلد الآمن وحاول مرة أخرى.</string>
     <string name="bookmark_name">الاسم</string>
+    <string name="play">تشغيل</string>
+    <string name="pip_play">تشغيل</string>
+    <string name="pip_pause">إيقاف مؤقت</string>
 </resources>

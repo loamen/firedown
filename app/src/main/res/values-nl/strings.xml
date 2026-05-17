@@ -346,4 +346,12 @@
     <string name="media_seek_forward_10s_desc">10 seconden vooruit</string>
 
 
+    <string name="play">Afspelen</string>
+    <string name="pip_play">Afspelen</string>
+    <string name="pip_pause">Pauzeren</string>
+    <plurals name="incognito_downloads_in_progress_title">
+        <item quantity="one">%d incognito-download bezig</item>
+        <item quantity="other">%d incognito-downloads bezig</item>
+    </plurals>
+    <string name="incognito_downloads_in_progress_subtitle">Tik om te bekijken in Beveiligde map</string>
 </resources>

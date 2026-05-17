@@ -346,4 +346,11 @@
     <string name="media_seek_forward_10s_desc">10 saniye ileri</string>
 
 
+    <string name="play">Oynat</string>
+    <string name="pip_play">Oynat</string>
+    <string name="pip_pause">Duraklat</string>
+    <plurals name="incognito_downloads_in_progress_title">
+        <item quantity="other">%d gizli indirme devam ediyor</item>
+    </plurals>
+    <string name="incognito_downloads_in_progress_subtitle">Güvenli klasörde görüntülemek için dokunun</string>
 </resources>

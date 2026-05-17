@@ -290,4 +290,7 @@
     <string name="vault_encrypting">Шифрування файлу, зачекайте…</string>
     <string name="vault_unsupported">Не вдається відкрити цей файл. Щоб відкрити, перемістіть його з безпечної папки та повторіть спробу.</string>
     <string name="bookmark_name">Назва</string>
+    <string name="play">Відтворити</string>
+    <string name="pip_play">Відтворити</string>
+    <string name="pip_pause">Пауза</string>
 </resources>

@@ -284,4 +284,7 @@
     <string name="vault_encrypting">Đang mã hóa tập tin, vui lòng đợi…</string>
     <string name="vault_unsupported">Không thể mở tập tin này. Để mở, hãy di chuyển tập tin ra khỏi Thư mục An toàn và thử lại.</string>
     <string name="bookmark_name">Tên</string>
+    <string name="play">Phát</string>
+    <string name="pip_play">Phát</string>
+    <string name="pip_pause">Tạm dừng</string>
 </resources>
