@@ -380,8 +380,18 @@ public class BrowserFragment extends BaseBrowserFragment implements OnItemClickL
             return WindowInsetsCompat.CONSUMED;
         });
 
-        mTaskViewModel.getObservableCount().observe(getViewLifecycleOwner(),
-                count -> mBottomNavigationBar.onBadgeCount(count));
+        // Download badge: subscribe to both count streams and gate on
+        // mIsIncognitoThemed (same pattern as the tab-count observers
+        // below). Without this, an incognito-tab download would surface
+        // its badge in the regular BrowserFragment chrome and vice
+        // versa — the bottom bar is a single instance shared across
+        // both modes.
+        mTaskViewModel.getRegularCount().observe(getViewLifecycleOwner(), count -> {
+            if (!mIsIncognitoThemed) mBottomNavigationBar.onBadgeCount(count);
+        });
+        mTaskViewModel.getSafeCount().observe(getViewLifecycleOwner(), count -> {
+            if (mIsIncognitoThemed) mBottomNavigationBar.onBadgeCount(count);
+        });
 
         mGeckoStateViewModel.getTabsCount().observe(getViewLifecycleOwner(), count -> {
             if (!mIsIncognitoThemed) mBottomNavigationBar.onTabsCount(count);
@@ -1671,6 +1681,16 @@ public class BrowserFragment extends BaseBrowserFragment implements OnItemClickL
                 ? mIncognitoStateViewModel.getTabsCount().getValue()
                 : mGeckoStateViewModel.getTabsCount().getValue();
         if (count != null) mBottomNavigationBar.onTabsCount(count);
+
+        // Mirror the tab-count refresh for the download badge: the
+        // observers above only fire on LiveData emission, so a mode
+        // switch without a count change would leave the badge stale
+        // (e.g. regular shows 1 → switch to incognito → still 1 until
+        // a vault download lands).
+        Integer badge = incognito
+                ? mTaskViewModel.getSafeCount().getValue()
+                : mTaskViewModel.getRegularCount().getValue();
+        mBottomNavigationBar.onBadgeCount(badge != null ? badge : 0);
     }
 
     private void recreateSession(GeckoState geckoState) {

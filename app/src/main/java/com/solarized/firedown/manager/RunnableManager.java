@@ -650,7 +650,7 @@ public class RunnableManager extends Service {
 
 		Log.d(TAG, "addDownloadToExecutor count: " + (mActiveTasks.size() + mQueueTasks.size()));
 
-		mTaskRepository.updateCount(mActiveTasks.size() + mQueueTasks.size());
+		publishTaskCounts();
 
 	}
 
@@ -688,7 +688,7 @@ public class RunnableManager extends Service {
 		}
 
 		Log.d(TAG, "addDownloadToExecutor count: " + (mActiveTasks.size() + mQueueTasks.size()));
-		mTaskRepository.updateCount(mActiveTasks.size() + mQueueTasks.size());
+		publishTaskCounts();
 	}
 
 
@@ -895,12 +895,32 @@ public class RunnableManager extends Service {
 
 		Log.d(TAG, "recycleTask count: " + (mActiveTasks.size() + mQueueTasks.size()));
 
-		mTaskRepository.updateCount(mActiveTasks.size() + mQueueTasks.size());
+		publishTaskCounts();
 
 		// Stop service if empty
 		Message message = serviceHandler.obtainMessage();
 		message.arg2 = MSG_STOP;
 		serviceHandler.sendMessage(message);
+	}
+
+	/**
+	 * Walk active+queued task lists and bucket-count by vault status,
+	 * then push the split to {@link TaskRepository#updateCount(int, int)}.
+	 * Separates the bottom-bar badge for regular vs incognito browsing
+	 * so an incognito-tab download doesn't surface in the regular
+	 * BrowserFragment / HomeFragment chrome (privacy: don't advertise
+	 * private downloads in the public UI).
+	 */
+	private void publishTaskCounts() {
+		int safe = 0;
+		int regular = 0;
+		for (DownloadTask t : mActiveTasks) {
+			if (t.isFileSafe()) safe++; else regular++;
+		}
+		for (DownloadTask t : mQueueTasks) {
+			if (t.isFileSafe()) safe++; else regular++;
+		}
+		mTaskRepository.updateCount(regular, safe);
 	}
 
 	private boolean isTaskInLists(int id) {

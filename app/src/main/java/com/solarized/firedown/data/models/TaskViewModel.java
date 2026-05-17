@@ -27,8 +27,12 @@ public class TaskViewModel extends ViewModel {
         this.mTaskRepository = repository;
     }
 
-    public LiveData<Integer> getObservableCount() {
-        return mTaskRepository.getObservableCount();
+    public LiveData<Integer> getRegularCount() {
+        return mTaskRepository.getRegularCount();
+    }
+
+    public LiveData<Integer> getSafeCount() {
+        return mTaskRepository.getSafeCount();
     }
 
     // --- Type-safe events (preferred) ---
