@@ -355,9 +355,9 @@
     <string name="settings_donate">Donar</string>
     <string name="settings_donate_summary">Devuelve lo que Firedown valga para ti</string>
 <string name="settings_downloads">Descargas</string>
-    <string name="settings_downloads_free">Descargas &lt;small&gt;(%s)/small&gt;</string>
+    <string name="settings_downloads_free">Descargas &lt;small&gt;(%s)&lt;/small&gt;</string>
     <string name="settings_downloads_path">Ubicación de Descargas</string>
-    <string name="settings_downloads_sdcard_free">Tarjeta SD &lt;small&gt;(%s)/small&gt;</string>
+    <string name="settings_downloads_sdcard_free">Tarjeta SD &lt;small&gt;(%s)&lt;/small&gt;</string>
     <string name="settings_downloads_sdcard_not_detected">Tarjeta SD &lt;small&gt;(No detectada)&lt;/small&gt;</string>
     <string name="settings_enhanced_tracking_protection">Protección de seguimiento mejorada</string>
     <string name="settings_enhanced_tracking_protection_custom_description_2">Elige qué rastreadores y scripts deseas bloquear.</string>

@@ -445,7 +445,7 @@
     <string name="sort_by_size_opt">Taille</string>
 <string name="sort_by_type_alpha">Nom</string>
     <string name="sort_by_type_apk">Apk</string>
-    <string name="sort_by_type_audio">L\'audio</string>
+    <string name="sort_by_type_audio">Audio</string>
     <string name="sort_by_type_docs">Documents</string>
     <string name="sort_by_type_gif">GIF</string>
     <string name="sort_by_type_images">Images</string>

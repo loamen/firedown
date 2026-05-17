@@ -78,7 +78,7 @@
     <string name="error_http_408">Demande expirée</string>
     <string name="error_http_500">Erreur interne du serveur</string>
     <string name="error_http_502">Mauvaise passerelle</string>
-    <string name="error_http_503">service non disponible</string>
+    <string name="error_http_503">Service non disponible</string>
     <string name="error_io_exception">Erreur de connexion</string>
     <string name="error_malformed_url">URL mal formée</string>
     <string name="error_needs_login">vous devez vous connecter pour continuer</string>
@@ -203,7 +203,7 @@
     <string name="sort_by_size_opt">Taille</string>
 <string name="sort_by_type_alpha">Nom</string>
     <string name="sort_by_type_apk">Apk</string>
-    <string name="sort_by_type_audio">l\'audio</string>
+    <string name="sort_by_type_audio">Audio</string>
     <string name="sort_by_type_docs">Documents</string>
     <string name="sort_by_type_gif">GIF</string>
     <string name="sort_by_type_images">Images</string>
