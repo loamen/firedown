@@ -43,6 +43,7 @@ import com.solarized.firedown.data.models.DownloadsViewModel;
 import com.solarized.firedown.data.models.TaskViewModel;
 import com.solarized.firedown.manager.ServiceActions;
 import com.solarized.firedown.phone.DownloadsActivity;
+import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.ui.CardViewListItemDecoration;
 import com.solarized.firedown.ui.EqualSpacingItemDecoration;
@@ -295,6 +296,9 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
             setActionModeTitle(mAdapter.getSelectedSize());
         } else if (id == R.id.action_safe) {
             Intent intent = new Intent(mActivity, VaultActivity.class);
+            startActivity(intent);
+        } else if (id == R.id.action_settings) {
+            Intent intent = new Intent(mActivity, SettingsActivity.class);
             startActivity(intent);
         }
         return true;
