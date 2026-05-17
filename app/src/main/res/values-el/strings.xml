@@ -284,4 +284,7 @@
     <string name="vault_encrypting">Κρυπτογράφηση αρχείου, περιμένετε…</string>
     <string name="vault_unsupported">Δεν είναι δυνατό το άνοιγμα αυτού του αρχείου. Για να το ανοίξετε, μετακινήστε τον από τον Ασφαλή φάκελο και δοκιμάστε ξανά.</string>
     <string name="bookmark_name">Όνομα</string>
+    <string name="play">Αναπαραγωγή</string>
+    <string name="pip_play">Αναπαραγωγή</string>
+    <string name="pip_pause">Παύση</string>
 </resources>

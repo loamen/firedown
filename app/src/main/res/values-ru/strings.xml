@@ -349,4 +349,7 @@
 
 
 
+    <string name="play">Воспроизвести</string>
+    <string name="pip_play">Воспроизвести</string>
+    <string name="pip_pause">Пауза</string>
 </resources>

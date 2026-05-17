@@ -301,4 +301,7 @@
     <string name="vault_encrypting">Salataan tiedostoa, odota…</string>
     <string name="vault_unsupported">Tätä tiedostoa ei voi avata. Avaa se siirtämällä se pois Turvakansiosta ja yritä uudelleen.</string>
     <string name="bookmark_name">Nimi</string>
+    <string name="play">Toista</string>
+    <string name="pip_play">Toista</string>
+    <string name="pip_pause">Tauko</string>
 </resources>

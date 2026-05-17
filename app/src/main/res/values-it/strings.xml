@@ -327,4 +327,12 @@
     <string name="media_seek_forward_10s_desc">Avanti di 10 secondi</string>
 
 
+    <string name="play">Riproduci</string>
+    <string name="pip_play">Riproduci</string>
+    <string name="pip_pause">Pausa</string>
+    <plurals name="incognito_downloads_in_progress_title">
+        <item quantity="one">%d download in incognito in corso</item>
+        <item quantity="other">%d download in incognito in corso</item>
+    </plurals>
+    <string name="incognito_downloads_in_progress_subtitle">Tocca per visualizzare nella Cartella di sicurezza</string>
 </resources>

@@ -284,4 +284,7 @@
     <string name="vault_encrypting">Fájl titkosítása, kérjük, várjon…</string>
     <string name="vault_unsupported">Ez a fájl nem nyitható meg. A megnyitáshoz helyezze ki a Biztonságos mappából, és próbálja újra.</string>
     <string name="bookmark_name">Név</string>
+    <string name="play">Lejátszás</string>
+    <string name="pip_play">Lejátszás</string>
+    <string name="pip_pause">Szünet</string>
 </resources>
