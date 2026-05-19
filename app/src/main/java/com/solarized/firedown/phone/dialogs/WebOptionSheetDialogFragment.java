@@ -2,10 +2,7 @@ package com.solarized.firedown.phone.dialogs;
 
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.Intent;
 import android.content.res.TypedArray;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,9 +10,13 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavOptions;
 import androidx.recyclerview.widget.RecyclerView;
+import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.R;
 import com.solarized.firedown.data.OptionItem;
+import com.solarized.firedown.data.entity.GeckoStateEntity;
+import com.solarized.firedown.data.models.BrowserURIViewModel;
 import com.solarized.firedown.data.models.WebBookmarkViewModel;
 import com.solarized.firedown.data.models.WebHistoryViewModel;
 import com.solarized.firedown.Keys;
@@ -31,6 +32,8 @@ public class WebOptionSheetDialogFragment extends BaseBottomSheetDialogFragment 
     private WebBookmarkViewModel mWebBookmarkViewModel;
 
     private WebHistoryViewModel mWebHistoryViewModel;
+
+    private BrowserURIViewModel mBrowserURIViewModel;
 
     private String mCurrentUrl;
 
@@ -56,6 +59,10 @@ public class WebOptionSheetDialogFragment extends BaseBottomSheetDialogFragment 
         mWebBookmarkViewModel = new ViewModelProvider(this).get(WebBookmarkViewModel.class);
 
         mWebHistoryViewModel = new ViewModelProvider(this).get(WebHistoryViewModel.class);
+
+        // Activity-scoped so BrowserFragment's OPEN_EXTERNAL_URI observer
+        // picks up the event we publish from 'Open in New Tab'.
+        mBrowserURIViewModel = new ViewModelProvider(mActivity).get(BrowserURIViewModel.class);
 
     }
 
@@ -106,10 +113,21 @@ public class WebOptionSheetDialogFragment extends BaseBottomSheetDialogFragment 
             return;
         int id = item.getIconRes();
         if (id == R.drawable.ic_web_24) {
-            Intent resultIntent = new Intent(Intent.ACTION_VIEW);
-            resultIntent.setData(Uri.parse(mCurrentUrl));
-            mActivity.setResult(Activity.RESULT_OK, resultIntent);
-            mActivity.finish();
+            // 'Open in New Tab' — mirrors IntentHandler.handleExternalUri:
+            // a fresh GeckoStateEntity flagged external so BrowserFragment
+            // spawns a new tab for it, then OPEN_EXTERNAL_URI on the
+            // activity-scoped ViewModel + navigate to browser popping back
+            // to home so the bookmark / history surface doesn't linger.
+            // Old flow used setResult(ACTION_VIEW) + finish on
+            // BookmarkActivity / HistoryActivity, which closed the whole
+            // app once those Activities were dropped.
+            GeckoStateEntity geckoStateEntity = new GeckoStateEntity(false, mCurrentUrl);
+            geckoStateEntity.setExternal(true);
+            mBrowserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_EXTERNAL_URI);
+            NavOptions navOptions = new NavOptions.Builder()
+                    .setPopUpTo(R.id.home, false)
+                    .build();
+            mNavController.navigate(R.id.browser, null, navOptions);
         } else if (id == R.drawable.ic_baseline_delete_24) {
             mWebBookmarkViewModel.delete(mId);
             mWebHistoryViewModel.delete(mId);
