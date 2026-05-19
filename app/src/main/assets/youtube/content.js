@@ -132,15 +132,13 @@ if (location.pathname === '/robots.txt') {
     // race where GeckoView tears down the tab before the sleep finishes.
     browser.runtime.sendMessage({ type: 'poTokenTabReady' }).catch(() => {});
 
-    // Native PO-token bridge — when Java's PoTokenGenerator owns this session
-    // (instead of background.js's browser.tabs.create path), the connectNative
-    // below routes straight to PoTokenGenerator.onPortConnected in Java without
-    // going through background.js. Both paths can coexist: the existing
-    // runtime.sendMessage flow above keeps working for the JS-orchestrated
-    // browser.tabs.create case, while this port handles the Java-orchestrated
-    // case. The native side ignores ports that have no matching session, so
-    // opening this port is harmless in the legacy path.
-    try {
+    // Native PO-token bridge — only opened when Java's PoTokenGenerator
+    // created this session. Java signals ownership via the URL fragment
+    // #fd-native; without it (i.e. background.js's browser.tabs.create
+    // path) we skip the native port so it doesn't get captured + later
+    // torn down when the JS tab dies, which would break the native path
+    // mid-mint if it ran concurrently.
+    if (location.hash === '#fd-native') try {
         const natPort = browser.runtime.connectNative('youtube-potoken');
         natPort.onMessage.addListener(async (msg) => {
             if (msg?.type !== 'mint') return;

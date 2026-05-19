@@ -357,17 +357,27 @@ public class SabrStrategy implements DownloadStrategy {
         PoTokenGenerator gen = context.getPoTokenGenerator();
         String videoId = request.getSabrVideoId();
         String visitorData = request.getSabrVisitorData();
+        String jsToken = request.getSabrPoToken();
+        int jsLen = jsToken != null ? jsToken.length() : 0;
+
+        Log.d(TAG, "mintPoToken: gen=" + (gen != null) + " videoId="
+                + (videoId != null ? videoId : "null") + " visitorData="
+                + (visitorData != null ? visitorData.length() + " chars" : "null")
+                + " jsFallback=" + jsLen + " chars");
 
         if (gen != null && !TextUtils.isEmpty(videoId) && !TextUtils.isEmpty(visitorData)) {
+            long t0 = System.currentTimeMillis();
             try {
                 String native_ = gen.generate(videoId, visitorData);
+                long dt = System.currentTimeMillis() - t0;
                 if (!TextUtils.isEmpty(native_)) {
-                    Log.d(TAG, "Native PO token: " + native_.length() + " chars");
+                    Log.d(TAG, "Native PO token: " + native_.length() + " chars (" + dt + "ms)");
                     return native_;
                 }
-                Log.w(TAG, "Native mint returned empty, falling back to JS token");
+                Log.w(TAG, "Native mint returned empty after " + dt + "ms, falling back to JS token");
             } catch (Exception e) {
-                Log.w(TAG, "Native mint failed, falling back to JS token: " + e.getMessage());
+                long dt = System.currentTimeMillis() - t0;
+                Log.w(TAG, "Native mint failed after " + dt + "ms, falling back to JS token: " + e.getMessage());
             }
         } else if (gen == null) {
             Log.w(TAG, "PoTokenGenerator unavailable, using JS token");
@@ -375,7 +385,7 @@ public class SabrStrategy implements DownloadStrategy {
             Log.w(TAG, "Missing videoId/visitorData on request, using JS token");
         }
 
-        return request.getSabrPoToken();
+        return jsToken;
     }
 
     private void reportProgress(int percent, long downloaded, long total) {

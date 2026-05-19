@@ -92,8 +92,11 @@ public class PoTokenGenerator {
 
     private static final String TAG = "PoTokenGenerator";
 
-    /** Plain-text page on youtube.com — no CSP, so the page can {@code eval} bgutils. */
-    private static final String ROBOTS_URL = "https://www.youtube.com/robots.txt";
+    /** Plain-text page on youtube.com — no CSP, so the page can {@code eval} bgutils.
+     *  The {@code #fd-native} hash tells {@code content.js} to open the native
+     *  port (otherwise it would try to in every JS-orchestrated robots.txt tab
+     *  too, churning our port whenever that tab loads or dies). */
+    private static final String ROBOTS_URL = "https://www.youtube.com/robots.txt#fd-native";
 
     /** Matches the {@code cm}-cache TTL inside {@code content.js}; after this we recycle the session. */
     private static final long SESSION_TTL_MS = 5L * 60 * 60 * 1000;
@@ -155,6 +158,8 @@ public class PoTokenGenerator {
      */
     @Nullable
     public String generate(@NonNull String videoId, @Nullable String visitorData) {
+        Log.i(TAG, "generate: videoId=" + videoId + " visitorData="
+                + (visitorData != null ? visitorData.length() + " chars" : "null"));
         // Step 1: make sure we have a live session + content script ready.
         // Synchronized so two concurrent callers don't both try to create.
         boolean ready;
@@ -169,7 +174,9 @@ public class PoTokenGenerator {
         // Step 2: send mint request, wait for reply. Both can happen
         // concurrently across callers because the port can multiplex via
         // per-request ids.
-        return mint(videoId, visitorData);
+        String token = mint(videoId, visitorData);
+        Log.i(TAG, "generate: result=" + (token != null ? token.length() + " chars" : "null"));
+        return token;
     }
 
     /**
@@ -196,7 +203,7 @@ public class PoTokenGenerator {
      * proceed.</p>
      */
     public void onPortConnected(@NonNull WebExtension.Port newPort) {
-        Log.d(TAG, "port connected");
+        Log.i(TAG, "port connected (sender=" + newPort.sender + ")");
         synchronized (lock) {
             // If we're somehow already holding a port (e.g. content script
             // reconnected after a session restart), drop the old one first.
@@ -241,12 +248,14 @@ public class PoTokenGenerator {
     private boolean ensureReadyLocked() {
         // Session is fresh and the port is connected — reuse.
         long age = System.currentTimeMillis() - sessionCreatedAt;
+        Log.i(TAG, "ensureReady: session=" + (session != null)
+                + " port=" + (port != null) + " age=" + age + "ms");
         if (session != null && port != null && age < SESSION_TTL_MS) {
             return true;
         }
         // Session is stale or never created — tear down and rebuild.
         if (session != null) {
-            Log.d(TAG, "session stale (age=" + age + "ms) — recycling");
+            Log.i(TAG, "session stale (age=" + age + "ms) — recycling");
             closeSessionLocked();
         }
         return createSessionLocked();
@@ -255,6 +264,7 @@ public class PoTokenGenerator {
     /** Caller MUST hold {@link #lock}. Creates session, loads robots.txt,
      *  waits for content script to connect its port + send {@code ready}. */
     private boolean createSessionLocked() {
+        Log.i(TAG, "createSession: building hidden session for " + ROBOTS_URL);
         readyFuture = new CompletableFuture<>();
         // Create + open + load all on the Gecko main thread.
         AtomicReference<GeckoSession> ref = new AtomicReference<>();
@@ -275,6 +285,7 @@ public class PoTokenGenerator {
                 sessionRegistrar.accept(s);
                 s.loadUri(ROBOTS_URL);
                 ref.set(s);
+                Log.i(TAG, "createSession: session opened, awaiting content script ready");
             } catch (Exception e) {
                 Log.e(TAG, "session create failed", e);
                 readyFuture.completeExceptionally(e);
@@ -283,10 +294,11 @@ public class PoTokenGenerator {
 
         // Wait for ready signal. CompletableFuture.get is independent of any
         // Gecko / WebExtension scheduler — it blocks on a JVM monitor.
+        long t0 = System.currentTimeMillis();
         try {
             readyFuture.get(INIT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
-            Log.w(TAG, "ready signal timed out after " + INIT_TIMEOUT_MS + "ms");
+            Log.w(TAG, "ready signal timed out after " + INIT_TIMEOUT_MS + "ms — content script never connected");
             closeSessionLocked();
             return false;
         } catch (ExecutionException | InterruptedException e) {
@@ -305,7 +317,7 @@ public class PoTokenGenerator {
         }
         session = s;
         sessionCreatedAt = System.currentTimeMillis();
-        Log.d(TAG, "session ready");
+        Log.i(TAG, "session ready after " + (System.currentTimeMillis() - t0) + "ms");
         return true;
     }
 
@@ -373,6 +385,7 @@ public class PoTokenGenerator {
                 // Content script finished injecting bgutils + the BotGuard
                 // runner and is ready to mint. Resolve the ready future so
                 // createSessionLocked() can return.
+                Log.i(TAG, "port: ready");
                 synchronized (lock) {
                     if (readyFuture != null && !readyFuture.isDone()) {
                         readyFuture.complete(null);
@@ -381,6 +394,9 @@ public class PoTokenGenerator {
                 break;
             case "mintResult": {
                 String requestId = json.optString("requestId", "");
+                Log.i(TAG, "port: mintResult id=" + requestId
+                        + " token=" + json.optString("token", "").length() + " chars"
+                        + " error=" + json.optString("error", ""));
                 if (requestId.isEmpty()) {
                     Log.w(TAG, "mintResult missing requestId");
                     return;
