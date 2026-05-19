@@ -66,9 +66,7 @@ import com.solarized.firedown.geckoview.media.GeckoMediaPlaybackService;
 import com.solarized.firedown.geckoview.media.GeckoMetaData;
 import com.solarized.firedown.geckoview.toolbar.BottomNavigationBar;
 import com.solarized.firedown.manager.DownloadRequest;
-import com.solarized.firedown.phone.BookmarkActivity;
 import com.solarized.firedown.phone.DownloadsActivity;
-import com.solarized.firedown.phone.HistoryActivity;
 import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.phone.dialogs.DownloadsQuickAccessSheet;
@@ -493,9 +491,9 @@ public class BrowserFragment extends BaseBrowserFragment
             } else if (id == R.id.popup_downloads) {
                 mStartForResult.launch(new Intent(mActivity, DownloadsActivity.class));
             }else if (id == R.id.popup_bookmarks) {
-                mStartForResult.launch(new Intent(mActivity, BookmarkActivity.class));
+                NavigationUtils.navigateSafe(mNavController, R.id.action_browser_to_bookmarks);
             } else if (id == R.id.popup_history) {
-                mStartForResult.launch(new Intent(mActivity, HistoryActivity.class));
+                NavigationUtils.navigateSafe(mNavController, R.id.action_browser_to_history);
             } else if (id == R.id.popup_settings) {
                 mStartForResult.launch(new Intent(mActivity, SettingsActivity.class));
             } else if (id == R.id.popup_share) {
@@ -534,10 +532,10 @@ public class BrowserFragment extends BaseBrowserFragment
                 GeckoState mGeckoState = peekCurrentGeckoState();
                 if (mGeckoState == null) return;
                 String url = mGeckoState.getEntityUri();
-                Intent bookmarksIntent = new Intent(mActivity, BookmarkActivity.class);
-                bookmarksIntent.putExtra(Keys.ITEM_ID, url.hashCode());
-                bookmarksIntent.setAction(IntentActions.BOOKMARK_EDIT);
-                mStartForResult.launch(bookmarksIntent);
+                Bundle editArgs = new Bundle();
+                editArgs.putInt(Keys.ITEM_ID, url.hashCode());
+                NavigationUtils.navigateSafe(mNavController,
+                        R.id.action_browser_to_bookmark_edit, R.id.browser, editArgs);
             } else if (id == R.id.popup_reload) {
                 GeckoState gs = peekCurrentGeckoState();
                 if (gs != null) gs.reload();
@@ -978,7 +976,22 @@ public class BrowserFragment extends BaseBrowserFragment
     @Override
     public void onQuickAccessFileTap(@NonNull DownloadEntity entity) {
         if (entity.getFileStatus() == Download.ERROR) {
-            openSourceUrl(entity);
+            // Inlined replacement for BaseFocusFragment.openSourceUrl, which
+            // does setResult + finish — that flow assumes the fragment is
+            // hosted in a child Activity (DownloadsActivity / VaultActivity)
+            // whose result is consumed by BrowserActivity. BrowserFragment
+            // *is* in BrowserActivity, so finish() there would close the app.
+            // Same in-process pattern as WebOptionSheetDialogFragment's
+            // 'Open in New Tab': publish OPEN_URI with the source URL on
+            // the shared ViewModel and let the existing observer below
+            // (handles OPEN_URI by setActiveSession + openSession + openUri)
+            // do the work.
+            String url = !TextUtils.isEmpty(entity.getOriginUrl())
+                    ? entity.getOriginUrl()
+                    : entity.getFileUrl();
+            if (TextUtils.isEmpty(url)) return;
+            GeckoStateEntity geckoStateEntity = new GeckoStateEntity(true, url);
+            mBrowserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_URI);
         } else {
             openItem(entity, null);
         }

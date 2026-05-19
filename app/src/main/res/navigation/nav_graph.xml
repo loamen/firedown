@@ -11,6 +11,12 @@
             app:destination="@id/home_incognito"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_home_to_bookmarks"
+            app:destination="@id/nav_graph_bookmark" />
+        <action
+            android:id="@+id/action_home_to_history"
+            app:destination="@id/nav_graph_history" />
     </fragment>
 
     <fragment
@@ -21,10 +27,33 @@
             app:destination="@id/home"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_home_incognito_to_bookmarks"
+            app:destination="@id/nav_graph_bookmark" />
+        <action
+            android:id="@+id/action_home_incognito_to_history"
+            app:destination="@id/nav_graph_history" />
     </fragment>
     <fragment
         android:id="@+id/browser"
-        android:name="com.solarized.firedown.phone.fragments.BrowserFragment" />
+        android:name="com.solarized.firedown.phone.fragments.BrowserFragment">
+        <action
+            android:id="@+id/action_browser_to_bookmarks"
+            app:destination="@id/nav_graph_bookmark" />
+        <action
+            android:id="@+id/action_browser_to_history"
+            app:destination="@id/nav_graph_history" />
+        <!--
+            Direct entry to the bookmark editor, used by the
+            'Edit bookmark' popup item on the browser. Old flow opened
+            BookmarkActivity with BOOKMARK_EDIT + ITEM_ID extras; new
+            flow passes ITEM_ID as a nav argument and lands directly
+            on the edit destination.
+        -->
+        <action
+            android:id="@+id/action_browser_to_bookmark_edit"
+            app:destination="@id/web_bookmark_edit" />
+    </fragment>
     <fragment
         android:id="@+id/tabs"
         android:name="com.solarized.firedown.phone.fragments.TabsHolderFragment">
@@ -148,5 +177,16 @@
     <dialog
         android:id="@+id/dialog_delete_clipboard"
         android:name="com.solarized.firedown.phone.dialogs.ClipboardDialogFragment" />
+
+    <!--
+        Bookmark + History destinations live inside their own child
+        graphs (kept separate to scope their inner dialogs). Nested
+        into root via include so home / home_incognito / browser can
+        reach them via nav actions. Replaces the previous
+        BookmarkActivity / HistoryActivity wrappers that hosted these
+        graphs in their own NavHostFragment.
+    -->
+    <include app:graph="@navigation/nav_graph_bookmark" />
+    <include app:graph="@navigation/nav_graph_history" />
 
 </navigation>
