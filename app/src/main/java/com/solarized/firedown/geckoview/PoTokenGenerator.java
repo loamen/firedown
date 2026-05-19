@@ -108,8 +108,10 @@ public class PoTokenGenerator {
      *  or ~3s (first mint after fresh session). 15s leaves headroom but caps a stuck mint. */
     private static final long MINT_TIMEOUT_MS = 15_000;
 
-    /** Port name the content script connects to. Must match the literal in {@code content.js}. */
-    public static final String PORT_NAME = "youtube-potoken";
+    /** Port name the content script connects to. Must match the literal in
+     *  {@code content.js}. Note: {@code connectNative} validates against
+     *  {@code /^\w+(\.\w+)*$/} — hyphens are rejected, so use underscore. */
+    public static final String PORT_NAME = "youtube_potoken";
 
     private final GeckoRuntime runtime;
     /** Hooks the session into the WebExtension wiring so the youtube extension

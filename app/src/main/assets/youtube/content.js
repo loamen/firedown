@@ -139,7 +139,10 @@ if (location.pathname === '/robots.txt') {
     // torn down when the JS tab dies, which would break the native path
     // mid-mint if it ran concurrently.
     if (location.hash === '#fd-native') try {
-        const natPort = browser.runtime.connectNative('youtube-potoken');
+        // Port name must match PoTokenGenerator.PORT_NAME exactly, and the
+        // WebExtension connectNative regex /^\w+(\.\w+)*$/ rejects hyphens,
+        // so use underscore.
+        const natPort = browser.runtime.connectNative('youtube_potoken');
         natPort.onMessage.addListener(async (msg) => {
             if (msg?.type !== 'mint') return;
             const requestId = msg.requestId;
