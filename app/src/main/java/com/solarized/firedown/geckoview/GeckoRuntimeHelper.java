@@ -68,6 +68,7 @@ public class GeckoRuntimeHelper {
     private final Executor mMainExecutor;
     public final BrowserSessionActionDelegate mBrowserSessionActionDelegate;
     private final MessageDelegate mMessageDelegate;
+    private final PoTokenGenerator mPoTokenGenerator;
     private final SharedPreferences mSharedPreferences;
     private final PriorityTaskThreadPoolExecutor mPriorityExecutor;
     private final Executor mNetworkExecutor;
@@ -140,6 +141,15 @@ public class GeckoRuntimeHelper {
         sGeckoRuntime.getSettings().setFingerprintingProtectionPrivateBrowsing(true);
 
         mMessageDelegate = new MessageDelegate();
+
+        // PoTokenGenerator owns its own GeckoSession (created outside
+        // TabDelegate to bypass the WebExtension Tabs API surface that has
+        // been the source of repeated mid-mint tab deaths). It needs to
+        // attach our loaded WebExtensions to the session it creates so the
+        // youtube content script gets injected on robots.txt — pass
+        // registerSession as a method reference so PoTokenGenerator doesn't
+        // have to know about mLoadedExtensions.
+        mPoTokenGenerator = new PoTokenGenerator(sGeckoRuntime, this::registerSession);
 
         mBrowserSessionActionDelegate = new BrowserSessionActionDelegate();
 
@@ -460,6 +470,17 @@ public class GeckoRuntimeHelper {
         @Override
         public void onConnect(@NonNull WebExtension.Port port) {
             String name = port.name; // This is the native app ID, e.g. "browser", "ublock"
+
+            // The youtube-potoken port is the native bridge the content script
+            // opens on robots.txt when running inside the PoTokenGenerator
+            // session. Hand it off — PoTokenGenerator owns its own delegate
+            // for that port and we DON'T want to put it in mPorts (which is
+            // for the general-purpose extension <-> native channels).
+            if (PoTokenGenerator.PORT_NAME.equals(name)) {
+                mPoTokenGenerator.onPortConnected(port);
+                return;
+            }
+
             mPorts.put(name, port);
             port.setDelegate(new PortDelegate());
             // When the ublock port connects (once per extension lifecycle), push
@@ -1009,6 +1030,13 @@ public class GeckoRuntimeHelper {
 
     public GeckoRuntime getGeckoRuntime() {
         return sGeckoRuntime;
+    }
+
+    /** Singleton native PO-token minter. Callers should invoke
+     *  {@code getPoTokenGenerator().generate(videoId, visitorData)} on a
+     *  background thread (the call blocks until token or timeout). */
+    public PoTokenGenerator getPoTokenGenerator() {
+        return mPoTokenGenerator;
     }
 
     public int getTabId() {

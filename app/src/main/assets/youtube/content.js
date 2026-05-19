@@ -132,6 +132,56 @@ if (location.pathname === '/robots.txt') {
     // race where GeckoView tears down the tab before the sleep finishes.
     browser.runtime.sendMessage({ type: 'poTokenTabReady' }).catch(() => {});
 
+    // Native PO-token bridge — when Java's PoTokenGenerator owns this session
+    // (instead of background.js's browser.tabs.create path), the connectNative
+    // below routes straight to PoTokenGenerator.onPortConnected in Java without
+    // going through background.js. Both paths can coexist: the existing
+    // runtime.sendMessage flow above keeps working for the JS-orchestrated
+    // browser.tabs.create case, while this port handles the Java-orchestrated
+    // case. The native side ignores ports that have no matching session, so
+    // opening this port is harmless in the legacy path.
+    try {
+        const natPort = browser.runtime.connectNative('youtube-potoken');
+        natPort.onMessage.addListener(async (msg) => {
+            if (msg?.type !== 'mint') return;
+            const requestId = msg.requestId;
+            try {
+                if (!window.wrappedJSObject || typeof window.wrappedJSObject.__fdGenPoToken !== 'function') {
+                    throw new Error('__fdGenPoToken not exposed yet');
+                }
+                // __fdGenPoToken calls __fdPoTokenCB → that callback posts a
+                // runtime.sendMessage of type 'poTokenResult'. We need the
+                // result here on the port, not relayed through background.js.
+                // Wrap with a one-shot listener keyed by requestId.
+                const token = await new Promise((resolve, reject) => {
+                    const handler = (resultMsg) => {
+                        if (resultMsg?.type !== 'poTokenResult') return;
+                        if (resultMsg.data?.requestId !== requestId) return;
+                        browser.runtime.onMessage.removeListener(handler);
+                        if (resultMsg.data.error) reject(new Error(resultMsg.data.error));
+                        else resolve(resultMsg.data.token);
+                    };
+                    browser.runtime.onMessage.addListener(handler);
+                    window.wrappedJSObject.__fdGenPoToken(msg.videoId || '', msg.visitorData || '', requestId);
+                });
+                natPort.postMessage({ type: 'mintResult', requestId, token });
+            } catch (e) {
+                natPort.postMessage({ type: 'mintResult', requestId, error: e.message });
+            }
+        });
+        natPort.onDisconnect.addListener(() => {
+            console.log('[BG-robots] native PO-token port disconnected');
+        });
+        // Tell Java the runner is up and ready to receive mint requests.
+        natPort.postMessage({ type: 'ready' });
+        console.log('[BG-robots] native PO-token port connected');
+    } catch (e) {
+        // connectNative throws if no matching native app is registered for
+        // this session. That's fine in the legacy JS path — fall back to the
+        // browser.runtime.sendMessage flow above.
+        console.log('[BG-robots] native PO-token port unavailable: ' + e.message);
+    }
+
     console.log('[BG-robots] PO token content script ready on robots.txt');
 }
 
