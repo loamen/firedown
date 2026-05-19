@@ -175,7 +175,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
 
             RecyclerViewPreloader<BrowserDownloadEntity> preloader = new RecyclerViewPreloader<>(
                     glide,
-                    new ListPreloader.PreloadModelProvider<BrowserDownloadEntity>() {
+                    new ListPreloader.PreloadModelProvider<>() {
                         @NonNull
                         @Override
                         public List<BrowserDownloadEntity> getPreloadItems(int position) {

@@ -66,21 +66,6 @@ public class BrowserOptionHolderSheetDialogFragment extends BaseBottomSheetDialo
 
 
 
-    private final BottomSheetBehavior.BottomSheetCallback mBottomSheetCallback = new BottomSheetBehavior.BottomSheetCallback() {
-        @Override
-        public void onStateChanged(@NonNull View bottomSheet, int newState) {
-            if (newState == BottomSheetBehavior.STATE_EXPANDED) {
-                mView.setBackgroundResource(R.drawable.dialog_rectangle);
-            } else {
-                mView.setBackgroundResource(R.drawable.dialog_rounded_top);
-            }
-        }
-
-        @Override
-        public void onSlide(@NonNull View bottomSheet, float slideOffset) {
-        }
-    };
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,7 +98,6 @@ public class BrowserOptionHolderSheetDialogFragment extends BaseBottomSheetDialo
         super.onStart();
         if (mView != null) {
             BottomSheetBehavior<View> mBottomBehavior = BottomSheetBehavior.from((View) mView.getParent());
-            mBottomBehavior.addBottomSheetCallback(mBottomSheetCallback);
             // Belt-and-braces opt-out from the portrait 640dp cap that
             // BaseBottomSheetDialogFragment applies. This sheet sizes
             // its own inner FrameLayout to visibleRect.height() -
@@ -124,7 +108,6 @@ public class BrowserOptionHolderSheetDialogFragment extends BaseBottomSheetDialo
             // -1 here keeps the sheet rendering correctly.
             mBottomBehavior.setMaxHeight(-1);
             mBottomBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-            mView.setBackgroundResource(R.drawable.dialog_rectangle);
         }
     }
 
