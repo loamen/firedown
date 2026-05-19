@@ -1,0 +1,26 @@
+package com.solarized.firedown.data.dao;
+
+import androidx.room.Dao;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.Query;
+
+import com.solarized.firedown.data.entity.WasmAllowlistEntity;
+
+import java.util.List;
+
+@Dao
+public interface WasmAllowlistDao {
+
+    @Query("SELECT uid FROM wasm_allowlist")
+    List<Integer> getAllIds();
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    Long insert(WasmAllowlistEntity entity);
+
+    @Query("DELETE FROM wasm_allowlist WHERE uid = :id")
+    Integer deleteById(int id);
+
+    @Query("DELETE FROM wasm_allowlist")
+    Integer deleteAll();
+}

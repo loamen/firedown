@@ -19,6 +19,7 @@ import com.solarized.firedown.data.repository.BrowserDownloadRepository;
 import com.solarized.firedown.data.repository.GeckoStateDataRepository;
 import com.solarized.firedown.data.repository.IncognitoStateRepository;
 import com.solarized.firedown.data.repository.IconsRepository;
+import com.solarized.firedown.data.repository.WasmAllowlistRepository;
 import com.solarized.firedown.manager.UrlParser;
 import com.solarized.firedown.manager.UrlType;
 import com.solarized.firedown.utils.JsonHelper;
@@ -64,6 +65,7 @@ public class GeckoRuntimeHelper {
     private final BrowserDownloadRepository mBrowserDownloadRepository;
     private final GeckoStateDataRepository mGeckoStateDataRepository;
     private final IncognitoStateRepository mIncognitoStateRepository;
+    private final WasmAllowlistRepository mWasmAllowlistRepository;
     private final GeckoUblockHelper mGeckoUblockHelper;
     private final Executor mMainExecutor;
     public final BrowserSessionActionDelegate mBrowserSessionActionDelegate;
@@ -84,6 +86,7 @@ public class GeckoRuntimeHelper {
             BrowserDownloadRepository browserDownloadRepository,
             GeckoStateDataRepository geckoStateDataRepository,
             IncognitoStateRepository incognitoStateRepository,
+            WasmAllowlistRepository wasmAllowlistRepository,
             GeckoUblockHelper geckoUblockHelper,
             PriorityTaskThreadPoolExecutor priorityExecutor,
             OkHttpClient okHttpClient,
@@ -94,6 +97,7 @@ public class GeckoRuntimeHelper {
         this.mBrowserDownloadRepository = browserDownloadRepository;
         this.mGeckoStateDataRepository = geckoStateDataRepository;
         this.mIncognitoStateRepository = incognitoStateRepository;
+        this.mWasmAllowlistRepository = wasmAllowlistRepository;
         this.mGeckoUblockHelper = geckoUblockHelper;
         this.mPriorityExecutor = priorityExecutor;
         this.mMainExecutor = mainExecutor;
@@ -332,6 +336,24 @@ public class GeckoRuntimeHelper {
                 }
                 case "onHeadersReceived", "onResponseStarted", "contentScript" -> {
                     handleExtractionMessage(json);
+                }
+                case "wasmUnavailable" -> {
+                    // The content-script bridge spotted a WASM error on the
+                    // page. Route to the active repo (incognito vs regular)
+                    // so the BrowserFragment for that tab type observes it
+                    // and shows the "Enable for {host}?" snackbar. We look
+                    // up incognito-ness by tabId rather than trusting the
+                    // JS bridge — the content script has no reliable way
+                    // to introspect its own session's private-mode state.
+                    String url = json.optString("url", null);
+                    if (TextUtils.isEmpty(url)) break;
+                    int tabId = json.optInt("tabId", GeckoState.NULL_SESSION_ID);
+                    boolean isIncognito = mIncognitoStateRepository.getGeckoState(tabId) != null;
+                    if (isIncognito) {
+                        mIncognitoStateRepository.getWasmAllowlistRepository().postNeedsWasm(url);
+                    } else {
+                        mWasmAllowlistRepository.postNeedsWasm(url);
+                    }
                 }
             }
         }
@@ -774,6 +796,51 @@ public class GeckoRuntimeHelper {
         geckoResult.accept(unused -> {
             Log.d(TAG, "setWebAssembly: " + unused + " enable: " + enable);
         });
+    }
+
+    /**
+     * Returns the user's saved WebAssembly preference (the "off when
+     * no allowlisted site is active" baseline). The NavigationDelegate
+     * uses this to know what to revert to after leaving an allowlisted
+     * host.
+     */
+    public boolean getUserWebAssemblyPreference() {
+        return mSharedPreferences.getBoolean(
+                Preferences.SETTINGS_ENABLE_WEBASSEMBLY,
+                Preferences.DEFAULT_ENABLE_WEBASSEMBLY);
+    }
+
+    /**
+     * Resolves the WASM pref for a tab navigating to {@code url}:
+     * pref ON if the host is in the regular or incognito allowlist,
+     * otherwise the user's baseline. Called from NavigationDelegate
+     * on every onLocationChange so the pref tracks the active tab.
+     */
+    public boolean shouldEnableWasmFor(String url) {
+        if (TextUtils.isEmpty(url)) return getUserWebAssemblyPreference();
+        if (mWasmAllowlistRepository.contains(url)) return true;
+        if (mIncognitoStateRepository.getWasmAllowlistRepository().contains(url)) return true;
+        return getUserWebAssemblyPreference();
+    }
+
+    /**
+     * Flips {@code javascript.options.wasm} only when the desired state
+     * differs from the current runtime state, then reloads
+     * {@code session} once the pref has been applied. Used by the
+     * "Enable for {host}?" snackbar — the page that just failed needs
+     * a fresh load to actually pick up the new pref.
+     */
+    @OptIn(markerClass = ExperimentalGeckoViewApi.class)
+    public void enableWasmAndReload(GeckoSession session) {
+        GeckoPreferenceController
+                .setGeckoPref("javascript.options.wasm", true, GeckoPreferenceController.PREF_BRANCH_USER)
+                .accept(unused -> mMainExecutor.execute(() -> {
+                    if (session != null) session.reload();
+                }));
+    }
+
+    public WasmAllowlistRepository getWasmAllowlistRepository() {
+        return mWasmAllowlistRepository;
     }
 
 

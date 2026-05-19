@@ -8,6 +8,56 @@
 
 console.log('[cs] loaded', location.href);
 
+// ---------------------------------------------------------------------------
+// WebAssembly unavailability detector
+// WASM is disabled by default in Firedown for privacy (javascript.options.wasm
+// = false). Some sites (kick.com, codepen, figma) hard-require it and break.
+// Watch for the canonical failure modes — uncaught errors and console.error
+// calls that mention WebAssembly — and notify the background once per page so
+// it can surface the "Enable for {host}?" snackbar. Both surfaces are needed:
+// the page may either throw to the global error handler or swallow the throw
+// and just log via console.error.
+// ---------------------------------------------------------------------------
+(() => {
+  let reported = false;
+  const WASM_PATTERN = /WebAssembly/i;
+
+  function report(detail) {
+    if (reported) return;
+    reported = true;
+    try {
+      browser.runtime.sendMessage({
+        kind: 'wasm-unavailable',
+        url: location.href,
+        detail: String(detail || '').slice(0, 200),
+      });
+    } catch (_) { /* extension context torn down — ignore */ }
+  }
+
+  window.addEventListener('error', (e) => {
+    const msg = (e && (e.message || (e.error && e.error.message))) || '';
+    if (WASM_PATTERN.test(msg)) report(msg);
+  }, true);
+
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e && e.reason;
+    const msg = reason && (reason.message || String(reason));
+    if (msg && WASM_PATTERN.test(msg)) report(msg);
+  });
+
+  const origError = console.error;
+  console.error = function (...args) {
+    try {
+      const joined = args.map((a) => {
+        if (a && a.message) return a.message;
+        try { return String(a); } catch (_) { return ''; }
+      }).join(' ');
+      if (WASM_PATTERN.test(joined)) report(joined);
+    } catch (_) { /* never let our wrapper break the page */ }
+    return origError.apply(console, args);
+  };
+})();
+
 // Top-frame metadata responder. We only answer in the top frame so the
 // background's tabs.sendMessage (which broadcasts to all frames in a tab
 // by default) doesn't return an iframe's title instead of the page's.
