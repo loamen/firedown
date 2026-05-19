@@ -21,7 +21,6 @@ public class ContextElementEntity implements Parcelable {
 
     String srcUri;
 
-    String textContent;
 
 
 
@@ -31,8 +30,7 @@ public class ContextElementEntity implements Parcelable {
         baseUri = element.baseUri;
         title = element.title;
         linkUri = element.linkUri;
-        srcUri = element.srcUri;
-        textContent = element.textContent;
+        srcUri = element.srcUri;;
     }
 
     protected ContextElementEntity(Parcel in) {
@@ -42,7 +40,6 @@ public class ContextElementEntity implements Parcelable {
         title = in.readString();
         linkUri = in.readString();
         srcUri = in.readString();
-        textContent = in.readString();
     }
 
     public static final Creator<ContextElementEntity> CREATOR = new Creator<>() {
@@ -77,9 +74,6 @@ public class ContextElementEntity implements Parcelable {
         return srcUri;
     }
 
-    public String getTextContent() {
-        return textContent;
-    }
 
     public String getTitle() {
         return title;
@@ -98,6 +92,5 @@ public class ContextElementEntity implements Parcelable {
         parcel.writeString(title);
         parcel.writeString(linkUri);
         parcel.writeString(srcUri);
-        parcel.writeString(textContent);
     }
 }

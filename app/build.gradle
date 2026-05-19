@@ -92,7 +92,7 @@ android {
 
 ext {
     geckoviewChannel = "lite"
-    geckoviewVersion = "150.0.20260511200624"
+    geckoviewVersion = "151.0.20260513195118"
 }
 
 
