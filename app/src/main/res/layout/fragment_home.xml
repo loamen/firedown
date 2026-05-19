@@ -124,7 +124,7 @@
                     <FrameLayout
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@drawable/bg_icon_container_secondary">
+                        android:background="@drawable/bg_icon_container_tertiary">
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:layout_width="24dp"
@@ -132,7 +132,7 @@
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_lock_24"
-                            app:tint="?attr/colorOnSecondaryContainer" />
+                            app:tint="?attr/colorOnTertiaryContainer" />
 
                     </FrameLayout>
 
