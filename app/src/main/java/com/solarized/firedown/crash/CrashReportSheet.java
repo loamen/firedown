@@ -18,40 +18,41 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentManager;
 
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
 import com.solarized.firedown.R;
+import com.solarized.firedown.phone.dialogs.BaseBottomSheetDialogFragment;
 
 import java.io.File;
 import java.util.List;
 
+import dagger.hilt.android.AndroidEntryPoint;
+
 /**
- * Bottom sheet that surfaces a captured crash on the next launch.
- * Single UI for both crash sources — the {@link CrashReport} carries
- * its own type and origin, the layout doesn't care whether it came
- * from a Java exception or a Gecko child-process death.
+ * Bottom sheet that surfaces a captured Java crash on the next
+ * launch. Extends {@link BaseBottomSheetDialogFragment} so width /
+ * height caps, rotation handling, and system-bar insets come for
+ * free — matches every other sheet in the app.
  *
  * <p>Three actions:
  * <ul>
- *   <li><b>Report on GitHub</b> — opens the pre-filled new-issue URL
+ *   <li><b>Report</b> — opens the pre-filled GitHub new-issue URL
  *       in the system browser; the URL body is capped at ~6KB, so we
  *       also copy the full trace to the clipboard as a paste-in
  *       fallback for long traces.</li>
- *   <li><b>Copy</b> — clipboard only, for users who want to file the
- *       report somewhere other than GitHub (issue tracker email, etc).</li>
- *   <li><b>Dismiss</b> — deletes the file without sending anything.</li>
+ *   <li><b>Copy</b> — clipboard only.</li>
+ *   <li><b>Dismiss</b> — closes without sending.</li>
  * </ul>
  *
+ * <p>Pending files are deleted in {@link #onDismiss(DialogInterface)}
+ * so swipe-down, back press, and tap-outside all sweep the same way
+ * the buttons do.</p>
+ *
  * <p>If there are multiple pending crashes we show the newest one and
- * sweep the rest on report/dismiss — saves the user from a stack of
- * dialogs and the same crash is likely to repeat anyway.</p>
+ * sweep the rest on dismiss — multiple pendings almost always share
+ * a root cause.</p>
  */
-public class CrashReportSheet extends BottomSheetDialogFragment {
+@AndroidEntryPoint
+public class CrashReportSheet extends BaseBottomSheetDialogFragment {
 
     private static final String TAG = "CrashReportSheet";
 
@@ -62,13 +63,10 @@ public class CrashReportSheet extends BottomSheetDialogFragment {
 
     /**
      * Shows the sheet if at least one pending report exists. Safe to
-     * call from {@code onStart} on every fragment activation —
-     * idempotent via the {@code findFragmentByTag} check, and after
-     * the user actions the sheet the pending files are deleted so
-     * subsequent calls bail at the {@code pending.isEmpty()} guard.
-     * A Gecko child crash that lands after the user dismisses still
-     * surfaces on the next {@code onStart} because we don't rely on
-     * a per-process "shown once" flag.
+     * call from {@code onResume} on every activity — idempotent via
+     * the {@code findFragmentByTag} check, and after the user actions
+     * the sheet the pending files are deleted so subsequent calls
+     * bail at the {@code pending.isEmpty()} guard.
      */
     public static void showIfPending(@NonNull Context context,
                                      @NonNull FragmentManager fm) {
@@ -99,26 +97,18 @@ public class CrashReportSheet extends BottomSheetDialogFragment {
             dismissAllowingStateLoss();
             return null;
         }
-        return inflater.inflate(R.layout.fragment_dialog_crash_report, container, false);
+        LayoutInflater themedInflater = container != null
+                ? LayoutInflater.from(container.getContext())
+                : inflater;
+        mView = themedInflater.inflate(R.layout.fragment_dialog_crash_report,
+                container, false);
+        return mView;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (mReport == null) return;
-
-        // System bar / gesture handle insets — without this the
-        // action row at the bottom of the sheet sits under the nav
-        // bar and the buttons aren't tappable. Mirrors the inset
-        // handling BaseBottomSheetDialogFragment applies to its
-        // sheets.
-        ViewCompat.setOnApplyWindowInsetsListener(view, (v, windowInsets) -> {
-            Insets insets = windowInsets.getInsets(
-                    WindowInsetsCompat.Type.systemBars()
-                            | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(insets.left, 0, insets.right, insets.bottom);
-            return WindowInsetsCompat.CONSUMED;
-        });
 
         TextView subtitle = view.findViewById(R.id.crash_subtitle);
         TextView trace = view.findViewById(R.id.crash_trace);
@@ -140,7 +130,7 @@ public class CrashReportSheet extends BottomSheetDialogFragment {
 
         report.setOnClickListener(v -> onReport());
         copy.setOnClickListener(v -> onCopy());
-        dismiss.setOnClickListener(v -> onDismiss());
+        dismiss.setOnClickListener(v -> dismissAllowingStateLoss());
     }
 
     private void onReport() {
@@ -160,7 +150,7 @@ public class CrashReportSheet extends BottomSheetDialogFragment {
                     R.string.crash_sheet_open_failed, Toast.LENGTH_LONG).show();
             return;
         }
-        sweepAndDismiss();
+        dismissAllowingStateLoss();
     }
 
     private void onCopy() {
@@ -168,50 +158,14 @@ public class CrashReportSheet extends BottomSheetDialogFragment {
         copyToClipboard(CrashReportUrlBuilder.fullText(mReport));
         Toast.makeText(requireContext(),
                 R.string.crash_sheet_copied, Toast.LENGTH_SHORT).show();
-        sweepAndDismiss();
-    }
-
-    private void onDismiss() {
-        sweepAndDismiss();
-    }
-
-    private void sweepAndDismiss() {
-        // File cleanup lives in onDismiss so swipe-down / back also
-        // sweep — see the override above.
         dismissAllowingStateLoss();
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        // Match BaseBottomSheetDialogFragment's sizing pattern:
-        // skip the half-collapsed peek state (this sheet's content is
-        // small enough that the peek would clip the action row), cap
-        // width at R.dimen.bottom_sheet_max_width (sentinel 0 in
-        // values/dimens.xml clears the cap for portrait phones; the
-        // landscape / tablet override puts a real cap), and cap
-        // height at R.dimen.bottom_sheet_max_height.
-        View parent = getView() != null ? (View) getView().getParent() : null;
-        if (parent == null) return;
-        BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(parent);
-        behavior.setSkipCollapsed(true);
-        behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        int maxWidthPx = getResources().getDimensionPixelSize(R.dimen.bottom_sheet_max_width);
-        behavior.setMaxWidth(maxWidthPx > 0 ? maxWidthPx : -1);
-        int maxHeightPx = getResources().getDimensionPixelSize(R.dimen.bottom_sheet_max_height);
-        behavior.setMaxHeight(maxHeightPx > 0 ? maxHeightPx : -1);
-        parent.requestLayout();
     }
 
     /**
      * Any dismissal — Report/Copy/Dismiss button, swipe-down, back
-     * press, tap outside — sweeps the pending files. The "show me
-     * again next time" model would require an explicit "Later"
-     * button, which we don't have; treating every exit as final
-     * matches what users mean when they dismiss a crash dialog
-     * (either they reported or they don't want to). Without this
-     * override, swipe-down/back left the files on disk and the
-     * sheet popped on every subsequent activity start.
+     * press, tap outside — sweeps the pending files. Without this
+     * override, the non-button paths left files on disk and the
+     * sheet popped on every subsequent activity's onResume.
      */
     @Override
     public void onDismiss(@NonNull DialogInterface dialog) {
