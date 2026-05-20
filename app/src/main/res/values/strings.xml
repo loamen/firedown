@@ -339,7 +339,7 @@
     <string name="settings_clear_browsing_error">Failed to clear data for %s</string>
     <string name="settings_clear_browsing_success">Data cleared for %s</string>
     <string name="crash_sheet_title">Crash detected</string>
-    <string name="crash_sheet_report">Report on GitHub</string>
+    <string name="crash_sheet_report">Report</string>
     <string name="crash_sheet_copy">Copy</string>
     <string name="crash_sheet_dismiss">Dismiss</string>
     <string name="crash_sheet_copied">Crash report copied to clipboard</string>
