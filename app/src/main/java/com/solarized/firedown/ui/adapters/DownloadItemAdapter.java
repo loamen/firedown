@@ -53,6 +53,23 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     private final Drawable mChecked;
     private final Drawable mUnChecked;
     private final RequestOptions mRequestOptions;
+    /** Soft 'wash' surface for in-flight rows. Pale coral on light,
+     *  deep warm on dark. Hardcoded rather than pulled from the
+     *  HomeCardStyle pick — the home active strip is loud
+     *  (primaryContainer) because nothing else competes with it
+     *  there; here we sit next to procedurally-generated coral mime
+     *  icons that disappear into a full brand surface, so the wash
+     *  has to stay tonally distinct from those icons. */
+    private final int mActiveCardBg;
+    /** Defaults for non-active rows. List items want plain surface
+     *  (transparent against the page); grid items keep the
+     *  surfaceContainerHigh placeholder the layout originally set. */
+    private final int mDefaultListBg;
+    private final int mDefaultGridBg;
+    /** Brand accent for the list-mode mime label, also used as the
+     *  progress bar indicator colour. */
+    private final int mDefaultPrimary;
+    private final int mDefaultPrimaryAlpha;
     private boolean mActionMode;
     private boolean mEnabled;
     private boolean mEnableGrid;
@@ -76,6 +93,23 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                 MaterialColors.getColor(context,
                         com.google.android.material.R.attr.colorPrimaryContainer, Color.TRANSPARENT));
         mRequestOptions = new RequestOptions();
+
+        boolean night = (context.getResources().getConfiguration().uiMode
+                & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        // Wash colours match the Home cards 'Blush' palette so the
+        // downloads-list active row reads as a soft live signal
+        // rather than the loud primaryContainer brand wall.
+        mActiveCardBg = night ? 0xFF3A1F1C : 0xFFFFE6E0;
+
+        mDefaultListBg = MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorSurface, Color.TRANSPARENT);
+        mDefaultGridBg = MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorSurfaceContainerHigh, Color.TRANSPARENT);
+        mDefaultPrimary = MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorPrimary, Color.BLACK);
+        mDefaultPrimaryAlpha = androidx.core.graphics.ColorUtils
+                .setAlphaComponent(mDefaultPrimary, 0x33);
     }
 
 
@@ -334,7 +368,30 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         holder.item.setStrokeColor(mActionMode && contains ? mColorSelected : mColorNormal);
         holder.selected.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
         holder.selected.setImageDrawable(mActionMode ? (contains ? mChecked : mUnChecked) : null);
-        holder.mimeText.setText(FileUriHelper.getLongMimeText(mContext, mimeType));
+        // List mode renders mime as a text label that prefixes the
+        // domain ('VÍDEO · youtube.com'), so append the separator
+        // here; grid keeps the chip styling, no separator.
+        String mimeLabel = FileUriHelper.getLongMimeText(mContext, mimeType);
+        if (TextUtils.isEmpty(mimeLabel)) {
+            holder.mimeText.setVisibility(View.GONE);
+        } else {
+            holder.mimeText.setVisibility(View.VISIBLE);
+            holder.mimeText.setText(isGrid ? mimeLabel : mimeLabel + " · ");
+        }
+
+        // ── Active-state surface ────────────────────────────────────
+        // In-flight items (PROGRESS / QUEUED) take the wash surface
+        // so the 'live' signal is visible without the heavy brand
+        // wall fighting the procedurally-coloured mime placeholders.
+        // Completed / error rows reset to the per-view-type default —
+        // list goes back to plain surface (flat against the page),
+        // grid keeps the surfaceContainerHigh placeholder so an
+        // unloaded thumbnail still has a backdrop. Text colours stay
+        // at theme defaults; the wash is tonally close enough to the
+        // page surface that onSurface / onSurfaceVariant read fine.
+        boolean isActive = status == Download.PROGRESS || status == Download.QUEUED;
+        holder.item.setCardBackgroundColor(
+                isActive ? mActiveCardBg : (isGrid ? mDefaultGridBg : mDefaultListBg));
 
         if (holder.fileName != null) holder.fileName.setText(entity.getFileName());
         if (holder.fileUrl != null) holder.fileUrl.setText(domain);
@@ -350,8 +407,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         }
 
         // ── Reset all status views ──────────────────────────────────
-        setVisible(holder.progressText, false);
-        setVisible(holder.progressBar, false);
+        setVisible(holder.progressRow, false);
         setVisible(holder.finishedText, false);
         setVisible(holder.errorText, false);
         setVisible(holder.queuedText, false);
@@ -385,8 +441,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             holder.image.setImageDrawable(null);
             holder.image.setTag(null);
         }else {
-            setVisible(holder.progressText, true);
-            setVisible(holder.progressBar, true);
+            setVisible(holder.progressRow, true);
+            // Bar tints: indicator in brand coral (the 'live' signal)
+            // and track in the same coral at ~20 % alpha so it reads
+            // as a subtle channel beneath, not a saturated wash.
+            if (holder.progressBar != null) {
+                ColorStateList barFg = ColorStateList.valueOf(mDefaultPrimary);
+                ColorStateList barBg = ColorStateList.valueOf(mDefaultPrimaryAlpha);
+                holder.progressBar.setProgressTintList(barFg);
+                holder.progressBar.setProgressBackgroundTintList(barBg);
+                holder.progressBar.setIndeterminateTintList(barFg);
+            }
             if(holder.progressText != null){
                 holder.progressText.setText(retrieving
                         ? Utils.readableFileSize(entity.getFileSize())
@@ -505,6 +570,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
         // Status-specific (nullable — not all layouts have all views)
         final @Nullable ProgressOverlayView imageProgress;
+        final @Nullable View progressRow;
         final @Nullable TextView progressText;
         final @Nullable ProgressBar progressBar;
         final @Nullable TextView finishedText;
@@ -541,6 +607,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
             // Status views (null-safe across list/grid layouts)
             imageProgress = view.findViewById(R.id.image_progress);
+            progressRow = view.findViewById(R.id.progress_row);
             progressText = view.findViewById(R.id.progress_text);
             progressBar = view.findViewById(R.id.progress_bar);
             finishedText = view.findViewById(R.id.item_download_finished);
