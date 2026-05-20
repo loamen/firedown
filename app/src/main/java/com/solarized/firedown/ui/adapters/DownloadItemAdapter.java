@@ -429,8 +429,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         }
 
         // ── Reset all status views ──────────────────────────────────
-        setVisible(holder.progressText, false);
-        setVisible(holder.progressBar, false);
+        setVisible(holder.progressRow, false);
         setVisible(holder.finishedText, false);
         setVisible(holder.errorText, false);
         setVisible(holder.queuedText, false);
@@ -464,8 +463,19 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             holder.image.setImageDrawable(null);
             holder.image.setTag(null);
         }else {
-            setVisible(holder.progressText, true);
-            setVisible(holder.progressBar, true);
+            setVisible(holder.progressRow, true);
+            // Tint the bar against the active surface — track gets the
+            // active fg at low alpha so it reads as a subtle channel
+            // rather than a saturated orange wash, indicator/text take
+            // the active fg at full opacity for legibility on coral.
+            if (holder.progressBar != null) {
+                ColorStateList barFg = ColorStateList.valueOf(mActiveFg);
+                ColorStateList barBg = ColorStateList.valueOf(
+                        androidx.core.graphics.ColorUtils.setAlphaComponent(mActiveFg, 0x33));
+                holder.progressBar.setProgressTintList(barFg);
+                holder.progressBar.setProgressBackgroundTintList(barBg);
+                holder.progressBar.setIndeterminateTintList(barFg);
+            }
             if(holder.progressText != null){
                 holder.progressText.setText(retrieving
                         ? Utils.readableFileSize(entity.getFileSize())
@@ -584,6 +594,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
         // Status-specific (nullable — not all layouts have all views)
         final @Nullable ProgressOverlayView imageProgress;
+        final @Nullable View progressRow;
         final @Nullable TextView progressText;
         final @Nullable ProgressBar progressBar;
         final @Nullable TextView finishedText;
@@ -620,6 +631,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
             // Status views (null-safe across list/grid layouts)
             imageProgress = view.findViewById(R.id.image_progress);
+            progressRow = view.findViewById(R.id.progress_row);
             progressText = view.findViewById(R.id.progress_text);
             progressBar = view.findViewById(R.id.progress_bar);
             finishedText = view.findViewById(R.id.item_download_finished);

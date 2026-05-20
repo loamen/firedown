@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Downloads list row. Three logical layers: thumbnail on the left,
+  text column in the middle, action button on the right edge. The
+  text column is a vertical LinearLayout (gravity=center_vertical)
+  so its three lines — filename, mime · domain, status — distribute
+  evenly inside the 64dp row and stay visually balanced regardless
+  of which status variant is showing.
+
+  mime_text is the list-mode plain-text label (style
+  MimePrimaryLabel); the adapter appends ' · ' so the line reads as
+  'VÍDEO · youtube.com'. Grid uses the filled chip style in its own
+  layout — see fragment_download_item_grid.xml.
+
+  The status row contains all four mutually-exclusive states stacked
+  vertically; the adapter sets visibility on the appropriate one and
+  GONE on the rest, so wrap_content collapses to a single line.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -60,153 +77,154 @@
                 app:layout_constraintStart_toStartOf="@id/image"
                 app:layout_constraintTop_toTopOf="@id/image" />
 
-            <!-- Top row: file name only. The mime badge that used to
-                 live here has moved down to the metadata line as
-                 plain text — the filename is the primary identifier
-                 and shouldn't share that row with a heavy filled
-                 chip that grows with translations. -->
-            <com.google.android.material.textview.MaterialTextView
-                android:id="@+id/file_name"
-                style="@style/TextAppearance.Material3.TitleSmall"
+            <!-- Text column: filename / meta line / status. Vertical
+                 LinearLayout with center-vertical gravity gives even
+                 spacing regardless of how tall the status row is. -->
+            <LinearLayout
+                android:id="@+id/text_column"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/list_margin"
-                android:ellipsize="marquee"
-                android:singleLine="true"
-                android:textColor="?attr/colorOnSurface"
-                app:layout_constraintBottom_toTopOf="@id/mime_text"
-                app:layout_constraintEnd_toStartOf="@id/item_download_action"
-                app:layout_constraintStart_toEndOf="@id/image" />
-
-            <!-- Middle row: mime label · globe · domain. mime_text
-                 keeps its id (adapter binds it the same way) but
-                 now uses the text-only MimePrimaryLabel style. The
-                 adapter appends ' · ' so the label reads as a
-                 prefix to the domain; if mime resolves to empty
-                 the view is hidden and the row degrades to plain
-                 'globe · domain'. -->
-            <TextView
-                android:id="@+id/mime_text"
-                style="@style/MimePrimaryLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/list_margin"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@id/image"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="VÍDEO · " />
-
-            <ImageView
-                android:id="@+id/file_url_icon"
-                android:layout_width="@dimen/list_item_domain"
-                android:layout_height="@dimen/list_item_domain"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_baseline_language_24"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toEndOf="@id/mime_text"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="?attr/colorOnSurfaceVariant" />
-
-            <TextView
-                android:id="@+id/file_url"
-                style="@style/TextAppearance.Material3.LabelSmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="12dp"
-                android:ellipsize="marquee"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
-                android:singleLine="true"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/item_download_action"
-                app:layout_constraintStart_toEndOf="@id/file_url_icon"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <!-- Bottom row: status area (only one visible at a time) -->
-
-            <!-- PROGRESS: percent + bar -->
-            <TextView
-                android:id="@+id/progress_text"
-                style="@style/TextAppearance.Material3.BodySmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/list_margin"
-                android:layout_marginBottom="2dp"
+                android:layout_height="match_parent"
                 android:gravity="center_vertical"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:visibility="gone"
-                app:layout_constraintStart_toEndOf="@id/image"
-                app:layout_constraintTop_toBottomOf="@id/file_url"
-                tools:text="80%" />
-
-            <ProgressBar
-                android:id="@+id/progress_bar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="0dp"
-                android:layout_height="16dp"
-                android:layout_marginStart="@dimen/list_margin"
-                android:layout_marginEnd="@dimen/list_margin"
-                android:indeterminate="true"
-                android:max="100"
-                android:progress="0"
-                android:progressTint="@color/orange"
-                android:progressBackgroundTint="@color/orange_light"
-                android:visibility="gone"
-                app:layout_constraintEnd_toStartOf="@id/item_download_action"
-                app:layout_constraintStart_toEndOf="@id/progress_text"
-                app:layout_constraintTop_toBottomOf="@id/file_url" />
-
-            <!-- FINISHED: size + date -->
-            <TextView
-                android:id="@+id/item_download_finished"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                style="@style/TextAppearance.Material3.BodySmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/list_margin"
-                android:visibility="gone"
-                app:layout_constraintStart_toEndOf="@id/image"
-                app:layout_constraintTop_toBottomOf="@id/file_url" />
-
-            <!-- ERROR: error message -->
-            <TextView
-                android:id="@+id/error_text"
-                style="@style/TextAppearance.Material3.BodySmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/list_margin"
-                android:singleLine="true"
-                android:textColor="?attr/colorPrimary"
-                android:visibility="gone"
+                android:orientation="vertical"
+                android:paddingStart="@dimen/list_margin"
+                android:paddingEnd="0dp"
                 app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/item_download_action"
                 app:layout_constraintStart_toEndOf="@id/image"
-                tools:text="@string/error_check_internet_connection" />
+                app:layout_constraintTop_toTopOf="parent">
 
-            <!-- QUEUED: status text -->
-            <TextView
-                android:id="@+id/queued_text"
-                style="@style/TextAppearance.Material3.BodySmall"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/list_margin"
-                android:layout_marginBottom="2dp"
-                android:gravity="center_vertical"
-                android:text="@string/download_queued"
-                android:visibility="gone"
-                app:layout_constraintStart_toEndOf="@id/image"
-                app:layout_constraintTop_toBottomOf="@id/file_url" />
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/file_name"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="marquee"
+                    android:singleLine="true"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="The Knight Who Chose the Dawn" />
+
+                <!-- Meta line: mime label · globe · domain. -->
+                <LinearLayout
+                    android:id="@+id/row_meta"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/mime_text"
+                        style="@style/MimePrimaryLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        tools:text="VÍDEO · " />
+
+                    <ImageView
+                        android:id="@+id/file_url_icon"
+                        android:layout_width="@dimen/list_item_domain"
+                        android:layout_height="@dimen/list_item_domain"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_baseline_language_24"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+
+                    <TextView
+                        android:id="@+id/file_url"
+                        style="@style/TextAppearance.Material3.LabelSmall"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="youtube.com" />
+
+                </LinearLayout>
+
+                <!-- Status row: one of progress / finished / queued /
+                     error visible at a time. Sits in the bottom slot
+                     of the text column; when nothing is visible (no
+                     status to show) the row's wrap_content collapses
+                     and the column re-centres. -->
+
+                <!-- PROGRESS: percent + bar inline. -->
+                <LinearLayout
+                    android:id="@+id/progress_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/progress_text"
+                        style="@style/TextAppearance.Material3.BodySmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="80%" />
+
+                    <ProgressBar
+                        android:id="@+id/progress_bar"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:layout_width="0dp"
+                        android:layout_height="4dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:indeterminate="true"
+                        android:max="100"
+                        android:progress="0" />
+
+                </LinearLayout>
+
+                <!-- FINISHED: size · date. -->
+                <TextView
+                    android:id="@+id/item_download_finished"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"
+                    tools:text="11.6 MB · 20 may 2026" />
+
+                <!-- QUEUED: 'Pending…'. -->
+                <TextView
+                    android:id="@+id/queued_text"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:singleLine="true"
+                    android:text="@string/download_queued"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone" />
+
+                <!-- ERROR: red message. -->
+                <TextView
+                    android:id="@+id/error_text"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:singleLine="true"
+                    android:textColor="?attr/colorPrimary"
+                    android:visibility="gone"
+                    tools:text="@string/error_check_internet_connection" />
+
+            </LinearLayout>
 
             <!-- Action button (more / remove) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/item_download_action"
                 style="@style/Theme.FireDown.More.Button"
+                app:icon="@drawable/ic_baseline_more_vert_24"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:icon="@drawable/ic_baseline_more_vert_24" />
+                app:layout_constraintTop_toTopOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
