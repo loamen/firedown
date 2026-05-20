@@ -194,6 +194,13 @@ public abstract class BaseActivity extends AppCompatActivity implements IntentHa
         Log.d(TAG, "onResume");
         handleIntent(getIntent());
         mPaused = false;
+        // Crash-report sheet — surfaces here rather than in any single
+        // fragment so it fires regardless of which activity Android
+        // restarts to after a crash. The previous foregrounded activity
+        // may have been Settings or Downloads, not Browser, so a
+        // BrowserFragment-only trigger misses those paths.
+        com.solarized.firedown.crash.CrashReportSheet.showIfPending(
+                this, getSupportFragmentManager());
     }
 
     @Override

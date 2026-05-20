@@ -47,7 +47,10 @@ public final class CrashHandler implements Thread.UncaughtExceptionHandler {
     public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
         try {
             CrashReport report = CrashReport.fromThrowable(t, e);
-            CrashStorage.write(mContext, report);
+            java.io.File f = CrashStorage.write(mContext, report);
+            Log.i(TAG, "captured " + e.getClass().getSimpleName()
+                    + " on thread " + t.getName()
+                    + " → " + (f != null ? f.getName() : "WRITE FAILED"));
         } catch (Throwable inner) {
             // Never let our handler block the platform default — if
             // capture fails we still want Android to terminate the

@@ -710,13 +710,6 @@ public class BrowserFragment extends BaseBrowserFragment
             } else if (Lifecycle.Event.ON_START.equals(event)) {
                 Log.d(TAG, "onStart");
                 mSwipeRefreshLayout.setEnabled(true);
-                // Crash-report sheet — CrashHandler writes Java
-                // crashes from any process to CrashStorage. Idempotent
-                // via findFragmentByTag and file delete-on-action; a
-                // crash that lands after the user dismisses an earlier
-                // one still surfaces on the next ON_START.
-                com.solarized.firedown.crash.CrashReportSheet.showIfPending(
-                        requireContext(), getParentFragmentManager());
 
             } else if (Lifecycle.Event.ON_RESUME.equals(event)) {
                 Log.d(TAG, "onResume");

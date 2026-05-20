@@ -67,6 +67,9 @@ public class CrashReportSheet extends BottomSheetDialogFragment {
     public static void showIfPending(@NonNull Context context,
                                      @NonNull FragmentManager fm) {
         List<File> pending = CrashStorage.listPending(context);
+        android.util.Log.i(TAG, "showIfPending: pending=" + pending.size()
+                + " stateSaved=" + fm.isStateSaved()
+                + " alreadyShown=" + (fm.findFragmentByTag(TAG) != null));
         if (pending.isEmpty()) return;
         if (fm.findFragmentByTag(TAG) != null) return;
         if (fm.isStateSaved()) return;
