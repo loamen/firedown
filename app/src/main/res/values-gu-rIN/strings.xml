@@ -34,16 +34,16 @@
     <string name="home_onboarding_sites_label">Firedown અજમાવો</string>
     <string name="home_media_playing">ચલાવી રહ્યું છે</string>
     <string name="home_media_paused">થોભાવ્યું</string>
-<string name="settings_theme_app_category">App theme</string>
-    <string name="settings_theme_home_category">Home page</string>
-    <string name="settings_home_cards">Home cards</string>
-    <string name="settings_home_cards_summary">Pick the style for home cards</string>
-    <string name="settings_home_cards_header">A single home theme flips all the home cards together — pick the look you like.</string>
-    <string name="home_card_style_neutral">Neutral</string>
+<string name="settings_theme_app_category">ઍપ થીમ</string>
+    <string name="settings_theme_home_category">હોમ સ્ક્રીન</string>
+    <string name="settings_home_cards">હોમ કાર્ડ</string>
+    <string name="settings_home_cards_summary">હોમ કાર્ડ માટે શૈલી પસંદ કરો</string>
+    <string name="settings_home_cards_header">એક થીમ બધા કાર્ડ એક સાથે બદલે છે — તમારી પસંદનો દેખાવ પસંદ કરો.</string>
+    <string name="home_card_style_neutral">તટસ્થ</string>
     <string name="home_card_style_blush">Blush</string>
     <string name="home_card_style_bloom">Bloom</string>
     <string name="home_card_style_coral">Coral</string>
-    <string name="home_card_style_preview_downloads_subtitle">150 files saved · 2.4 GB</string>
-    <string name="home_card_style_preview_vault_subtitle">12 items saved</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 ફાઇલો સાચવી · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 આઇટમ સાચવ્યા</string>
 
 </resources>

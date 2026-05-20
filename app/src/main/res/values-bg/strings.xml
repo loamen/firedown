@@ -282,16 +282,16 @@
     <string name="home_vault_button">Защитена папка</string>
     <string name="home_media_playing">Възпроизвежда се</string>
     <string name="home_media_paused">На пауза</string>
-<string name="settings_theme_app_category">App theme</string>
-    <string name="settings_theme_home_category">Home page</string>
-    <string name="settings_home_cards">Home cards</string>
-    <string name="settings_home_cards_summary">Pick the style for home cards</string>
-    <string name="settings_home_cards_header">A single home theme flips all the home cards together — pick the look you like.</string>
-    <string name="home_card_style_neutral">Neutral</string>
+<string name="settings_theme_app_category">Тема на приложението</string>
+    <string name="settings_theme_home_category">Начален екран</string>
+    <string name="settings_home_cards">Карти на началния екран</string>
+    <string name="settings_home_cards_summary">Изберете стил за картите на началния екран</string>
+    <string name="settings_home_cards_header">Една тема променя всички карти наведнъж — изберете предпочитания вид.</string>
+    <string name="home_card_style_neutral">Неутрален</string>
     <string name="home_card_style_blush">Blush</string>
     <string name="home_card_style_bloom">Bloom</string>
     <string name="home_card_style_coral">Coral</string>
-    <string name="home_card_style_preview_downloads_subtitle">150 files saved · 2.4 GB</string>
-    <string name="home_card_style_preview_vault_subtitle">12 items saved</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 файла запазени · 2,4 ГБ</string>
+    <string name="home_card_style_preview_vault_subtitle">12 елемента запазени</string>
 
 </resources>

@@ -223,16 +223,16 @@
     <string name="home_vault_button">Folda salama</string>
     <string name="home_media_playing">Inacheza</string>
     <string name="home_media_paused">Imesimamishwa</string>
-<string name="settings_theme_app_category">App theme</string>
-    <string name="settings_theme_home_category">Home page</string>
-    <string name="settings_home_cards">Home cards</string>
-    <string name="settings_home_cards_summary">Pick the style for home cards</string>
-    <string name="settings_home_cards_header">A single home theme flips all the home cards together — pick the look you like.</string>
-    <string name="home_card_style_neutral">Neutral</string>
+<string name="settings_theme_app_category">Mandhari ya programu</string>
+    <string name="settings_theme_home_category">Skrini ya nyumbani</string>
+    <string name="settings_home_cards">Kadi za skrini ya nyumbani</string>
+    <string name="settings_home_cards_summary">Chagua mtindo wa kadi za skrini ya nyumbani</string>
+    <string name="settings_home_cards_header">Mandhari moja hubadilisha kadi zote kwa pamoja — chagua mwonekano unaopenda.</string>
+    <string name="home_card_style_neutral">Wastani</string>
     <string name="home_card_style_blush">Blush</string>
     <string name="home_card_style_bloom">Bloom</string>
     <string name="home_card_style_coral">Coral</string>
-    <string name="home_card_style_preview_downloads_subtitle">150 files saved · 2.4 GB</string>
-    <string name="home_card_style_preview_vault_subtitle">12 items saved</string>
+    <string name="home_card_style_preview_downloads_subtitle">Faili 150 zimehifadhiwa · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">Vipengee 12 vimehifadhiwa</string>
 
 </resources>

@@ -259,16 +259,16 @@
     <string name="home_vault_button">സുരക്ഷിത ഫോൾഡർ</string>
     <string name="home_media_playing">പ്ലേ ചെയ്യുന്നു</string>
     <string name="home_media_paused">താൽക്കാലികമായി നിർത്തി</string>
-<string name="settings_theme_app_category">App theme</string>
-    <string name="settings_theme_home_category">Home page</string>
-    <string name="settings_home_cards">Home cards</string>
-    <string name="settings_home_cards_summary">Pick the style for home cards</string>
-    <string name="settings_home_cards_header">A single home theme flips all the home cards together — pick the look you like.</string>
-    <string name="home_card_style_neutral">Neutral</string>
+<string name="settings_theme_app_category">ആപ്പ് തീം</string>
+    <string name="settings_theme_home_category">ഹോം സ്ക്രീൻ</string>
+    <string name="settings_home_cards">ഹോം കാർഡുകൾ</string>
+    <string name="settings_home_cards_summary">ഹോം കാർഡുകൾക്കുള്ള ശൈലി തിരഞ്ഞെടുക്കുക</string>
+    <string name="settings_home_cards_header">ഒരു തീം എല്ലാ കാർഡുകളെയും ഒരുമിച്ച് മാറ്റുന്നു — നിങ്ങൾക്ക് ഇഷ്ടമുള്ള രൂപം തിരഞ്ഞെടുക്കുക.</string>
+    <string name="home_card_style_neutral">നിഷ്പക്ഷം</string>
     <string name="home_card_style_blush">Blush</string>
     <string name="home_card_style_bloom">Bloom</string>
     <string name="home_card_style_coral">Coral</string>
-    <string name="home_card_style_preview_downloads_subtitle">150 files saved · 2.4 GB</string>
-    <string name="home_card_style_preview_vault_subtitle">12 items saved</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 ഫയലുകൾ സംരക്ഷിച്ചു · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 ഇനങ്ങൾ സംരക്ഷിച്ചു</string>
 
 </resources>

@@ -56,16 +56,16 @@
     <string name="home_onboarding_sites_label">Prueba Firedown en</string>
     <string name="home_media_playing">Reproduciendo</string>
     <string name="home_media_paused">En pausa</string>
-<string name="settings_theme_app_category">App theme</string>
-    <string name="settings_theme_home_category">Home page</string>
-    <string name="settings_home_cards">Home cards</string>
-    <string name="settings_home_cards_summary">Pick the style for home cards</string>
-    <string name="settings_home_cards_header">A single home theme flips all the home cards together — pick the look you like.</string>
-    <string name="home_card_style_neutral">Neutral</string>
+<string name="settings_theme_app_category">Tema de la aplicación</string>
+    <string name="settings_theme_home_category">Página de inicio</string>
+    <string name="settings_home_cards">Tarjetas de inicio</string>
+    <string name="settings_home_cards_summary">Elige el estilo de las tarjetas de inicio</string>
+    <string name="settings_home_cards_header">Un solo tema cambia todas las tarjetas a la vez — elige el aspecto que prefieras.</string>
+    <string name="home_card_style_neutral">Neutro</string>
     <string name="home_card_style_blush">Blush</string>
     <string name="home_card_style_bloom">Bloom</string>
     <string name="home_card_style_coral">Coral</string>
-    <string name="home_card_style_preview_downloads_subtitle">150 files saved · 2.4 GB</string>
-    <string name="home_card_style_preview_vault_subtitle">12 items saved</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 archivos guardados · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elementos guardados</string>
 
 </resources>
