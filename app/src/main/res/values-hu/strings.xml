@@ -284,4 +284,23 @@
     <string name="incognito_home_warning">A privát böngészés nem rejti el a tevékenységedet a hálózatod, a munkáltatód vagy a meglátogatott oldalak elől.</string>
     <string name="downloads_quick_access_view_all">Összes letöltés megtekintése</string>
     <string name="downloads_quick_access_empty">A legutóbbi letöltések itt jelennek meg</string>
+<string name="settings_theme_app_category">Alkalmazás megjelenése</string>
+    <string name="settings_theme_home_category">Kezdőlap</string>
+    <string name="settings_home_cards">Kezdőlap kártyák</string>
+    <string name="settings_home_cards_summary">Válassza ki a kezdőlap kártyáinak stílusát</string>
+    <string name="settings_home_cards_header">Egyetlen téma mindegyik kártyát egyszerre váltja át — válassza ki a megjelenést, ami tetszik.</string>
+    <string name="home_card_style_neutral">Semleges</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 fájl mentve · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elem mentve</string>
+    <string name="crash_sheet_title">Összeomlás észlelve</string>
+    <string name="crash_sheet_report">Jelentés</string>
+    <string name="crash_sheet_copy">Másolás</string>
+    <string name="crash_sheet_dismiss">Elvetés</string>
+    <string name="crash_sheet_copied">Összeomlási jelentés a vágólapra másolva</string>
+    <string name="crash_sheet_open_failed">Nem sikerült megnyitni a böngészőt. A jelentés a vágólapon van — illessze be egy új GitHub bejegyzésbe.</string>
+
+
 </resources>

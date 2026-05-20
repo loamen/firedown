@@ -282,4 +282,23 @@
     <string name="home_vault_button">Защитена папка</string>
     <string name="home_media_playing">Възпроизвежда се</string>
     <string name="home_media_paused">На пауза</string>
+<string name="settings_theme_app_category">Тема на приложението</string>
+    <string name="settings_theme_home_category">Начален екран</string>
+    <string name="settings_home_cards">Карти на началния екран</string>
+    <string name="settings_home_cards_summary">Изберете стил за картите на началния екран</string>
+    <string name="settings_home_cards_header">Една тема променя всички карти наведнъж — изберете предпочитания вид.</string>
+    <string name="home_card_style_neutral">Неутрален</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 файла запазени · 2,4 ГБ</string>
+    <string name="home_card_style_preview_vault_subtitle">12 елемента запазени</string>
+    <string name="crash_sheet_title">Открит срив</string>
+    <string name="crash_sheet_report">Докладвай</string>
+    <string name="crash_sheet_copy">Копирай</string>
+    <string name="crash_sheet_dismiss">Отхвърли</string>
+    <string name="crash_sheet_copied">Докладът за срив е копиран в клипборда</string>
+    <string name="crash_sheet_open_failed">Браузерът не можа да се отвори. Докладът е в клипборда — поставете го в нов GitHub проблем.</string>
+
+
 </resources>

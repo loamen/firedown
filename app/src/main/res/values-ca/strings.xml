@@ -295,4 +295,23 @@
     <string name="settings_wasm_allowlist_remove_title">Treu el lloc</string>
     <string name="settings_wasm_allowlist_remove_message">Vols treure %s de la llista permesa de WebAssembly?</string>
     <string name="settings_wasm_allowlist_remove_confirm">Treu</string>
+<string name="settings_theme_app_category">Tema de l\'aplicació</string>
+    <string name="settings_theme_home_category">Pàgina d\'inici</string>
+    <string name="settings_home_cards">Targetes d\'inici</string>
+    <string name="settings_home_cards_summary">Tria l\'estil de les targetes d\'inici</string>
+    <string name="settings_home_cards_header">Un sol tema canvia totes les targetes alhora — tria l\'aspecte que prefereixis.</string>
+    <string name="home_card_style_neutral">Neutre</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 fitxers desats · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elements desats</string>
+    <string name="crash_sheet_title">Fallada detectada</string>
+    <string name="crash_sheet_report">Informa</string>
+    <string name="crash_sheet_copy">Copia</string>
+    <string name="crash_sheet_dismiss">Descarta</string>
+    <string name="crash_sheet_copied">Informe de fallada copiat al porta-retalls</string>
+    <string name="crash_sheet_open_failed">No s\'ha pogut obrir el navegador. L\'informe és al porta-retalls — enganxa\'l a una nova incidència de GitHub.</string>
+
+
 </resources>

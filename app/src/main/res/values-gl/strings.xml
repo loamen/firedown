@@ -264,4 +264,23 @@
     <string name="home_vault_button">Cartafol seguro</string>
     <string name="home_media_playing">Reproducindo</string>
     <string name="home_media_paused">En pausa</string>
+<string name="settings_theme_app_category">Tema da aplicación</string>
+    <string name="settings_theme_home_category">Páxina de inicio</string>
+    <string name="settings_home_cards">Tarxetas de inicio</string>
+    <string name="settings_home_cards_summary">Elixe o estilo das tarxetas de inicio</string>
+    <string name="settings_home_cards_header">Un só tema cambia todas as tarxetas á vez — elixe o aspecto que prefiras.</string>
+    <string name="home_card_style_neutral">Neutro</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 ficheiros gardados · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elementos gardados</string>
+    <string name="crash_sheet_title">Fallo detectado</string>
+    <string name="crash_sheet_report">Informar</string>
+    <string name="crash_sheet_copy">Copiar</string>
+    <string name="crash_sheet_dismiss">Descartar</string>
+    <string name="crash_sheet_copied">Informe de fallo copiado ao portapapeis</string>
+    <string name="crash_sheet_open_failed">Non se puido abrir o navegador. O informe está no portapapeis — pégao nunha nova incidencia de GitHub.</string>
+
+
 </resources>

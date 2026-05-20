@@ -324,4 +324,23 @@
     <string name="settings_wasm_allowlist_remove_title">إزالة الموقع</string>
     <string name="settings_wasm_allowlist_remove_message">إزالة %s من قائمة WebAssembly المسموح بها؟</string>
     <string name="settings_wasm_allowlist_remove_confirm">إزالة</string>
+<string name="settings_theme_app_category">مظهر التطبيق</string>
+    <string name="settings_theme_home_category">الصفحة الرئيسية</string>
+    <string name="settings_home_cards">بطاقات الصفحة الرئيسية</string>
+    <string name="settings_home_cards_summary">اختر نمط بطاقات الصفحة الرئيسية</string>
+    <string name="settings_home_cards_header">مظهر واحد يغير كل البطاقات معًا — اختر الشكل الذي يعجبك.</string>
+    <string name="home_card_style_neutral">محايد</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 ملفًا محفوظًا · 2.4 جيجابايت</string>
+    <string name="home_card_style_preview_vault_subtitle">12 عنصرًا محفوظًا</string>
+    <string name="crash_sheet_title">تم رصد تعطل</string>
+    <string name="crash_sheet_report">إبلاغ</string>
+    <string name="crash_sheet_copy">نسخ</string>
+    <string name="crash_sheet_dismiss">تجاهل</string>
+    <string name="crash_sheet_copied">تم نسخ تقرير التعطل إلى الحافظة</string>
+    <string name="crash_sheet_open_failed">تعذر فتح المتصفح. التقرير في الحافظة — الصقه في مشكلة جديدة على GitHub.</string>
+
+
 </resources>

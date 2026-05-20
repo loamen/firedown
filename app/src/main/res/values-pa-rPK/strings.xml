@@ -38,4 +38,23 @@
     <string name="home_onboarding_sites_label">Firedown اجماؤ</string>
     <string name="home_media_playing">چل رہا اے</string>
     <string name="home_media_paused">رکیا</string>
+<string name="settings_theme_app_category">ایپ تھیم</string>
+    <string name="settings_theme_home_category">ہوم اسکرین</string>
+    <string name="settings_home_cards">ہوم کارڈز</string>
+    <string name="settings_home_cards_summary">ہوم کارڈز دا اسٹائل چنو</string>
+    <string name="settings_home_cards_header">اک تھیم سارے کارڈز اکٹھے بدلدا اے — اپنا پسندیدہ روپ چنو۔</string>
+    <string name="home_card_style_neutral">غیر جانبدار</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 فائلاں محفوظ · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 آئٹم محفوظ</string>
+    <string name="crash_sheet_title">کریش دا پتہ لگا</string>
+    <string name="crash_sheet_report">رپورٹ</string>
+    <string name="crash_sheet_copy">کاپی</string>
+    <string name="crash_sheet_dismiss">مسترد</string>
+    <string name="crash_sheet_copied">کریش رپورٹ کلپ بورڈ تے کاپی ہوگئی</string>
+    <string name="crash_sheet_open_failed">براؤزر نئیں کھل سکیا۔ رپورٹ کلپ بورڈ تے اے — ایہنوں نویں GitHub مسئلے وچ چپکاؤ۔</string>
+
+
 </resources>

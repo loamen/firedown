@@ -223,4 +223,23 @@
     <string name="home_vault_button">Drošā mape</string>
     <string name="home_media_playing">Atskaņo</string>
     <string name="home_media_paused">Pauzēts</string>
+<string name="settings_theme_app_category">Lietotnes tēma</string>
+    <string name="settings_theme_home_category">Sākuma ekrāns</string>
+    <string name="settings_home_cards">Sākuma ekrāna kartītes</string>
+    <string name="settings_home_cards_summary">Izvēlieties sākuma ekrāna kartīšu stilu</string>
+    <string name="settings_home_cards_header">Viena tēma maina visas kartītes vienlaikus — izvēlieties izskatu, kas jums patīk.</string>
+    <string name="home_card_style_neutral">Neitrāla</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 failu saglabāti · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 vienumi saglabāti</string>
+    <string name="crash_sheet_title">Konstatēta avārija</string>
+    <string name="crash_sheet_report">Ziņot</string>
+    <string name="crash_sheet_copy">Kopēt</string>
+    <string name="crash_sheet_dismiss">Aizvērt</string>
+    <string name="crash_sheet_copied">Avārijas ziņojums kopēts starpliktuvē</string>
+    <string name="crash_sheet_open_failed">Pārlūku neizdevās atvērt. Ziņojums ir starpliktuvē — ielīmējiet to jaunā GitHub problēmā.</string>
+
+
 </resources>

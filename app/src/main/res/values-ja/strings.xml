@@ -496,4 +496,23 @@
     <string name="settings_wasm_allowlist_remove_title">サイトを削除</string>
     <string name="settings_wasm_allowlist_remove_message">%sをWebAssembly許可リストから削除しますか？</string>
     <string name="settings_wasm_allowlist_remove_confirm">削除</string>
+<string name="settings_theme_app_category">アプリのテーマ</string>
+    <string name="settings_theme_home_category">ホーム画面</string>
+    <string name="settings_home_cards">ホームカード</string>
+    <string name="settings_home_cards_summary">ホームカードのスタイルを選択</string>
+    <string name="settings_home_cards_header">1 つのテーマですべてのカードがまとめて切り替わります — お好みの見た目を選んでください。</string>
+    <string name="home_card_style_neutral">ニュートラル</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 件のファイルを保存 · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 件のアイテムを保存</string>
+    <string name="crash_sheet_title">クラッシュを検出しました</string>
+    <string name="crash_sheet_report">報告</string>
+    <string name="crash_sheet_copy">コピー</string>
+    <string name="crash_sheet_dismiss">閉じる</string>
+    <string name="crash_sheet_copied">クラッシュレポートをクリップボードにコピーしました</string>
+    <string name="crash_sheet_open_failed">ブラウザを開けませんでした。レポートはクリップボードにあります — 新しい GitHub の issue に貼り付けてください。</string>
+
+
 </resources>

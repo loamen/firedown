@@ -281,4 +281,23 @@
     <string name="incognito_home_warning">Anonymné prehliadanie neskrýva vašu aktivitu pred sieťou, zamestnávateľom ani navštívenými stránkami.</string>
     <string name="downloads_quick_access_view_all">Zobraziť všetky preberania</string>
     <string name="downloads_quick_access_empty">Posledné preberania sa zobrazia tu</string>
+<string name="settings_theme_app_category">Vzhľad aplikácie</string>
+    <string name="settings_theme_home_category">Domovská obrazovka</string>
+    <string name="settings_home_cards">Karty domovskej obrazovky</string>
+    <string name="settings_home_cards_summary">Vyberte štýl kariet domovskej obrazovky</string>
+    <string name="settings_home_cards_header">Jedna téma zmení všetky karty naraz — vyberte vzhľad, ktorý sa vám páči.</string>
+    <string name="home_card_style_neutral">Neutrálny</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 súborov uložených · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 položiek uložených</string>
+    <string name="crash_sheet_title">Zistené zlyhanie</string>
+    <string name="crash_sheet_report">Nahlásiť</string>
+    <string name="crash_sheet_copy">Kopírovať</string>
+    <string name="crash_sheet_dismiss">Zavrieť</string>
+    <string name="crash_sheet_copied">Hlásenie o páde skopírované do schránky</string>
+    <string name="crash_sheet_open_failed">Nepodarilo sa otvoriť prehliadač. Hlásenie je v schránke — vložte ho do nového GitHub issue.</string>
+
+
 </resources>

@@ -264,4 +264,23 @@
     <string name="home_vault_button">Sigurni folder</string>
     <string name="home_media_playing">Reprodukcija</string>
     <string name="home_media_paused">Pauzirano</string>
+<string name="settings_theme_app_category">Tema aplikacije</string>
+    <string name="settings_theme_home_category">Početni ekran</string>
+    <string name="settings_home_cards">Kartice početnog ekrana</string>
+    <string name="settings_home_cards_summary">Odaberite stil kartica početnog ekrana</string>
+    <string name="settings_home_cards_header">Jedna tema mijenja sve kartice odjednom — odaberite izgled koji vam se sviđa.</string>
+    <string name="home_card_style_neutral">Neutralno</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 datoteka sačuvano · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 stavki sačuvano</string>
+    <string name="crash_sheet_title">Otkriven krah</string>
+    <string name="crash_sheet_report">Prijavi</string>
+    <string name="crash_sheet_copy">Kopiraj</string>
+    <string name="crash_sheet_dismiss">Odbaci</string>
+    <string name="crash_sheet_copied">Izvještaj o krahu kopiran u međuspremnik</string>
+    <string name="crash_sheet_open_failed">Nije moguće otvoriti preglednik. Izvještaj je u međuspremniku — zalijepite ga u novi GitHub issue.</string>
+
+
 </resources>

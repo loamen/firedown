@@ -220,4 +220,23 @@
     <string name="home_vault_button">Ifolda ephephile</string>
     <string name="home_media_playing">Iyadlala</string>
     <string name="home_media_paused">Imisiwe</string>
+<string name="settings_theme_app_category">Itimu yohlelo lokusebenza</string>
+    <string name="settings_theme_home_category">Isikrini sasekhaya</string>
+    <string name="settings_home_cards">Amakhadi asekhaya</string>
+    <string name="settings_home_cards_summary">Khetha isitayela samakhadi asekhaya</string>
+    <string name="settings_home_cards_header">Itimu eyodwa ishintsha onke amakhadi kanyekanye — khetha ukubukeka okuthandayo.</string>
+    <string name="home_card_style_neutral">Okungathathi hlangothi</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">Amafayela angu-150 alondoloziwe · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">Izinto ezingu-12 zilondoloziwe</string>
+    <string name="crash_sheet_title">Kutholakele ukubhajwa</string>
+    <string name="crash_sheet_report">Bika</string>
+    <string name="crash_sheet_copy">Kopisha</string>
+    <string name="crash_sheet_dismiss">Vala</string>
+    <string name="crash_sheet_copied">Umbiko wokubhajwa ukopishelwe ebhodini lokukopisha</string>
+    <string name="crash_sheet_open_failed">Akukwazanga ukuvulwa kwesiphequluli. Umbiko usebhodini lokukopisha — unamathisele endabeni entsha ye-GitHub.</string>
+
+
 </resources>

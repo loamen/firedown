@@ -255,4 +255,23 @@
     <string name="home_vault_button">ආරක්ෂිත ෆෝල්ඩරය</string>
     <string name="home_media_playing">වාදනය වෙමින්</string>
     <string name="home_media_paused">විරාම කර ඇත</string>
+<string name="settings_theme_app_category">යෙදුම් තේමාව</string>
+    <string name="settings_theme_home_category">මුල් පිටුව</string>
+    <string name="settings_home_cards">මුල් පිටුවේ කාඩ්පත්</string>
+    <string name="settings_home_cards_summary">මුල් පිටුවේ කාඩ්පත් සඳහා මෝස්තරය තෝරන්න</string>
+    <string name="settings_home_cards_header">එක් තේමාවක් සියලුම කාඩ්පත් එකවර වෙනස් කරයි — ඔබට කැමති පෙනුම තෝරන්න.</string>
+    <string name="home_card_style_neutral">මධ්‍යස්ථ</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">ගොනු 150ක් සුරැකූ · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">අයිතම 12ක් සුරැකූ</string>
+    <string name="crash_sheet_title">බිඳවැටීමක් අනාවරණය විය</string>
+    <string name="crash_sheet_report">වාර්තා</string>
+    <string name="crash_sheet_copy">පිටපත් කරන්න</string>
+    <string name="crash_sheet_dismiss">ඉවත් කරන්න</string>
+    <string name="crash_sheet_copied">බිඳවැටීමේ වාර්තාව ක්ලිප්බෝඩයට පිටපත් කරන ලදී</string>
+    <string name="crash_sheet_open_failed">බ්‍රවුසරය විවෘත කළ නොහැකි විය. වාර්තාව ක්ලිප්බෝඩයේ ඇත — එය නව GitHub issue එකකට අලවන්න.</string>
+
+
 </resources>

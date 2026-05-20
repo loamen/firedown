@@ -13,12 +13,12 @@
 <!--            app:icon="@drawable/ic_tabs_new_24">-->
 <!--        </Preference>-->
 
-
         <Preference
             android:key="com.solarized.firedown.preferences.theme"
             android:title="@string/settings_theme"
             app:icon="@drawable/palette_24">
         </Preference>
+
 
         <Preference
             android:key="com.solarized.firedown.preferences.search.engine"

@@ -168,6 +168,11 @@
 
     <style name="Firedown.Widget.App.Chip.Filter" parent="Widget.Material3.Chip.Filter">
         <item name="materialThemeOverlay">@style/ThemeOverlay.App.Chip</item>
+        <!-- Matches Theme.FireDown.Download.Chip: full pill + 36dp
+             min height so the rail reads consistently across the
+             Downloads list and the BrowserOptions sheet. -->
+        <item name="chipCornerRadius">100dp</item>
+        <item name="chipMinHeight">36dp</item>
     </style>
 
     <style name="ThemeOverlay.App.Chip" parent="">
@@ -184,6 +189,24 @@
         <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textAllCaps">true</item>
+        <item name="singleLine">true</item>
+    </style>
+
+    <!-- Text-only mime label used in the Downloads list. No chip
+         background — sits inline with the domain on the metadata
+         line so it scales naturally with long translations
+         (Russian ИЗОБРАЖЕНИЕ, Italian SOTTOTITOLI) instead of
+         pushing the filename off-screen. Coloured with colorPrimary
+         so it reads as a brand-accented label on the surface; the
+         adapter overrides it to the active CardLook's fg when the
+         row sits on the coral active surface, where colorPrimary
+         would disappear into the background. -->
+    <style name="MimePrimaryLabel">
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.04</item>
         <item name="singleLine">true</item>
     </style>
 
@@ -261,6 +284,15 @@
     <style name="Theme.FireDown.Download.Chip" parent="Widget.Material3.Chip.Filter">
         <item name="chipSurfaceColor">@color/transparent</item>
         <item name="chipBackgroundColor">@color/chip_download</item>
+        <!-- Pill shape. Large radius is capped to half the chip height
+             by the framework, so the value doesn't have to match the
+             exact height — bumping it once here keeps the pill look
+             even if Material updates the default chip height later. -->
+        <item name="chipCornerRadius">100dp</item>
+        <!-- 36dp instead of the M3 default 32 — the extra 4dp gives the
+             pill curve a bit more room to show and makes the rail feel
+             comfortable to tap without crossing into 'button' territory. -->
+        <item name="chipMinHeight">36dp</item>
     </style>
 
     <style name="Firedown.AlertDialogTheme" parent="Theme.AppCompat.Dialog.Alert">

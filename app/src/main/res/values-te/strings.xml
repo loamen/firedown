@@ -257,4 +257,23 @@
     <string name="home_vault_button">సురక్షిత ఫోల్డర్</string>
     <string name="home_media_playing">ప్లే అవుతోంది</string>
     <string name="home_media_paused">పాజ్ చేయబడింది</string>
+<string name="settings_theme_app_category">యాప్ థీమ్</string>
+    <string name="settings_theme_home_category">హోమ్ స్క్రీన్</string>
+    <string name="settings_home_cards">హోమ్ కార్డ్‌లు</string>
+    <string name="settings_home_cards_summary">హోమ్ కార్డ్‌ల కోసం శైలిని ఎంచుకోండి</string>
+    <string name="settings_home_cards_header">ఒక థీమ్ అన్ని కార్డ్‌లను ఒకేసారి మారుస్తుంది — మీకు నచ్చిన రూపాన్ని ఎంచుకోండి.</string>
+    <string name="home_card_style_neutral">తటస్థం</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 ఫైళ్లు సేవ్ చేయబడ్డాయి · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 అంశాలు సేవ్ చేయబడ్డాయి</string>
+    <string name="crash_sheet_title">క్రాష్ గుర్తించబడింది</string>
+    <string name="crash_sheet_report">నివేదిక</string>
+    <string name="crash_sheet_copy">కాపీ</string>
+    <string name="crash_sheet_dismiss">తీసివేయండి</string>
+    <string name="crash_sheet_copied">క్రాష్ నివేదిక క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది</string>
+    <string name="crash_sheet_open_failed">బ్రౌజర్‌ను తెరవలేకపోయింది. నివేదిక క్లిప్‌బోర్డ్‌లో ఉంది — దానిని కొత్త GitHub ఇష్యూలో పేస్ట్ చేయండి.</string>
+
+
 </resources>

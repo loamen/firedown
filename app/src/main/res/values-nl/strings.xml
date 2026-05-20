@@ -362,4 +362,23 @@
     <string name="settings_wasm_allowlist_remove_title">Site verwijderen</string>
     <string name="settings_wasm_allowlist_remove_message">%s uit de WebAssembly-toelatingslijst verwijderen?</string>
     <string name="settings_wasm_allowlist_remove_confirm">Verwijderen</string>
+<string name="settings_theme_app_category">Appthema</string>
+    <string name="settings_theme_home_category">Startpagina</string>
+    <string name="settings_home_cards">Startkaarten</string>
+    <string name="settings_home_cards_summary">Kies de stijl voor de startkaarten</string>
+    <string name="settings_home_cards_header">Eén thema verandert alle kaarten tegelijk — kies de look die je het mooiste vindt.</string>
+    <string name="home_card_style_neutral">Neutraal</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 bestanden opgeslagen · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 items opgeslagen</string>
+    <string name="crash_sheet_title">Crash gedetecteerd</string>
+    <string name="crash_sheet_report">Rapporteren</string>
+    <string name="crash_sheet_copy">Kopiëren</string>
+    <string name="crash_sheet_dismiss">Sluiten</string>
+    <string name="crash_sheet_copied">Crashrapport gekopieerd naar klembord</string>
+    <string name="crash_sheet_open_failed">Kan de browser niet openen. Het crashrapport staat op je klembord — plak het in een nieuw GitHub-issue.</string>
+
+
 </resources>

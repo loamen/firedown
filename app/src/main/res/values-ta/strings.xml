@@ -245,4 +245,23 @@
     <string name="home_vault_button">பாதுகாப்பான ஃபோல்டர்</string>
     <string name="home_media_playing">இயக்கப்படுகிறது</string>
     <string name="home_media_paused">இடைநிறுத்தப்பட்டது</string>
+<string name="settings_theme_app_category">ஆப் தீம்</string>
+    <string name="settings_theme_home_category">முகப்புத் திரை</string>
+    <string name="settings_home_cards">முகப்பு கார்டுகள்</string>
+    <string name="settings_home_cards_summary">முகப்பு கார்டுகளுக்கான பாணியைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="settings_home_cards_header">ஒரு தீம் அனைத்து கார்டுகளையும் ஒரே நேரத்தில் மாற்றுகிறது — விரும்பும் தோற்றத்தைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="home_card_style_neutral">நடுநிலை</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 கோப்புகள் சேமிக்கப்பட்டன · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 உருப்படிகள் சேமிக்கப்பட்டன</string>
+    <string name="crash_sheet_title">செயலிழப்பு கண்டறியப்பட்டது</string>
+    <string name="crash_sheet_report">புகாரளி</string>
+    <string name="crash_sheet_copy">நகலெடு</string>
+    <string name="crash_sheet_dismiss">நிராகரி</string>
+    <string name="crash_sheet_copied">செயலிழப்பு அறிக்கை கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது</string>
+    <string name="crash_sheet_open_failed">உலாவியைத் திறக்க முடியவில்லை. அறிக்கை கிளிப்போர்டில் உள்ளது — அதை புதிய GitHub பிரச்சினையில் ஒட்டவும்.</string>
+
+
 </resources>

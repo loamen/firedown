@@ -220,4 +220,23 @@
     <string name="home_vault_button">Carpeta segura</string>
     <string name="home_media_playing">Reproduciendo</string>
     <string name="home_media_paused">En pausa</string>
+<string name="settings_theme_app_category">Tema de la aplicación</string>
+    <string name="settings_theme_home_category">Página de inicio</string>
+    <string name="settings_home_cards">Tarjetas de inicio</string>
+    <string name="settings_home_cards_summary">Elige el estilo de las tarjetas de inicio</string>
+    <string name="settings_home_cards_header">Un solo tema cambia todas las tarjetas a la vez — elige el aspecto que prefieras.</string>
+    <string name="home_card_style_neutral">Neutro</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 archivos guardados · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elementos guardados</string>
+    <string name="crash_sheet_title">Fallo detectado</string>
+    <string name="crash_sheet_report">Informar</string>
+    <string name="crash_sheet_copy">Copiar</string>
+    <string name="crash_sheet_dismiss">Descartar</string>
+    <string name="crash_sheet_copied">Informe de fallo copiado al portapapeles</string>
+    <string name="crash_sheet_open_failed">No se pudo abrir el navegador. El informe está en tu portapapeles — pégalo en una nueva incidencia de GitHub.</string>
+
+
 </resources>

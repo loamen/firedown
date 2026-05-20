@@ -270,4 +270,23 @@
     <string name="home_vault_button">ደህንነቱ የተጠበቀ አቃፊ</string>
     <string name="home_media_playing">በማጫወት ላይ</string>
     <string name="home_media_paused">ቆሟል</string>
+<string name="settings_theme_app_category">የመተግበሪያ ገጽታ</string>
+    <string name="settings_theme_home_category">መነሻ ማያ ገጽ</string>
+    <string name="settings_home_cards">የመነሻ ካርዶች</string>
+    <string name="settings_home_cards_summary">የመነሻ ካርዶችን ስልት ይምረጡ</string>
+    <string name="settings_home_cards_header">አንድ ገጽታ ሁሉንም ካርዶች በአንድ ጊዜ ይቀይራል — የሚወዱትን ገጽታ ይምረጡ።</string>
+    <string name="home_card_style_neutral">ገለልተኛ</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 ፋይሎች ተቀምጠዋል · 2.4 ጂቢ</string>
+    <string name="home_card_style_preview_vault_subtitle">12 ዕቃዎች ተቀምጠዋል</string>
+    <string name="crash_sheet_title">ብልሽት ተገኝቷል</string>
+    <string name="crash_sheet_report">ሪፖርት</string>
+    <string name="crash_sheet_copy">ቅዳ</string>
+    <string name="crash_sheet_dismiss">ዝጋ</string>
+    <string name="crash_sheet_copied">የብልሽት ሪፖርት ወደ ቅንጥብ ሰሌዳ ተቀድቷል</string>
+    <string name="crash_sheet_open_failed">አሳሹን መክፈት አልተቻለም። ሪፖርቱ በቅንጥብ ሰሌዳ ላይ ነው — በአዲስ GitHub issue ውስጥ ይለጥፉት።</string>
+
+
 </resources>

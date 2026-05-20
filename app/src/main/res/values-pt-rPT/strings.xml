@@ -237,4 +237,23 @@
     <string name="settings_wasm_allowlist_remove_title">Remover site</string>
     <string name="settings_wasm_allowlist_remove_message">Remover %s da lista de permissão WebAssembly?</string>
     <string name="settings_wasm_allowlist_remove_confirm">Remover</string>
+<string name="settings_theme_app_category">Tema do aplicativo</string>
+    <string name="settings_theme_home_category">Página inicial</string>
+    <string name="settings_home_cards">Cartões iniciais</string>
+    <string name="settings_home_cards_summary">Escolha o estilo dos cartões iniciais</string>
+    <string name="settings_home_cards_header">Um único tema muda todos os cartões de uma vez — escolha o visual que preferir.</string>
+    <string name="home_card_style_neutral">Neutro</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 arquivos salvos · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 itens salvos</string>
+    <string name="crash_sheet_title">Falha detectada</string>
+    <string name="crash_sheet_report">Reportar</string>
+    <string name="crash_sheet_copy">Copiar</string>
+    <string name="crash_sheet_dismiss">Dispensar</string>
+    <string name="crash_sheet_copied">Relatório de falha copiado para a área de transferência</string>
+    <string name="crash_sheet_open_failed">Não foi possível abrir o navegador. O relatório está na área de transferência — cole-o em uma nova issue do GitHub.</string>
+
+
 </resources>

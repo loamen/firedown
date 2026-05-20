@@ -69,6 +69,14 @@ public class Preferences {
 
     public static final String SETTINGS_THEME_OLED = "com.solarized.firedown.preferences.theme.oled";
 
+    /** Home shelf-card style picker. Single preference (one of the
+     *  {@link com.solarized.firedown.ui.HomeCardStyle#key} values) flips
+     *  both the Downloads and Safe Folder cards together — the choices
+     *  are a packaged styling, not per-card colour tweaks. */
+    public static final String SETTINGS_HOME_CARDS = "com.solarized.firedown.preferences.home.cards";
+    public static final String SETTINGS_HOME_CARD_STYLE = "com.solarized.firedown.preferences.home.card.style";
+    public static final String DEFAULT_HOME_CARD_STYLE = "neutral";
+
     /**
      * Sentinel value stored in {@link #SETTINGS_THEME} when the user picks
      * AMOLED mode. Distinct from {@link androidx.appcompat.app.AppCompatDelegate}

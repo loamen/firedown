@@ -250,4 +250,23 @@
     <string name="home_vault_button">নিরাপদ ফোল্ডার</string>
     <string name="home_media_playing">চলছে</string>
     <string name="home_media_paused">বিরতি</string>
+<string name="settings_theme_app_category">অ্যাপ থিম</string>
+    <string name="settings_theme_home_category">হোম স্ক্রিন</string>
+    <string name="settings_home_cards">হোম কার্ড</string>
+    <string name="settings_home_cards_summary">হোম কার্ডের স্টাইল বেছে নিন</string>
+    <string name="settings_home_cards_header">একটি থিম সব কার্ড একসাথে বদলে দেয় — আপনার পছন্দের চেহারা বেছে নিন।</string>
+    <string name="home_card_style_neutral">নিরপেক্ষ</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150টি ফাইল সংরক্ষিত · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12টি আইটেম সংরক্ষিত</string>
+    <string name="crash_sheet_title">ক্র্যাশ সনাক্ত করা হয়েছে</string>
+    <string name="crash_sheet_report">রিপোর্ট</string>
+    <string name="crash_sheet_copy">কপি</string>
+    <string name="crash_sheet_dismiss">বাতিল</string>
+    <string name="crash_sheet_copied">ক্র্যাশ রিপোর্ট ক্লিপবোর্ডে কপি করা হয়েছে</string>
+    <string name="crash_sheet_open_failed">ব্রাউজার খোলা যায়নি। রিপোর্ট ক্লিপবোর্ডে আছে — এটি একটি নতুন GitHub ইস্যুতে পেস্ট করুন।</string>
+
+
 </resources>

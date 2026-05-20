@@ -60,6 +60,12 @@ public class SettingsActivity extends BaseActivity {
                 mToolbar.setTitle(R.string.navigation_settings);
             else if(id == R.id.settings_about)
                 mToolbar.setTitle(R.string.settings_about);
+            else if(id == R.id.settings_theme)
+                mToolbar.setTitle(R.string.settings_theme);
+            else if(id == R.id.settings_home_cards)
+                mToolbar.setTitle(R.string.settings_home_cards);
+            else if(id == R.id.settings_wasm)
+                mToolbar.setTitle(R.string.settings_wasm);
             else if(id == R.id.settings_license)
                 mToolbar.setTitle(R.string.settings_license);
             else if(id == R.id.settings_doh)

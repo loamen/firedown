@@ -301,4 +301,23 @@
     <string name="incognito_home_warning">Yksityinen selaus ei piilota toimintaasi verkoltasi, työnantajaltasi tai vierailemiltasi sivustoilta.</string>
     <string name="downloads_quick_access_view_all">Näytä kaikki lataukset</string>
     <string name="downloads_quick_access_empty">Viimeisimmät lataukset näkyvät täällä</string>
+<string name="settings_theme_app_category">Sovelluksen teema</string>
+    <string name="settings_theme_home_category">Aloitusnäyttö</string>
+    <string name="settings_home_cards">Aloitusnäytön kortit</string>
+    <string name="settings_home_cards_summary">Valitse aloitusnäytön korttien tyyli</string>
+    <string name="settings_home_cards_header">Yksi teema vaihtaa kaikki kortit kerralla — valitse haluamasi tyyli.</string>
+    <string name="home_card_style_neutral">Neutraali</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 tiedostoa tallennettu · 2,4 Gt</string>
+    <string name="home_card_style_preview_vault_subtitle">12 kohdetta tallennettu</string>
+    <string name="crash_sheet_title">Kaatuminen havaittu</string>
+    <string name="crash_sheet_report">Raportoi</string>
+    <string name="crash_sheet_copy">Kopioi</string>
+    <string name="crash_sheet_dismiss">Hylkää</string>
+    <string name="crash_sheet_copied">Kaatumisraportti kopioitu leikepöydälle</string>
+    <string name="crash_sheet_open_failed">Selainta ei voitu avata. Raportti on leikepöydällä — liitä se uuteen GitHub-asiaan.</string>
+
+
 </resources>

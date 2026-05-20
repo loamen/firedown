@@ -223,4 +223,23 @@
     <string name="home_vault_button">Folder selamat</string>
     <string name="home_media_playing">Memainkan</string>
     <string name="home_media_paused">Dijeda</string>
+<string name="settings_theme_app_category">Tema aplikasi</string>
+    <string name="settings_theme_home_category">Skrin utama</string>
+    <string name="settings_home_cards">Kad skrin utama</string>
+    <string name="settings_home_cards_summary">Pilih gaya kad skrin utama</string>
+    <string name="settings_home_cards_header">Satu tema mengubah semua kad sekali gus — pilih rupa yang anda suka.</string>
+    <string name="home_card_style_neutral">Berkecuali</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 fail disimpan · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 item disimpan</string>
+    <string name="crash_sheet_title">Ranap dikesan</string>
+    <string name="crash_sheet_report">Lapor</string>
+    <string name="crash_sheet_copy">Salin</string>
+    <string name="crash_sheet_dismiss">Tutup</string>
+    <string name="crash_sheet_copied">Laporan ranap disalin ke papan keratan</string>
+    <string name="crash_sheet_open_failed">Tidak dapat membuka pelayar. Laporan ada di papan keratan — tampal ke issue GitHub baharu.</string>
+
+
 </resources>
