@@ -351,6 +351,7 @@
     <string name="crash_sheet_open_failed">Couldn\'t open a browser. Crash report is on your clipboard — paste it into a new GitHub issue.</string>
     <string name="wasm_snackbar_message">%s needs WebAssembly to work</string>
     <string name="wasm_snackbar_action_enable">Enable</string>
+    <string name="settings_wasm" translatable="false">WebAssembly </string>
     <string name="settings_wasm_allowlist_title">Allowed sites</string>
     <string name="settings_wasm_allowlist_empty">No sites yet. Tap \"Enable\" on the snackbar when a site asks for WebAssembly.</string>
     <string name="settings_wasm_allowlist_clear">Clear all</string>
