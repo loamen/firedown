@@ -10,18 +10,22 @@
   there's nothing diagnostic to report. ContentDelegate.onKill
   handles tab-level Gecko deaths by reloading the affected tab.
 
-  Layout: outer LinearLayout uses wrap_content so the sheet sizes to
-  its content. Trace area is FIXED at 160dp — wrap_content with
-  android:maxHeight was unreliable inside a wrap_content parent and
-  let the trace push the action row off-screen on long stacks. Fixed
-  height + inner scroll guarantees the buttons are always visible.
+  Layout: outer LinearLayout is match_parent in height so the trace
+  block can use layout_weight=1 to absorb whatever space is left
+  after the fixed header + button row. The sheet's overall height
+  is constrained by behavior.maxHeight (R.dimen.bottom_sheet_max_height)
+  set in CrashReportSheet.onStart — 640dp in portrait, uncapped in
+  landscape where it just fills the available window height. Either
+  way the trace gets the leftover space and the button row stays
+  visible, fixing the landscape case where a fixed 280dp trace
+  pushed buttons off-screen.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/crash_root"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical">
 
 
@@ -74,18 +78,20 @@
     </LinearLayout>
 
 
-    <!-- Fixed-height trace block. Internal NestedScrollView lets the
-         user skim long traces without the outer sheet growing past
-         the action row. 280dp ≈ 20 lines at 11sp monospace which is
-         enough to see the exception type + a few frames without
-         scrolling on a typical crash. -->
+    <!-- Trace block — weight=1 absorbs the remaining sheet height
+         after header + button row. minHeight gives a usable readable
+         area on very short sheets (e.g. landscape on a small phone);
+         the inner NestedScrollView takes over once a long trace
+         overflows the available space. -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="280dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="12dp"
         android:background="?attr/colorSurfaceContainerHigh"
+        android:minHeight="120dp"
         android:padding="12dp">
 
         <TextView
