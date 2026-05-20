@@ -200,6 +200,8 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         vaultCard.setOnClickListener(view ->
                 mStartForResult.launch(new Intent(mActivity, VaultActivity.class)));
 
+        applyHomeCardStyle(v);
+
 
         mBottomNavigationBar.setListener(this);
 
@@ -427,6 +429,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             } else if (Lifecycle.Event.ON_RESUME.equals(event)) {
                 Log.d(TAG, "onResume");
                 mStop = false;
+                // Pick up any palette change made in Settings → Home
+                // cards. The settings sub-screen is hosted by another
+                // activity, so the home view survives the round-trip
+                // and only its chip backgrounds need to flip.
+                View root = getView();
+                if (root != null) applyHomeCardStyle(root);
             }
         });
 
@@ -513,6 +521,81 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         }
         if (mActiveStripIcon != null) {
             mActiveStripIcon.setAlpha(1.0f);
+        }
+    }
+
+    /**
+     * Paints all four home cards — active download, playing media,
+     * Downloads, Safe Folder — with the user's picked
+     * {@link com.solarized.firedown.ui.HomeCardStyle}. One pref, four
+     * cards flip together; the picker rewards a coherent look rather
+     * than per-card tweaks. Called from {@code onCreateView} and again
+     * on {@code ON_RESUME} so a style change made in Settings shows up
+     * when the user navigates back, without forcing a fragment rebuild.
+     *
+     * <p>The media card's favicon is left untouched — it's loaded via
+     * Glide and a tint would discolour real site icons. The play/pause
+     * toggle is the themed icon there.</p>
+     */
+    private void applyHomeCardStyle(@NonNull View root) {
+        SharedPreferences prefs = androidx.preference.PreferenceManager
+                .getDefaultSharedPreferences(requireContext());
+        String key = prefs.getString(
+                Preferences.SETTINGS_HOME_CARD_STYLE,
+                Preferences.DEFAULT_HOME_CARD_STYLE);
+        com.solarized.firedown.ui.HomeCardStyle style =
+                com.solarized.firedown.ui.HomeCardStyle.fromKey(
+                        key, com.solarized.firedown.ui.HomeCardStyle.NEUTRAL);
+        boolean night = com.solarized.firedown.ui.HomeCardStyle.isNightMode(getResources());
+
+        if (mActiveStrip != null) {
+            com.solarized.firedown.ui.HomeCardStyle.CardLook activeLook = style.active(night);
+            com.solarized.firedown.ui.HomeCardStyle.applyToCard(
+                    mActiveStrip,
+                    null,
+                    (android.widget.ImageView) mActiveStripIcon,
+                    mActiveStripTitle,
+                    null,
+                    mActiveStripLabel,
+                    activeLook);
+            // Percent reads as a number, not a soft subtitle — keep it
+            // at full fg opacity instead of running it through the
+            // applyToCard subtitle (alpha B3) path.
+            if (mActiveStripPercent != null) mActiveStripPercent.setTextColor(activeLook.fg);
+            if (mActiveStripBar != null) mActiveStripBar.setIndicatorColor(activeLook.fg);
+        }
+
+        if (mHomeMediaStrip instanceof MaterialCardView) {
+            com.solarized.firedown.ui.HomeCardStyle.applyToCard(
+                    (MaterialCardView) mHomeMediaStrip,
+                    null,
+                    mHomeMediaToggle,
+                    mHomeMediaTitle,
+                    mHomeMediaSubtitle,
+                    mHomeMediaLabel,
+                    style.media(night));
+        }
+
+        MaterialCardView downloadsCard = root.findViewById(R.id.recent_downloads_card);
+        if (downloadsCard != null) {
+            com.solarized.firedown.ui.HomeCardStyle.applyToCard(
+                    downloadsCard,
+                    root.findViewById(R.id.recent_downloads_chip),
+                    root.findViewById(R.id.recent_downloads_icon),
+                    root.findViewById(R.id.recent_downloads_title),
+                    mRecentDownloadsSubtitle,
+                    style.downloads(night));
+        }
+
+        MaterialCardView vaultCard = root.findViewById(R.id.home_vault_card);
+        if (vaultCard != null) {
+            com.solarized.firedown.ui.HomeCardStyle.applyToCard(
+                    vaultCard,
+                    root.findViewById(R.id.home_vault_chip),
+                    root.findViewById(R.id.home_vault_icon),
+                    root.findViewById(R.id.home_vault_title),
+                    mHomeVaultSubtitle,
+                    style.vault(night));
         }
     }
 

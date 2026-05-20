@@ -351,6 +351,7 @@
     <string name="crash_sheet_open_failed">Couldn\'t open a browser. Crash report is on your clipboard — paste it into a new GitHub issue.</string>
     <string name="wasm_snackbar_message">%s needs WebAssembly to work</string>
     <string name="wasm_snackbar_action_enable">Enable</string>
+    <string name="settings_wasm" translatable="false">WebAssembly </string>
     <string name="settings_wasm_allowlist_title">Allowed sites</string>
     <string name="settings_wasm_allowlist_empty">No sites yet. Tap \"Enable\" on the snackbar when a site asks for WebAssembly.</string>
     <string name="settings_wasm_allowlist_clear">Clear all</string>
@@ -456,6 +457,26 @@
     <string name="settings_tabs_archive_summary">Automatically close tabs you haven\'t used in a while</string>
     <string name="settings_tabs_archive_title">Auto-close tabs</string>
     <string name="settings_theme">Theme</string>
+    <!-- Section headers inside the Theme settings screen. The app
+         radios (Default/Dark/Light/OLED) live under the first; the
+         home-cards picker lives under the second so the two kinds of
+         choices don't read as one continuous list. -->
+    <string name="settings_theme_app_category">App theme</string>
+    <string name="settings_theme_home_category">Home page</string>
+    <!-- Settings → Theme → Home cards. Sub-screen that picks a
+         packaged style for the home page. -->
+    <string name="settings_home_cards">Home cards</string>
+    <string name="settings_home_cards_summary">Pick the style for home cards</string>
+    <string name="settings_home_cards_header">A single home theme flips all the home cards together — pick the look you like.</string>
+    <string name="home_card_style_neutral">Neutral</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <!-- Sample-data subtitles shown inside the style-picker previews.
+         Not surfaced anywhere else — purely illustrative so the
+         preview cards don't look anaemic. -->
+    <string name="home_card_style_preview_downloads_subtitle">150 files saved · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 items saved</string>
     <string name="settings_version">Version</string>
     <string name="settings_webgl_disabled">Disable WebGL</string>
     <string name="settings_webgl_disabled_summary">Blocks GPU fingerprinting, may break 3D content</string>

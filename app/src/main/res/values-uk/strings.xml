@@ -301,4 +301,16 @@
     <string name="settings_wasm_allowlist_remove_title">Видалити сайт</string>
     <string name="settings_wasm_allowlist_remove_message">Видалити %s зі списку дозволених для WebAssembly?</string>
     <string name="settings_wasm_allowlist_remove_confirm">Видалити</string>
+<string name="settings_theme_app_category">Тема застосунку</string>
+    <string name="settings_theme_home_category">Головний екран</string>
+    <string name="settings_home_cards">Картки головного екрана</string>
+    <string name="settings_home_cards_summary">Виберіть стиль карток головного екрана</string>
+    <string name="settings_home_cards_header">Одна тема змінює всі картки одночасно — оберіть бажаний вигляд.</string>
+    <string name="home_card_style_neutral">Нейтральний</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 файлів збережено · 2,4 ГБ</string>
+    <string name="home_card_style_preview_vault_subtitle">12 елементів збережено</string>
+
 </resources>

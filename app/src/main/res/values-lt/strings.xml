@@ -263,4 +263,16 @@
     <string name="home_vault_button">Saugus aplankas</string>
     <string name="home_media_playing">Grojama</string>
     <string name="home_media_paused">Pristabdyta</string>
+<string name="settings_theme_app_category">Programos tema</string>
+    <string name="settings_theme_home_category">Pradžios ekranas</string>
+    <string name="settings_home_cards">Pradžios ekrano kortelės</string>
+    <string name="settings_home_cards_summary">Pasirinkite pradžios ekrano kortelių stilių</string>
+    <string name="settings_home_cards_header">Viena tema pakeičia visas korteles iš karto — pasirinkite jums patinkančią išvaizdą.</string>
+    <string name="home_card_style_neutral">Neutrali</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 failų išsaugota · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elementų išsaugota</string>
+
 </resources>

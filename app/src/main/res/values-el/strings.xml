@@ -284,4 +284,16 @@
     <string name="incognito_home_warning">Η ιδιωτική περιήγηση δεν κρύβει τη δραστηριότητά σας από το δίκτυό σας, τον εργοδότη σας ή τις ιστοσελίδες που επισκέπτεστε.</string>
     <string name="downloads_quick_access_view_all">Προβολή όλων των λήψεων</string>
     <string name="downloads_quick_access_empty">Οι πρόσφατες λήψεις θα εμφανιστούν εδώ</string>
+<string name="settings_theme_app_category">Θέμα εφαρμογής</string>
+    <string name="settings_theme_home_category">Αρχική</string>
+    <string name="settings_home_cards">Κάρτες αρχικής</string>
+    <string name="settings_home_cards_summary">Επιλέξτε στυλ για τις κάρτες αρχικής</string>
+    <string name="settings_home_cards_header">Ένα θέμα αλλάζει όλες τις κάρτες ταυτόχρονα — διαλέξτε την εμφάνιση που σας αρέσει.</string>
+    <string name="home_card_style_neutral">Ουδέτερο</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 αρχεία αποθηκεύτηκαν · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 στοιχεία αποθηκεύτηκαν</string>
+
 </resources>

@@ -277,4 +277,16 @@
     <string name="incognito_home_warning">Navigarea privată nu îți ascunde activitatea față de rețea, angajator sau site-urile pe care le vizitezi.</string>
     <string name="downloads_quick_access_view_all">Vezi toate descărcările</string>
     <string name="downloads_quick_access_empty">Descărcările recente vor apărea aici</string>
+<string name="settings_theme_app_category">Temă aplicație</string>
+    <string name="settings_theme_home_category">Pagina principală</string>
+    <string name="settings_home_cards">Carduri principale</string>
+    <string name="settings_home_cards_summary">Alege stilul cardurilor de pe pagina principală</string>
+    <string name="settings_home_cards_header">O singură temă schimbă toate cardurile odată — alege aspectul preferat.</string>
+    <string name="home_card_style_neutral">Neutru</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 fișiere salvate · 2,4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 elemente salvate</string>
+
 </resources>

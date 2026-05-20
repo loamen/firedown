@@ -256,4 +256,16 @@
     <string name="home_vault_button">محفوظ فولڈر</string>
     <string name="home_media_playing">چل رہا ہے</string>
     <string name="home_media_paused">روکا ہوا</string>
+<string name="settings_theme_app_category">ایپ تھیم</string>
+    <string name="settings_theme_home_category">ہوم اسکرین</string>
+    <string name="settings_home_cards">ہوم کارڈز</string>
+    <string name="settings_home_cards_summary">ہوم کارڈز کے لیے اسٹائل منتخب کریں</string>
+    <string name="settings_home_cards_header">ایک تھیم تمام کارڈز ایک ساتھ بدل دیتا ہے — اپنا پسندیدہ ظہور منتخب کریں۔</string>
+    <string name="home_card_style_neutral">غیر جانبدار</string>
+    <string name="home_card_style_blush">Blush</string>
+    <string name="home_card_style_bloom">Bloom</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_preview_downloads_subtitle">150 فائلیں محفوظ · 2.4 GB</string>
+    <string name="home_card_style_preview_vault_subtitle">12 آئٹمز محفوظ</string>
+
 </resources>
