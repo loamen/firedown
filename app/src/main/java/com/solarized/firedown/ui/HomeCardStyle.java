@@ -97,9 +97,10 @@ public final class HomeCardStyle {
     private static final CardLook MEDIA_BRAND_DARK =
             new CardLook(0xFFFAB186, 0xFF532606, null, 0xFF532606);
 
-    /** 0 — current shelf look (neutral surface + tonal chip). */
-    public static final HomeCardStyle DEFAULT = new HomeCardStyle("default",
-            R.string.home_card_style_default,
+    /** 0 — Neutral. Neutral surface + tonal chip; matches what's on
+     *  main today. The 'no theme picked yet' baseline. */
+    public static final HomeCardStyle NEUTRAL = new HomeCardStyle("neutral",
+            R.string.home_card_style_neutral,
             new CardLook(0xFFEFEDF0, 0xFF1B1B1E, 0xFFFF857F, 0xFF460005),
             new CardLook(0xFF1F1F22, 0xFFE4E2E5, 0xFFF66A66, 0xFF0F0000),
             new CardLook(0xFFEFEDF0, 0xFF1B1B1E, 0xFFC8417B, 0xFFFFFFFF),
@@ -107,9 +108,10 @@ public final class HomeCardStyle {
             ACTIVE_BRAND_LIGHT, ACTIVE_BRAND_DARK,
             MEDIA_BRAND_LIGHT,  MEDIA_BRAND_DARK);
 
-    /** 1 — pale-tinted surface (light) / deep warm surface (dark), no chip. */
-    public static final HomeCardStyle TINTED_NO_CHIP = new HomeCardStyle("tinted_no_chip",
-            R.string.home_card_style_tinted_no_chip,
+    /** 1 — Coral wash. Pale coral surface (light) / deep warm surface
+     *  (dark), no chip. The 'soft tinted' option. */
+    public static final HomeCardStyle CORAL_WASH = new HomeCardStyle("coral_wash",
+            R.string.home_card_style_coral_wash,
             new CardLook(0xFFFFE6E0, 0xFF5C1313, null, 0xFFB11030),
             new CardLook(0xFF3A1F1C, 0xFFF4DDDB, null, 0xFFF66A66),
             new CardLook(0xFFFBE2EC, 0xFF5C1B3F, null, 0xFF8C1F49),
@@ -117,9 +119,10 @@ public final class HomeCardStyle {
             ACTIVE_BRAND_LIGHT, ACTIVE_BRAND_DARK,
             MEDIA_BRAND_LIGHT,  MEDIA_BRAND_DARK);
 
-    /** 2 — tinted surface + chip kept. */
-    public static final HomeCardStyle TINTED_WITH_CHIP = new HomeCardStyle("tinted_with_chip",
-            R.string.home_card_style_tinted_with_chip,
+    /** 2 — Coral wash + chip. Same tinted surface as Coral wash but
+     *  with the brand chips kept — two layers of brand colour. */
+    public static final HomeCardStyle CORAL_WASH_CHIP = new HomeCardStyle("coral_wash_chip",
+            R.string.home_card_style_coral_wash_chip,
             new CardLook(0xFFFFE6E0, 0xFF5C1313, 0xFFFF857F, 0xFF460005),
             new CardLook(0xFF3A1F1C, 0xFFF4DDDB, 0xFFF66A66, 0xFF0F0000),
             new CardLook(0xFFFBE2EC, 0xFF5C1B3F, 0xFFC8417B, 0xFFFFFFFF),
@@ -127,9 +130,11 @@ public final class HomeCardStyle {
             ACTIVE_BRAND_LIGHT, ACTIVE_BRAND_DARK,
             MEDIA_BRAND_LIGHT,  MEDIA_BRAND_DARK);
 
-    /** 3 — full-saturation brand surface (matches the live cards). */
-    public static final HomeCardStyle FILLED_BRAND = new HomeCardStyle("filled_brand",
-            R.string.home_card_style_filled_brand,
+    /** 3 — Coral. Full-saturation brand surface across the shelves —
+     *  Downloads goes coral, Safe Folder goes raspberry, all four
+     *  cards adopt the same loud brand treatment. */
+    public static final HomeCardStyle CORAL = new HomeCardStyle("coral",
+            R.string.home_card_style_coral,
             new CardLook(0xFFFF857F, 0xFF460005, null, 0xFF460005),
             new CardLook(0xFFF66A66, 0xFF0F0000, null, 0xFF0F0000),
             new CardLook(0xFFC8417B, 0xFFFFFFFF, null, 0xFFFFFFFF),
@@ -137,11 +142,12 @@ public final class HomeCardStyle {
             ACTIVE_BRAND_LIGHT, ACTIVE_BRAND_DARK,
             MEDIA_BRAND_LIGHT,  MEDIA_BRAND_DARK);
 
-    /** 4 — dark warm surface in both modes, all four cards. Live
-     *  cards drop their branded surface for the same dark wash but
-     *  keep a branded accent icon so the 'live' signal isn't lost. */
-    public static final HomeCardStyle ALWAYS_DARK = new HomeCardStyle("always_dark",
-            R.string.home_card_style_always_dark,
+    /** 4 — Ember. Dark warm surface in both light and dark modes,
+     *  across all four cards. Live cards drop their branded surface
+     *  for the same dark wash but keep a branded accent icon so the
+     *  'live' signal isn't lost. */
+    public static final HomeCardStyle EMBER = new HomeCardStyle("ember",
+            R.string.home_card_style_ember,
             new CardLook(0xFF3A1F1C, 0xFFF4DDDB, null, 0xFFFF857F),
             new CardLook(0xFF3A1F1C, 0xFFF4DDDB, null, 0xFFF66A66),
             new CardLook(0xFF3A1A28, 0xFFF4DDDB, null, 0xFFFFB0C9),
@@ -152,7 +158,7 @@ public final class HomeCardStyle {
             new CardLook(0xFF3A1A28, 0xFFF4DDDB, null, 0xFFFAB186));
 
     public static final List<HomeCardStyle> ALL =
-            Arrays.asList(DEFAULT, TINTED_NO_CHIP, TINTED_WITH_CHIP, FILLED_BRAND, ALWAYS_DARK);
+            Arrays.asList(NEUTRAL, CORAL_WASH, CORAL_WASH_CHIP, CORAL, EMBER);
 
     @NonNull
     public static HomeCardStyle fromKey(@Nullable String key, @NonNull HomeCardStyle fallback) {

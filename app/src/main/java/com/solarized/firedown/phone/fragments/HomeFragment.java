@@ -536,7 +536,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
                 Preferences.DEFAULT_HOME_CARD_STYLE);
         com.solarized.firedown.ui.HomeCardStyle style =
                 com.solarized.firedown.ui.HomeCardStyle.fromKey(
-                        key, com.solarized.firedown.ui.HomeCardStyle.DEFAULT);
+                        key, com.solarized.firedown.ui.HomeCardStyle.NEUTRAL);
         boolean night = com.solarized.firedown.ui.HomeCardStyle.isNightMode(getResources());
 
         if (mActiveStrip != null) {

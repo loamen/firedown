@@ -457,11 +457,11 @@
     <string name="settings_home_cards">Home cards</string>
     <string name="settings_home_cards_summary">Pick a style for the Downloads and Safe Folder cards</string>
     <string name="settings_home_cards_header">All four home cards flip together as a single theme — active download, playing media, Downloads, Safe Folder.</string>
-    <string name="home_card_style_default">Default</string>
-    <string name="home_card_style_tinted_no_chip">Tinted surface, no chip</string>
-    <string name="home_card_style_tinted_with_chip">Tinted surface with chip</string>
-    <string name="home_card_style_filled_brand">Filled brand surface</string>
-    <string name="home_card_style_always_dark">Always-dark surface</string>
+    <string name="home_card_style_neutral">Neutral</string>
+    <string name="home_card_style_coral_wash">Coral wash</string>
+    <string name="home_card_style_coral_wash_chip">Coral wash + chip</string>
+    <string name="home_card_style_coral">Coral</string>
+    <string name="home_card_style_ember">Ember</string>
     <!-- Sample-data subtitles shown inside the style-picker previews.
          Not surfaced anywhere else — purely illustrative so the
          preview cards don't look anaemic. -->
