@@ -287,7 +287,7 @@
     <string name="trackers_info_saved">~%1$s af bandbreidd sparað</string>
     <string name="trackers_info_categories">Rakning · Auglýsingar · Fingrafar · Vafrakökur</string>
     <string name="trackers_info_action">Stjórna vörn</string>
-    <string name="trackers_info_today">%1$s blocked today</string>
+    <string name="trackers_info_today">%1$s blokkað í dag</string>
 
 
 

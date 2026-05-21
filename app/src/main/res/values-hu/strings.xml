@@ -310,7 +310,7 @@
     <string name="trackers_info_saved">~%1$s sávszélesség megtakarítva</string>
     <string name="trackers_info_categories">Nyomkövetők · Hirdetések · Ujjlenyomat · Sütik</string>
     <string name="trackers_info_action">Védelem kezelése</string>
-    <string name="trackers_info_today">%1$s blocked today</string>
+    <string name="trackers_info_today">%1$s blokkolva ma</string>
 
 
 

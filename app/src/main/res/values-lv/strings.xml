@@ -249,7 +249,7 @@
     <string name="trackers_info_saved">~%1$s joslas platuma ietaupīts</string>
     <string name="trackers_info_categories">Izsekotāji · Reklāmas · Pirkstu nospiedumi · Sīkfaili</string>
     <string name="trackers_info_action">Pārvaldīt aizsardzību</string>
-    <string name="trackers_info_today">%1$s blocked today</string>
+    <string name="trackers_info_today">%1$s šodien bloķēts</string>
 
 
 
