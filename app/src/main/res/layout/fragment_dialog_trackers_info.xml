@@ -40,13 +40,10 @@
         android:paddingTop="8dp"
         android:paddingBottom="20dp">
 
-        <!-- Privacy-themed illustration. 96dp so it accents the
-             sheet header without dominating it — the hero number
-             below is the page's main visual weight, the
-             illustration is supporting. -->
+
         <ImageView
             android:layout_width="wrap_content"
-            android:layout_height="96dp"
+            android:layout_height="120dp"
             android:layout_marginBottom="4dp"
             android:adjustViewBounds="true"
             android:contentDescription="@null"
