@@ -51,6 +51,11 @@
     <string name="delete_browsing_data_quit_off">Óvirkt</string>
     <string name="delete_browsing_data_quit_on">Virkt</string>
     <string name="delete_downloads">Eyða niðurhali</string>
+    <string name="delete_history_all_time">Allur ferill</string>
+    <string name="delete_history_last_15_minutes">Síðustu 15 mínútur</string>
+    <string name="delete_history_last_24_hours">Síðustu 24 klukkustundir</string>
+    <string name="delete_history_last_hour">Síðasta klukkustund</string>
+    <string name="delete_history_prompt_message">Vafurferli frá valda tímabilinu verður varanlega fjarlægður af þessu tæki.</string>
     <string name="delete_history_prompt_title">Tímabil sem á að hreinsa</string>
     <string name="delete_partial_tabs">Þetta mun eyða gögnum um lokaða flipa.</string>
     <string name="delete_password">Eyða lykilorði</string>

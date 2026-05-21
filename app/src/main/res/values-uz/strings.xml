@@ -49,6 +49,11 @@
     <string name="delete_browsing_data_quit_off">Oʻchiq</string>
     <string name="delete_browsing_data_quit_on">Yoniq</string>
     <string name="delete_downloads">Yuklashlarni o\'chirish</string>
+    <string name="delete_history_all_time">Hammasi</string>
+    <string name="delete_history_last_15_minutes">Soʻnggi 15 daqiqa</string>
+    <string name="delete_history_last_24_hours">Soʻnggi 24 soat</string>
+    <string name="delete_history_last_hour">Soʻnggi soat</string>
+    <string name="delete_history_prompt_message">Tanlangan davrdagi browser tarixi bu qurilmadan butunlay oʻchirib tashlanadi.</string>
     <string name="delete_history_prompt_title">Oʻchirish uchun vaqt oraligʻi</string>
     <string name="delete_partial_tabs">Bu sizning yopiq tab ma\'lumotlaringizni o\'chiradi.</string>
     <string name="delete_password">Parolni o\'chirish</string>

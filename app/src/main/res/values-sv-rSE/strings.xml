@@ -21,6 +21,11 @@
     <string name="delete_browsing_data_on_quit_action">Avsluta</string>
     <string name="delete_browsing_data_quit_off">Av</string>
     <string name="delete_browsing_data_quit_on">På</string>
+    <string name="delete_history_all_time">Hela tiden</string>
+    <string name="delete_history_last_15_minutes">Senaste 15 minuterna</string>
+    <string name="delete_history_last_24_hours">Senaste 24 timmarna</string>
+    <string name="delete_history_last_hour">Senaste timmen</string>
+    <string name="delete_history_prompt_message">Webbhistoriken från den valda perioden kommer att tas bort permanent från den här enheten.</string>
     <string name="delete_history_prompt_title">Tidsintervall att radera</string>
     <string name="exit_fullscreen_with_back_button_short">Dra från toppen och tryck bakåt för att avsluta</string>
     <string name="library_bookmarks">Bokmärken</string>

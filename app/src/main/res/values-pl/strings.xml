@@ -55,6 +55,11 @@
     <string name="delete_browsing_data_quit_off">Wyłączone</string>
     <string name="delete_browsing_data_quit_on">Włączone</string>
     <string name="delete_downloads">Usuń pobrane pliki</string>
+    <string name="delete_history_all_time">Cała historia</string>
+    <string name="delete_history_last_15_minutes">Ostatnie 15 minut</string>
+    <string name="delete_history_last_24_hours">Ostatnie 24 godziny</string>
+    <string name="delete_history_last_hour">Ostatnia godzina</string>
+    <string name="delete_history_prompt_message">Historia przeglądania z wybranego okresu zostanie trwale usunięta z tego urządzenia.</string>
     <string name="delete_history_prompt_title">Okres do usunięcia</string>
     <string name="delete_partial_tabs">Spowoduje to usunięcie danych z zamkniętych kart.</string>
     <string name="delete_password">Usuń hasło</string>

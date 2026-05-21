@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Fra</string>
     <string name="delete_browsing_data_quit_on">Til</string>
     <string name="delete_downloads">Slet downloads</string>
+    <string name="delete_history_all_time">Hele perioden</string>
+    <string name="delete_history_last_15_minutes">Sidste 15 minutter</string>
+    <string name="delete_history_last_24_hours">Sidste 24 timer</string>
+    <string name="delete_history_last_hour">Sidste time</string>
+    <string name="delete_history_prompt_message">Browserhistorik fra den valgte periode vil blive permanent fjernet fra denne enhed.</string>
     <string name="delete_history_prompt_title">Tidsinterval der skal slettes</string>
     <string name="delete_partial_tabs">Dette vil slette alle dine lukkede faner-data.</string>
     <string name="delete_password">Slet adgangskode</string>

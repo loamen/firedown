@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Vypnuté</string>
     <string name="delete_browsing_data_quit_on">Zapnuté</string>
     <string name="delete_downloads">Odstrániť stiahnuté súbory</string>
+    <string name="delete_history_all_time">Všetko</string>
+    <string name="delete_history_last_15_minutes">Posledných 15 minút</string>
+    <string name="delete_history_last_24_hours">Posledných 24 hodín</string>
+    <string name="delete_history_last_hour">Poslednú hodinu</string>
+    <string name="delete_history_prompt_message">História prehliadania z vybraného obdobia bude natrvalo odstránená z tohto zariadenia.</string>
     <string name="delete_history_prompt_title">Obdobie, za ktoré vymazať údaje</string>
     <string name="delete_partial_tabs">Týmto sa odstránia všetky údaje o zatvorených kartách.</string>
     <string name="delete_password">Odstrániť heslo</string>

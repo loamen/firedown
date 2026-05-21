@@ -50,6 +50,11 @@
     <string name="delete_browsing_data_quit_off">අක්‍රිය</string>
     <string name="delete_browsing_data_quit_on">සක්‍රිය</string>
     <string name="delete_downloads">බාගැනීම් මකන්න</string>
+    <string name="delete_history_all_time">සියලු කාලය</string>
+    <string name="delete_history_last_15_minutes">අවසන් මිනිත්තු 15</string>
+    <string name="delete_history_last_24_hours">අවසන් පැය 24</string>
+    <string name="delete_history_last_hour">අවසන් පැය</string>
+    <string name="delete_history_prompt_message">තෝරාගත් කාලය තුළ පිහිටි බ්‍රවුස් ඉතිහාසය මෙම උපාංගයෙන් ස්ථිරව ඉවත් කරනු ලැබේ.</string>
     <string name="delete_history_prompt_title">මකා දමන කාල පරාසය</string>
     <string name="delete_partial_tabs">මෙය ඔබගේ වසා දැමූ ටැබ් දත්ත මකනු ඇත.</string>
     <string name="delete_password">මුරපදය මකන්න</string>

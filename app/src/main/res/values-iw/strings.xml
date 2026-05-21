@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">כבוי</string>
     <string name="delete_browsing_data_quit_on">פעיל</string>
     <string name="delete_downloads">מחק הורדות</string>
+    <string name="delete_history_all_time">היסטוריה מלאה</string>
+    <string name="delete_history_last_15_minutes">15 הדקות האחרונות</string>
+    <string name="delete_history_last_24_hours">24 השעות האחרונות</string>
+    <string name="delete_history_last_hour">השעה האחרונה</string>
+    <string name="delete_history_prompt_message">היסטוריית הגלישה מהתקופה שנבחרה תוסר לצמיתות ממכשיר זה.</string>
     <string name="delete_history_prompt_title">טווח זמן למחיקה</string>
     <string name="delete_partial_tabs">פעולה זו תמחק את כל נתוני הכרטיסיות הסגורות שלך.</string>
     <string name="delete_password">מחק סיסמה</string>

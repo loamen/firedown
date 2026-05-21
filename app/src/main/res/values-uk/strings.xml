@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Вимкнено</string>
     <string name="delete_browsing_data_quit_on">Увімкнено</string>
     <string name="delete_downloads">Видалити завантаження</string>
+    <string name="delete_history_all_time">Увесь час</string>
+    <string name="delete_history_last_15_minutes">Останні 15 хвилин</string>
+    <string name="delete_history_last_24_hours">Останні 24 години</string>
+    <string name="delete_history_last_hour">Остання година</string>
+    <string name="delete_history_prompt_message">Журнал перегляду за вибраний період буде остаточно видалено з цього пристрою.</string>
     <string name="delete_history_prompt_title">Проміжок часу для видалення</string>
     <string name="delete_partial_tabs">Це видалить дані ваших закритих вкладок.</string>
     <string name="delete_password">Видалити пароль</string>

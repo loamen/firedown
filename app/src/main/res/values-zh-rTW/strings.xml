@@ -55,6 +55,11 @@
     <string name="delete_browsing_data_quit_off">關閉</string>
     <string name="delete_browsing_data_quit_on">開啟</string>
     <string name="delete_downloads">刪除下載</string>
+    <string name="delete_history_all_time">全部歷史</string>
+    <string name="delete_history_last_15_minutes">過去 15 分鐘</string>
+    <string name="delete_history_last_24_hours">過去 24 小時</string>
+    <string name="delete_history_last_hour">過去 1 小時</string>
+    <string name="delete_history_prompt_message">所選時段的瀏覽記錄將從此裝置上永久移除。</string>
     <string name="delete_history_prompt_title">要清除的時間範圍</string>
     <string name="delete_partial_tabs">這將刪除所有已關閉的標籤資料。</string>
     <string name="delete_password">刪除密碼</string>

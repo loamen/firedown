@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Tắt</string>
     <string name="delete_browsing_data_quit_on">Bật</string>
     <string name="delete_downloads">Xóa Tải xuống</string>
+    <string name="delete_history_all_time">Mọi lúc</string>
+    <string name="delete_history_last_15_minutes">15 phút qua</string>
+    <string name="delete_history_last_24_hours">24 giờ qua</string>
+    <string name="delete_history_last_hour">1 giờ qua</string>
+    <string name="delete_history_prompt_message">Lịch sử duyệt web trong khoảng thời gian đã chọn sẽ bị xóa vĩnh viễn khỏi thiết bị này.</string>
     <string name="delete_history_prompt_title">Khoảng thời gian để xóa</string>
     <string name="delete_partial_tabs">Thao tác này sẽ xóa dữ liệu về các tab đã đóng của bạn.</string>
     <string name="delete_password">Xóa mật khẩu</string>

@@ -85,6 +85,11 @@
     <string name="delete_browsing_data_quit_off">オフ</string>
     <string name="delete_browsing_data_quit_on">オン</string>
     <string name="delete_downloads">ダウンロードを削除</string>
+    <string name="delete_history_all_time">すべての履歴</string>
+    <string name="delete_history_last_15_minutes">過去 15 分間</string>
+    <string name="delete_history_last_24_hours">過去 24 時間</string>
+    <string name="delete_history_last_hour">過去 1 時間</string>
+    <string name="delete_history_prompt_message">選択した期間の閲覧履歴がこの端末から完全に削除されます。</string>
     <string name="delete_history_prompt_title">削除する期間</string>
     <string name="delete_partial_tabs">これにより、閉じたタブのデータがすべて削除されます。</string>
     <string name="delete_password">パスワードを削除</string>

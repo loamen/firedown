@@ -21,6 +21,11 @@
     <string name="delete_browsing_data_on_quit_action">Avslutt</string>
     <string name="delete_browsing_data_quit_off">Av</string>
     <string name="delete_browsing_data_quit_on">På</string>
+    <string name="delete_history_all_time">All tid</string>
+    <string name="delete_history_last_15_minutes">Siste 15 minutter</string>
+    <string name="delete_history_last_24_hours">Siste 24 timer</string>
+    <string name="delete_history_last_hour">Siste time</string>
+    <string name="delete_history_prompt_message">Nettleserloggen for den valgte perioden vil bli permanent fjernet fra denne enheten.</string>
     <string name="delete_history_prompt_title">Tidsrom for sletting</string>
     <string name="exit_fullscreen_with_back_button_short">Dra fra toppen, og trykk tilbake for å avslutte</string>
     <string name="library_bookmarks">Bokmerker</string>

@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Pois</string>
     <string name="delete_browsing_data_quit_on">Päällä</string>
     <string name="delete_downloads">Poista lataukset</string>
+    <string name="delete_history_all_time">Kaikki</string>
+    <string name="delete_history_last_15_minutes">Viimeiset 15 minuuttia</string>
+    <string name="delete_history_last_24_hours">Viimeiset 24 tuntia</string>
+    <string name="delete_history_last_hour">Viimeinen tunti</string>
+    <string name="delete_history_prompt_message">Valitun ajanjakson selaushistoria poistetaan pysyvästi tästä laitteesta.</string>
     <string name="delete_history_prompt_title">Tyhjennettävä aikajakso</string>
     <string name="delete_partial_tabs">Tämä poistaa kaikki suljettujen välilehtien tiedot.</string>
     <string name="delete_password">Poista salasana</string>

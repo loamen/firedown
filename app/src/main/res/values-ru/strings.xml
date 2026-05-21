@@ -55,6 +55,11 @@
     <string name="delete_browsing_data_quit_off">Отключено</string>
     <string name="delete_browsing_data_quit_on">Включено</string>
     <string name="delete_downloads">Удалить загрузки</string>
+    <string name="delete_history_all_time">Вся история</string>
+    <string name="delete_history_last_15_minutes">Последние 15 минут</string>
+    <string name="delete_history_last_24_hours">Последние 24 часа</string>
+    <string name="delete_history_last_hour">Последний час</string>
+    <string name="delete_history_prompt_message">История просмотров за выбранный период будет навсегда удалена с этого устройства.</string>
     <string name="delete_history_prompt_title">Промежуток времени для удаления</string>
     <string name="delete_partial_tabs">Это приведет к удалению всех данных с закрытых вкладок.</string>
     <string name="delete_password">Удалить пароль</string>

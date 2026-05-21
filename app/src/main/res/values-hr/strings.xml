@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Isključeno</string>
     <string name="delete_browsing_data_quit_on">Uključeno</string>
     <string name="delete_downloads">Izbriši preuzimanja</string>
+    <string name="delete_history_all_time">Sve vrijeme</string>
+    <string name="delete_history_last_15_minutes">Zadnjih 15 minuta</string>
+    <string name="delete_history_last_24_hours">Zadnja 24 sata</string>
+    <string name="delete_history_last_hour">Zadnji sat</string>
+    <string name="delete_history_prompt_message">Povijest pregledavanja iz odabranog razdoblja bit će trajno uklonjena s ovog uređaja.</string>
     <string name="delete_history_prompt_title">Vremenski opseg za brisanje</string>
     <string name="delete_partial_tabs">Ovo će izbrisati sve vaše podatke o zatvorenim karticama.</string>
     <string name="delete_password">Izbriši lozinku</string>

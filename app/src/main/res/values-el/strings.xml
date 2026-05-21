@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Ανενεργό</string>
     <string name="delete_browsing_data_quit_on">Ενεργό</string>
     <string name="delete_downloads">Διαγραφή λήψεων</string>
+    <string name="delete_history_all_time">Όλος ο χρόνος</string>
+    <string name="delete_history_last_15_minutes">Τελευταία 15 λεπτά</string>
+    <string name="delete_history_last_24_hours">Τελευταίες 24 ώρες</string>
+    <string name="delete_history_last_hour">Τελευταία ώρα</string>
+    <string name="delete_history_prompt_message">Το ιστορικό περιήγησης από την επιλεγμένη περίοδο θα διαγραφεί οριστικά από αυτή τη συσκευή.</string>
     <string name="delete_history_prompt_title">Χρονικό διάστημα διαγραφής</string>
     <string name="delete_partial_tabs">Αυτό θα διαγράψει τα δεδομένα των κλειστών καρτελών σας.</string>
     <string name="delete_password">Διαγραφή κωδικού πρόσβασης</string>

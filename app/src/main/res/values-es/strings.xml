@@ -85,6 +85,11 @@
     <string name="delete_browsing_data_quit_off">Desactivado</string>
     <string name="delete_browsing_data_quit_on">Activado</string>
     <string name="delete_downloads">Eliminar descargas</string>
+    <string name="delete_history_all_time">Todo el historial</string>
+    <string name="delete_history_last_15_minutes">Últimos 15 minutos</string>
+    <string name="delete_history_last_24_hours">Últimas 24 horas</string>
+    <string name="delete_history_last_hour">Última hora</string>
+    <string name="delete_history_prompt_message">El historial de navegación del período seleccionado se eliminará permanentemente de este dispositivo.</string>
     <string name="delete_history_prompt_title">Intervalo de tiempo a eliminar</string>
     <string name="delete_partial_tabs">Esto eliminará los datos de tus pestañas cerradas.</string>
     <string name="delete_password">Eliminar contraseña</string>

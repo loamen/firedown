@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Desactivat</string>
     <string name="delete_browsing_data_quit_on">Activat</string>
     <string name="delete_downloads">Suprimeix les descàrregues</string>
+    <string name="delete_history_all_time">Tot l\'historial</string>
+    <string name="delete_history_last_15_minutes">Últims 15 minuts</string>
+    <string name="delete_history_last_24_hours">Últimes 24 hores</string>
+    <string name="delete_history_last_hour">Última hora</string>
+    <string name="delete_history_prompt_message">L\'historial de navegació del període seleccionat s\'eliminarà permanentment d\'aquest dispositiu.</string>
     <string name="delete_history_prompt_title">Interval de temps per suprimir</string>
     <string name="delete_partial_tabs">Això suprimirà totes les dades de les pestanyes tancades.</string>
     <string name="delete_password">Esborra la contrasenya</string>

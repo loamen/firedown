@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">Ki</string>
     <string name="delete_browsing_data_quit_on">Be</string>
     <string name="delete_downloads">Letöltések törlése</string>
+    <string name="delete_history_all_time">Teljes előzmények</string>
+    <string name="delete_history_last_15_minutes">Utolsó 15 perc</string>
+    <string name="delete_history_last_24_hours">Utolsó 24 óra</string>
+    <string name="delete_history_last_hour">Utolsó óra</string>
+    <string name="delete_history_prompt_message">A kiválasztott időszak böngészési előzményei véglegesen törlődnek erről az eszközről.</string>
     <string name="delete_history_prompt_title">Törlendő időtartomány</string>
     <string name="delete_partial_tabs">Ezzel törli a bezárt lapokra vonatkozó összes adatot.</string>
     <string name="delete_password">Jelszó törlése</string>

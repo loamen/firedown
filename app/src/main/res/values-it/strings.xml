@@ -55,6 +55,11 @@
     <string name="delete_browsing_data_quit_off">Disattivato</string>
     <string name="delete_browsing_data_quit_on">Attivato</string>
     <string name="delete_downloads">Elimina download</string>
+    <string name="delete_history_all_time">Tutto</string>
+    <string name="delete_history_last_15_minutes">Ultimi 15 minuti</string>
+    <string name="delete_history_last_24_hours">Ultime 24 ore</string>
+    <string name="delete_history_last_hour">Ultima ora</string>
+    <string name="delete_history_prompt_message">La cronologia di navigazione del periodo selezionato verrà rimossa definitivamente da questo dispositivo.</string>
     <string name="delete_history_prompt_title">Intervallo di tempo da cancellare</string>
     <string name="delete_partial_tabs">Ciò eliminerà i dati delle schede chiuse.</string>
     <string name="delete_password">Elimina password</string>

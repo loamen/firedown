@@ -55,6 +55,11 @@
     <string name="delete_browsing_data_quit_off">Kapalı</string>
     <string name="delete_browsing_data_quit_on">Açık</string>
     <string name="delete_downloads">İndirilenleri Sil</string>
+    <string name="delete_history_all_time">Tüm zamanlar</string>
+    <string name="delete_history_last_15_minutes">Son 15 dakika</string>
+    <string name="delete_history_last_24_hours">Son 24 saat</string>
+    <string name="delete_history_last_hour">Son saat</string>
+    <string name="delete_history_prompt_message">Seçilen dönemin gezinme geçmişi bu cihazdan kalıcı olarak kaldırılacak.</string>
     <string name="delete_history_prompt_title">Silinecek zaman aralığı</string>
     <string name="delete_partial_tabs">Bu, tüm kapalı sekme verilerinizi siler.</string>
     <string name="delete_password">Şifreyi Sil</string>

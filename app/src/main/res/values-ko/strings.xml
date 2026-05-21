@@ -55,6 +55,11 @@
     <string name="delete_browsing_data_quit_off">꺼짐</string>
     <string name="delete_browsing_data_quit_on">켜짐</string>
     <string name="delete_downloads">다운로드 삭제</string>
+    <string name="delete_history_all_time">전체 기록</string>
+    <string name="delete_history_last_15_minutes">지난 15분</string>
+    <string name="delete_history_last_24_hours">지난 24시간</string>
+    <string name="delete_history_last_hour">지난 1시간</string>
+    <string name="delete_history_prompt_message">선택한 기간의 방문 기록이 이 기기에서 영구적으로 삭제됩니다.</string>
     <string name="delete_history_prompt_title">삭제할 시간 범위</string>
     <string name="delete_partial_tabs">닫은 탭 데이터가 모두 삭제됩니다.</string>
     <string name="delete_password">비밀번호 삭제</string>

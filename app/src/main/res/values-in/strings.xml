@@ -51,6 +51,11 @@
     <string name="delete_browsing_data_quit_off">Nonaktif</string>
     <string name="delete_browsing_data_quit_on">Aktif</string>
     <string name="delete_downloads">Hapus Unduhan</string>
+    <string name="delete_history_all_time">Semua</string>
+    <string name="delete_history_last_15_minutes">15 menit terakhir</string>
+    <string name="delete_history_last_24_hours">24 jam terakhir</string>
+    <string name="delete_history_last_hour">1 jam terakhir</string>
+    <string name="delete_history_prompt_message">Riwayat penjelajahan dari periode yang dipilih akan dihapus permanen dari perangkat ini.</string>
     <string name="delete_history_prompt_title">Rentang waktu untuk menghapus</string>
     <string name="delete_partial_tabs">Ini akan menghapus data tab yang ditutup.</string>
     <string name="delete_password">Hapus Kata Sandi</string>

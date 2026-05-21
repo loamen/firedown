@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">ጠፍቷል</string>
     <string name="delete_browsing_data_quit_on">በርቷል</string>
     <string name="delete_downloads">ውርዶችን ሰርዝ</string>
+    <string name="delete_history_all_time">ሁል ጊዜ</string>
+    <string name="delete_history_last_15_minutes">ያለፉት 15 ደቂቃዎች</string>
+    <string name="delete_history_last_24_hours">ያለፉት 24 ሰዓታት</string>
+    <string name="delete_history_last_hour">ያለፈው ሰዓት</string>
+    <string name="delete_history_prompt_message">በተመረጠው ጊዜ ውስጥ ያለው የአሰሳ ታሪክ ከዚህ መሣሪያ በቋሚነት ይወገዳል።</string>
     <string name="delete_history_prompt_title">የሚሰረዝበት ጊዜ</string>
     <string name="delete_partial_tabs">ይህ ሁሉንም የተዘጉ የትሮች ውሂብዎን ይሰርዛል።</string>
     <string name="delete_password">የይለፍ ቃል ሰርዝ</string>

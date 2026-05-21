@@ -52,6 +52,11 @@
     <string name="delete_browsing_data_quit_off">ปิด</string>
     <string name="delete_browsing_data_quit_on">เปิด</string>
     <string name="delete_downloads">ลบการดาวน์โหลด</string>
+    <string name="delete_history_all_time">ทั้งหมด</string>
+    <string name="delete_history_last_15_minutes">15 นาทีล่าสุด</string>
+    <string name="delete_history_last_24_hours">24 ชั่วโมงล่าสุด</string>
+    <string name="delete_history_last_hour">ชั่วโมงล่าสุด</string>
+    <string name="delete_history_prompt_message">ประวัติการเรียกดูจากช่วงเวลาที่เลือกจะถูกลบออกจากอุปกรณ์นี้อย่างถาวร</string>
     <string name="delete_history_prompt_title">ช่วงเวลาที่จะลบ</string>
     <string name="delete_partial_tabs">การดำเนินการนี้จะลบข้อมูลแท็บที่ปิดทั้งหมดของคุณ</string>
     <string name="delete_password">ลบรหัสผ่าน</string>

@@ -85,6 +85,11 @@
     <string name="delete_browsing_data_quit_off">Aus</string>
     <string name="delete_browsing_data_quit_on">Ein</string>
     <string name="delete_downloads">Downloads löschen</string>
+    <string name="delete_history_all_time">Gesamte Zeit</string>
+    <string name="delete_history_last_15_minutes">Letzte 15 Minuten</string>
+    <string name="delete_history_last_24_hours">Letzte 24 Stunden</string>
+    <string name="delete_history_last_hour">Letzte Stunde</string>
+    <string name="delete_history_prompt_message">Der Browserverlauf aus dem ausgewählten Zeitraum wird dauerhaft von diesem Gerät entfernt.</string>
     <string name="delete_history_prompt_title">Zu löschender Zeitraum</string>
     <string name="delete_partial_tabs">Dadurch werden alle Daten Ihrer geschlossenen Tabs gelöscht.</string>
     <string name="delete_password">Passwort löschen</string>

@@ -51,6 +51,11 @@
     <string name="delete_browsing_data_quit_off">ປິດ</string>
     <string name="delete_browsing_data_quit_on">ເປີດ</string>
     <string name="delete_downloads">ລຶບການດາວໂຫຼດ</string>
+    <string name="delete_history_all_time">ທັງໝົດ</string>
+    <string name="delete_history_last_15_minutes">15 ນາທີຜ່ານມາ</string>
+    <string name="delete_history_last_24_hours">24 ຊົ່ວໂມງຜ່ານມາ</string>
+    <string name="delete_history_last_hour">ຊົ່ວໂມງຜ່ານມາ</string>
+    <string name="delete_history_prompt_message">ປະຫວັດການທ່ອງເວັບໃນຊ່ວງເວລາທີ່ເລືອກຈະຖືກລຶບອອກຈາກອຸປະກອນນີ້ຖາວອນ.</string>
     <string name="delete_history_prompt_title">ຊ່ວງເວລາທີ່ຈະລຶບ</string>
     <string name="delete_partial_tabs">ນີ້ຈະລຶບຂໍ້ມູນແຖບປິດຂອງທ່ານ.</string>
     <string name="delete_password">ລຶບລະຫັດຜ່ານ</string>
