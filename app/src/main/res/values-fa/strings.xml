@@ -267,7 +267,6 @@
     <string name="vault_encrypting">در حال رمزگذاری فایل، لطفا صبر کنید…</string>
     <string name="vault_unsupported">نمی توان این فایل را باز کرد. برای باز کردن، آن را از پوشه ایمن خارج کرده و دوباره امتحان کنید.</string>
     <string name="bookmark_name">نام</string>
-    <string name="downloads_quick_access_title">دانلودهای اخیر</string>
     <string name="home_onboarding_sites_label">Firedown را امتحان کنید در</string>
     <string name="home_vault_button">پوشه ایمن</string>
     <string name="home_media_playing">در حال پخش</string>

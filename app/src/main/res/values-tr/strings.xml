@@ -340,7 +340,6 @@
         <item quantity="other">%d gizli indirme devam ediyor</item>
     </plurals>
     <string name="incognito_downloads_in_progress_subtitle">Güvenli klasörde görüntülemek için dokunun</string>
-    <string name="downloads_quick_access_title">Son indirilenler</string>
     <string name="home_onboarding_sites_label">Firedown\'u şurada deneyin</string>
     <string name="home_vault_button">Güvenli klasör</string>
     <string name="home_media_playing">Oynatılıyor</string>
@@ -348,8 +347,6 @@
     <string name="settings_webrtc_enabled_summary">Gerçek zamanlı görüntülü ve sesli aramaları etkinleştirir. Devre dışı bırakmak ağ tarama yüzeyini azaltır.</string>
     <string name="incognito_home_description">Gizli pencerede gezinirken Firedown şunları saklamaz:</string>
     <string name="incognito_home_warning">Gizli gezinti, etkinliğinizi ağınızdan, işvereninizden veya ziyaret ettiğiniz sitelerden gizlemez.</string>
-    <string name="downloads_quick_access_view_all">Tüm indirmeleri görüntüle</string>
-    <string name="downloads_quick_access_empty">Son indirmeler burada görüntülenecek</string>
     <string name="wasm_snackbar_message">%s WebAssembly gerektiriyor</string>
     <string name="wasm_snackbar_action_enable">Etkinleştir</string>
     <string name="settings_wasm_allowlist_title">İzin verilen siteler</string>

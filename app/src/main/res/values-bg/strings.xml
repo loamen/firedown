@@ -277,7 +277,6 @@
     <string name="vault_encrypting">Файлът се криптира, моля изчакайте…</string>
     <string name="vault_unsupported">Файлът не може да се отвори. За да го отворите, го преместете от Защитената папка и опитайте отново.</string>
     <string name="bookmark_name">Име</string>
-    <string name="downloads_quick_access_title">Скорошни изтегляния</string>
     <string name="home_onboarding_sites_label">Опитайте Firedown с</string>
     <string name="home_vault_button">Защитена папка</string>
     <string name="home_media_playing">Възпроизвежда се</string>

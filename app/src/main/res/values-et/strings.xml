@@ -266,7 +266,6 @@
     <string name="vault_encrypting">Faili krüptimine, palun oodake…</string>
     <string name="vault_unsupported">Seda faili ei saa avada. Avamiseks teisaldage see turvalisest kaustast välja ja proovige uuesti.</string>
     <string name="bookmark_name">Nimi</string>
-    <string name="downloads_quick_access_title">Hiljutised allalaadimised</string>
     <string name="home_onboarding_sites_label">Proovi Firedowni saidil</string>
     <string name="home_vault_button">Turvaline kaust</string>
     <string name="home_media_playing">Esitamine</string>

@@ -251,7 +251,6 @@
     <string name="vault_decrypting">فائل کو ڈکرپٹ کیا جا رہا ہے، براہ کرم انتظار کریں…</string>
     <string name="vault_encrypting">فائل کو خفیہ کر رہا ہے، براہ کرم انتظار کریں…</string>
     <string name="vault_unsupported">اس فائل کو نہیں کھولا جا سکتا۔ کھولنے کے لیے، اسے محفوظ فولڈر سے باہر لے جائیں اور دوبارہ کوشش کریں۔</string>
-    <string name="downloads_quick_access_title">حالیہ ڈاؤن لوڈز</string>
     <string name="home_onboarding_sites_label">Firedown آزمائیں</string>
     <string name="home_vault_button">محفوظ فولڈر</string>
     <string name="home_media_playing">چل رہا ہے</string>

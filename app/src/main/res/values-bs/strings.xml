@@ -259,7 +259,6 @@
     <string name="vault_encrypting">Šifriranje fajla, sačekajte…</string>
     <string name="vault_unsupported">Ne mogu otvoriti ovaj fajl. Da ga otvorite, premjestite ga iz sigurnog foldera i pokušajte ponovo.</string>
     <string name="bookmark_name">Naziv</string>
-    <string name="downloads_quick_access_title">Nedavna preuzimanja</string>
     <string name="home_onboarding_sites_label">Isprobajte Firedown na</string>
     <string name="home_vault_button">Sigurni folder</string>
     <string name="home_media_playing">Reprodukcija</string>

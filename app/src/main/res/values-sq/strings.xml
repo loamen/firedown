@@ -258,7 +258,6 @@
     <string name="vault_encrypting">Skedari po kriptohet, ju lutemi prisni…</string>
     <string name="vault_unsupported">Ky skedar nuk mund të hapet. Për ta hapur, zhvendoseni atë nga \"Dosja e sigurt\" dhe provoni përsëri.</string>
     <string name="bookmark_name">Emër</string>
-    <string name="downloads_quick_access_title">Shkarkimet e fundit</string>
     <string name="home_onboarding_sites_label">Provo Firedown në</string>
     <string name="home_vault_button">Dosja e sigurt</string>
     <string name="home_media_playing">Po luan</string>

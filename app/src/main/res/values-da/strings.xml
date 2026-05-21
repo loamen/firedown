@@ -287,7 +287,6 @@
     <string name="play">Afspil</string>
     <string name="pip_play">Afspil</string>
     <string name="pip_pause">Pause</string>
-    <string name="downloads_quick_access_title">Seneste downloads</string>
     <string name="home_onboarding_sites_label">Prøv Firedown på</string>
     <string name="home_vault_button">Sikker mappe</string>
     <string name="home_media_playing">Afspiller</string>
@@ -295,8 +294,6 @@
     <string name="settings_webrtc_enabled_summary">Tillader video- og taleopkald i realtid. Deaktivering reducerer netværkssonderingsfladen.</string>
     <string name="incognito_home_description">Når du surfer i et privat vindue, gemmer Firedown ikke:</string>
     <string name="incognito_home_warning">Privat browsing skjuler ikke din aktivitet for dit netværk, din arbejdsgiver eller de sider, du besøger.</string>
-    <string name="downloads_quick_access_view_all">Vis alle downloads</string>
-    <string name="downloads_quick_access_empty">Seneste downloads vises her</string>
 <string name="settings_theme_app_category">App-tema</string>
     <string name="settings_theme_home_category">Startside</string>
     <string name="settings_home_cards">Startkort</string>

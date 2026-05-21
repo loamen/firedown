@@ -265,7 +265,6 @@
     <string name="vault_encrypting">ፋይል በማመስጠር ላይ፣ እባክዎ ይጠብቁ…</string>
     <string name="vault_unsupported">ይህን ፋይል መክፈት አልተቻለም። ለመክፈት ደህንነቱ ከተጠበቀ አቃፊ አውጥተው ይውሰዱ እና እንደገና ይሞክሩ።</string>
     <string name="bookmark_name">ስም</string>
-    <string name="downloads_quick_access_title">የቅርብ ጊዜ ውርዶች</string>
     <string name="home_onboarding_sites_label">Firedownን ይሞክሩ በ</string>
     <string name="home_vault_button">ደህንነቱ የተጠበቀ አቃፊ</string>
     <string name="home_media_playing">በማጫወት ላይ</string>

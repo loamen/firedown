@@ -293,7 +293,6 @@
     <string name="play">Přehrát</string>
     <string name="pip_play">Přehrát</string>
     <string name="pip_pause">Pozastavit</string>
-    <string name="downloads_quick_access_title">Nedávná stahování</string>
     <string name="home_onboarding_sites_label">Vyzkoušejte Firedown na</string>
     <string name="home_vault_button">Bezpečná složka</string>
     <string name="home_media_playing">Přehrává se</string>
@@ -301,8 +300,6 @@
     <string name="settings_webrtc_enabled_summary">Umožňuje videohovory a hlasové hovory v reálném čase. Vypnutí zmenšuje plochu pro síťové sondování.</string>
     <string name="incognito_home_description">Při prohlížení v anonymním okně Firedown neukládá:</string>
     <string name="incognito_home_warning">Anonymní prohlížení neskrývá vaši aktivitu před sítí, zaměstnavatelem ani navštívenými stránkami.</string>
-    <string name="downloads_quick_access_view_all">Zobrazit všechna stahování</string>
-    <string name="downloads_quick_access_empty">Nedávná stahování se zobrazí zde</string>
     <string name="wasm_snackbar_message">%s vyžaduje WebAssembly</string>
     <string name="wasm_snackbar_action_enable">Povolit</string>
     <string name="settings_wasm_allowlist_title">Povolené weby</string>
