@@ -195,7 +195,7 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         boolean userTouching =
                 mRecyclerView.getScrollState() != RecyclerView.SCROLL_STATE_IDLE;
         if (activeId != -1) mLastTabActive = activeId;
-        if (activeChanged && !userTouching && activePosition >= 0) {
+        if (activeChanged && !userTouching) {
             int spanCount = mGridLayoutManager.getSpanCount();
             int adapterTarget = activePosition + getLeadingAdapterCount();
             int scrollTarget = Math.max(0, adapterTarget - spanCount);
