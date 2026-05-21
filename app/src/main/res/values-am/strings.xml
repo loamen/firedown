@@ -299,7 +299,7 @@
     <string name="trackers_info_saved">~%1$s የጥቅም ስፋት ተቆጥቧል</string>
     <string name="trackers_info_categories">ተከታታዮች · ማስታወቂያዎች · የጣት አሻራ · ኩኪዎች</string>
     <string name="trackers_info_breakdown_frames">የተካተቱ ክፈፎች</string>
-    <string name="trackers_info_breakdown_other">ሌሎች ጥያቄዎች</string>
+    <string name="trackers_info_breakdown_other">ትንታኔ እና ቴሌሜትሪ</string>
     <string name="trackers_info_breakdown_pixels">የመከታተያ ፒክሰሎች እና ቤከኖች</string>
     <string name="trackers_info_breakdown_scripts">ማስታወቂያዎች</string>
     <string name="trackers_info_section_breakdown">በዓይነት የተከለከለ</string>

@@ -384,7 +384,7 @@
     <string name="trackers_info_saved">~%1$s zaoszczędzonego transferu</string>
     <string name="trackers_info_categories">Trackery · Reklamy · Odciski · Ciasteczka</string>
     <string name="trackers_info_breakdown_frames">Osadzone ramki</string>
-    <string name="trackers_info_breakdown_other">Inne żądania</string>
+    <string name="trackers_info_breakdown_other">Analityka i telemetria</string>
     <string name="trackers_info_breakdown_pixels">Piksele śledzące i sygnalizatory</string>
     <string name="trackers_info_breakdown_scripts">Reklamy</string>
     <string name="trackers_info_section_breakdown">Zablokowane według typu</string>

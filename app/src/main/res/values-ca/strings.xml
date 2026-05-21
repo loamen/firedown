@@ -322,7 +322,7 @@
     <string name="trackers_info_saved">~%1$s d\'ample de banda estalviats</string>
     <string name="trackers_info_categories">Rastrejadors · Anuncis · Empremta · Galetes</string>
     <string name="trackers_info_breakdown_frames">Marcs incrustats</string>
-    <string name="trackers_info_breakdown_other">Altres sol·licituds</string>
+    <string name="trackers_info_breakdown_other">Analítica i telemetria</string>
     <string name="trackers_info_breakdown_pixels">Píxels de seguiment i balises</string>
     <string name="trackers_info_breakdown_scripts">Anuncis</string>
     <string name="trackers_info_section_breakdown">Blocat per tipus</string>

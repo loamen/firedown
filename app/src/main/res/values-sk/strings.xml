@@ -308,7 +308,7 @@
     <string name="trackers_info_saved">~%1$s šírky pásma ušetrenej</string>
     <string name="trackers_info_categories">Sledovače · Reklamy · Odtlačky · Cookies</string>
     <string name="trackers_info_breakdown_frames">Vložené rámce</string>
-    <string name="trackers_info_breakdown_other">Iné požiadavky</string>
+    <string name="trackers_info_breakdown_other">Analytika a telemetria</string>
     <string name="trackers_info_breakdown_pixels">Sledovacie pixely a majáky</string>
     <string name="trackers_info_breakdown_scripts">Reklamy</string>
     <string name="trackers_info_section_breakdown">Blokované podľa typu</string>

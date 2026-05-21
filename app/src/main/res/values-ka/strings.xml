@@ -293,7 +293,7 @@
     <string name="trackers_info_saved">~%1$s გამტარუნარიანობა დაზოგა</string>
     <string name="trackers_info_categories">ტრეკერები · რეკლამები · თითის ანაბეჭდი · ქუქი ფაილები</string>
     <string name="trackers_info_breakdown_frames">ჩაშენებული ფრეიმები</string>
-    <string name="trackers_info_breakdown_other">სხვა მოთხოვნები</string>
+    <string name="trackers_info_breakdown_other">ანალიტიკა და ტელემეტრია</string>
     <string name="trackers_info_breakdown_pixels">თვალთვალის პიქსელები და მაიაკები</string>
     <string name="trackers_info_breakdown_scripts">რეკლამები</string>
     <string name="trackers_info_section_breakdown">ტიპის მიხედვით დაბლოკილი</string>

@@ -524,7 +524,7 @@
     <string name="trackers_info_saved">~%1$s de bande passante économisée</string>
     <string name="trackers_info_categories">Traqueurs · Pubs · Empreinte · Cookies</string>
     <string name="trackers_info_breakdown_frames">Cadres intégrés</string>
-    <string name="trackers_info_breakdown_other">Autres requêtes</string>
+    <string name="trackers_info_breakdown_other">Analytique et télémétrie</string>
     <string name="trackers_info_breakdown_pixels">Pixels et balises de pistage</string>
     <string name="trackers_info_breakdown_scripts">Publicités</string>
     <string name="trackers_info_section_breakdown">Bloqué par type</string>

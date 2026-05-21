@@ -284,7 +284,7 @@
     <string name="trackers_info_saved">~%1$s කලාප පළල ඉතිරි කළා</string>
     <string name="trackers_info_categories">ට්‍රැකර් · දැන්වීම් · ඇඟිලි සලකුණු · කුකීස්</string>
     <string name="trackers_info_breakdown_frames">කාවැද්දූ රාමු</string>
-    <string name="trackers_info_breakdown_other">වෙනත් ඉල්ලීම්</string>
+    <string name="trackers_info_breakdown_other">විශ්ලේෂණ සහ ටෙලිමෙට්‍රි</string>
     <string name="trackers_info_breakdown_pixels">ලුහුබැඳීමේ පික්සල් සහ බීකන්</string>
     <string name="trackers_info_breakdown_scripts">වෙළඳ දැන්වීම්</string>
     <string name="trackers_info_section_breakdown">වර්ගය අනුව අවහිර කළ</string>

@@ -610,7 +610,7 @@
     <string name="trackers_info_breakdown_scripts">Ads</string>
     <string name="trackers_info_breakdown_pixels">Tracking pixels and beacons</string>
     <string name="trackers_info_breakdown_frames">Embedded frames</string>
-    <string name="trackers_info_breakdown_other">Other requests</string>
+    <string name="trackers_info_breakdown_other">Analytics &amp; telemetry</string>
     <string name="trackers_info_action">Manage protection</string>
     <!-- Subtitle placeholder for the initial state — uBlock hasn't
          pushed its cumulative count yet, or the count is genuinely

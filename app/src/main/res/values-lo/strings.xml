@@ -285,7 +285,7 @@
     <string name="trackers_info_saved">ປະຫຍັດແບນວິດ ~%1$s</string>
     <string name="trackers_info_categories">ຕົວຕິດຕາມ · ໂຄສະນາ · ລາຍນິ້ວມື · ຄຸກກີ</string>
     <string name="trackers_info_breakdown_frames">ກອບຝັງ</string>
-    <string name="trackers_info_breakdown_other">ຄຳຮ້ອງຂໍອື່ນໆ</string>
+    <string name="trackers_info_breakdown_other">ການວິເຄາະ ແລະ ໂທລະມາດ</string>
     <string name="trackers_info_breakdown_pixels">ພິກເຊວແລະບີຄອນຕິດຕາມ</string>
     <string name="trackers_info_breakdown_scripts">ໂຄສະນາ</string>
     <string name="trackers_info_section_breakdown">ບລັອກຕາມປະເພດ</string>

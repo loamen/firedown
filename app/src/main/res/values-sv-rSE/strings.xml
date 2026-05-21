@@ -89,7 +89,7 @@
     <string name="trackers_info_saved">~%1$s bandbredd sparad</string>
     <string name="trackers_info_categories">Spårare · Annonser · Fingeravtryck · Cookies</string>
     <string name="trackers_info_breakdown_frames">Inbäddade ramar</string>
-    <string name="trackers_info_breakdown_other">Andra förfrågningar</string>
+    <string name="trackers_info_breakdown_other">Analys och telemetri</string>
     <string name="trackers_info_breakdown_pixels">Spårningspixlar och fyrar</string>
     <string name="trackers_info_breakdown_scripts">Annonser</string>
     <string name="trackers_info_section_breakdown">Blockerat efter typ</string>

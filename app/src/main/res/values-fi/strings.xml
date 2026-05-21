@@ -328,7 +328,7 @@
     <string name="trackers_info_saved">~%1$s kaistaa säästetty</string>
     <string name="trackers_info_categories">Seuranta · Mainokset · Sormenjälki · Evästeet</string>
     <string name="trackers_info_breakdown_frames">Upotetut kehykset</string>
-    <string name="trackers_info_breakdown_other">Muut pyynnöt</string>
+    <string name="trackers_info_breakdown_other">Analytiikka ja telemetria</string>
     <string name="trackers_info_breakdown_pixels">Seurantapikselit ja majakat</string>
     <string name="trackers_info_breakdown_scripts">Mainokset</string>
     <string name="trackers_info_section_breakdown">Estetty tyypin mukaan</string>

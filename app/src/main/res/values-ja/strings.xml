@@ -523,7 +523,7 @@
     <string name="trackers_info_saved">約 %1$s の帯域幅を節約</string>
     <string name="trackers_info_categories">トラッカー · 広告 · フィンガープリント · Cookie バナー</string>
     <string name="trackers_info_breakdown_frames">埋め込みフレーム</string>
-    <string name="trackers_info_breakdown_other">その他のリクエスト</string>
+    <string name="trackers_info_breakdown_other">分析とテレメトリ</string>
     <string name="trackers_info_breakdown_pixels">トラッキングピクセルとビーコン</string>
     <string name="trackers_info_breakdown_scripts">広告</string>
     <string name="trackers_info_section_breakdown">種類別ブロック</string>

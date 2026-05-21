@@ -293,7 +293,7 @@
     <string name="trackers_info_saved">~%1$s de largura de banda aforrados</string>
     <string name="trackers_info_categories">Rastrexadores · Anuncios · Pegada · Cookies</string>
     <string name="trackers_info_breakdown_frames">Marcos incrustados</string>
-    <string name="trackers_info_breakdown_other">Outras solicitudes</string>
+    <string name="trackers_info_breakdown_other">Analítica e telemetría</string>
     <string name="trackers_info_breakdown_pixels">Píxeles e balizas de rastrexo</string>
     <string name="trackers_info_breakdown_scripts">Anuncios</string>
     <string name="trackers_info_section_breakdown">Bloqueado por tipo</string>

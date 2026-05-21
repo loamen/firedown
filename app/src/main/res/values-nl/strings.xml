@@ -389,7 +389,7 @@
     <string name="trackers_info_saved">~%1$s aan bandbreedte bespaard</string>
     <string name="trackers_info_categories">Trackers · Advertenties · Fingerprinting · Cookies</string>
     <string name="trackers_info_breakdown_frames">Ingesloten frames</string>
-    <string name="trackers_info_breakdown_other">Overige verzoeken</string>
+    <string name="trackers_info_breakdown_other">Analytics &amp; telemetrie</string>
     <string name="trackers_info_breakdown_pixels">Trackingpixels en bakens</string>
     <string name="trackers_info_breakdown_scripts">Advertenties</string>
     <string name="trackers_info_section_breakdown">Geblokkeerd per type</string>

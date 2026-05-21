@@ -311,7 +311,7 @@
     <string name="trackers_info_saved">~%1$s sávszélesség megtakarítva</string>
     <string name="trackers_info_categories">Nyomkövetők · Hirdetések · Ujjlenyomat · Sütik</string>
     <string name="trackers_info_breakdown_frames">Beágyazott keretek</string>
-    <string name="trackers_info_breakdown_other">Egyéb kérések</string>
+    <string name="trackers_info_breakdown_other">Analitika és telemetria</string>
     <string name="trackers_info_breakdown_pixels">Nyomkövető pixelek és beaconök</string>
     <string name="trackers_info_breakdown_scripts">Hirdetések</string>
     <string name="trackers_info_section_breakdown">Típus szerint blokkolva</string>

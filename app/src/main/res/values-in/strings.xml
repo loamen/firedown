@@ -296,7 +296,7 @@
     <string name="trackers_info_saved">~%1$s bandwidth dihemat</string>
     <string name="trackers_info_categories">Pelacak · Iklan · Sidik jari · Cookie</string>
     <string name="trackers_info_breakdown_frames">Bingkai tersemat</string>
-    <string name="trackers_info_breakdown_other">Permintaan lainnya</string>
+    <string name="trackers_info_breakdown_other">Analitik &amp; telemetri</string>
     <string name="trackers_info_breakdown_pixels">Piksel dan beacon pelacakan</string>
     <string name="trackers_info_breakdown_scripts">Iklan</string>
     <string name="trackers_info_section_breakdown">Diblokir berdasarkan jenis</string>

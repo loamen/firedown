@@ -279,7 +279,7 @@
     <string name="trackers_info_saved">~%1$s tarmoq trafigi tejaldi</string>
     <string name="trackers_info_categories">Kuzatuvchilar · Reklamalar · Izlar · Cookie</string>
     <string name="trackers_info_breakdown_frames">Oʻrnatilgan freymlar</string>
-    <string name="trackers_info_breakdown_other">Boshqa soʻrovlar</string>
+    <string name="trackers_info_breakdown_other">Tahlil va telemetriya</string>
     <string name="trackers_info_breakdown_pixels">Kuzatuv pikselari va mayoqlari</string>
     <string name="trackers_info_breakdown_scripts">Reklamalar</string>
     <string name="trackers_info_section_breakdown">Turi boʻyicha bloklangan</string>

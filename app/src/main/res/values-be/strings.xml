@@ -291,7 +291,7 @@
     <string name="trackers_info_saved">~%1$s трафіку зэканомлена</string>
     <string name="trackers_info_categories">Трэкеры · Рэклама · Адбіткі · Cookie</string>
     <string name="trackers_info_breakdown_frames">Убудаваныя фрэймы</string>
-    <string name="trackers_info_breakdown_other">Іншыя запыты</string>
+    <string name="trackers_info_breakdown_other">Аналітыка і тэлеметрыя</string>
     <string name="trackers_info_breakdown_pixels">Адсочваючыя пікселі і маякі</string>
     <string name="trackers_info_breakdown_scripts">Рэклама</string>
     <string name="trackers_info_section_breakdown">Заблакіравана па тыпе</string>

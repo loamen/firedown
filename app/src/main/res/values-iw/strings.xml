@@ -324,7 +324,7 @@
     <string name="trackers_info_saved">~%1$s רוחב פס נחסך</string>
     <string name="trackers_info_categories">עוקבים · פרסומות · טביעת אצבע · עוגיות</string>
     <string name="trackers_info_breakdown_frames">מסגרות מוטמעות</string>
-    <string name="trackers_info_breakdown_other">בקשות אחרות</string>
+    <string name="trackers_info_breakdown_other">ניתוח נתונים וטלמטריה</string>
     <string name="trackers_info_breakdown_pixels">פיקסלי מעקב ומשואות</string>
     <string name="trackers_info_breakdown_scripts">פרסומות</string>
     <string name="trackers_info_section_breakdown">נחסם לפי סוג</string>

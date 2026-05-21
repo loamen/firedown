@@ -524,7 +524,7 @@
     <string name="trackers_info_saved">~%1$s Bandbreite gespart</string>
     <string name="trackers_info_categories">Tracker · Werbung · Fingerprinting · Cookie-Banner</string>
     <string name="trackers_info_breakdown_frames">Eingebettete Frames</string>
-    <string name="trackers_info_breakdown_other">Andere Anfragen</string>
+    <string name="trackers_info_breakdown_other">Analytik &amp; Telemetrie</string>
     <string name="trackers_info_breakdown_pixels">Tracking-Pixel und Beacons</string>
     <string name="trackers_info_breakdown_scripts">Werbung</string>
     <string name="trackers_info_section_breakdown">Blockiert nach Typ</string>

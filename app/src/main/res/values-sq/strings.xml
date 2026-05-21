@@ -292,7 +292,7 @@
     <string name="trackers_info_saved">~%1$s gjerësi bande e kursyer</string>
     <string name="trackers_info_categories">Gjurmues · Reklama · Gjurmë · Cookies</string>
     <string name="trackers_info_breakdown_frames">Korniza të integruara</string>
-    <string name="trackers_info_breakdown_other">Kërkesa të tjera</string>
+    <string name="trackers_info_breakdown_other">Analitika dhe telemetria</string>
     <string name="trackers_info_breakdown_pixels">Piksele dhe sinjale gjurmimi</string>
     <string name="trackers_info_breakdown_scripts">Reklama</string>
     <string name="trackers_info_section_breakdown">Të bllokuara sipas llojit</string>

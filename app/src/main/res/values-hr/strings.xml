@@ -306,7 +306,7 @@
     <string name="trackers_info_saved">~%1$s propusnosti spremljeno</string>
     <string name="trackers_info_categories">Pratitelji · Oglasi · Otisci · Kolačići</string>
     <string name="trackers_info_breakdown_frames">Ugrađeni okviri</string>
-    <string name="trackers_info_breakdown_other">Ostali zahtjevi</string>
+    <string name="trackers_info_breakdown_other">Analitika i telemetrija</string>
     <string name="trackers_info_breakdown_pixels">Pikseli za praćenje i beaconi</string>
     <string name="trackers_info_breakdown_scripts">Oglasi</string>
     <string name="trackers_info_section_breakdown">Blokirano po vrsti</string>
