@@ -1,18 +1,10 @@
 import µb from './background.js';
 
-import {
-    domainFromHostname,
-    hostnameFromURI,
-    originFromURI,
-} from './uri-utils.js';
+import { hostnameFromURI } from './uri-utils.js';
 
 import {
-    permanentFirewall,
     permanentSwitches,
-    permanentURLFiltering,
-    sessionFirewall,
     sessionSwitches,
-    sessionURLFiltering,
 } from './filtering-engines.js';
 
 /******************************************************************************/
@@ -23,7 +15,6 @@ import {
 
     port.onMessage.addListener(response => {
         port.postMessage({ listener: "ublock", message: response });
-        console.log("[onMessage] raw=" + JSON.stringify(response));
         if (Object.hasOwn(response, "ads")) {
             toggleAds({ enable: response.ads });
         } else if (Object.hasOwn(response, "javascript")) {
@@ -113,17 +104,26 @@ import {
     async function toggleCookieNotices(message) {
         await defaultsReady;
 
-            const enable = message.enable === true;
-            console.log('[toggleCookieNotices] enable=' + enable + ' before=' + JSON.stringify(µb.selectedFilterLists));
+        const enable = message.enable === true;
 
-            const details = enable
-                ? { toSelect: COOKIE_NOTICE_LISTS, merge: true }
-                : { toRemove: COOKIE_NOTICE_LISTS };
+        // Short-circuit if uBlock is already in the desired state. The
+        // on-connect handshake in GeckoRuntimeHelper.onConnect pushes
+        // {cookies:true} every time the port attaches, which happens at
+        // least once per app launch — without this gate every launch
+        // would force-reload the active tab even though nothing changed.
+        const haveCookieLists = COOKIE_NOTICE_LISTS.every(
+            k => µb.selectedFilterLists.includes(k)
+        );
+        if (enable === haveCookieLists) {
+            return;
+        }
 
-            µb.applyFilterListSelection(details);
-            await µb.loadFilterLists();
+        const details = enable
+            ? { toSelect: COOKIE_NOTICE_LISTS, merge: true }
+            : { toRemove: COOKIE_NOTICE_LISTS };
 
-            console.log('[toggleCookieNotices] after=' + JSON.stringify(µb.selectedFilterLists));
+        µb.applyFilterListSelection(details);
+        await µb.loadFilterLists();
 
         const tab = await vAPI.tabs.getCurrent();
         if (tab instanceof Object) {
@@ -159,6 +159,12 @@ import {
         } else {
             µb.toggleNetFilteringSwitch(pageURL, '', newState);
         }
+
+        // Push the new firewall state back to Java immediately. tab.js
+        // onActivated only fires on tab *switch*, not on a same-tab reload,
+        // so without this the dialog's switch would lag one tab-switch
+        // behind the real state.
+        updateState();
 
         vAPI.tabs.reload(tab.id);
     }
@@ -199,21 +205,13 @@ import {
     async function updateState() {
         const tab = await vAPI.tabs.getCurrent();
         if (tab instanceof Object === false) { return; }
-        const normalURL = µb.normalizeTabURL(tab.id, tab.url);
         const currentState = µb.getNetFilteringSwitch(tab.url);
-        const hn = hostnameFromURI(normalURL);
-        const curProfileBits = µb.blockingModeFromHostname(hn);
-        const noLargeMedia = sessionSwitches.evaluateZ('no-large-media', hn);
-        const noFonts = sessionSwitches.evaluateZ('no-remote-fonts', hn);
         const cookieNoticesBlocked = COOKIE_NOTICE_LISTS.some(
             k => µb.selectedFilterLists.includes(k)
         );
         browser.runtime.sendNativeMessage("ublock", {
             firewall: {
                 activated: currentState,
-                profile: curProfileBits,
-                media: noLargeMedia,
-                fonts: noFonts,
                 cookies: cookieNoticesBlocked,
             }
         });

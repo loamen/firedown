@@ -62,6 +62,49 @@ registerScriptlet(getExceptionTokenFn, {
 
 /******************************************************************************/
 
+export function collateFetchArgumentsFn(resource, options) {
+    const safe = safeSelf();
+    const props = [
+        'body', 'cache', 'credentials', 'duplex', 'headers',
+        'integrity', 'keepalive', 'method', 'mode', 'priority',
+        'redirect', 'referrer', 'referrerPolicy', 'url'
+    ];
+    const out = {};
+    if ( collateFetchArgumentsFn.collateKnownProps === undefined ) {
+        collateFetchArgumentsFn.collateKnownProps = (src, out) => {
+            for ( const prop of props ) {
+                if ( src[prop] === undefined ) { continue; }
+                out[prop] = src[prop];
+            }
+        };
+    }
+    if (
+        typeof resource !== 'object' ||
+        safe.Object_toString.call(resource) !== '[object Request]'
+    ) {
+        out.url = `${resource}`;
+    } else {
+        let clone;
+        try {
+            clone = safe.Request_clone.call(resource);
+        } catch {
+        }
+        collateFetchArgumentsFn.collateKnownProps(clone || resource, out);
+    }
+    if ( typeof options === 'object' && options !== null ) {
+        collateFetchArgumentsFn.collateKnownProps(options, out);
+    }
+    return out;
+}
+registerScriptlet(collateFetchArgumentsFn, {
+    name: 'collate-fetch-arguments.fn',
+    dependencies: [
+        safeSelf,
+    ],
+});
+
+/******************************************************************************/
+
 export function parsePropertiesToMatchFn(propsToMatch, implicit = '') {
     const safe = safeSelf();
     const needles = new Map();
@@ -176,6 +219,14 @@ export function generateContentFn(trusted, directive) {
             warXHR.open('GET', fullpath.join(''));
             warXHR.send();
         }).catch(( ) => '');
+    }
+    if ( directive.startsWith('join:') ) {
+        const parts = directive.slice(7)
+                .split(directive.slice(5, 7))
+                .map(a => generateContentFn(trusted, a));
+        return parts.some(a => a instanceof Promise)
+            ? Promise.all(parts).then(parts => parts.join(''))
+            : parts.join('');
     }
     if ( trusted ) {
         return directive;
