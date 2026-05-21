@@ -142,13 +142,17 @@ import {
     async function toggleAds(message) {
         const newState = message.enable === true;
         const tab = await vAPI.tabs.getCurrent();
-        if (tab instanceof Object === false) { return; }
+        if (tab instanceof Object === false) {
+            console.log('[toggleAds] no active tab; ignoring enable=' + newState);
+            return;
+        }
 
         // Use normalURL (= tabContext.normalURL) as the popup does, so the
         // URL passed to toggleNetFilteringSwitch is consistent with what
         // getNetFilteringSwitch will later look up. Scope '' → hostname
         // directive (ublock.js line 141), matching the popup default.
         const pageURL = µb.normalizeTabURL(tab.id, tab.url);
+        console.log('[toggleAds] enable=' + newState + ' tab=' + tab.id + ' url=' + pageURL);
 
         // Go through pageStore so the net-filtering cache is invalidated,
         // matching the upstream popup flow in messaging.js toggleNetFiltering.
@@ -159,6 +163,12 @@ import {
         } else {
             µb.toggleNetFilteringSwitch(pageURL, '', newState);
         }
+
+        // Push the new firewall state back to Java immediately. tab.js
+        // onActivated only fires on tab *switch*, not on a same-tab reload,
+        // so without this the dialog's switch would lag one tab-switch
+        // behind the real state.
+        updateState();
 
         vAPI.tabs.reload(tab.id);
     }
