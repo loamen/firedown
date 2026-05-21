@@ -5,11 +5,21 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.preference.PreferenceManager;
 
 import dagger.hilt.android.qualifiers.ApplicationContext;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -45,6 +55,37 @@ public class GeckoUblockHelper {
      *  sheet a 'X today, Y since install' framing without persistent
      *  per-event storage. */
     private final MutableLiveData<Long> mTodayBlockedLive = new MutableLiveData<>(0L);
+
+    /** Per-category breakdown of blocked requests since install,
+     *  bucketed by request type at the uBlock side. uBlock's static
+     *  engine doesn't preserve filter-list origin, so we can't honestly
+     *  bucket by 'Tracker vs Ad'; instead firedown.js groups by the
+     *  filter context's itype (script / image-or-pixel / frame /
+     *  other) and pushes the four-key map alongside the cumulative
+     *  total. The TrackersInfoSheet renders each bucket under the
+     *  hero number to give 'what was blocked' some texture. */
+    public enum Category { SCRIPTS, PIXELS, FRAMES, OTHER }
+
+    private final MutableLiveData<Map<Category, Long>> mCategoryBlockedLive =
+            new MutableLiveData<>(emptyCategoryMap());
+
+    /** Top blocked third-party hostnames since install (or since the user
+     *  last hit 'Disable & clear' from the sheet). uBlock's firedown.js
+     *  maintains a per-host counter map, evicts at 500 entries, gates on
+     *  per-tab incognito state, and pushes the sorted top 10 over the
+     *  native port. The TrackersInfoSheet renders these as a list under
+     *  the per-type breakdown. */
+    public static final class HostCount {
+        public final String host;
+        public final long count;
+        public HostCount(String host, long count) {
+            this.host = host;
+            this.count = count;
+        }
+    }
+
+    private final MutableLiveData<List<HostCount>> mTopTrackersLive =
+            new MutableLiveData<>(Collections.emptyList());
 
     // Firewall activation is a global user preference — not per-mode.
     private final MutableLiveData<Boolean> mFirewallActiveLive = new MutableLiveData<>();
@@ -153,6 +194,57 @@ public class GeckoUblockHelper {
         return mTodayBlockedLive;
     }
 
+    public LiveData<Map<Category, Long>> getCategoryBlockedLive() {
+        return mCategoryBlockedLive;
+    }
+
+    /**
+     * Called from {@code handleUblockMessage} when firedown.js relays
+     * the per-category counters. The JS side sends a 4-key object
+     * ({@code scripts}, {@code pixels}, {@code frames}, {@code other});
+     * unknown keys or missing keys default to zero. Negative or NaN
+     * values are clamped to the last good value to keep the sheet from
+     * rendering nonsense if storage gets corrupted.
+     */
+    public LiveData<List<HostCount>> getTopTrackersLive() {
+        return mTopTrackersLive;
+    }
+
+    /**
+     * Called from {@code handleUblockMessage} when firedown.js relays a
+     * top-trackers payload. Format: a JSON array of {host, count} pairs
+     * already sorted descending. Entries with empty hostnames or
+     * non-positive counts are dropped defensively.
+     */
+    public void onTopTrackers(@NonNull JSONArray array) {
+        List<HostCount> next = new ArrayList<>(array.length());
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject row = array.optJSONObject(i);
+            if (row == null) continue;
+            String host = row.optString("host", "");
+            long count = row.optLong("count", 0);
+            if (host.isEmpty() || count <= 0) continue;
+            next.add(new HostCount(host, count));
+        }
+        mTopTrackersLive.postValue(next);
+    }
+
+    public void onCategoryBlocked(long scripts, long pixels, long frames, long other) {
+        Map<Category, Long> next = emptyCategoryMap();
+        next.put(Category.SCRIPTS, Math.max(0L, scripts));
+        next.put(Category.PIXELS,  Math.max(0L, pixels));
+        next.put(Category.FRAMES,  Math.max(0L, frames));
+        next.put(Category.OTHER,   Math.max(0L, other));
+        mCategoryBlockedLive.postValue(next);
+    }
+
+    @NonNull
+    private static Map<Category, Long> emptyCategoryMap() {
+        EnumMap<Category, Long> m = new EnumMap<>(Category.class);
+        for (Category c : Category.values()) m.put(c, 0L);
+        return m;
+    }
+
     private static String todayKey() {
         java.util.Calendar c = java.util.Calendar.getInstance();
         return String.format(java.util.Locale.US, "%04d-%02d-%02d",
@@ -205,5 +297,7 @@ public class GeckoUblockHelper {
         mAdsBlockedLiveIncognito.postValue("0");
         mFirewallActiveLive.postValue(false);
         mCookieNoticesBlockedLive.postValue(false);
+        mCategoryBlockedLive.postValue(emptyCategoryMap());
+        mTopTrackersLive.postValue(Collections.emptyList());
     }
 }

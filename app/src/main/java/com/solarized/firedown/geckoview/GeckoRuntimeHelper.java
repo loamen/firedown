@@ -453,6 +453,32 @@ public class GeckoRuntimeHelper {
                 mGeckoUblockHelper.onCumulativeBlocked(json.optLong("cumulativeBlocked", 0));
             }
 
+            // Per-category blocked breakdown — drives the bucketed rows
+            // under the hero number in TrackersInfoSheet. firedown.js
+            // bucketises by fctxt.itype (uBlock can't honestly bucket
+            // by source list; see the comment in firedown.js).
+            if (json.has("categoryBlocked")) {
+                JSONObject buckets = json.optJSONObject("categoryBlocked");
+                if (buckets != null) {
+                    mGeckoUblockHelper.onCategoryBlocked(
+                            buckets.optLong("scripts", 0),
+                            buckets.optLong("pixels", 0),
+                            buckets.optLong("frames", 0),
+                            buckets.optLong("other", 0));
+                }
+            }
+
+            // Top-N blocked third-party hostnames, sorted descending by
+            // block count. firedown.js sends this on the same push
+            // triggers as the cumulative total; the host list excludes
+            // incognito tabs via firedown.js's incognitoTabIds gate.
+            if (json.has("topTrackers")) {
+                JSONArray list = json.optJSONArray("topTrackers");
+                if (list != null) {
+                    mGeckoUblockHelper.onTopTrackers(list);
+                }
+            }
+
             // uBlock sends a firewall state change
             if (json.has("firewall")) {
                 JSONObject firewall = json.optJSONObject("firewall");
@@ -742,6 +768,23 @@ public class GeckoRuntimeHelper {
         WebExtension.Port port = mPorts.get(portName);
         if (port != null) {
             port.postMessage(message);
+        }
+    }
+
+    /**
+     * Pushes the 'Clear' user action down to firedown.js. The JS side
+     * wipes the per-host map, persists, and pushes an empty list back so
+     * the sheet refreshes. Recording itself stays on — wiping is not
+     * disabling. No confirmation flow on either side: the action is a
+     * soft delete (the map rebuilds in seconds of browsing).
+     */
+    public void clearTopTrackers() {
+        try {
+            JSONObject msg = new JSONObject();
+            msg.put("clearTopTrackers", true);
+            sendPortMessage("ublock", msg);
+        } catch (JSONException e) {
+            Log.e(TAG, "clearTopTrackers error", e);
         }
     }
 

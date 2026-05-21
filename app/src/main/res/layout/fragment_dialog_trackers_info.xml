@@ -4,128 +4,363 @@
   ads blocked' card. Three jobs:
 
     - Make the privacy work the app does visible. The card itself
-      is a small subtitle line; this sheet shows the number big
-      and explains what it represents.
-    - Tell the user *what* is being blocked — trackers, ads,
-      cookie notices, etc. — so the metric is meaningful instead
-      of a vanity counter.
+      is a small subtitle line; this sheet shows the totals in
+      three equal stat cards (Blocked / Saved / Today) so each
+      metric stands on its own instead of fighting for hierarchy.
+    - Tell the user *what* is being blocked — broken out by
+      request type (Ads / pixels / frames / other) under a
+      'Blocked by type' header.
     - Give a single clear CTA to the surface where the user can
       adjust protection (Settings → Enhanced Tracking Protection).
 
-  Outer LinearLayout owns the sticky drag handle; the ScrollView
-  below holds the rest so content can grow past the sheet height
-  on small screens / landscape without clipping the handle.
+  Layout is intentionally data-forward: no illustration, no glyph,
+  no hero-number-with-trailing-paragraph. The three stat cards
+  carry first-look attention; the breakdown beneath gives texture.
+  Mirrors Brave's Privacy Report gestalt but uses Firedown's tonal
+  colorSurfaceContainer cards (no outlines) to match the home
+  cards' visual language.
+
+  Sheet itself is not a scroll surface — content is laid out at
+  intrinsic height under the drag handle. Only the 'Top trackers'
+  list scrolls internally (via MaxHeightRecyclerView + LinearLayout
+  manager) when its row count exceeds the cap. This keeps the
+  bottom-sheet drag gesture unambiguous and avoids gesture conflicts
+  at the sheet edges that an outer ScrollView would introduce.
+-->
+<!--
+  Outer LinearLayout is the inset sink: BaseBottomSheetDialogFragment's
+  window-insets listener calls setPadding on mView with the system bar
+  / cutout / IME insets, which would clobber any padding we set here in
+  XML. So we keep this view unpadded and put the actual content
+  padding on the inner LinearLayout below.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical">
 
     <include layout="@layout/dialog_drag_handle" />
 
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fillViewport="true"
-        android:scrollbars="none">
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="20dp">
+        android:paddingHorizontal="24dp">
 
+        <!-- No sheet title. The drag handle frames the surface, the
+             stat cards below are self-labelled, and the source card on
+             Home ('Trackers and ads blocked') already establishes
+             context. Skipping the title also avoids the visual /
+             linguistic loudness an extra heading would carry. -->
 
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="120dp"
-            android:layout_marginBottom="4dp"
-            android:adjustViewBounds="true"
-            android:contentDescription="@null"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ill_privacy_red" />
+        <!-- Breathing room between the drag handle and the first row
+             of content. 12dp puts the stat cards far enough below the
+             handle that the two don't read as a single block. -->
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="12dp" />
 
-        <!-- Big number: '12,345' or 'Protection active' placeholder
-             when zero. Adapter swaps the binding at runtime. -->
+        <!-- Zero-state message. When the cumulative count is 0
+             (fresh install, no browsing yet) the three stat cards
+             would render as '0 / 0 / 0' which reads as 'protection
+             is broken' rather than 'we haven't done anything yet'.
+             The TrackersInfoSheet swaps this visible and hides the
+             cards + breakdown below until uBlock pushes a non-zero
+             cumulative. -->
         <TextView
-            android:id="@+id/trackers_info_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:textAppearance="?attr/textAppearanceDisplaySmall"
-            android:textColor="?attr/colorPrimary"
-            tools:text="12,345" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:gravity="center"
-            android:text="@string/trackers_info_count_label"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textColor="?attr/colorOnSurface" />
-
-        <!-- Estimated bytes saved — only visible when count > 0,
-             otherwise zero * 50KB is meaningless. -->
-        <TextView
-            android:id="@+id/trackers_info_saved"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:gravity="center"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:visibility="gone"
-            tools:text="~580 MB of bandwidth saved"
-            tools:visibility="visible" />
-
-        <!-- Today vs all-time framing — derived from the cumulative
-             counter with a midnight baseline (no per-event storage,
-             see GeckoUblockHelper). Hidden when today's count is
-             zero so the sheet doesn't render a redundant '0 today'
-             on first launch or a quiet day. -->
-        <TextView
-            android:id="@+id/trackers_info_today"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:visibility="gone"
-            tools:text="1,234 today"
-            tools:visibility="visible" />
-
-        <!-- Categories caption — what 'blocked' actually covers, as
-             a short comma-list rather than a paragraph. 8dp gap so
-             it reads as a natural continuation of the stat block
-             above, not a floating element. Translation length is
-             bounded by 4 short nouns so it stays on one or two
-             lines in every locale. -->
-        <TextView
+            android:id="@+id/trackers_info_idle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp"
             android:gravity="center"
-            android:text="@string/trackers_info_categories"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant" />
+            android:text="@string/home_trackers_subtitle_idle"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:visibility="gone"
+            tools:visibility="gone" />
+
+        <!-- Three equal stat cards: cumulative blocked / estimated
+             bytes saved / blocked today. weight=1 on each so they
+             share width 1:1:1; 8dp Spaces between rather than
+             card margins so the gutter doesn't accumulate at the
+             screen edges. Cards use colorSurfaceContainer fill
+             (no outline, no elevation) to match the home cards'
+             tonal style. Numbers tint colorPrimary so the three
+             read as a single visual unit; labels onSurfaceVariant
+             so they sit back. -->
+        <LinearLayout
+            android:id="@+id/trackers_info_stats_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/TrackersInfoStatCard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <LinearLayout style="@style/TrackersInfoStatBody">
+
+                    <TextView
+                        android:id="@+id/trackers_info_count"
+                        style="@style/TrackersInfoStatValue"
+                        tools:text="12,345" />
+
+                    <TextView
+                        style="@style/TrackersInfoStatLabel"
+                        android:text="@string/trackers_info_stat_blocked" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="match_parent" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/TrackersInfoStatCard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <LinearLayout style="@style/TrackersInfoStatBody">
+
+                    <TextView
+                        android:id="@+id/trackers_info_saved"
+                        style="@style/TrackersInfoStatValue"
+                        tools:text="580 MB" />
+
+                    <TextView
+                        style="@style/TrackersInfoStatLabel"
+                        android:text="@string/trackers_info_stat_saved" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="match_parent" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/TrackersInfoStatCard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <LinearLayout style="@style/TrackersInfoStatBody">
+
+                    <TextView
+                        android:id="@+id/trackers_info_today"
+                        style="@style/TrackersInfoStatValue"
+                        tools:text="1,234" />
+
+                    <TextView
+                        style="@style/TrackersInfoStatLabel"
+                        android:text="@string/trackers_info_stat_today" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- 'Blocked by type' section header — same small-uppercase
+             treatment as the overview header above so the two
+             sections read as parallel. Sits at colorOnSurfaceVariant
+             so the breakdown row labels below (also onSurfaceVariant)
+             read as a continuation, not a hierarchy break. -->
+        <TextView
+            android:id="@+id/trackers_info_breakdown_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="4dp"
+            android:letterSpacing="0.08"
+            android:text="@string/trackers_info_section_breakdown"
+            android:textAllCaps="true"
+            android:textAppearance="?attr/textAppearanceTitleSmallEmphasized"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <!-- Per-category breakdown. Four rows (Ads / Pixels /
+             Frames / Other) that show what kinds of requests the
+             stat cards above are composed of. Counts come from
+             GeckoUblockHelper.getCategoryBlockedLive(); firedown.js
+             buckets by fctxt.itype because uBlock's static engine
+             doesn't preserve filter-list origin at runtime.
+
+             Whole block hidden until the cumulative count is non-zero
+             — same trigger as the stats row above — so a fresh
+             install doesn't render four zeroes.
+
+             Each row is a label-and-count pair; the label hugs the
+             start, the count hugs the end with a tabular numeric
+             style so the digit columns line up across rows. -->
+        <LinearLayout
+            android:id="@+id/trackers_info_breakdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <LinearLayout
+                style="@style/TrackersInfoBreakdownRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    style="@style/TrackersInfoBreakdownLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/trackers_info_breakdown_scripts" />
+
+                <TextView
+                    android:id="@+id/trackers_info_breakdown_scripts"
+                    style="@style/TrackersInfoBreakdownCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="8,421" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/TrackersInfoBreakdownRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    style="@style/TrackersInfoBreakdownLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/trackers_info_breakdown_pixels" />
+
+                <TextView
+                    android:id="@+id/trackers_info_breakdown_pixels"
+                    style="@style/TrackersInfoBreakdownCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="2,103" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/TrackersInfoBreakdownRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    style="@style/TrackersInfoBreakdownLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/trackers_info_breakdown_frames" />
+
+                <TextView
+                    android:id="@+id/trackers_info_breakdown_frames"
+                    style="@style/TrackersInfoBreakdownCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="389" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/TrackersInfoBreakdownRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    style="@style/TrackersInfoBreakdownLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/trackers_info_breakdown_other" />
+
+                <TextView
+                    android:id="@+id/trackers_info_breakdown_other"
+                    style="@style/TrackersInfoBreakdownCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="1,432" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Top trackers section. Hidden until the JS-side map has at
+             least three entries (firedown.js gates via the records
+             observer in TrackersInfoSheet) so a fresh install or a
+             user who just disabled+cleared doesn't see an empty
+             section header floating. Rows are inflated into the
+             container from item_top_tracker.xml at bind time. -->
+        <TextView
+            android:id="@+id/trackers_info_top_trackers_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="4dp"
+            android:letterSpacing="0.08"
+            android:text="@string/trackers_info_section_top_trackers"
+            android:textAllCaps="true"
+            android:textAppearance="?attr/textAppearanceTitleSmallEmphasized"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <!-- Internal scroll surface for the top-trackers list.
+             wrap_content height up to app:maxHeight=180dp (≈ 5
+             visible rows at the item_top_tracker row height); when
+             fewer rows are bound the recycler sizes to fit so there's
+             no wasted empty space, and when more rows are bound the
+             content scrolls in place. The 180dp ceiling keeps total
+             sheet content under the expanded-state max height on
+             typical phones so the 'Manage protection' CTA at the
+             bottom isn't clipped.
+
+             Adapter (TopTrackersAdapter) + LinearLayoutManager wired
+             from TrackersInfoSheet — DiffUtil drives partial-update
+             animations when the host list reorders or counts tick up
+             between pushes. -->
+        <com.solarized.firedown.ui.MaxHeightRecyclerView
+            android:id="@+id/trackers_info_top_trackers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:overScrollMode="never"
+            android:visibility="gone"
+            app:maxHeight="180dp"
+            tools:itemCount="6"
+            tools:listitem="@layout/item_top_tracker"
+            tools:visibility="visible" />
+
+        <!-- Clear action. Wipes the stored per-host map in one tap.
+             Recording continues — disabling the feature entirely is a
+             future Settings-level control, not an in-sheet one. Visible
+             only when the section above has rows to clear (size ≥
+             TOP_TRACKERS_MIN_REVEAL); a freshly-cleared section
+             collapses the button along with it until new entries
+             accumulate. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/trackers_info_top_trackers_toggle"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="4dp"
+            android:minWidth="0dp"
+            android:text="@string/trackers_info_top_trackers_clear"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/trackers_info_action"
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginBottom="12dp"
+            android:layout_marginTop="12dp"
             android:text="@string/trackers_info_action" />
 
     </LinearLayout>
-
-    </ScrollView>
 
 </LinearLayout>
