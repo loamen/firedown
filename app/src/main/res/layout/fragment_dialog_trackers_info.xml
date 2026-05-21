@@ -8,7 +8,7 @@
       three equal stat cards (Blocked / Saved / Today) so each
       metric stands on its own instead of fighting for hierarchy.
     - Tell the user *what* is being blocked — broken out by
-      request type (Ads / pixels / frames / other) under a
+      request type (Ads / pixels / analytics / frames) under a
       'Blocked by type' header.
     - Give a single clear CTA to the surface where the user can
       adjust protection (Settings → Enhanced Tracking Protection).
@@ -185,7 +185,8 @@
             tools:visibility="visible" />
 
         <!-- Per-category breakdown. Four rows (Ads / Pixels /
-             Frames / Other) that show what kinds of requests the
+             Analytics & telemetry / Frames) that show what kinds of
+             requests the
              stat cards above are composed of. Counts come from
              GeckoUblockHelper.getCategoryBlockedLive(); firedown.js
              buckets by fctxt.itype because uBlock's static engine
@@ -256,14 +257,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/trackers_info_breakdown_frames" />
+                    android:text="@string/trackers_info_breakdown_other" />
 
                 <TextView
-                    android:id="@+id/trackers_info_breakdown_frames"
+                    android:id="@+id/trackers_info_breakdown_other"
                     style="@style/TrackersInfoBreakdownCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="389" />
+                    tools:text="1,432" />
             </LinearLayout>
 
             <LinearLayout
@@ -276,14 +277,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/trackers_info_breakdown_other" />
+                    android:text="@string/trackers_info_breakdown_frames" />
 
                 <TextView
-                    android:id="@+id/trackers_info_breakdown_other"
+                    android:id="@+id/trackers_info_breakdown_frames"
                     style="@style/TrackersInfoBreakdownCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    tools:text="1,432" />
+                    tools:text="389" />
             </LinearLayout>
 
         </LinearLayout>

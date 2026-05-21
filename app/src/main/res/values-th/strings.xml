@@ -308,7 +308,7 @@
     <string name="trackers_info_saved">ประหยัดแบนด์วิดท์ ~%1$s</string>
     <string name="trackers_info_categories">ตัวติดตาม · โฆษณา · ลายนิ้วมือดิจิทัล · คุกกี้</string>
     <string name="trackers_info_breakdown_frames">เฟรมที่ฝัง</string>
-    <string name="trackers_info_breakdown_other">คำขออื่นๆ</string>
+    <string name="trackers_info_breakdown_other">การวิเคราะห์และเทเลเมตรี</string>
     <string name="trackers_info_breakdown_pixels">พิกเซลและบีคอนติดตาม</string>
     <string name="trackers_info_breakdown_scripts">โฆษณา</string>
     <string name="trackers_info_section_breakdown">บล็อกตามประเภท</string>

@@ -304,7 +304,7 @@
     <string name="crash_sheet_open_failed">Không thể mở trình duyệt. Báo cáo đã ở trong bộ nhớ tạm — dán vào một issue mới trên GitHub.</string>
 
     <string name="trackers_info_breakdown_frames">Khung nhúng</string>
-    <string name="trackers_info_breakdown_other">Yêu cầu khác</string>
+    <string name="trackers_info_breakdown_other">Phân tích và đo từ xa</string>
     <string name="trackers_info_breakdown_pixels">Pixel và đèn hiệu theo dõi</string>
     <string name="trackers_info_breakdown_scripts">Quảng cáo</string>
     <string name="trackers_info_section_breakdown">Chặn theo loại</string>

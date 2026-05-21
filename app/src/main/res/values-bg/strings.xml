@@ -311,7 +311,7 @@
     <string name="trackers_info_saved">~%1$s трафик спестен</string>
     <string name="trackers_info_categories">Тракери · Реклами · Отпечатъци · Бисквитки</string>
     <string name="trackers_info_breakdown_frames">Вградени рамки</string>
-    <string name="trackers_info_breakdown_other">Други заявки</string>
+    <string name="trackers_info_breakdown_other">Анализ и телеметрия</string>
     <string name="trackers_info_breakdown_pixels">Проследяващи пиксели и маяци</string>
     <string name="trackers_info_breakdown_scripts">Реклами</string>
     <string name="trackers_info_section_breakdown">Блокирано по тип</string>

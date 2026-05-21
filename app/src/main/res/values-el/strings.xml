@@ -311,7 +311,7 @@
     <string name="trackers_info_saved">~%1$s εύρους ζώνης εξοικονομήθηκε</string>
     <string name="trackers_info_categories">Παρακολούθηση · Διαφημίσεις · Δακτυλικό αποτύπωμα · Cookies</string>
     <string name="trackers_info_breakdown_frames">Ενσωματωμένα πλαίσια</string>
-    <string name="trackers_info_breakdown_other">Άλλα αιτήματα</string>
+    <string name="trackers_info_breakdown_other">Αναλυτικά στοιχεία και τηλεμετρία</string>
     <string name="trackers_info_breakdown_pixels">Pixel παρακολούθησης και beacons</string>
     <string name="trackers_info_breakdown_scripts">Διαφημίσεις</string>
     <string name="trackers_info_section_breakdown">Αποκλεισμός κατά τύπο</string>

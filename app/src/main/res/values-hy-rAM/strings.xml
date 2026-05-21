@@ -86,7 +86,7 @@
     <string name="trackers_info_saved">~%1$s թողունակություն խնայվել է</string>
     <string name="trackers_info_categories">Հետևորդներ · Գովազդներ · Մատնահետք · Cookie</string>
     <string name="trackers_info_breakdown_frames">Ներդրված շրջանակներ</string>
-    <string name="trackers_info_breakdown_other">Այլ հարցումներ</string>
+    <string name="trackers_info_breakdown_other">Վերլուծություն և հեռաչափություն</string>
     <string name="trackers_info_breakdown_pixels">Հետևման փիքսելներ և մայակներ</string>
     <string name="trackers_info_breakdown_scripts">Գովազդներ</string>
     <string name="trackers_info_section_breakdown">Արգելափակված ըստ տիպի</string>

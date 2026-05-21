@@ -370,7 +370,7 @@
     <string name="trackers_info_saved">~%1$s di banda risparmiata</string>
     <string name="trackers_info_categories">Tracker · Annunci · Fingerprinting · Cookie</string>
     <string name="trackers_info_breakdown_frames">Frame incorporati</string>
-    <string name="trackers_info_breakdown_other">Altre richieste</string>
+    <string name="trackers_info_breakdown_other">Analitica e telemetria</string>
     <string name="trackers_info_breakdown_pixels">Pixel e beacon di tracciamento</string>
     <string name="trackers_info_breakdown_scripts">Pubblicità</string>
     <string name="trackers_info_section_breakdown">Bloccato per tipo</string>

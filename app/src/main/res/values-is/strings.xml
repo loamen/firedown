@@ -290,7 +290,7 @@
     <string name="trackers_info_saved">~%1$s af bandbreidd sparað</string>
     <string name="trackers_info_categories">Rakning · Auglýsingar · Fingrafar · Vafrakökur</string>
     <string name="trackers_info_breakdown_frames">Innfelldir rammar</string>
-    <string name="trackers_info_breakdown_other">Aðrar beiðnir</string>
+    <string name="trackers_info_breakdown_other">Greiningar og fjarmæling</string>
     <string name="trackers_info_breakdown_pixels">Rakningapixlar og vitar</string>
     <string name="trackers_info_breakdown_scripts">Auglýsingar</string>
     <string name="trackers_info_section_breakdown">Útilokað eftir gerð</string>

@@ -324,7 +324,7 @@
     <string name="trackers_info_saved">~%1$s båndbredde sparet</string>
     <string name="trackers_info_categories">Sporing · Annoncer · Fingeraftryk · Cookies</string>
     <string name="trackers_info_breakdown_frames">Indlejrede rammer</string>
-    <string name="trackers_info_breakdown_other">Andre anmodninger</string>
+    <string name="trackers_info_breakdown_other">Analyse og telemetri</string>
     <string name="trackers_info_breakdown_pixels">Sporingspixels og beacons</string>
     <string name="trackers_info_breakdown_scripts">Reklamer</string>
     <string name="trackers_info_section_breakdown">Blokeret efter type</string>

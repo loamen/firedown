@@ -301,7 +301,7 @@
     <string name="trackers_info_saved">~%1$s پهنای باند صرفه‌جویی شد</string>
     <string name="trackers_info_categories">ردیاب‌ها · تبلیغات · اثر انگشت · کوکی‌ها</string>
     <string name="trackers_info_breakdown_frames">فریم‌های جاسازی‌شده</string>
-    <string name="trackers_info_breakdown_other">سایر درخواست‌ها</string>
+    <string name="trackers_info_breakdown_other">تحلیل و تله‌متری</string>
     <string name="trackers_info_breakdown_pixels">پیکسل‌ها و چراغ‌های ردیابی</string>
     <string name="trackers_info_breakdown_scripts">تبلیغات</string>
     <string name="trackers_info_section_breakdown">مسدود شده بر اساس نوع</string>

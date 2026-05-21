@@ -287,7 +287,7 @@
     <string name="trackers_info_saved">~%1$s ng bandwidth naitipid</string>
     <string name="trackers_info_categories">Tracker · Ad · Fingerprinting · Cookies</string>
     <string name="trackers_info_breakdown_frames">Mga naka-embed na frame</string>
-    <string name="trackers_info_breakdown_other">Iba pang kahilingan</string>
+    <string name="trackers_info_breakdown_other">Analytics at telemetry</string>
     <string name="trackers_info_breakdown_pixels">Mga pixel at beacon ng pagsubaybay</string>
     <string name="trackers_info_breakdown_scripts">Mga ad</string>
     <string name="trackers_info_section_breakdown">Naharang ayon sa uri</string>

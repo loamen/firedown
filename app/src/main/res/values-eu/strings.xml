@@ -294,7 +294,7 @@
     <string name="trackers_info_saved">~%1$s banda-zabalera aurreztua</string>
     <string name="trackers_info_categories">Jarraitzaileak · Iragarkiak · Hatz-marka · Cookieak</string>
     <string name="trackers_info_breakdown_frames">Kapsulatutako markoak</string>
-    <string name="trackers_info_breakdown_other">Beste eskaerak</string>
+    <string name="trackers_info_breakdown_other">Analitika eta telemetria</string>
     <string name="trackers_info_breakdown_pixels">Jarraipen-pixelak eta balizak</string>
     <string name="trackers_info_breakdown_scripts">Iragarkiak</string>
     <string name="trackers_info_section_breakdown">Motaren arabera blokeatua</string>

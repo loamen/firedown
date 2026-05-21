@@ -89,7 +89,7 @@
     <string name="trackers_info_saved">~%1$s båndbredde spart</string>
     <string name="trackers_info_categories">Sporere · Annonser · Fingeravtrykk · Informasjonskapsler</string>
     <string name="trackers_info_breakdown_frames">Innebygde rammer</string>
-    <string name="trackers_info_breakdown_other">Andre forespørsler</string>
+    <string name="trackers_info_breakdown_other">Analyse og telemetri</string>
     <string name="trackers_info_breakdown_pixels">Sporingspiksler og fyrtårn</string>
     <string name="trackers_info_breakdown_scripts">Annonser</string>
     <string name="trackers_info_section_breakdown">Blokkert etter type</string>

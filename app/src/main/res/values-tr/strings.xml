@@ -388,7 +388,7 @@
     <string name="trackers_info_saved">~%1$s bant genişliği tasarruf edildi</string>
     <string name="trackers_info_categories">İzleyiciler · Reklamlar · Parmak izi · Çerezler</string>
     <string name="trackers_info_breakdown_frames">Gömülü çerçeveler</string>
-    <string name="trackers_info_breakdown_other">Diğer istekler</string>
+    <string name="trackers_info_breakdown_other">Analitik ve telemetri</string>
     <string name="trackers_info_breakdown_pixels">Takip pikselleri ve işaretçiler</string>
     <string name="trackers_info_breakdown_scripts">Reklamlar</string>
     <string name="trackers_info_section_breakdown">Türe göre engellenen</string>

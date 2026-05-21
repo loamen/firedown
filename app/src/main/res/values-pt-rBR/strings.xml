@@ -135,7 +135,7 @@
     <string name="trackers_info_saved">~%1$s de largura de banda economizados</string>
     <string name="trackers_info_categories">Rastreadores · Anúncios · Impressão digital · Cookies</string>
     <string name="trackers_info_breakdown_frames">Quadros incorporados</string>
-    <string name="trackers_info_breakdown_other">Outras solicitações</string>
+    <string name="trackers_info_breakdown_other">Análise e telemetria</string>
     <string name="trackers_info_breakdown_pixels">Pixels e beacons de rastreamento</string>
     <string name="trackers_info_breakdown_scripts">Anúncios</string>
     <string name="trackers_info_section_breakdown">Bloqueado por tipo</string>

@@ -305,7 +305,7 @@
     <string name="trackers_info_saved">~%1$s pasovne širine prihranjene</string>
     <string name="trackers_info_categories">Sledilniki · Oglasi · Prstni odtisi · Piškotki</string>
     <string name="trackers_info_breakdown_frames">Vdelani okvirji</string>
-    <string name="trackers_info_breakdown_other">Druge zahteve</string>
+    <string name="trackers_info_breakdown_other">Analitika in telemetrija</string>
     <string name="trackers_info_breakdown_pixels">Sledilni piksli in svetilniki</string>
     <string name="trackers_info_breakdown_scripts">Oglasi</string>
     <string name="trackers_info_section_breakdown">Blokirano po vrsti</string>
