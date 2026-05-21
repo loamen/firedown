@@ -246,9 +246,33 @@ import {
         } catch (_) { /* extension still loading, retry on next tick */ }
     }
 
-    // Initial push as soon as the extension is ready, then a coarse
-    // 60-second refresh while the runtime is alive.
-    µb.isReadyPromise.then(pushCumulativeStats);
+    // Initial push as soon as the extension is ready, then hook
+    // µb.updateToolbarIcon — uBlock calls it on every badge change,
+    // which happens as new blocks land — so the Home 'trackers
+    // blocked' card refreshes the moment the user returns from a
+    // browsing tab instead of waiting for the 60s interval.
+    //
+    // Debounced 250ms so an ad-heavy page (dozens of blocks in a
+    // burst) coalesces into a single native message rather than
+    // storming the bus. The 60s interval is kept as a backstop for
+    // anything that bypasses updateToolbarIcon.
+    µb.isReadyPromise.then(() => {
+        pushCumulativeStats();
+        let pushTimer = null;
+        const originalUpdateToolbarIcon = µb.updateToolbarIcon;
+        if (typeof originalUpdateToolbarIcon === 'function') {
+            µb.updateToolbarIcon = function(tabId, newParts) {
+                const result = originalUpdateToolbarIcon.call(µb, tabId, newParts);
+                if (pushTimer === null) {
+                    pushTimer = setTimeout(() => {
+                        pushTimer = null;
+                        pushCumulativeStats();
+                    }, 250);
+                }
+                return result;
+            };
+        }
+    });
     setInterval(pushCumulativeStats, 60_000);
 
 })();
