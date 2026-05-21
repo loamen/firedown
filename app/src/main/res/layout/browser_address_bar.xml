@@ -65,8 +65,6 @@
         android:id="@+id/edit_text"
         android:layout_width="0dp"
         android:layout_height="@dimen/address_bar_height"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp"
         android:layout_gravity="center"
         android:background="@null"
         android:hint="@string/browser_enter_url"
