@@ -559,6 +559,6 @@
          is the count rendered via NumberFormat with the locale's
          thousand separator + ' since install'. %1$s is the formatted
          number (already localised), see HomeFragment.bindTrackersCard. -->
-    <string name="home_trackers_title">Trackers blocked</string>
+    <string name="home_trackers_title">Trackers and ads blocked</string>
     <string name="home_trackers_subtitle">%1$s since install</string>
 </resources>
