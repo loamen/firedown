@@ -18,13 +18,11 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 
-import com.google.android.material.badge.ExperimentalBadgeUtils;
 import com.google.android.material.button.MaterialButton;
 import com.solarized.firedown.R;
 import com.solarized.firedown.autocomplete.AutoCompleteEditText;
@@ -123,7 +121,6 @@ public class GeckoToolbar extends FrameLayout implements View.OnClickListener, V
         return false;
     }
 
-    @OptIn(markerClass = ExperimentalBadgeUtils.class)
     private void init(Context context, AttributeSet attrs, int defStyleAttr) {
 
         TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.GeckoToolbar, defStyleAttr, 0);
