@@ -563,4 +563,9 @@
          flags it as an estimate, not measured. -->
     <string name="home_trackers_title">Trackers and ads blocked</string>
     <string name="home_trackers_subtitle">%1$s · ~%2$s saved</string>
+    <!-- Subtitle placeholder for the initial state — uBlock hasn't
+         pushed its cumulative count yet, or the count is genuinely
+         zero (fresh install, no browsing). Avoids the cosmetic
+         '0 · ~0 saved' that would otherwise appear. -->
+    <string name="home_trackers_subtitle_idle">Protection active</string>
 </resources>

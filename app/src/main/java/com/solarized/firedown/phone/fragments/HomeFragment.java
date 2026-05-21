@@ -339,9 +339,18 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         // figure (Brave's published methodology: 50KB average per
         // blocked request — flagged with '~' so users read it as an
         // estimate, not a measured value).
+        //
+        // Zero case → 'Protection active' placeholder instead of the
+        // cosmetic '0 · ~0 saved' you'd otherwise see between app
+        // start and the extension's first push, or on a fresh install
+        // before any browsing.
         mGeckoUblockHelper.getCumulativeBlockedLive().observe(getViewLifecycleOwner(), blocked -> {
             if (mTrackersSubtitle == null) return;
             long n = blocked == null ? 0L : blocked;
+            if (n <= 0) {
+                mTrackersSubtitle.setText(R.string.home_trackers_subtitle_idle);
+                return;
+            }
             String formattedCount = java.text.NumberFormat
                     .getInstance(java.util.Locale.getDefault())
                     .format(n);
