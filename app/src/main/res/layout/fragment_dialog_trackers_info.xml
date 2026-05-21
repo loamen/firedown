@@ -12,17 +12,24 @@
     - Give a single clear CTA to the surface where the user can
       adjust protection (Settings → Enhanced Tracking Protection).
 
-  Layout is a ScrollView so it doesn't truncate on small displays
-  in landscape; outer LinearLayout uses center_horizontal gravity
-  so the illustration + headline stack lines up nicely.
+  Outer LinearLayout owns the sticky drag handle; the ScrollView
+  below holds the rest so content can grow past the sheet height
+  on small screens / landscape without clipping the handle.
 -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:fillViewport="true"
-    android:scrollbars="none">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include layout="@layout/dialog_drag_handle" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -121,4 +128,6 @@
 
     </LinearLayout>
 
-</ScrollView>
+    </ScrollView>
+
+</LinearLayout>
