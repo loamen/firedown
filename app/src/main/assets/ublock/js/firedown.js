@@ -232,10 +232,16 @@ import {
      *************************************************************************/
     function pushCumulativeStats() {
         try {
-            const blocked = µb.requestStats && µb.requestStats.blockedCount;
-            if (typeof blocked !== 'number') { return; }
+            const stats = µb.requestStats;
+            if (!stats || typeof stats.blockedCount !== 'number') { return; }
+            // Pair blocked with allowed so the native side can compute
+            // a ratio ('1 in N requests blocked') for the info sheet —
+            // a paired stat reads as more credible than the absolute
+            // count alone.
             browser.runtime.sendNativeMessage("ublock", {
-                cumulativeBlocked: blocked
+                cumulativeBlocked: stats.blockedCount,
+                cumulativeAllowed: typeof stats.allowedCount === 'number'
+                    ? stats.allowedCount : 0
             });
         } catch (_) { /* extension still loading, retry on next tick */ }
     }

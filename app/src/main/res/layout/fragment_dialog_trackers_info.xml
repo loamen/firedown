@@ -78,17 +78,35 @@
             tools:text="~580 MB of bandwidth saved"
             tools:visibility="visible" />
 
-        <!-- Bullet list explaining what 'blocked' actually covers,
-             so the number reads as meaningful rather than a vanity
-             counter. Plain text rather than a chip row because
-             translation lengths blow up chip widths fast. -->
+        <!-- '1 in N web requests' — paired stat (blocked / blocked+
+             allowed) so the number reads as a real ratio rather
+             than a free-floating count. Visibility toggled in code
+             when we don't yet have an allowed count (cold start
+             before the extension has pushed) or when no requests
+             have been seen yet. -->
         <TextView
+            android:id="@+id/trackers_info_ratio"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:lineSpacingExtra="4dp"
-            android:text="@string/trackers_info_breakdown"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface"
+            android:visibility="gone"
+            tools:text="1 in 4 web requests since install"
+            tools:visibility="visible" />
+
+        <!-- Categories label — what 'blocked' actually covers, as
+             a short comma-list rather than a paragraph. Translation
+             length is bounded by 4 short nouns so it stays on one
+             or two lines in every locale. -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="@string/trackers_info_categories"
+            android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.button.MaterialButton
