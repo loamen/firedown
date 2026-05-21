@@ -222,20 +222,18 @@ const FrameStore = class {
             return this._cosmeticFilteringBits;
         }
         this._cosmeticFilteringBits = 0b11;
+        const fctxt = µb.filteringContext
+            .duplicate()
+            .fromTabId(tabId)
+            .setURL(this.rawURL)
+            .setDocOriginFromURL(this.rawURL)
+            .setMethod('')
+            .setRealm('network')
         {
-            const result = staticNetFilteringEngine.matchRequestReverse(
-                'specifichide',
-                this.rawURL
-            );
+            fctxt.setType('specifichide');
+            const result = staticNetFilteringEngine.matchRequest(fctxt, 0b11);
             if ( result !== 0 && logger.enabled ) {
-                µb.filteringContext
-                    .duplicate()
-                    .fromTabId(tabId)
-                    .setURL(this.rawURL)
-                    .setDocOriginFromURL(this.rawURL)
-                    .setRealm('network')
-                    .setType('specifichide')
-                    .setFilter(staticNetFilteringEngine.toLogData())
+                fctxt.setFilter(staticNetFilteringEngine.toLogData())
                     .toLogger();
             }
             if ( result === 2 ) {
@@ -243,19 +241,10 @@ const FrameStore = class {
             }
         }
         {
-            const result = staticNetFilteringEngine.matchRequestReverse(
-                'generichide',
-                this.rawURL
-            );
+            fctxt.setType('generichide');
+            const result = staticNetFilteringEngine.matchRequest(fctxt, 0b11);
             if ( result !== 0 && logger.enabled ) {
-                µb.filteringContext
-                    .duplicate()
-                    .fromTabId(tabId)
-                    .setURL(this.rawURL)
-                    .setDocOriginFromURL(this.rawURL)
-                    .setRealm('network')
-                    .setType('generichide')
-                    .setFilter(staticNetFilteringEngine.toLogData())
+                fctxt.setFilter(staticNetFilteringEngine.toLogData())
                     .toLogger();
             }
             if ( result === 2 ) {
@@ -892,12 +881,12 @@ const PageStore = class {
         return result;
     }
 
-    filterOnHeaders(fctxt, headers) {
+    filterOnHeaders(fctxt, ...headers) {
         fctxt.filter = undefined;
 
         if ( this.getNetFilteringSwitch(fctxt) === false ) { return 0; }
 
-        let result = staticNetFilteringEngine.matchHeaders(fctxt, headers);
+        let result = staticNetFilteringEngine.matchHeaders(fctxt, ...headers);
         if ( result === 0 ) { return 0; }
 
         const loggerEnabled = logger.enabled;
@@ -956,7 +945,7 @@ const PageStore = class {
 
     redirectNonBlockedRequest(fctxt) {
         const directives = [];
-        staticNetFilteringEngine.transformRequest(fctxt, directives);
+        staticNetFilteringEngine.transformURL(fctxt, directives);
         if ( staticNetFilteringEngine.hasQuery(fctxt) ) {
             staticNetFilteringEngine.filterQuery(fctxt, directives);
         }
@@ -976,14 +965,12 @@ const PageStore = class {
     skipMainDocument(fctxt, blocked) {
         const directives = staticNetFilteringEngine.urlSkip(fctxt, blocked);
         if ( directives === undefined ) { return; }
-        if ( logger.enabled !== true ) { return; }
         fctxt.pushFilters(directives.map(a => a.logData()));
-        if ( fctxt.redirectURL !== undefined ) {
-            fctxt.pushFilter({
-                source: 'redirect',
-                raw: fctxt.redirectURL
-            });
-        }
+        if ( fctxt.redirectURL === undefined ) { return; }
+        fctxt.pushFilter({
+            source: 'redirect',
+            raw: fctxt.redirectURL
+        });
     }
 
     filterCSPReport(fctxt) {
@@ -1113,12 +1100,13 @@ const PageStore = class {
             }
         }
         if ( exceptCname === undefined ) {
-            const result = staticNetFilteringEngine.matchRequestReverse(
-                'cname',
+            fctxt.setType('cname');
+            fctxt.setURL(
                 frameStore instanceof Object
                     ? frameStore.rawURL
                     : fctxt.getDocOrigin()
             );
+            const result = staticNetFilteringEngine.matchRequest(fctxt, 0b11);
             exceptCname = result === 2
                 ? staticNetFilteringEngine.toLogData()
                 : false;

@@ -871,22 +871,14 @@ vAPI.Tabs = class extends vAPI.Tabs {
     onActivated(details) {
         const { tabId } = details;
         if ( vAPI.isBehindTheSceneTabId(tabId) ) { return; }
-
-        // 1. Look up the TabContext for the activated tab
-           const tabContext = µb.tabContextManager.lookup(tabId);
-
-           if (tabContext !== null) {
-               // 2. Call getNetFilteringSwitch to see if uBO is enabled for this tab/URL
-               const isEnabled = tabContext.getNetFilteringSwitch();
-
-               if (isEnabled) {
-                    console.log(`Filtering is ENABLED for tab ${tabId}`);
-               } else {
-                    console.log(`Filtering is DISABLED for tab ${tabId}`);
-               }
-
-               browser.runtime.sendNativeMessage("ublock", {firewall: {activated : isEnabled}});
-         }
+        // Firedown: tell the native side whether net filtering is on
+        // for the activated tab so the toolbar shield reflects the
+        // current per-host state without an extra round-trip.
+        const tabContext = µb.tabContextManager.lookup(tabId);
+        if (tabContext !== null) {
+            const isEnabled = tabContext.getNetFilteringSwitch();
+            browser.runtime.sendNativeMessage("ublock", {firewall: {activated: isEnabled}});
+        }
 
         // https://github.com/uBlockOrigin/uBlock-issues/issues/757
         const pageStore = µb.pageStoreFromTabId(tabId);
@@ -1144,8 +1136,6 @@ vAPI.tabs = new vAPI.Tabs();
         }
         tabIdToDetails.set(tabId, newParts);
     };
-
-
 }
 
 /******************************************************************************/

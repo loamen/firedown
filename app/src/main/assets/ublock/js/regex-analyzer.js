@@ -40,6 +40,16 @@ export function tokenizableStrFromRegex(reStr) {
     return _literalStrFromRegex(reStr);
 }
 
+export function literalStrFromRegex(reStr) {
+    let literals = tokenizableStrFromRegex(reStr)
+        .split(/[\x00\x01]+/)
+        .sort((a, b) => b.length - a.length);
+    if ( literals.length > 1 ) {
+        literals = literals.filter(a => (/^(\.?com|\.?net|www\.?)$/).test(a) === false);
+    }
+    return literals[0] || '';
+}
+
 /******************************************************************************/
 
 function _isRE2(node) {
@@ -60,6 +70,8 @@ function _isRE2(node) {
     }
     return true;
 }
+
+/******************************************************************************/
 
 function _literalStrFromRegex(reStr) {
     if ( RegexAnalyzer === null ) { return ''; }
@@ -199,4 +211,56 @@ function tokenizableStrFromNode(node) {
         break;
     }
     return '\x01';
+}
+
+/******************************************************************************/
+
+export function toHeaderPattern(reStr) {
+    if ( RegexAnalyzer === null ) { return; }
+    try {
+        return _toHeaderPattern(RegexAnalyzer(reStr, false).tree());
+    } catch {
+    }
+}
+
+function _toHeaderPattern(branch, depth = 0) {
+    switch ( branch.type ) {
+    case 1: /* T_SEQUENCE, 'Sequence' */ {
+        let s = '';
+        for ( const node of branch.val ) {
+            const t = _toHeaderPattern(node, depth+1);
+            if ( t === undefined ) { return; }
+            s += t;
+        }
+        if ( depth === 0 && branch.val.length !== 0 ) {
+            const first = branch.val[0];
+            if ( first.type !== 128 || first.val !== '^' ) { s = `*${s}`; }
+            const last = branch.val.at(-1);
+            if ( last.type !== 128 || last.val !== '$' ) { s = `${s}*`; }
+        }
+        return s;
+    }
+    case 4: /* T_GROUP, 'Group' */ {
+        if (
+            branch.flags.NegativeLookAhead === 1 ||
+            branch.flags.NegativeLookBehind === 1
+        ) {
+            return;
+        }
+        return _toHeaderPattern(branch.val, depth+1);
+    }
+    case 64: /* T_HEXCHAR, 'HexChar' */
+        return branch.flags.Char;
+    case 128: /* T_SPECIAL, 'Special' */ {
+        if ( branch.val === '^' ) { return ''; }
+        if ( branch.val === '$' ) { return ''; }
+        return;
+    }
+    case 1024: /* T_STRING, 'String' */
+        return branch.val;
+    case 2048: /* T_COMMENT, 'Comment' */
+        return '';
+    default:
+        break;
+    }
 }

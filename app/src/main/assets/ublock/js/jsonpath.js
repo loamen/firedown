@@ -49,6 +49,7 @@
  *   - ^=: stringified value starts with 
  *   - $=: stringified value ends with
  *   - *=: stringified value includes
+ *   - =/.../: regular expression matches
  * 
  * - Examples (from "JSONPath examples" at reference link)
  *   - .store.book[*].author
@@ -99,8 +100,19 @@ export class JSONPath {
         const r = this.#compile(query, 0);
         if ( r === undefined ) { return; }
         if ( r.i !== query.length ) {
-            if ( query.startsWith('=', r.i) === false ) { return; }
-            try { r.rval = JSON.parse(query.slice(r.i+1)); }
+            let val;
+            if ( query.startsWith('=', r.i) ) {
+                if ( /^=repl\(.+\)$/.test(query.slice(r.i)) ) {
+                    r.modify = 'repl';
+                    val = query.slice(r.i+6, -1);
+                } else {
+                    val = query.slice(r.i+1);
+                }
+            } else if ( query.startsWith('+=', r.i) ) {
+                r.modify = '+';
+                val = query.slice(r.i+2);
+            }
+            try { r.rval = JSON.parse(val); }
             catch { return; }
         }
         this.#compiled = r;
@@ -113,24 +125,25 @@ export class JSONPath {
         return paths;
     }
     apply(root) {
-        if ( this.valid === false ) { return 0; }
+        if ( this.valid === false ) { return; }
         const { rval } = this.#compiled;
-        this.#root = root;
+        this.#root = { '$': root };
         const paths = this.#evaluate(this.#compiled.steps, []);
-        const n = paths.length;
-        let i = n;
+        let i = paths.length
+        if ( i === 0 ) { this.#root = null; return; }
         while ( i-- ) {
             const { obj, key } = this.#resolvePath(paths[i]);
             if ( rval !== undefined ) {
-                obj[key] = rval;
+                this.#modifyVal(obj, key);
             } else if ( Array.isArray(obj) && typeof key === 'number' ) {
                 obj.splice(key, 1);
             } else {
                 delete obj[key];
             }
         }
+        const result = this.#root['$'] ?? null;
         this.#root = null;
-        return n;
+        return result;
     }
     dump() {
         return JSON.stringify(this.#compiled);
@@ -155,8 +168,15 @@ export class JSONPath {
         if ( query.length === 0 ) { return; }
         const steps = [];
         let c = query.charCodeAt(i);
-        steps.push({ mv: c === 0x24 /* $ */ ? this.#ROOT : this.#CURRENT });
-        if ( c === 0x24 /* $ */ || c === 0x40 /* @ */ ) { i += 1; }
+        if ( c === 0x24 /* $ */ ) {
+            steps.push({ mv: this.#ROOT });
+            i += 1;
+        } else if ( c === 0x40 /* @ */ ) {
+            steps.push({ mv: this.#CURRENT });
+            i += 1;
+        } else {
+            steps.push({ mv: i === 0 ? this.#ROOT : this.#CURRENT });
+        }
         let mv = this.#UNDEFINED;
         for (;;) {
             if ( i === query.length ) { break; }
@@ -218,7 +238,8 @@ export class JSONPath {
             i = r.i + 1;
             mv = this.#UNDEFINED;
         }
-        if ( steps.length <= 1 ) { return; }
+        if ( steps.length === 0 ) { return; }
+        if ( mv !== this.#UNDEFINED ) { return; }
         return { steps, i };
     }
     #evaluate(steps, pathin) {
@@ -227,7 +248,7 @@ export class JSONPath {
         for ( const step of steps ) {
             switch ( step.mv ) {
             case this.#ROOT:
-                resultset = [ [] ];
+                resultset = [ [ '$' ] ];
                 break;
             case this.#CURRENT:
                 resultset = [ pathin ];
@@ -356,7 +377,7 @@ export class JSONPath {
                 continue;
             }
             if ( c0 === 0x27 /* ' */ ) {
-                const r = this.#consumeQuotedIdentifier(query, i+1);
+                const r = this.#untilChar(query, 0x27 /* ' */, i+1)
                 if ( r === undefined ) { return; }
                 keys.push(r.s);
                 i = r.i;
@@ -377,22 +398,27 @@ export class JSONPath {
         }
         return { s: keys.length === 1 ? keys[0] : keys, i };
     }
-    #consumeQuotedIdentifier(query, i) {
+    #consumeUnquotedIdentifier(query, i) {
+        const match = this.#reUnquotedIdentifier.exec(query.slice(i));
+        if ( match === null ) { return; }
+        return match[0];
+    }
+    #untilChar(query, targetCharCode, i) {
         const len = query.length;
         const parts = [];
         let beg = i, end = i;
         for (;;) {
             if ( end === len ) { return; }
             const c = query.charCodeAt(end);
-            if ( c === 0x27 /* ' */ ) {
+            if ( c === targetCharCode ) {
                 parts.push(query.slice(beg, end));
                 end += 1;
                 break;
             }
             if ( c === 0x5C /* \ */ && (end+1) < len ) {
-                parts.push(query.slice(beg, end));
-                const d = query.chatCodeAt(end+1);
-                if ( d === 0x27 || d === 0x5C ) {
+                const d = query.charCodeAt(end+1);
+                if ( d === targetCharCode ) {
+                    parts.push(query.slice(beg, end));
                     end += 1;
                     beg = end;
                 }
@@ -401,12 +427,20 @@ export class JSONPath {
         }
         return { s: parts.join(''), i: end };
     }
-    #consumeUnquotedIdentifier(query, i) {
-        const match = this.#reUnquotedIdentifier.exec(query.slice(i));
-        if ( match === null ) { return; }
-        return match[0];
-    }
     #compileExpr(query, step, i) {
+        if ( query.startsWith('=/', i) ) {
+            const r = this.#untilChar(query, 0x2F /* / */, i+2);
+            if ( r === undefined ) { return i; }
+            const match = /^[i]/.exec(query.slice(r.i));
+            try {
+                step.rval = new RegExp(r.s, match && match[0] || undefined);
+            } catch {
+                return i;
+            }
+            step.op = 're';
+            if ( match ) { r.i += match[0].length; }
+            return r.i;
+        }
         const match = this.#reExpr.exec(query.slice(i));
         if ( match === null ) { return i; }
         try {
@@ -446,8 +480,48 @@ export class JSONPath {
         case '^=': outcome = `${v}`.startsWith(step.rval) === target; break;
         case '$=': outcome = `${v}`.endsWith(step.rval) === target; break;
         case '*=': outcome = `${v}`.includes(step.rval) === target; break;
+        case 're': outcome = step.rval.test(`${v}`); break;
         default: outcome = hasOwn === target; break;
         }
         if ( outcome ) { return k; }
+    }
+    #modifyVal(obj, key) {
+        let { modify, rval } = this.#compiled;
+        if ( typeof rval === 'string' ) {
+            rval = rval.replace('${now}', `${Date.now()}`);
+        }
+        switch ( modify ) {
+        case undefined:
+            obj[key] = rval;
+            break;
+        case '+': {
+            if ( rval instanceof Object === false ) { return; }
+            const lval = obj[key];
+            if ( lval instanceof Object === false ) { return; }
+            if ( Array.isArray(lval) ) { return; }
+            for ( const [ k, v ] of Object.entries(rval) ) {
+                lval[k] = v;
+            }
+            break;
+        }
+        case 'repl': {
+            const lval = obj[key];
+            if ( typeof lval !== 'string' ) { return; }
+            if ( this.#compiled.re === undefined ) {
+                this.#compiled.re = null;
+                try {
+                    this.#compiled.re = rval.regex !== undefined
+                        ? new RegExp(rval.regex, rval.flags)
+                        : new RegExp(rval.pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                } catch {
+                }
+            }
+            if ( this.#compiled.re === null ) { return; }
+            obj[key] = lval.replace(this.#compiled.re, rval.replacement);
+            break;
+        }
+        default:
+            break;
+        }
     }
 }
