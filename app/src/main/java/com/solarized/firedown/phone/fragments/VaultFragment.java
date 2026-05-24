@@ -168,6 +168,12 @@ public class VaultFragment extends BaseDownloadFragment implements OnItemClickLi
         // Observe the specific "Safe" data stream
         mDownloadsViewModel.getSafe().observe(getViewLifecycleOwner(), data ->
                 mAdapter.submitData(getLifecycle(), data));
+
+        // Per-group aggregates for header subtitles. Vault uses the
+        // separate getSafeAggregates() stream so the count/size reflects
+        // only vault-stored items, never the regular downloads list.
+        mDownloadsViewModel.getSafeAggregates().observe(getViewLifecycleOwner(),
+                aggregates -> { if (aggregates != null) mAdapter.setAggregates(aggregates); });
     }
 
     @Override

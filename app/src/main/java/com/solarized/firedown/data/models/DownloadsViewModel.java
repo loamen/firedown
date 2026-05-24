@@ -22,9 +22,12 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.Sorting;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.repository.DownloadDataRepository;
+import com.solarized.firedown.utils.DownloadAggregator;
 import com.solarized.firedown.utils.DownloadSortOrganizer;
+import com.solarized.firedown.utils.GroupAggregate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,6 +62,12 @@ public class DownloadsViewModel extends ViewModel {
      * (the stored value is compared). Backed by mStateTrigger.
      */
     private final LiveData<String> mDispatchedQuery;
+
+    /** Per-category aggregates (count + total bytes) for the current sort, computed
+     *  off a separate full-list LiveData (not the paging stream) so the adapter can
+     *  render header subtitles without consuming the entire paged source. */
+    private final LiveData<Map<Integer, GroupAggregate>> mDownloadAggregates;
+    private final LiveData<Map<Integer, GroupAggregate>> mSafeAggregates;
 
     @Inject
     public DownloadsViewModel(DownloadDataRepository repository, Sorting sorting) {
@@ -125,6 +134,19 @@ public class DownloadsViewModel extends ViewModel {
         mDispatchedQuery = Transformations.distinctUntilChanged(
                 Transformations.map(mStateTrigger, state -> state == null ? "" : (state.query == null ? "" : state.query))
         );
+
+        // Aggregate streams. Each sort change re-aggregates the full list
+        // under the new category function; each insert/update/delete in the
+        // download table re-fires the underlying LiveData and the aggregates
+        // recompute. Heavier than the paging path on raw row count, but the
+        // aggregator runs in ~O(N) over a small projection and only when the
+        // sort actually changed or the table mutated.
+        mDownloadAggregates = Transformations.switchMap(mStateTrigger, state ->
+                Transformations.map(mRepository.getAllRegularLive(),
+                        list -> DownloadAggregator.aggregate(list, state.sortType)));
+        mSafeAggregates = Transformations.switchMap(mStateTrigger, state ->
+                Transformations.map(mRepository.getAllSafeLive(),
+                        list -> DownloadAggregator.aggregate(list, state.sortType)));
     }
 
     @Override
@@ -234,6 +256,14 @@ public class DownloadsViewModel extends ViewModel {
     /** Emits only when the query string changes (not on chip/sort changes). */
     public LiveData<String> getDispatchedQuery() {
         return mDispatchedQuery;
+    }
+
+    public LiveData<Map<Integer, GroupAggregate>> getDownloadAggregates() {
+        return mDownloadAggregates;
+    }
+
+    public LiveData<Map<Integer, GroupAggregate>> getSafeAggregates() {
+        return mSafeAggregates;
     }
 
     public void addDownload(DownloadEntity download) {

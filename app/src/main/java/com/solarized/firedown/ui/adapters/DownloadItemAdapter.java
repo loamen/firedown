@@ -33,7 +33,9 @@ import com.solarized.firedown.ui.OnItemClickListener;
 import com.solarized.firedown.ui.ProgressOverlayView;
 import com.solarized.firedown.utils.DateUtils;
 import com.solarized.firedown.utils.FileUriHelper;
+import com.solarized.firedown.utils.GroupAggregate;
 import com.solarized.firedown.utils.MessageHelper;
+import com.solarized.firedown.utils.SelectionStyling;
 import com.solarized.firedown.utils.Utils;
 import com.solarized.firedown.utils.WebUtils;
 
@@ -42,6 +44,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.ViewHolder> {
 
@@ -53,19 +56,24 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     private final Drawable mChecked;
     private final Drawable mUnChecked;
     private final RequestOptions mRequestOptions;
-    /** Soft 'wash' surface for in-flight rows. Pale coral on light,
-     *  deep warm on dark. Hardcoded rather than pulled from the
-     *  HomeCardStyle pick — the home active strip is loud
-     *  (primaryContainer) because nothing else competes with it
-     *  there; here we sit next to procedurally-generated coral mime
-     *  icons that disappear into a full brand surface, so the wash
-     *  has to stay tonally distinct from those icons. */
-    private final int mActiveCardBg;
-    /** Defaults for non-active rows. List items want plain surface
-     *  (transparent against the page); grid items keep the
-     *  surfaceContainerHigh placeholder the layout originally set. */
+    /** Backgrounds for download rows. Active and finished now share
+     *  the same surface — the live signal moved to a thicker, tinted
+     *  LinearProgressIndicator under the filename. Stacked active
+     *  rows used to read as one heavy warm block under the
+     *  "Downloading" section; the per-row bar is per-row by definition
+     *  and stacks cleanly. List items want plain surface (transparent
+     *  against the page); grid items keep the surfaceContainerHigh
+     *  placeholder the layout originally set. */
     private final int mDefaultListBg;
     private final int mDefaultGridBg;
+    /** Selected-state tonal wash for each surface — primaryContainer
+     *  layered at 20% over the respective default. Stroke alone
+     *  wasn't loud enough to confirm "did I really pick these?" at
+     *  scroll speed; the wash makes the selected set readable from
+     *  across the screen without going as loud as a full
+     *  primaryContainer fill. */
+    private final int mSelectedListBg;
+    private final int mSelectedGridBg;
     /** Brand accent for the list-mode mime label, also used as the
      *  progress bar indicator colour. */
     private final int mDefaultPrimary;
@@ -73,6 +81,11 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     private boolean mActionMode;
     private boolean mEnabled;
     private boolean mEnableGrid;
+
+    /** Per-category aggregates used to fill the header subtitle
+     *  ("N files · X MB"). Empty until the ViewModel's aggregator emits. */
+    @NonNull private Map<Integer, GroupAggregate> mAggregates = Collections.emptyMap();
+
 
 
 
@@ -94,18 +107,14 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                         com.google.android.material.R.attr.colorPrimaryContainer, Color.TRANSPARENT));
         mRequestOptions = new RequestOptions();
 
-        boolean night = (context.getResources().getConfiguration().uiMode
-                & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
-                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-        // Wash colours match the Home cards 'Blush' palette so the
-        // downloads-list active row reads as a soft live signal
-        // rather than the loud primaryContainer brand wall.
-        mActiveCardBg = night ? 0xFF3A1F1C : 0xFFFFE6E0;
-
         mDefaultListBg = MaterialColors.getColor(context,
                 com.google.android.material.R.attr.colorSurface, Color.TRANSPARENT);
         mDefaultGridBg = MaterialColors.getColor(context,
                 com.google.android.material.R.attr.colorSurfaceContainerHigh, Color.TRANSPARENT);
+        mSelectedListBg = SelectionStyling.selectedCardWashOver(context,
+                com.google.android.material.R.attr.colorSurface);
+        mSelectedGridBg = SelectionStyling.selectedCardWashOver(context,
+                com.google.android.material.R.attr.colorSurfaceContainerHigh);
         mDefaultPrimary = MaterialColors.getColor(context,
                 android.R.attr.colorPrimary, Color.BLACK);
         mDefaultPrimaryAlpha = androidx.core.graphics.ColorUtils
@@ -142,7 +151,11 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
      * resolves mime text, kicks Glide loads, and rebuilds status views,
      * none of which change when the user enters action mode.
      */
-    private static final Object PAYLOAD_SELECTION = new Object();
+    private static final Object PAYLOAD_SELECTION  = new Object();
+
+    /** Per-group aggregates changed — only header subtitles need to
+     *  re-render. Items ignore this payload entirely. */
+    private static final Object PAYLOAD_AGGREGATES = new Object();
 
     public void setActionMode(boolean value) {
         mActionMode = value;
@@ -234,6 +247,20 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         return item instanceof DownloadEntity entity ? entity : null;
     }
 
+    // ── Section header aggregates ──────────────────────────────────────
+
+    public void setAggregates(@NonNull Map<Integer, GroupAggregate> aggregates) {
+        if (mAggregates == aggregates || mAggregates.equals(aggregates)) return;
+        mAggregates = aggregates;
+        // Only headers consume aggregates; the payload lets items short
+        // out without rebinding — important because a full rebind would
+        // re-fire Glide loads, and audio files whose embedded-art decode
+        // is guaranteed to fail (FFmpegThumbnailer returns null bitmap)
+        // get no cache entry and re-decode on every retry, producing a
+        // visible blink on each aggregate emit.
+        notifyItemRangeChanged(0, getItemCount(), PAYLOAD_AGGREGATES);
+    }
+
     // ── View types ──────────────────────────────────────────────────────
 
     @Override
@@ -279,7 +306,8 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 
         if (viewType == Download.HEADER) {
-            return new HeaderViewHolder(inflater.inflate(R.layout.fragment_item_header, parent, false));
+            return new HeaderViewHolder(
+                    inflater.inflate(R.layout.fragment_item_header, parent, false));
         }
 
         if (viewType == Download.EMPTY) {
@@ -317,8 +345,12 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             int status = getStatus(viewType);
             boolean isGrid = isGridType(viewType);
 
+            boolean washSelected = mActionMode && contains;
             holder.item.setEnabled(mEnabled);
-            holder.item.setStrokeColor(mActionMode && contains ? mColorSelected : mColorNormal);
+            holder.item.setCardBackgroundColor(washSelected
+                    ? (isGrid ? mSelectedGridBg : mSelectedListBg)
+                    : (isGrid ? mDefaultGridBg  : mDefaultListBg));
+            holder.item.setStrokeColor(washSelected ? mColorSelected : mColorNormal);
             holder.selected.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
             holder.selected.setImageDrawable(mActionMode ? (contains ? mChecked : mUnChecked) : null);
             holder.actionButton.setVisibility(mActionMode ? View.INVISIBLE : View.VISIBLE);
@@ -331,8 +363,29 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                             : R.drawable.ic_baseline_more_vert_24);
             return;
         }
+
+        // Aggregates-only payload: header subtitle text. Items ignore.
+        if (!payloads.isEmpty()
+                && Collections.frequency(payloads, PAYLOAD_AGGREGATES) == payloads.size()) {
+            applyAggregatesPayload(viewHolder, position);
+            return;
+        }
+
         // Anything else (or no payload, or mixed payloads) → full rebind.
         super.onBindViewHolder(viewHolder, position, payloads);
+    }
+
+    private void applyAggregatesPayload(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
+        if (!(viewHolder instanceof HeaderViewHolder header)) return;
+        Object item = peek(position);
+        if (!(item instanceof DownloadSeparatorEntity sep)) return;
+        GroupAggregate agg = mAggregates.get(sep.getCategory());
+        if (agg != null) {
+            header.subtitle.setVisibility(View.VISIBLE);
+            header.subtitle.setText(formatGroupSubtitle(header.itemView.getContext(), agg));
+        } else {
+            header.subtitle.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -341,10 +394,20 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         if (item == null) return;
 
         if (viewHolder instanceof HeaderViewHolder header && item instanceof DownloadSeparatorEntity sep) {
+            int category = sep.getCategory();
+
             if (sep.getTitleResId() != 0) {
                 header.text.setText(header.itemView.getContext().getString(sep.getTitleResId()));
             } else {
                 header.text.setText(sep.getTitleText());
+            }
+
+            GroupAggregate agg = mAggregates.get(category);
+            if (agg != null) {
+                header.subtitle.setVisibility(View.VISIBLE);
+                header.subtitle.setText(formatGroupSubtitle(header.itemView.getContext(), agg));
+            } else {
+                header.subtitle.setVisibility(View.GONE);
             }
             return;
         }
@@ -379,19 +442,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             holder.mimeText.setText(isGrid ? mimeLabel : mimeLabel + " · ");
         }
 
-        // ── Active-state surface ────────────────────────────────────
-        // In-flight items (PROGRESS / QUEUED) take the wash surface
-        // so the 'live' signal is visible without the heavy brand
-        // wall fighting the procedurally-coloured mime placeholders.
-        // Completed / error rows reset to the per-view-type default —
-        // list goes back to plain surface (flat against the page),
-        // grid keeps the surfaceContainerHigh placeholder so an
-        // unloaded thumbnail still has a backdrop. Text colours stay
-        // at theme defaults; the wash is tonally close enough to the
-        // page surface that onSurface / onSurfaceVariant read fine.
-        boolean isActive = status == Download.PROGRESS || status == Download.QUEUED;
-        holder.item.setCardBackgroundColor(
-                isActive ? mActiveCardBg : (isGrid ? mDefaultGridBg : mDefaultListBg));
+        // ── Row surface ─────────────────────────────────────────────
+        // Same default for active and finished rows. The active signal
+        // lives in the thicker tinted LinearProgressIndicator (list) or
+        // the ProgressOverlayView on the thumbnail (grid). During
+        // action mode, selected rows take the tonal wash so the
+        // selection set reads from across the screen — see the field
+        // comment on mSelectedListBg for the why.
+        boolean washSelected = mActionMode && contains;
+        holder.item.setCardBackgroundColor(washSelected
+                ? (isGrid ? mSelectedGridBg : mSelectedListBg)
+                : (isGrid ? mDefaultGridBg  : mDefaultListBg));
 
         if (holder.fileName != null) holder.fileName.setText(entity.getFileName());
         if (holder.fileUrl != null) holder.fileUrl.setText(domain);
@@ -648,10 +709,31 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
     static class HeaderViewHolder extends RecyclerView.ViewHolder {
         final TextView text;
+        final TextView subtitle;
+
         HeaderViewHolder(View view) {
             super(view);
-            text = view.findViewById(R.id.item_header);
+            text     = view.findViewById(R.id.item_header);
+            subtitle = view.findViewById(R.id.item_header_subtitle);
         }
+    }
+
+    /** "{n} files · {size}", or just "{n} files" when the total is
+     *  unknown. fileSize comes from Content-Length at request creation
+     *  time; HLS / live streams and any source without a length
+     *  header land as 0, which would otherwise render the active
+     *  "Downloading" section header as "2 files · 0 B" — accurate to
+     *  the data but useless to read. Same gate handles the rare
+     *  finished-but-size-unset edge case for free.
+     *  <p>Pluralization is light — Java's
+     *  {@code Resources.getQuantityString} is fine here but the
+     *  English "1 file / N files" split is the only locale rule
+     *  that matters for this header today. */
+    private static String formatGroupSubtitle(@NonNull Context ctx, @NonNull GroupAggregate agg) {
+        String files = ctx.getResources().getQuantityString(
+                R.plurals.downloads_group_files, agg.count, agg.count);
+        if (agg.totalSize <= 0) return files;
+        return files + " · " + Utils.readableFileSize(agg.totalSize);
     }
 
     static class EmptyViewHolder extends RecyclerView.ViewHolder {

@@ -232,6 +232,12 @@ public class DownloadFragment extends BaseDownloadFragment implements
         mDownloadsViewModel.getDownloads().observe(getViewLifecycleOwner(), data ->
                 mAdapter.submitData(getLifecycle(), data));
 
+        // Push per-group aggregates (count + total size) so the adapter
+        // can fill section-header subtitles. Re-fires whenever the
+        // download table changes or the sort mode changes.
+        mDownloadsViewModel.getDownloadAggregates().observe(getViewLifecycleOwner(),
+                aggregates -> { if (aggregates != null) mAdapter.setAggregates(aggregates); });
+
         // Scroll the list back to the top whenever a new (distinct) query is dispatched.
         // distinctUntilChanged on the VM side suppresses the spurious initial emission
         // caused by chip/sort changes, but the first observation still fires once — which

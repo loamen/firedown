@@ -189,7 +189,7 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
                 SavedStateHandle handle = entry.getSavedStateHandle();
                 if (handle.contains(IntentActions.DOWNLOAD_SORT)) {
                     OptionEntity option = handle.get(IntentActions.DOWNLOAD_SORT);
-                    if(option != null) mDownloadsViewModel.setSortType(option.getId());
+                    if (option != null) mDownloadsViewModel.setSortType(option.getId());
                     handle.remove(IntentActions.DOWNLOAD_SORT);
                 } else if (handle.contains(IntentActions.DOWNLOAD_ITEM)) {
                     OptionEntity option = handle.get(IntentActions.DOWNLOAD_ITEM);
