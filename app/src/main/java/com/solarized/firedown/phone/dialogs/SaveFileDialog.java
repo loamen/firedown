@@ -22,6 +22,7 @@ import com.solarized.firedown.data.entity.OptionEntity;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.utils.FileUriHelper;
+import com.solarized.firedown.utils.FragmentArgs;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -53,20 +54,13 @@ public class SaveFileDialog extends BaseDialogFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Bundle bundle = getArguments();
-        if (bundle != null) {
-            // Restored arg bundles default to the system classloader, which
-            // can't resolve BrowserDownloadEntity — getParcelable then
-            // returns null silently after process death.
-            bundle.setClassLoader(BrowserDownloadEntity.class.getClassLoader());
-        }
-
-        BrowserDownloadEntity browserDownloadEntity = bundle != null ? bundle.getParcelable(Keys.ITEM_ID) : null;
+        BrowserDownloadEntity browserDownloadEntity =
+                FragmentArgs.parcelable(this, Keys.ITEM_ID, BrowserDownloadEntity.class);
 
         if (browserDownloadEntity == null) {
-            // Truly missing — fall through with mBrowserDownloadEntity null.
-            // onCreateDialog dismisses on first show so the user lands on
-            // the screen behind the dialog and can re-tap Save.
+            // Args lost on restore or never set — onCreateDialog dismisses
+            // on first show so the user lands behind the dialog and can
+            // re-tap Save.
             return;
         }
 
