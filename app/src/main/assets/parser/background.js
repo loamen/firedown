@@ -115,7 +115,7 @@ async function sendNative(message) {
  * Unified variant sender for Twitter, Instagram, and future parsers.
  * Handles dedup, sorting, and message construction.
  */
-async function sendVariants(details, { variants, origin, description, img, name, duration }) {
+async function sendVariants(details, { variants, origin, description, img, name, duration, requestHeaders }) {
     if (!Array.isArray(variants) || variants.length === 0) return;
 
     // Sort by height descending — best quality first
@@ -155,6 +155,9 @@ async function sendVariants(details, { variants, origin, description, img, name,
     if (img) message.img = img;
     if (name) message.name = name;
     if (duration > 0) message.duration = duration;
+    if (Array.isArray(requestHeaders) && requestHeaders.length > 0) {
+        message.requestHeaders = requestHeaders;
+    }
 
     sendNative(message);
 }
@@ -193,7 +196,10 @@ function collectFilteredResponse(details) {
         };
 
         filter.onerror = () => {
-            filter.close();
+            // Already in errored state — close() itself throws
+            // NS_ERROR_FAILURE on Gecko, which surfaces as a noisy
+            // console error even though the rejection is handled.
+            try { filter.close(); } catch (_) {}
             reject(new Error(`Filter error: ${filter.error}`));
         };
     });
@@ -795,6 +801,160 @@ browser.webNavigation.onHistoryStateUpdated.addListener(
         url: [{ hostEquals: "podcasts.apple.com", pathContains: "/podcast/" }]
     }
 );
+
+// ============================================================================
+// TikTok
+// ============================================================================
+
+// Build the header set that lets v*-webapp-prime.tiktok.com /video/
+// URLs replay successfully from the native downloader. Mirrors what
+// Firefox itself sends on the page-driven media fetch (captured via
+// the webrequests path): Origin/Referer/Sec-Fetch-* and — crucially
+// — Cookie, which carries tt_chain_token (the URL's `tk=` param names
+// this cookie as the auth source, so without it TikTok 403s).
+async function buildTikTokHeaders() {
+    let cookieHeader = "";
+    let cookieCount = 0;
+    try {
+        const cookies = await browser.cookies.getAll({ domain: "tiktok.com" });
+        cookieCount = cookies.length;
+        cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join("; ");
+    } catch (e) {
+        log("TIKTOK", `cookies.getAll failed`, e.message);
+    }
+    log("TIKTOK", `built headers`, { cookies: cookieCount, cookieLen: cookieHeader.length, ua: navigator.userAgent.slice(0, 60) });
+    return [
+        { name: "User-Agent",     value: navigator.userAgent },
+        { name: "Accept",         value: "*/*" },
+        { name: "Accept-Language", value: "en-US,en;q=0.9" },
+        { name: "Origin",         value: "https://www.tiktok.com" },
+        { name: "Referer",        value: "https://www.tiktok.com/" },
+        { name: "Sec-Fetch-Dest", value: "empty" },
+        { name: "Sec-Fetch-Mode", value: "cors" },
+        { name: "Sec-Fetch-Site", value: "same-site" },
+        { name: "Connection",     value: "keep-alive" },
+        { name: "Cookie",         value: cookieHeader }
+    ];
+}
+
+// Receives JSON bodies posted by the content-script bridge. The body
+// is the exact response the page itself received via fetch/XHR —
+// captured by a page-world hook (tiktok-inject.js) that observes
+// passively without touching the network stack. This avoids three
+// failure modes encountered with webRequest-based approaches:
+//   1. filterResponseData perturbs the page (TikTok shows a
+//      "something went wrong" overlay).
+//   2. Refetching the URL ourselves trips TikTok's single-use
+//      msToken / X-Bogus signature and returns a stripped response.
+//   3. ServiceWorker-served endpoints (/related/item_list/) can't be
+//      tapped via filterResponseData at all.
+async function handleTikTokItemList(msg, sender) {
+    log("TIKTOK", `onMessage`, {
+        url: (msg.url || "").slice(0, 120),
+        bodyLen: msg.body ? msg.body.length : 0,
+        tabId: sender.tab?.id ?? -1,
+        tabUrl: (sender.tab?.url || "").slice(0, 80)
+    });
+
+    const json = tryParseJson(msg.body);
+    if (!json) {
+        log("TIKTOK", `JSON parse failed`, { head: (msg.body || "").slice(0, 200) });
+        return;
+    }
+    const items = json?.itemList;
+    if (!Array.isArray(items)) {
+        log("TIKTOK", `no itemList[] in body`, { topKeys: Object.keys(json).slice(0, 12) });
+        return;
+    }
+    if (items.length === 0) {
+        log("TIKTOK", `empty itemList[]`);
+        return;
+    }
+
+    const pathname = (() => {
+        try { return new URL(msg.url, sender.tab?.url || "https://www.tiktok.com/").pathname; }
+        catch (_) { return msg.url; }
+    })();
+    log("TIKTOK", `${items.length} item(s) from ${pathname}`);
+
+    const headers = await buildTikTokHeaders();
+    const tabId = sender.tab?.id ?? -1;
+    const pageUrl = sender.tab?.url || "https://www.tiktok.com/";
+
+    let sentCount = 0;
+    let skippedNoVariants = 0;
+    let skippedNoVideo = 0;
+    for (const item of items) {
+        const v = item?.video;
+        if (!v) { skippedNoVideo++; continue; }
+
+        const author = item.author?.uniqueId || item.author?.nickname;
+        const caption = (item.desc || "").split("\n")[0].slice(0, 140);
+        const canonical = author && item.id
+            ? `https://www.tiktok.com/@${author}/video/${item.id}`
+            : pageUrl;
+
+        const variants = [];
+        if (Array.isArray(v.bitrateInfo)) {
+            for (const b of v.bitrateInfo) {
+                const list = b?.PlayAddr?.UrlList;
+                if (!Array.isArray(list) || list.length === 0) continue;
+                variants.push({
+                    url: list[0],
+                    width: b.PlayAddr?.Width || v.width || 0,
+                    height: b.PlayAddr?.Height || v.height || 0,
+                    videoCodec: "h264"
+                });
+            }
+        }
+        if (variants.length === 0 && (v.playAddr || v.downloadAddr)) {
+            variants.push({
+                url: v.playAddr || v.downloadAddr,
+                width: v.width || 0,
+                height: v.height || 0,
+                videoCodec: "h264"
+            });
+        }
+        if (variants.length === 0) { skippedNoVariants++; continue; }
+
+        log("TIKTOK", `item -> sendVariants`, {
+            id: item.id,
+            author,
+            variants: variants.length,
+            topUrl: variants[0].url.slice(0, 80),
+            name: caption.slice(0, 60)
+        });
+
+        // Synthetic details object: sendVariants only reads tabId,
+        // requestId, documentUrl, originUrl, and url.
+        const details = {
+            tabId,
+            documentUrl: pageUrl,
+            originUrl: pageUrl,
+            url: msg.url,
+            requestId: `tiktok-${item.id || Date.now()}`
+        };
+
+        sendVariants(details, {
+            variants,
+            origin: canonical,
+            description: author ? "@" + author : undefined,
+            img: v.cover || v.originCover,
+            name: caption || (author ? `TikTok by @${author}` : "TikTok video"),
+            duration: typeof v.duration === "number" ? v.duration * 1000 : 0,
+            requestHeaders: headers
+        });
+        sentCount++;
+    }
+    log("TIKTOK", `batch done`, { sent: sentCount, skippedNoVideo, skippedNoVariants, total: items.length });
+}
+
+browser.runtime.onMessage.addListener((msg, sender) => {
+    if (!msg || msg.kind !== "tiktok-itemlist") return;
+    handleTikTokItemList(msg, sender).catch(e => {
+        log("TIKTOK", `handler error`, e.message);
+    });
+});
 
 // ============================================================================
 // Twitter / X

@@ -1,18 +1,34 @@
 {
   "manifest_version": 2,
-  "version": "1.7",
+  "version": "2.7",
   "browser_specific_settings": {
     "gecko": {
       "id": "parser@solarized.dev"
     }
   },
   "name": "Video parser",
-  "description": "Parses media URLs from Vimeo, Twitter/X, Instagram, Kick, Twitch, Dailymotion, and Apple Podcasts",
+  "description": "Parses media URLs from Vimeo, Twitter/X, Instagram, Kick, Twitch, Dailymotion, Apple Podcasts, and TikTok",
   "background": {
     "scripts": [
       "background.js"
     ]
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.tiktok.com/*",
+        "*://m.tiktok.com/*"
+      ],
+      "js": [
+        "tiktok-content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    "tiktok-inject.js"
+  ],
   "permissions": [
     "nativeMessaging",
     "nativeMessagingFromContent",
@@ -38,6 +54,7 @@
     "*://podcasts.apple.com/*",
     "*://amp-api.podcasts.apple.com/*",
     "*://amp-api-edge.podcasts.apple.com/*",
-    "*://itunes.apple.com/*"
+    "*://itunes.apple.com/*",
+    "*://*.tiktok.com/*"
   ]
 }
