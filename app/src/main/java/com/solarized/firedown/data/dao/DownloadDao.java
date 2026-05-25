@@ -104,6 +104,16 @@ public interface DownloadDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     long insertSync(DownloadEntity download);
 
+    /**
+     * Flip the negative-cache flag for a single row. Called from the
+     * Glide load listener after every decoder in the chain has failed
+     * for a completed file, so subsequent paging accesses can short-
+     * circuit to the static mime icon instead of re-running the
+     * MediaMetadataRetriever / FFmpegThumbnailer chain.
+     */
+    @Query("UPDATE download SET file_thumbnail_unavailable = :unavailable WHERE uid = :id")
+    void setThumbnailUnavailableSync(int id, boolean unavailable);
+
     // --- Delete Operations ---
 
     @Delete

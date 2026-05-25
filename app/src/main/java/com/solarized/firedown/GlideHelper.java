@@ -24,13 +24,20 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.signature.ObjectKey;
+import com.solarized.firedown.data.Download;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.entity.DownloadEntity;
+import com.solarized.firedown.data.repository.DownloadDataRepository;
 import com.solarized.firedown.glide.DomainThumbnail;
 import com.solarized.firedown.glide.MimeTypeThumbnail;
 import com.solarized.firedown.utils.BrowserHeaders;
 import com.solarized.firedown.utils.FileUriHelper;
 import com.solarized.firedown.utils.Utils;
+
+import dagger.hilt.EntryPoint;
+import dagger.hilt.InstallIn;
+import dagger.hilt.android.EntryPointAccessors;
+import dagger.hilt.components.SingletonComponent;
 
 import java.util.Map;
 
@@ -99,6 +106,77 @@ public class GlideHelper {
                 return false; // let Glide handle it
             }
         };
+    }
+
+    /**
+     * Variant of {@link #fallbackListener} for the audio/video branch
+     * that ALSO persists a negative-cache flag on the entity once every
+     * decoder fails for a {@link Download#FINISHED} file. Subsequent
+     * paging accesses then short-circuit the whole Glide chain via
+     * {@link DownloadEntity#isFileThumbnailUnavailable()} instead of
+     * re-running {@code MediaMetadataRetriever} + {@code FFmpegThumbnailer}
+     * (one binder round-trip + one Stagefright init + one FFmpeg context
+     * each) per scroll past the row.
+     *
+     * <p>Gated on {@code STATUS_COMPLETE} so an in-flight download that
+     * fails a probe on a partial file isn't permanently poisoned.</p>
+     */
+    private static <T> RequestListener<T> negativeCachingFallbackListener(
+            @NonNull DownloadEntity entity,
+            @NonNull String mimeType,
+            @NonNull AppCompatImageView image) {
+        return new RequestListener<>() {
+            @Override
+            public boolean onLoadFailed(GlideException e, Object model,
+                                        @NonNull Target<T> target, boolean isFirstResource) {
+                image.setImageDrawable(generateThumbnail(mimeType, image));
+                if (entity.getFileStatus() == Download.FINISHED
+                        && !entity.isFileThumbnailUnavailable()) {
+                    markThumbnailUnavailableAsync(image.getContext(), entity);
+                }
+                return true; // handled
+            }
+
+            @Override
+            public boolean onResourceReady(@NonNull T resource, @NonNull Object model,
+                                           Target<T> target, @NonNull DataSource dataSource,
+                                           boolean isFirstResource) {
+                return false; // let Glide handle it
+            }
+        };
+    }
+
+    /**
+     * Hilt EntryPoint so this static helper can reach the singleton
+     * {@link DownloadDataRepository} from a Glide listener callback —
+     * same pattern {@link GlideModule} uses for OkHttpClient.
+     */
+    @EntryPoint
+    @InstallIn(SingletonComponent.class)
+    interface RepositoryEntryPoint {
+        DownloadDataRepository getDownloadRepository();
+    }
+
+    /**
+     * Mark the entity's row as "Glide decoders exhausted for this file."
+     * The repo dispatches the Room write on its own disk executor, never
+     * the main thread. Updates the in-memory entity too so subsequent
+     * binds on the same instance short-circuit instantly without waiting
+     * for the next PagingSource invalidation.
+     */
+    private static void markThumbnailUnavailableAsync(@NonNull Context context,
+                                                      @NonNull DownloadEntity entity) {
+        entity.setFileThumbnailUnavailable(true);
+        try {
+            RepositoryEntryPoint entryPoint = EntryPointAccessors.fromApplication(
+                    context.getApplicationContext(), RepositoryEntryPoint.class);
+            entryPoint.getDownloadRepository().setThumbnailUnavailable(entity.getId(), true);
+        } catch (IllegalStateException e) {
+            // Not in a Hilt context (shouldn't happen in app code, but guard
+            // for tests / preview renders so a failed Glide load still
+            // shows the icon).
+            Log.w(TAG, "markThumbnailUnavailable: no Hilt entry point", e);
+        }
     }
 
 
@@ -247,9 +325,21 @@ public class GlideHelper {
                 image.setImageDrawable(generateThumbnail(mimeType, image));
                 return;
             }
+            // Persistent negative cache: the entity remembers when every
+            // decoder in the Glide chain has already failed for this
+            // file. Skip the whole MediaMetadataRetriever +
+            // FFmpegThumbnailer dance and render the mime icon directly.
+            // Without this, every paging scroll past an audio-without-
+            // cover-art row spends ~50-200ms on a guaranteed-failing
+            // pipeline plus the GC pressure from churn.
+            if (entity.isFileThumbnailUnavailable()) {
+                clearSafe(image);
+                image.setImageDrawable(generateThumbnail(mimeType, image));
+                return;
+            }
             Glide.with(image).load(entity)
                     .signature(new ObjectKey(interval + entity.getFileUrl().hashCode()))
-                    .listener(fallbackListener(mimeType, image))
+                    .listener(negativeCachingFallbackListener(entity, mimeType, image))
                     .apply(options)
                     .into(image);
 
@@ -313,6 +403,11 @@ public class GlideHelper {
             // so nothing to preload either.
             if (FileUriHelper.isAudio(mimeType)
                     && !FileUriHelper.canHaveEmbeddedArt(mimeType)) {
+                return null;
+            }
+            // Same negative-cache gate as load() — no point preloading
+            // a chain we know will fail.
+            if (entity.isFileThumbnailUnavailable()) {
                 return null;
             }
             return glide.load(entity)

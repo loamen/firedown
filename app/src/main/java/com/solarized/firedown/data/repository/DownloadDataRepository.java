@@ -139,6 +139,23 @@ public class DownloadDataRepository {
     }
 
     /**
+     * Mark a download's Glide thumbnail pipeline as known-unproductive
+     * (no embedded cover art, no decodable video frame, corrupt media,
+     * etc). Called from the Glide load listener after every decoder in
+     * the chain has failed for a {@link Download#FINISHED} file. The
+     * next paging access reads the flag from the entity and short-
+     * circuits to the static mime icon — no more {@code MediaMetadata-
+     * Retriever} or FFmpeg contexts per scroll past this row.
+     *
+     * <p>Dispatched on {@code mDiskExecutor} so the Room write never
+     * runs on the main thread.</p>
+     */
+    public void setThumbnailUnavailable(int id, boolean unavailable) {
+        mDiskExecutor.execute(() ->
+                mDatabase.downloadDao().setThumbnailUnavailableSync(id, unavailable));
+    }
+
+    /**
      * Refreshes metadata and thumbnail timestamp for a download.
      */
     public void updateDownloadThumb(DownloadEntity download) {

@@ -48,5 +48,6 @@ public interface Download {
     boolean isFileSafe();
     long getThumbnailDuration();
     long getDuration();
+    boolean isFileThumbnailUnavailable();
 
 }
