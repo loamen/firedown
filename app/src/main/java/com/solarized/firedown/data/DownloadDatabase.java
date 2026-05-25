@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.solarized.firedown.data.dao.DownloadDao;
 import com.solarized.firedown.data.entity.DownloadEntity;
 
-@Database(entities = {DownloadEntity.class}, version = 9, exportSchema = true)
+@Database(entities = {DownloadEntity.class}, version = 10, exportSchema = true)
 public abstract class DownloadDatabase extends RoomDatabase {
 
     public static final String DATABASE_NAME = "download-db";
@@ -83,6 +83,20 @@ public abstract class DownloadDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             // Placeholder for actual version 9 changes if different from version 8
+        }
+    };
+
+    /**
+     * Adds the {@code file_thumbnail_unavailable} negative-cache column.
+     * Default 0 = unknown / behave as before — the column only flips to 1
+     * after every decoder in the Glide chain has failed for a completed
+     * file, at which point subsequent paging accesses short-circuit to
+     * the static mime icon instead of re-running the failing chain.
+     */
+    public static final Migration MIGRATION_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE 'download' ADD COLUMN 'file_thumbnail_unavailable' INTEGER NOT NULL DEFAULT 0");
         }
     };
 }

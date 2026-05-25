@@ -80,6 +80,26 @@ public class DownloadEntity implements Download, Parcelable {
     @ColumnInfo(name = "file_safe", defaultValue = "0")
     public boolean fileSafe;
 
+    /**
+     * Negative cache for the Glide thumbnail pipeline. Set to true once
+     * every decoder in the chain has failed for a completed file —
+     * audio with no embedded cover, video with no decodable frame at t=0,
+     * mp4 with no video track, corrupt media, anything FFmpeg can't crack.
+     *
+     * <p>When true, {@code GlideHelper.load} short-circuits to the static
+     * mime-type icon without spinning up {@code MediaMetadataRetriever} /
+     * {@code FFmpegThumbnailer} again. Previously each paging access
+     * re-ran the whole failing chain (binder + Stagefright init + FFmpeg
+     * context) for hundreds of milliseconds of wasted work and matching
+     * GC pressure that pauses the UI.</p>
+     *
+     * <p>Only set when {@code fileStatus == Download.STATUS_COMPLETE}
+     * so an in-flight download isn't permanently poisoned by a failure
+     * caused by a partial file.</p>
+     */
+    @ColumnInfo(name = "file_thumbnail_unavailable", defaultValue = "0")
+    public boolean fileThumbnailUnavailable;
+
 
     protected DownloadEntity(Parcel in) {
         uid = in.readInt();
@@ -104,6 +124,7 @@ public class DownloadEntity implements Download, Parcelable {
         fileThumbnailDuration = in.readLong();
         fileDuration = in.readLong();
         fileDurationFormatted = in.readString();
+        fileThumbnailUnavailable = in.readByte() != 0;
     }
 
     public static final Creator<DownloadEntity> CREATOR = new Creator<>() {
@@ -317,6 +338,14 @@ public class DownloadEntity implements Download, Parcelable {
         this.fileSafe = fileSafe;
     }
 
+    public boolean isFileThumbnailUnavailable() {
+        return fileThumbnailUnavailable;
+    }
+
+    public void setFileThumbnailUnavailable(boolean value) {
+        this.fileThumbnailUnavailable = value;
+    }
+
     public void setFileThumbnailDuration(long duration) {
         this.fileThumbnailDuration = duration;
     }
@@ -352,6 +381,7 @@ public class DownloadEntity implements Download, Parcelable {
         this.fileDuration = download.getDuration();
         this.fileDurationFormatted = download.getDurationFormatted();
         this.fileSafe = download.isFileSafe();
+        this.fileThumbnailUnavailable = download.isFileThumbnailUnavailable();
     }
 
     public DownloadEntity(){
@@ -387,6 +417,7 @@ public class DownloadEntity implements Download, Parcelable {
         parcel.writeLong(fileThumbnailDuration);
         parcel.writeLong(fileDuration);
         parcel.writeString(fileDurationFormatted);
+        parcel.writeByte((byte) (fileThumbnailUnavailable ? 1 : 0));
     }
 
 
