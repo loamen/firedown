@@ -1687,7 +1687,19 @@ public class BrowserFragment extends BaseBrowserFragment
             newSession.setActive(true);
             String uri = mSearchRepository.parseUri(geckoState.getEntityUri());
             geckoState.setEntityUri(uri);
-            openUri(geckoState);
+            // When the GeckoState has serialized SessionState, getOrCreateGeckoSession
+            // already called restoreState(), which navigates to the last history entry
+            // on its own. A second loadUri here races the restore: restore completes
+            // (progress 100), the queued loadUri then restarts the load (progress 15)
+            // and stalls — visible from TabsFragment as a tab that never finishes
+            // loading. Apply only the UI side of openUri in that case.
+            boolean hasRestoredState = !geckoState.getGeckoStateEntity().isIncognito()
+                    && !TextUtils.isEmpty(geckoState.getEntityState());
+            if (hasRestoredState) {
+                applyOpenUriUi(geckoState, uri);
+            } else {
+                openUri(geckoState);
+            }
         }
 
         final CertificateInfoEntity certificateInfoEntity = geckoState.getCertificateState();
@@ -1850,13 +1862,24 @@ public class BrowserFragment extends BaseBrowserFragment
             currentUri = GeckoResources.createFiredownTab(mActivity);
             geckoState.setEntityUri(currentUri);
         }
+        geckoState.getOrCreateGeckoSession().loadUri(currentUri);
+        applyOpenUriUi(geckoState, currentUri);
+    }
+
+    /**
+     * UI-only half of {@link #openUri} — enter browsing mode, refresh
+     * tracking-protection state, update the toolbar, hide the keyboard.
+     * Shared with the saved-state restore path in setGeckoViewSession,
+     * which navigates via GeckoSession.restoreState and must NOT also
+     * call loadUri (the two collide and the second load stalls).
+     */
+    private void applyOpenUriUi(GeckoState geckoState, String currentUri) {
         enterBrowsing(geckoState);
         if (geckoState.getGeckoStateEntity().isIncognito()) {
             mIncognitoStateViewModel.isTrackingProtected(currentUri);
         } else {
             mGeckoStateViewModel.isTrackingProtected(currentUri);
         }
-        geckoState.getOrCreateGeckoSession().loadUri(currentUri);
         mAutoCompleteEditText.clearFocus();
         mGeckoToolbar.setUri(currentUri, false);
         hideKeyboard(mAutoCompleteEditText);
