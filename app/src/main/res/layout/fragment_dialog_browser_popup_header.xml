@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Browser popup quick-row: page-context transient actions only —
+    Back · Forward · Share · Refresh. Bookmarking is a page-state
+    toggle and lives as the first row of the page-state card below,
+    not here.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/popup_header"

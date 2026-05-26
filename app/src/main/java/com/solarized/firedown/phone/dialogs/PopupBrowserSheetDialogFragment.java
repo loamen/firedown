@@ -2,18 +2,20 @@ package com.solarized.firedown.phone.dialogs;
 
 
 import android.content.SharedPreferences;
-import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageView;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.color.MaterialColors;
+
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
@@ -22,28 +24,49 @@ import com.solarized.firedown.data.models.BrowserDialogViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
-import com.solarized.firedown.ui.OnItemClickListener;
 import com.solarized.firedown.ui.browser.BackwardBrowserButton;
 import com.solarized.firedown.ui.browser.BasicBrowserButton;
 import com.solarized.firedown.ui.browser.ForwardBrowserButton;
 import com.solarized.firedown.ui.browser.ReloadBrowserButton;
 import com.solarized.firedown.utils.NavigationUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
+/**
+ * Browser "more" bottom sheet.
+ *
+ * <p>Replaces the previous RecyclerView-of-rows with a static layout
+ * of MaterialCard sections (page state · library · app · destructive).
+ * The structure is intentionally inline rather than data-driven: the
+ * row count is small enough (6–7 items, depending on mode and the
+ * quit-on-exit preference) that the section-grouping is easier to
+ * read in XML than to assemble from arrays.</p>
+ *
+ * <p>State-dependent UI lives here, not in the layout:</p>
+ * <ul>
+ *   <li><b>Bookmark page row</b> at the top of the page-state card
+ *       toggles its star icon (outline ↔ filled), label, and dispatched
+ *       OptionEntity id based on {@code mHasBookmark}.</li>
+ *   <li><b>Vault row</b> swaps to Downloads in incognito mode — icon,
+ *       label, and dispatched id all change so incognito chrome reaches
+ *       Downloads (no Downloads card there) without surfacing the
+ *       Vault entrypoint at all.</li>
+ *   <li><b>Desktop site switch</b> mirrors the current page's
+ *       {@code isDesktop()} on inflate.</li>
+ *   <li><b>Quit card</b> stays GONE unless {@link Preferences#SETTINGS_QUIT_PREF}
+ *       is on; rendered in its own MaterialCard with error-tinted chip
+ *       so the destructive action is visually quarantined.</li>
+ * </ul>
+ */
 @AndroidEntryPoint
-public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragment implements OnItemClickListener, View.OnClickListener {
+public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragment
+        implements View.OnClickListener {
 
     private BrowserDialogViewModel mBrowserDialogViewModel;
     private boolean mHasBookmark;
     private ReloadBrowserButton mReloadBrowserButton;
-    private CustomAdapter mCustomAdapter;
     private GeckoState mGeckoState;
 
     @Inject SharedPreferences mSharedPreferences;
@@ -51,7 +74,6 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        mCustomAdapter = null;
         mReloadBrowserButton = null;
     }
 
@@ -61,16 +83,7 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
     public View onCreateView(LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-
-        // get the views and attach the listener
-
-
-
-        List<Integer> mLocalDrawables = new ArrayList<>();
-        List<Integer> mLocalIdsSet = new ArrayList<>();
-
-        mView = inflater.inflate(R.layout.fragment_dialog_browser_popup, container,
-                false);
+        mView = inflater.inflate(R.layout.fragment_dialog_browser_popup, container, false);
 
         // Guard: peekCurrentGeckoState can return null if the popup was
         // opened in an inconsistent state (process restoration, tab
@@ -80,96 +93,158 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
             return mView;
         }
 
-        View headerView = mView.findViewById(R.id.popup_header);
-
-
-        for (int i = 0; i < ((ViewGroup)headerView).getChildCount(); i++) {
-            View v = ((ViewGroup) headerView).getChildAt(i);
-            if (v instanceof BasicBrowserButton) {
-                v.setOnClickListener(this);
-                if(v instanceof ReloadBrowserButton){
-                    mReloadBrowserButton = (ReloadBrowserButton) v;
-                }else if(v instanceof BackwardBrowserButton backwardBrowserButton){
-                    backwardBrowserButton.setClickable(mGeckoState.canGoBackward());
-                    backwardBrowserButton.setEnabled(mGeckoState.canGoBackward());
-                }else if(v instanceof ForwardBrowserButton forwardBrowserButton){
-                    forwardBrowserButton.setClickable(mGeckoState.canGoForward());
-                    forwardBrowserButton.setEnabled(mGeckoState.canGoForward());
-                }
-            }
-        }
-
-        boolean isDesktop = mGeckoState.isDesktop();
-
-        boolean quitEnabled = mSharedPreferences.getBoolean(Preferences.SETTINGS_QUIT_PREF, false);
-
-        RecyclerView recyclerView = mView.findViewById(R.id.recycler_view);
-
-        TypedArray imgs = getResources().obtainTypedArray(R.array.popup_browser_icon);
-
-        for(int i = 0; i < imgs.length(); i++){
-            mLocalDrawables.add(imgs.getResourceId(i, R.drawable.ic_draft_24));
-        }
-
-        imgs.recycle();
-
-        TypedArray ids = getResources().obtainTypedArray(R.array.popup_browser_ids);
-
-        for(int i = 0; i < imgs.length(); i++){
-            mLocalIdsSet.add(imgs.getResourceId(i, R.drawable.ic_draft_24));
-        }
-
-        ids.recycle();
-
-        String[] stringArray = getResources().getStringArray(R.array.popup_browser_text);
-
-        List<String> mLocalStrings = new ArrayList<>(Arrays.asList(stringArray));
-
-        if(quitEnabled){
-            mLocalDrawables.add(R.drawable.ic_logout_24);
-            mLocalIdsSet.add(R.id.popup_quit);
-            mLocalStrings.add(getString(R.string.delete_browsing_data_on_quit_action));
-        }
-
-        if(mHasBookmark){
-            int index = mLocalIdsSet.indexOf(R.id.popup_bookmark_add);
-            if(index >= 0){
-                mLocalDrawables.set(index, R.drawable.ic_bookmark_24);
-                mLocalIdsSet.set(index, R.id.popup_bookmark_edit);
-                mLocalStrings.set(index, getString(R.string.browser_menu_edit_bookmark));
-            }
-        }
-
-        if(mIsIncognito){
-            int index = mLocalIdsSet.indexOf(R.id.popup_vault);
-            if(index >= 0){
-                mLocalDrawables.set(index, R.drawable.download_24);
-                mLocalIdsSet.set(index, R.id.popup_downloads);
-                mLocalStrings.set(index, getString(R.string.navigation_downloads));
-            }
-        }
-
-        mCustomAdapter = new CustomAdapter(mLocalStrings, mLocalDrawables, mLocalIdsSet, this, isDesktop);
-
-        recyclerView.setAdapter(mCustomAdapter);
+        bindQuickRow();
+        bindRows();
+        applyBookmarkState();
+        applyIncognitoSwap();
+        applyDesktopState();
+        applyQuitVisibility();
 
         return mView;
-
     }
 
+
+    /**
+     * Wires the top quick-row (Back / Forward / Share / Refresh).
+     * Back and Forward inherit enabled-state from the gecko session.
+     */
+    private void bindQuickRow() {
+        View headerView = mView.findViewById(R.id.popup_header);
+        for (int i = 0; i < ((ViewGroup) headerView).getChildCount(); i++) {
+            View v = ((ViewGroup) headerView).getChildAt(i);
+            if (!(v instanceof BasicBrowserButton)) continue;
+
+            v.setOnClickListener(this);
+
+            if (v instanceof ReloadBrowserButton) {
+                mReloadBrowserButton = (ReloadBrowserButton) v;
+            } else if (v instanceof BackwardBrowserButton backward) {
+                backward.setClickable(mGeckoState.canGoBackward());
+                backward.setEnabled(mGeckoState.canGoBackward());
+            } else if (v instanceof ForwardBrowserButton forward) {
+                forward.setClickable(mGeckoState.canGoForward());
+                forward.setEnabled(mGeckoState.canGoForward());
+            }
+        }
+    }
+
+
+    /**
+     * Hooks every list row in the body. Most rows are wired through
+     * the shared {@link #onClick(View)} since their LinearLayout id
+     * matches the wire id expected by the BrowserFragment dispatcher;
+     * Bookmark page and Vault have specialized listeners because the
+     * dispatched id depends on state (mHasBookmark / mIsIncognito).
+     */
+    private void bindRows() {
+        mView.findViewById(R.id.popup_find).setOnClickListener(this);
+        mView.findViewById(R.id.popup_desktop).setOnClickListener(this);
+        mView.findViewById(R.id.popup_bookmarks).setOnClickListener(this);
+        mView.findViewById(R.id.popup_history).setOnClickListener(this);
+        mView.findViewById(R.id.popup_settings).setOnClickListener(this);
+        mView.findViewById(R.id.popup_quit).setOnClickListener(this);
+
+        mView.findViewById(R.id.popup_bookmark_page).setOnClickListener(view -> dispatch(
+                mHasBookmark ? R.id.popup_bookmark_edit : R.id.popup_bookmark_add));
+
+        mView.findViewById(R.id.popup_vault).setOnClickListener(view -> dispatch(
+                mIsIncognito ? R.id.popup_downloads : R.id.popup_vault));
+    }
+
+
+    /**
+     * Paints the Bookmark page row's icon and label to reflect whether
+     * the current page is already saved. Click dispatch is wired to
+     * the same flag in {@link #bindRows()} so the row consistently
+     * routes to {@code popup_bookmark_add} or {@code popup_bookmark_edit}.
+     */
+    private void applyBookmarkState() {
+        AppCompatImageView icon = mView.findViewById(R.id.popup_bookmark_page_icon);
+        TextView label = mView.findViewById(R.id.popup_bookmark_page_label);
+        if (icon == null || label == null) return;
+
+        icon.setImageResource(
+                mHasBookmark ? R.drawable.ic_bookmark_24 : R.drawable.ic_bookmark_border_24);
+        label.setText(
+                mHasBookmark ? R.string.browser_menu_edit_bookmark
+                             : R.string.browser_menu_bookmark_this_page_2);
+    }
+
+
+    /**
+     * Repaints the Vault row to read as Downloads when this popup was
+     * launched from incognito chrome. The view's id stays
+     * {@code popup_vault} — it's just the user-visible icon and label
+     * that flip; the dispatched OptionEntity id is set in
+     * {@link #bindRows()} based on the same {@code mIsIncognito} flag.
+     * The chip background is already neutral for every row, so no
+     * tint swap is needed — just the icon and label.
+     */
+    private void applyIncognitoSwap() {
+        if (!mIsIncognito) return;
+
+        AppCompatImageView icon = mView.findViewById(R.id.popup_vault_icon);
+        TextView label = mView.findViewById(R.id.popup_vault_label);
+        if (icon == null || label == null) return;
+
+        icon.setImageResource(R.drawable.download_24);
+        label.setText(R.string.navigation_downloads);
+    }
+
+
+    /**
+     * Mirrors the current tab's Desktop-mode state into the status pill.
+     * On state uses the primary-container background + onPrimaryContainer
+     * text so the active mode reads at a glance; off uses the neutral
+     * surface palette to recede. The whole row is the click target
+     * (handled by the shared onClick → popup_desktop) — the pill is
+     * decorative status, not the hit target. A pill replaces the original
+     * MaterialSwitch which was ~48dp tall and made this row read visibly
+     * taller than its siblings.
+     */
+    private void applyDesktopState() {
+        TextView desktopState = mView.findViewById(R.id.popup_desktop_state);
+        if (desktopState == null) return;
+
+        boolean isDesktop = mGeckoState.isDesktop();
+        desktopState.setText(isDesktop ? R.string.popup_desktop_on : R.string.popup_desktop_off);
+        desktopState.setBackground(ContextCompat.getDrawable(requireContext(),
+                isDesktop ? R.drawable.bg_popup_pill_on : R.drawable.bg_popup_pill));
+        desktopState.setTextColor(MaterialColors.getColor(desktopState, isDesktop
+                ? com.google.android.material.R.attr.colorOnPrimaryContainer
+                : com.google.android.material.R.attr.colorOnSurfaceVariant));
+    }
+
+
+    /**
+     * Toggles the destructive Quit card based on the user's "quit on
+     * exit" preference. The card carries its own MaterialCard chrome
+     * with error-tinted chip and label — visually quarantined so the
+     * action can't be hit by accident when scanning the menu.
+     */
+    private void applyQuitVisibility() {
+        boolean quitEnabled = mSharedPreferences.getBoolean(Preferences.SETTINGS_QUIT_PREF, false);
+        View quitCard = mView.findViewById(R.id.popup_quit_card);
+        if (quitCard != null) {
+            quitCard.setVisibility(quitEnabled ? View.VISIBLE : View.GONE);
+        }
+    }
 
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        //Change the reload button on the bottomsheet
-        mBrowserDialogViewModel.getLoadingEvent().observe(getViewLifecycleOwner(), mObservableLoadingEvent ->{
-            if(mReloadBrowserButton != null){
-                mReloadBrowserButton.setLoading(mObservableLoadingEvent);
+        // Change the reload-button icon when a page is loading so the
+        // user can hit it as a stop button. Bound after view creation so
+        // the observer's lifecycle matches the view, not the fragment.
+        mBrowserDialogViewModel.getLoadingEvent().observe(getViewLifecycleOwner(), loading -> {
+            if (mReloadBrowserButton != null) {
+                mReloadBrowserButton.setLoading(loading);
             }
         });
     }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -179,208 +254,36 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         mHasBookmark = bundle != null && bundle.getBoolean(Keys.ITEM_BOOKMARK, false);
         mBrowserDialogViewModel = new ViewModelProvider(mActivity).get(BrowserDialogViewModel.class);
 
-        GeckoStateViewModel geckoStateViewModel =  new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
+        GeckoStateViewModel geckoStateViewModel =
+                new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
+        IncognitoStateViewModel incognitoStateViewModel =
+                new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
 
-        IncognitoStateViewModel incognitoStateViewModel = new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
-
-        if(mIsIncognito){
+        if (mIsIncognito) {
             mGeckoState = incognitoStateViewModel.peekCurrentGeckoState();
-        }else{
+        } else {
             mGeckoState = geckoStateViewModel.peekCurrentGeckoState();
         }
-
-
     }
 
-    @Override
-    public void onItemClick(int position, int resId) {
-        if (position == RecyclerView.NO_POSITION)
-            return;
-
-        int id = mCustomAdapter.getResourceId(position);
-
-        OptionEntity optionEntity = new OptionEntity();
-
-        optionEntity.setId(id);
-
-        NavigationUtils.popBackStackSafe(mNavController, R.id.dialog_browser_popup);
-
-        mBrowserDialogViewModel.onOptionSelected(optionEntity);
-
-    }
-
-    @Override
-    public void onLongClick(int position, int resId) {
-
-    }
-
-    @Override
-    public void onItemVariantClick(int position, int variant, int resId) {
-
-    }
 
     @Override
     public void onClick(View view) {
-        int id = view.getId();
+        dispatch(view.getId());
+    }
 
-        OptionEntity optionEntity = new OptionEntity();
 
-        optionEntity.setId(id);
-
+    /**
+     * Central dispatch — dismisses the sheet and fires the option event
+     * for the BrowserFragment handler to act on. Used both as the shared
+     * row click listener and by the specialized listeners (Bookmark
+     * page row, Vault row) that need to send a different id than their
+     * view's own.
+     */
+    private void dispatch(int id) {
+        OptionEntity entity = new OptionEntity();
+        entity.setId(id);
         NavigationUtils.popBackStackSafe(mNavController, R.id.dialog_browser_popup);
-
-        mBrowserDialogViewModel.onOptionSelected(optionEntity);
+        mBrowserDialogViewModel.onOptionSelected(entity);
     }
-
-
-    private static class CustomAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
-        private static final int ITEM = 0;
-
-        private static final int SWITCH = 1;
-
-        private static final int FINAL = 2;
-
-        private final OnItemClickListener mOnItemClickListener;
-
-        private final List<String> mLocalDataSet;
-
-        private final List<Integer> mLocalIconSet;
-
-        private final List<Integer> mLocalIdsSet;
-
-        private final boolean mIsDesktop;
-
-
-        /**
-         * Provide a reference to the type of views that you are using
-         * (custom ViewHolder).
-         */
-        public static class ItemViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-            private final TextView textView;
-            private final OnItemClickListener mOnItemClickListener;
-
-            public ItemViewHolder(View view, OnItemClickListener onItemClickListener) {
-                super(view);
-                // Define click listener for the ViewHolder's View
-                textView = view.findViewById(R.id.item_options);
-                textView.setOnClickListener(this);
-                mOnItemClickListener = onItemClickListener;
-            }
-
-            @Override
-            public void onClick(View view) {
-                int position = getAbsoluteAdapterPosition();
-                if(mOnItemClickListener != null){
-                    mOnItemClickListener.onItemClick(position, view.getId());
-                }
-            }
-
-        }
-
-
-        public static class ItemSwitchViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
-
-            private final TextView textView;
-            private final MaterialSwitch mSwitchView;
-            private final OnItemClickListener mOnItemClickListener;
-
-            public ItemSwitchViewHolder(View view, OnItemClickListener onItemClickListener) {
-                super(view);
-                // Define click listener for the ViewHolder's View
-                View itemView = view.findViewById(R.id.item_options_switch);
-                mSwitchView = view.findViewById(R.id.item_options_switch_button);
-                textView = view.findViewById(R.id.item_options);
-                mSwitchView.setOnClickListener(this);
-                itemView.setOnClickListener(this);
-                mOnItemClickListener = onItemClickListener;
-            }
-
-            @Override
-            public void onClick(View view) {
-                int position = getAbsoluteAdapterPosition();
-                if(mOnItemClickListener != null){
-                    mOnItemClickListener.onItemClick(position, view.getId());
-                }
-            }
-
-        }
-
-
-        /**
-         * Initialize the dataset of the Adapter.
-         *
-         * @param stringSet List<String></String> containing the data to populate views to be used
-         * by RecyclerView.
-         */
-        public CustomAdapter(List<String> stringSet, List<Integer> iconSet, List<Integer> idSet, OnItemClickListener onItemClickListener, boolean isDesktop) {
-            mLocalDataSet = stringSet;
-            mLocalIconSet = iconSet;
-            mLocalIdsSet = idSet;
-            mIsDesktop = isDesktop;
-            mOnItemClickListener = onItemClickListener;
-        }
-
-        // Create new views (invoked by the layout manager)
-        @NonNull
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
-            // Create a new view, which defines the UI of the list item
-            if(viewType == ITEM){
-                View view = LayoutInflater.from(viewGroup.getContext())
-                        .inflate(R.layout.fragment_dialog_options_item, viewGroup, false);
-                return new ItemViewHolder(view, mOnItemClickListener);
-            }else if(viewType == FINAL){
-                View view = LayoutInflater.from(viewGroup.getContext())
-                        .inflate(R.layout.fragment_dialog_options_item_final, viewGroup, false);
-                return new ItemViewHolder(view, mOnItemClickListener);
-            }else{
-                View view = LayoutInflater.from(viewGroup.getContext())
-                        .inflate(R.layout.fragment_dialog_options_item_switch, viewGroup, false);
-                return new ItemSwitchViewHolder(view, mOnItemClickListener);
-            }
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if(mLocalIconSet.get(position) == R.drawable.ic_computer_24){
-                return SWITCH;
-            }else if(mLocalIconSet.get(position) == R.drawable.ic_logout_24){
-                return FINAL;
-            }else{
-                return ITEM;
-            }
-        }
-
-        // Replace the contents of a view (invoked by the layout manager)
-        @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, final int position) {
-
-            // Get element from your dataset at this position and replace the
-            // contents of the view with that element
-            //viewHolder.textView.setEnabled(FileUriHelper.isVideo(mMimeType));
-            if(viewHolder instanceof ItemViewHolder itemViewHolder){
-                itemViewHolder.textView.setCompoundDrawablesRelativeWithIntrinsicBounds(mLocalIconSet.get(position), 0, 0, 0);
-                itemViewHolder.textView.setText(mLocalDataSet.get(position));
-            }else if(viewHolder instanceof ItemSwitchViewHolder itemSwitchViewHolder){
-                itemSwitchViewHolder.mSwitchView.setChecked(mIsDesktop);
-                itemSwitchViewHolder.textView.setCompoundDrawablesRelativeWithIntrinsicBounds(mLocalIconSet.get(position), 0, 0, 0);
-                itemSwitchViewHolder.textView.setText(mLocalDataSet.get(position));
-            }
-
-
-        }
-
-        @Override
-        public int getItemCount() {
-            return mLocalDataSet.size();
-        }
-
-        public int getResourceId(int position){
-            return mLocalIdsSet.get(position);
-        }
-
-
-    }
-
 }
