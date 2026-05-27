@@ -31,17 +31,18 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp">
 
-        <!-- Favicon wrapped in a tonal frame so the row has a leading
-             element with the same visual weight as the downloads
-             thumbnail. Frame is list_web_image_frame (40dp) on a
-             surfaceVariant tile (bg_popup_favicon, 10dp corners);
-             6dp padding pins the favicon back to list_web_image_height
-             (28dp) inside so it renders the same size as before. -->
+        <!-- Favicon wrapped in an outlined frame (40dp tile,
+             1dp colorOutlineVariant stroke, 10dp corners). 6dp padding
+             pins the favicon back to list_web_image_height (28dp).
+             Outlined rather than tonal-filled so brand favicons that
+             already carry their own background don't read as
+             pill-in-pill; the frame is a column slot, not a chip. -->
+
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/file_icon"
             android:layout_width="@dimen/list_web_image_frame"
             android:layout_height="@dimen/list_web_image_frame"
-            android:background="@drawable/bg_popup_favicon"
+            android:background="@drawable/bg_favicon_frame_outlined"
             android:contentDescription="@null"
             android:padding="6dp"
             android:scaleType="fitCenter"
