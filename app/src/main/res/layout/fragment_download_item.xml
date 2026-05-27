@@ -36,19 +36,23 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="8dp"
-    app:strokeWidth="2dp">
+    app:strokeWidth="0dp">
 
-    <!-- Horizontal margin intentionally 0 so the thumbnail sits flush
-         against the card edge, matching grid mode where the tile *is*
-         the thumbnail. Vertical: 4dp top + 4dp bottom is the minimum
-         that keeps the thumbnail's 4dp rounded corner from visually
-         colliding with the 8dp card corner + 2dp stroke; further
-         padding would just bulk the row without changing the look.
-         Combined with the 64dp landscape thumbnail below, the total
-         inner card height is 72dp — the M3 three-line-list metric. -->
+    <!-- Files-by-Google pattern: card has no stroke and (per the
+         adapter) a transparent default background, so the only thing
+         that ever paints is the selected wash. The 8dp horizontal
+         margin insets the thumbnail from the card edge so the wash
+         reads as a pill around the row rather than a flush band.
+         Combined with the row decoration's 8dp gutter, the thumbnail
+         starts 16dp from the screen edge — same column as the
+         section header (which has its own 8dp internal padding).
+         Vertical 4dp top + 4dp bottom keeps the row at the M3
+         three-line metric (64dp thumb + 8dp = 72dp). -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"
         android:minHeight="@dimen/list_download_image_height">

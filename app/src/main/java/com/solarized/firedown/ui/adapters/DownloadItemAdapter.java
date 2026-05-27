@@ -418,21 +418,13 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                 header.subtitle.setVisibility(View.GONE);
             }
 
-            // fragment_item_header.xml is shared with WebHistoryAdapter and
-            // TabArchiveAdapter, which still rely on its internal
-            // list_spacing horizontal padding because they use
-            // CardViewListItemDecoration (no horizontal gutter). The
-            // downloads list uses EqualSpacingItemDecoration in both list
-            // and grid mode, which already adds list_spacing on the left
-            // and right of every item — keeping the layout padding here
-            // too would double it. Zero out the header's start/end so the
-            // decoration is the single source of truth and the header
-            // lines up with the row content (also at list_spacing).
-            header.itemView.setPaddingRelative(
-                    0,
-                    header.itemView.getPaddingTop(),
-                    0,
-                    header.itemView.getPaddingBottom());
+            // Files-by-Google pattern: header text aligns with the
+            // thumbnail column, not the card edge. Decoration adds
+            // list_spacing (8dp) on each side; header keeps its own
+            // list_spacing internal start padding; thumbnails inside
+            // the row also sit list_spacing past the card edge.
+            // Net: header text + thumbnail both land at 2·list_spacing
+            // (16dp) from the screen edge.
             return;
         }
 
