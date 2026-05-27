@@ -1,0 +1,109 @@
+# Baseline profile for the downloads-list cold-start scroll path.
+#
+# Format: HRF — Human Readable Format. Each line is either a class
+# (`L<class>;`) or a method (`<flags>L<class>;-><method><signature>`).
+# Flags:
+#   H = Hot (called many times)
+#   S = Startup (called during startup)
+#   P = Post-startup (called soon after startup completes)
+#
+# Class-level entries (no method signature) AOT all methods in the
+# class — safer than enumerating signatures, which break silently
+# when a method's descriptor changes during refactor.
+#
+# Why this exists: traces of cold-start scroll on the downloads list
+# showed ~900 baseline JIT compilations happening DURING the scroll,
+# with hot methods like DownloadItemAdapter.bindFull, GlideHelper.load,
+# and ConstraintLayout measure paths running interpreted on their
+# first ~hundred invocations (10-50x slower than AOT-compiled). The
+# user-visible result is jerky scroll for the first viewport or two
+# of every cold start; even on a tiny library (<50 rows) the JIT
+# pressure stacks on top of the actual bind work and drops ~30% of
+# frames in the first 10s.
+#
+# This profile lists the methods that need to run compiled from byte 1
+# so the first cold-start scroll doesn't pay the interpreter tax. It's
+# hand-curated rather than Macrobenchmark-generated — fine because the
+# downloads-list scroll surface is small and stable.
+#
+# To verify after install:
+#   adb shell cmd package compile -m speed-profile com.solarized.firedown
+#   adb shell dumpsys package dexopt | grep -A2 com.solarized.firedown
+#   (look for "status=speed-profile" on base.apk)
+#
+# To verify it took effect at runtime: capture a perfetto trace of the
+# cold-start scroll; the "JIT compiling ..." slices for the listed
+# classes should disappear (or be drastically reduced).
+
+# ── App: downloads list adapter + view holders ───────────────────────
+HSPLcom/solarized/firedown/ui/adapters/DownloadItemAdapter;
+HSPLcom/solarized/firedown/ui/adapters/DownloadItemAdapter$DownloadViewHolder;
+HSPLcom/solarized/firedown/ui/adapters/DownloadItemAdapter$HeaderViewHolder;
+HSPLcom/solarized/firedown/ui/adapters/DownloadItemAdapter$EmptyViewHolder;
+HSPLcom/solarized/firedown/ui/adapters/IncognitoInProgressHeaderAdapter;
+HSPLcom/solarized/firedown/ui/adapters/WrapContentLinearLayoutManager;
+HSPLcom/solarized/firedown/ui/diffs/DownloadDiffCallback;
+
+# ── App: fragments + activity in the downloads cold path ─────────────
+HSPLcom/solarized/firedown/phone/DownloadsActivity;
+HSPLcom/solarized/firedown/phone/fragments/BaseDownloadFragment;
+HSPLcom/solarized/firedown/phone/fragments/BaseFocusFragment;
+HSPLcom/solarized/firedown/phone/fragments/DownloadFragment;
+
+# ── App: ViewModel + paging + aggregator ─────────────────────────────
+HSPLcom/solarized/firedown/data/models/DownloadsViewModel;
+HSPLcom/solarized/firedown/data/models/DownloadsViewModel$DownloadsState;
+HSPLcom/solarized/firedown/data/models/TaskViewModel;
+HSPLcom/solarized/firedown/data/repository/DownloadDataRepository;
+HSPLcom/solarized/firedown/utils/DownloadAggregator;
+HSPLcom/solarized/firedown/utils/DownloadSortOrganizer;
+HSPLcom/solarized/firedown/utils/GroupAggregate;
+
+# ── App: entities & related data classes ─────────────────────────────
+HSPLcom/solarized/firedown/data/entity/DownloadEntity;
+HSPLcom/solarized/firedown/data/entity/DownloadSeparatorEntity;
+HSPLcom/solarized/firedown/data/Download;
+
+# ── App: Glide wiring + thumbnail synthesis ──────────────────────────
+HSPLcom/solarized/firedown/GlideHelper;
+HSPLcom/solarized/firedown/glide/MimeTypeThumbnail;
+HSPLcom/solarized/firedown/glide/DomainThumbnail;
+HSPLcom/solarized/firedown/glide/GlideRequestOptions;
+
+# ── App: bind-path utilities (hot per-row) ───────────────────────────
+HSPLcom/solarized/firedown/utils/WebUtils;
+HSPLcom/solarized/firedown/utils/FileUriHelper;
+HSPLcom/solarized/firedown/utils/Utils;
+HSPLcom/solarized/firedown/utils/DateUtils;
+HSPLcom/solarized/firedown/utils/SelectionStyling;
+HSPLcom/solarized/firedown/utils/MessageHelper;
+HSPLcom/solarized/firedown/utils/BrowserHeaders;
+
+# ── App: custom views drawn per row ──────────────────────────────────
+HSPLcom/solarized/firedown/ui/ProgressOverlayView;
+HSPLcom/solarized/firedown/ui/LCEERecyclerView;
+HSPLcom/solarized/firedown/ui/EqualSpacingItemDecoration;
+HSPLcom/solarized/firedown/ui/CardViewListItemDecoration;
+
+# ── Glide: hot internal classes Glide doesn't ship a profile for ─────
+# Engine.load is the synchronous dispatch path; DecodeJob is the
+# decode pipeline; SingleRequest is the per-request orchestrator.
+# All three showed up in JIT-compile traces during cold-start scroll.
+HSPLcom/bumptech/glide/Glide;
+HSPLcom/bumptech/glide/GlideContext;
+HSPLcom/bumptech/glide/RequestBuilder;
+HSPLcom/bumptech/glide/RequestManager;
+HSPLcom/bumptech/glide/load/engine/Engine;
+HSPLcom/bumptech/glide/load/engine/EngineJob;
+HSPLcom/bumptech/glide/load/engine/EngineKey;
+HSPLcom/bumptech/glide/load/engine/EngineResource;
+HSPLcom/bumptech/glide/load/engine/DecodeJob;
+HSPLcom/bumptech/glide/load/engine/DecodeJob$DecodeCallback;
+HSPLcom/bumptech/glide/request/SingleRequest;
+HSPLcom/bumptech/glide/request/BaseRequestOptions;
+HSPLcom/bumptech/glide/request/RequestOptions;
+HSPLcom/bumptech/glide/request/target/ImageViewTarget;
+HSPLcom/bumptech/glide/request/target/DrawableImageViewTarget;
+HSPLcom/bumptech/glide/integration/recyclerview/RecyclerViewPreloader;
+HSPLcom/bumptech/glide/ListPreloader;
+HSPLcom/bumptech/glide/util/FixedPreloadSizeProvider;
