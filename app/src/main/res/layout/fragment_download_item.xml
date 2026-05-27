@@ -47,32 +47,28 @@
              that keeps the thumbnail's 4dp rounded corner from visually
              colliding with the 8dp card corner + 2dp stroke; further
              padding would just bulk the row without changing the look.
-             Combined with the 72dp thumbnail below, the total inner card
-             height is 80dp — M3 three-line-list territory, matching the
-             filename + mime · domain + status text rows in the column
-             beside the thumbnail. -->
+             Combined with the 64dp landscape thumbnail below, the total
+             inner card height is 72dp — the M3 three-line-list metric. -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="4dp"
-            android:minHeight="72dp">
+            android:minHeight="64dp">
 
-            <!-- Thumbnail. 72x72 square — M3 list-with-thumbnail metric,
-                 large enough to balance the three-line text column on
-                 its right without overshooting into 'media tile'
-                 territory. The previous 78x64 inherited from earlier
-                 layouts had an unusual ~1.22:1 aspect that left video
-                 thumbnails letterboxed inside the row; square +
-                 centerCrop gives a tighter visual. The dimens
-                 list_download_image_width / _height are still shared
-                 with browser-options and tabs list rows, so the values
-                 here are intentionally inline rather than a dimen
-                 rename. -->
+            <!-- Thumbnail. 78x64 landscape (the original aspect that
+                 was in place before the brief detour to square). Most
+                 captured media is landscape — 16:9 video, magazine-shape
+                 imagery — so a square thumb made everything look
+                 letterboxed top and bottom. The shared
+                 list_download_image_* dimens are inlined here because
+                 fragment_browser_options_item_list and
+                 fragment_tabs_item_list still reference them with the
+                 original sizing. -->
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/image"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
+                android:layout_width="78dp"
+                android:layout_height="64dp"
                 android:adjustViewBounds="true"
                 android:background="@drawable/mask_image_rounded"
                 android:contentDescription="@null"
