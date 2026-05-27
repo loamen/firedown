@@ -485,9 +485,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
         // ── Reset all status views ──────────────────────────────────
         setVisible(holder.progressRow, false);
-        setVisible(holder.finishedText, false);
-        setVisible(holder.errorText, false);
-        setVisible(holder.queuedText, false);
+        setVisible(holder.statusText, false);
         setVisible(holder.imageProgress, false);
         setVisible(holder.topScrim, false);
         setVisible(holder.mimeDuration, false);
@@ -496,7 +494,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         switch (status) {
             case Download.PROGRESS -> bindProgress(holder, entity, isGrid);
             case Download.FINISHED -> bindFinished(holder, entity, isGrid);
-            case Download.ERROR -> bindError(holder, entity);
+            case Download.ERROR -> bindError(holder, entity, isGrid);
             case Download.QUEUED -> bindQueued(holder, entity, isGrid);
         }
     }
@@ -558,9 +556,15 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             }
         }
 
-        if (holder.finishedText != null) {
-            holder.finishedText.setVisibility(isGrid ? View.GONE : View.VISIBLE);
-            holder.finishedText.setText(getFinishedLabel(holder, entity));
+        // FINISHED label is list-only — grid uses scrim + duration
+        // badge. The unified status_text view exists in both layouts
+        // but we leave it GONE in grid mode here.
+        if (!isGrid && holder.statusText != null) {
+            holder.statusText.setTextColor(MaterialColors.getColor(
+                    holder.statusText,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant));
+            holder.statusText.setText(getFinishedLabel(holder, entity));
+            holder.statusText.setVisibility(View.VISIBLE);
         }
 
         // Finished items always load the real thumbnail
@@ -596,18 +600,35 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         return label;
     }
 
-    private void bindError(DownloadViewHolder holder, DownloadEntity entity) {
-        if (holder.errorText != null) {
-            holder.errorText.setVisibility(View.VISIBLE);
+    private void bindError(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
+        if (holder.statusText != null) {
+            // Grid scrim is darker so the error reads better on
+            // colorPrimaryContainer; the list row is on plain surface
+            // and uses colorPrimary for the same legibility against a
+            // lighter ground. Mirrors the textColor split the two
+            // separate XML TextViews previously had.
+            holder.statusText.setTextColor(MaterialColors.getColor(
+                    holder.statusText,
+                    isGrid ? com.google.android.material.R.attr.colorPrimaryContainer
+                            : com.google.android.material.R.attr.colorPrimary));
             int errorId = MessageHelper.getResourceIdFromCode(entity.getFileErrorType());
-            holder.errorText.setText(errorId);
+            holder.statusText.setText(errorId);
+            holder.statusText.setVisibility(View.VISIBLE);
         }
         GlideHelper.loadFallback(entity, holder.image);
     }
 
     private void bindQueued(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
-        if (!isGrid && holder.queuedText != null) {
-            holder.queuedText.setVisibility(View.VISIBLE);
+        // QUEUED has no grid-mode treatment (matches the previous
+        // behaviour where queued_text in the grid layout was never
+        // toggled VISIBLE). List-mode shows 'Pending…' in surface
+        // variant.
+        if (!isGrid && holder.statusText != null) {
+            holder.statusText.setTextColor(MaterialColors.getColor(
+                    holder.statusText,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant));
+            holder.statusText.setText(R.string.download_queued);
+            holder.statusText.setVisibility(View.VISIBLE);
         }
         GlideHelper.loadFallback(entity, holder.image);
     }
@@ -650,9 +671,12 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         final @Nullable View progressRow;
         final @Nullable TextView progressText;
         final @Nullable LinearProgressIndicator progressBar;
-        final @Nullable TextView finishedText;
-        final @Nullable TextView errorText;
-        final @Nullable TextView queuedText;
+        // Unified FINISHED / QUEUED / ERROR slot. Replaces the three
+        // separate TextViews — finishedText / queuedText / errorText —
+        // that the layout used to carry as mutually-exclusive
+        // children. The recycler builds one view per row instead of
+        // three, and bind* methods set text + color directly.
+        final @Nullable TextView statusText;
         final @Nullable TextView mimeDuration;
         final @Nullable View topScrim;
 
@@ -687,9 +711,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             progressRow = view.findViewById(R.id.progress_row);
             progressText = view.findViewById(R.id.progress_text);
             progressBar = view.findViewById(R.id.progress_bar);
-            finishedText = view.findViewById(R.id.item_download_finished);
-            errorText = view.findViewById(R.id.error_text);
-            queuedText = view.findViewById(R.id.queued_text);
+            statusText = view.findViewById(R.id.status_text);
             mimeDuration = view.findViewById(R.id.mime_duration);
             topScrim = view.findViewById(R.id.top_scrim);
 
