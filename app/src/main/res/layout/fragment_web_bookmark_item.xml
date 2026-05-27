@@ -6,6 +6,14 @@
   file_more INVISIBLE on action mode, so the two never paint at
   once and the row geometry stays stable across the toggle.
 
+  Files-by-Google pattern: strokeWidth=0 and (per the adapter) a
+  transparent default cardBackgroundColor mean the row is flat by
+  default — the only chrome that paints is the selected wash. The
+  inner ConstraintLayout's 8dp layout_margin insets file_icon from
+  the card edge by list_spacing; combined with the row decoration's
+  8dp gutter the icon lands 16dp from the screen edge, same column
+  as fragment_item_header's text.
+
   Same pattern is mirrored in fragment_download_item.xml and
   fragment_web_history_item.xml — keep them aligned.
 -->

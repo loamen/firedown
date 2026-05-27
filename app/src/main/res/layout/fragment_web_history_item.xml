@@ -4,6 +4,14 @@
   the MaterialCardView, selection check overlays the more button's
   slot, no outer LinearLayout / spacer pushing the card around when
   action mode toggles.
+
+  Files-by-Google pattern: strokeWidth=0 and (per the adapter) a
+  transparent default cardBackgroundColor mean the row is flat by
+  default — the only chrome that paints is the selected wash. The
+  inner ConstraintLayout's 8dp layout_margin insets file_icon from
+  the card edge by list_spacing; combined with the row decoration's
+  8dp gutter the icon lands 16dp from the screen edge, same column
+  as fragment_item_header's text.
 -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
