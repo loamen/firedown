@@ -290,6 +290,8 @@
 <string name="task_decryption_finished">Dešifrování dokončeno</string>
     <string name="task_encryption_finished">Šifrování dokončeno</string>
     <string name="task_gif_finished">GIF vytvořen</string>
+    <string name="task_gif_cancelled">Vytváření GIF zrušeno</string>
+    <string name="task_audio_cancelled">Extrahování zvuku zrušeno</string>
     <string name="vault_decrypting">Dešifrování souboru, čekejte prosím…</string>
     <string name="vault_encrypting">Šifrování souboru, čekejte prosím…</string>
     <string name="vault_unsupported">Tento soubor nelze otevřít. Chcete-li jej otevřít, přesuňte jej z bezpečné složky a zkuste to znovu.</string>

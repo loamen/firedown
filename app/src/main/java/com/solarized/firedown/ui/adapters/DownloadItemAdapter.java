@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.Trace;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -78,6 +79,18 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
      *  progress bar indicator colour. */
     private final int mDefaultPrimary;
     private final int mDefaultPrimaryAlpha;
+    /** colorOnSurfaceVariant resolved once at construction; the list-mode
+     *  action button's icon tint. setActionIcon was previously calling
+     *  MaterialColors.getColor inline on every bind, which is a theme
+     *  attribute resolution per row — caching the int once removes that
+     *  lookup from the hot scroll path. */
+    private final int mActionIconTintList;
+    /** ColorStateList wrappers cached per surface — setIconTint takes a
+     *  ColorStateList, and wrapping a plain int with valueOf allocates
+     *  on every bind. Two surfaces (grid = white, list =
+     *  colorOnSurfaceVariant), so two cached lists cover every call. */
+    private final ColorStateList mActionIconTintListCsl;
+    private final ColorStateList mActionIconTintGridCsl;
     private boolean mActionMode;
     private boolean mEnabled;
     private boolean mEnableGrid;
@@ -85,6 +98,19 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     /** Per-category aggregates used to fill the header subtitle
      *  ("N files · X MB"). Empty until the ViewModel's aggregator emits. */
     @NonNull private Map<Integer, GroupAggregate> mAggregates = Collections.emptyMap();
+
+    /** Localized "VÍDEO" / "IMAGEN" / etc. label per mime type, computed
+     *  the first time we see a given mime then reused for every subsequent
+     *  bind. The label is a resource string lookup, which goes through
+     *  the theme + LocaleList; doing it on every bind for every visible
+     *  row added up during cold-start scroll. Per-adapter (not static)
+     *  so a configuration change that rebuilds the adapter under a new
+     *  locale rebuilds the cache too. */
+    private final java.util.HashMap<String, String> mMimeLabelCache = new java.util.HashMap<>(16);
+    /** Same string with the list-mode trailing " · " separator already
+     *  appended — saves a String concat per list-mode bind in addition
+     *  to the resource lookup. */
+    private final java.util.HashMap<String, String> mMimeLabelListCache = new java.util.HashMap<>(16);
 
 
 
@@ -107,8 +133,16 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                         com.google.android.material.R.attr.colorPrimaryContainer, Color.TRANSPARENT));
         mRequestOptions = new RequestOptions();
 
-        mDefaultListBg = MaterialColors.getColor(context,
-                com.google.android.material.R.attr.colorSurface, Color.TRANSPARENT);
+        // Default list-row card background is transparent — the
+        // RecyclerView's parent already paints colorSurface, so
+        // resolving the attr and re-painting the same colour on every
+        // card was a no-op. The selected wash still blends primaryContainer
+        // over the resolved colorSurface (selectedCardWashOver does
+        // need a concrete base to layer onto; without it the 20% alpha
+        // would read as a faint hint instead of a clear wash). Grid
+        // tiles do live on a different elevation (colorSurfaceContainerHigh)
+        // than the page, so their default still resolves the attr.
+        mDefaultListBg = Color.TRANSPARENT;
         mDefaultGridBg = MaterialColors.getColor(context,
                 com.google.android.material.R.attr.colorSurfaceContainerHigh, Color.TRANSPARENT);
         mSelectedListBg = SelectionStyling.selectedCardWashOver(context,
@@ -119,6 +153,10 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                 android.R.attr.colorPrimary, Color.BLACK);
         mDefaultPrimaryAlpha = androidx.core.graphics.ColorUtils
                 .setAlphaComponent(mDefaultPrimary, 0x33);
+        mActionIconTintList = MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorOnSurfaceVariant, Color.BLACK);
+        mActionIconTintListCsl = ColorStateList.valueOf(mActionIconTintList);
+        mActionIconTintGridCsl = ColorStateList.valueOf(Color.WHITE);
     }
 
 
@@ -130,11 +168,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             // Clear tag too — a bind after recycle calls setTag(null) and relies on it,
             // and any future caller reading the tag should not see a stale key.
             h.image.setTag(null);
-            // Drop the FINISHED-row label cache. The id-mismatch check in
-            // getFinishedLabel would already rebuild on the next bind, but
-            // nulling here lets the String be GC'd while the holder sits
-            // in the RecycledViewPool.
-            h.cachedFinishedLabel = null;
+            // Keep the cached label / domain strings on recycle. The
+            // id-keyed equality checks in getFinishedLabel and the
+            // domain-cache block already invalidate on entity change,
+            // so leaving the values pinned across the pool round-trip
+            // turns scroll-back into a cache hit when the pool hands
+            // the holder back to the same entity. Trace data with
+            // these nulled showed 100% miss rate
+            // (finishedLabel:miss == bind:finished). The pinned
+            // strings are ~20-50 bytes each; the alloc + format cost
+            // they save on every recycled-pool rebind is the bigger
+            // number on cold-start scroll.
         }
     }
 
@@ -303,22 +347,41 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        // Trace markers — visible in a Perfetto trace under the main
+        // thread track so we can spot which step (inflate, bind, mime
+        // resolution, etc) is actually blocking frames during cold-
+        // start scroll. android.os.Trace.isEnabled is a cheap volatile
+        // read when tracing isn't active, so the cost in non-trace
+        // builds is negligible.
+        Trace.beginSection("DLA.onCreateViewHolder");
+        try {
+            LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 
-        if (viewType == Download.HEADER) {
-            return new HeaderViewHolder(
-                    inflater.inflate(R.layout.fragment_item_header, parent, false));
-        }
+            if (viewType == Download.HEADER) {
+                Trace.beginSection("inflate:header");
+                try {
+                    return new HeaderViewHolder(
+                            inflater.inflate(R.layout.fragment_item_header, parent, false));
+                } finally { Trace.endSection(); }
+            }
 
-        if (viewType == Download.EMPTY) {
-            return new EmptyViewHolder(inflater.inflate(R.layout.fragment_download_empty_item, parent, false));
-        }
+            if (viewType == Download.EMPTY) {
+                Trace.beginSection("inflate:empty");
+                try {
+                    return new EmptyViewHolder(inflater.inflate(R.layout.fragment_download_empty_item, parent, false));
+                } finally { Trace.endSection(); }
+            }
 
-        int layoutRes = isGridType(viewType)
-                ? R.layout.fragment_download_item_grid
-                : R.layout.fragment_download_item;
+            boolean isGrid = isGridType(viewType);
+            int layoutRes = isGrid
+                    ? R.layout.fragment_download_item_grid
+                    : R.layout.fragment_download_item;
 
-        return new DownloadViewHolder(inflater.inflate(layoutRes, parent, false), mOnItemClickListener);
+            Trace.beginSection(isGrid ? "inflate:row(grid)" : "inflate:row(list)");
+            try {
+                return new DownloadViewHolder(inflater.inflate(layoutRes, parent, false), mOnItemClickListener);
+            } finally { Trace.endSection(); }
+        } finally { Trace.endSection(); }
     }
 
     // ── Bind ────────────────────────────────────────────────────────────
@@ -335,44 +398,50 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder,
                                  int position,
                                  @NonNull List<Object> payloads) {
-        if (!payloads.isEmpty()
-                && Collections.frequency(payloads, PAYLOAD_SELECTION) == payloads.size()
-                && viewHolder instanceof DownloadViewHolder holder) {
-            Object item = peek(position);
-            if (!(item instanceof DownloadEntity entity)) return;
-            boolean contains = mSelected.contains(entity.getId());
-            int viewType = getItemViewType(position);
-            int status = getStatus(viewType);
-            boolean isGrid = isGridType(viewType);
+        Trace.beginSection("DLA.onBindVH(payload)");
+        try {
+            if (!payloads.isEmpty()
+                    && Collections.frequency(payloads, PAYLOAD_SELECTION) == payloads.size()
+                    && viewHolder instanceof DownloadViewHolder holder) {
+                Trace.beginSection("bind:selectionOnly");
+                try {
+                    Object item = peek(position);
+                    if (!(item instanceof DownloadEntity entity)) return;
+                    boolean contains = mSelected.contains(entity.getId());
+                    int viewType = getItemViewType(position);
+                    int status = getStatus(viewType);
+                    boolean isGrid = isGridType(viewType);
 
-            boolean washSelected = mActionMode && contains;
-            holder.item.setEnabled(mEnabled);
-            holder.item.setCardBackgroundColor(washSelected
-                    ? (isGrid ? mSelectedGridBg : mSelectedListBg)
-                    : (isGrid ? mDefaultGridBg  : mDefaultListBg));
-            holder.item.setStrokeColor(washSelected ? mColorSelected : mColorNormal);
-            holder.selected.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
-            holder.selected.setImageDrawable(mActionMode ? (contains ? mChecked : mUnChecked) : null);
-            holder.actionButton.setVisibility(mActionMode ? View.INVISIBLE : View.VISIBLE);
-            // Action icon depends on status (queued = clear, otherwise more)
-            // — re-set so we don't end up showing the wrong glyph after a
-            // status update raced with an action-mode toggle.
-            setActionIcon(holder, isGrid,
-                    status == Download.QUEUED
-                            ? R.drawable.ic_clear_24
-                            : R.drawable.ic_baseline_more_vert_24);
-            return;
-        }
+                    boolean washSelected = mActionMode && contains;
+                    holder.item.setEnabled(mEnabled);
+                    holder.item.setCardBackgroundColor(washSelected
+                            ? (isGrid ? mSelectedGridBg : mSelectedListBg)
+                            : (isGrid ? mDefaultGridBg  : mDefaultListBg));
+                    holder.item.setStrokeColor(washSelected ? mColorSelected : mColorNormal);
+                    holder.selected.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
+                    holder.selected.setImageDrawable(mActionMode ? (contains ? mChecked : mUnChecked) : null);
+                    holder.actionButton.setVisibility(mActionMode ? View.INVISIBLE : View.VISIBLE);
+                    setActionIcon(holder, isGrid,
+                            status == Download.QUEUED
+                                    ? R.drawable.ic_clear_24
+                                    : R.drawable.ic_baseline_more_vert_24);
+                    return;
+                } finally { Trace.endSection(); }
+            }
 
-        // Aggregates-only payload: header subtitle text. Items ignore.
-        if (!payloads.isEmpty()
-                && Collections.frequency(payloads, PAYLOAD_AGGREGATES) == payloads.size()) {
-            applyAggregatesPayload(viewHolder, position);
-            return;
-        }
+            // Aggregates-only payload: header subtitle text. Items ignore.
+            if (!payloads.isEmpty()
+                    && Collections.frequency(payloads, PAYLOAD_AGGREGATES) == payloads.size()) {
+                Trace.beginSection("bind:aggregatesOnly");
+                try {
+                    applyAggregatesPayload(viewHolder, position);
+                } finally { Trace.endSection(); }
+                return;
+            }
 
-        // Anything else (or no payload, or mixed payloads) → full rebind.
-        super.onBindViewHolder(viewHolder, position, payloads);
+            // Anything else (or no payload, or mixed payloads) → full rebind.
+            super.onBindViewHolder(viewHolder, position, payloads);
+        } finally { Trace.endSection(); }
     }
 
     private void applyAggregatesPayload(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
@@ -390,26 +459,36 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
+        Trace.beginSection("DLA.onBindVH(full)");
+        try {
+            bindFull(viewHolder, position);
+        } finally { Trace.endSection(); }
+    }
+
+    private void bindFull(@NonNull RecyclerView.ViewHolder viewHolder, int position) {
         Object item = getItem(position);
         if (item == null) return;
 
         if (viewHolder instanceof HeaderViewHolder header && item instanceof DownloadSeparatorEntity sep) {
-            int category = sep.getCategory();
+            Trace.beginSection("bind:header");
+            try {
+                int category = sep.getCategory();
 
-            if (sep.getTitleResId() != 0) {
-                header.text.setText(header.itemView.getContext().getString(sep.getTitleResId()));
-            } else {
-                header.text.setText(sep.getTitleText());
-            }
+                if (sep.getTitleResId() != 0) {
+                    header.text.setText(header.itemView.getContext().getString(sep.getTitleResId()));
+                } else {
+                    header.text.setText(sep.getTitleText());
+                }
 
-            GroupAggregate agg = mAggregates.get(category);
-            if (agg != null) {
-                header.subtitle.setVisibility(View.VISIBLE);
-                header.subtitle.setText(formatGroupSubtitle(header.itemView.getContext(), agg));
-            } else {
-                header.subtitle.setVisibility(View.GONE);
-            }
-            return;
+                GroupAggregate agg = mAggregates.get(category);
+                if (agg != null) {
+                    header.subtitle.setVisibility(View.VISIBLE);
+                    header.subtitle.setText(formatGroupSubtitle(header.itemView.getContext(), agg));
+                } else {
+                    header.subtitle.setVisibility(View.GONE);
+                }
+                return;
+            } finally { Trace.endSection(); }
         }
 
         if (!(viewHolder instanceof DownloadViewHolder holder) || !(item instanceof DownloadEntity entity))
@@ -421,10 +500,35 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         boolean contains = mSelected.contains(entity.getId());
 
         String mimeType = entity.getFileMimeType();
-        String originUrl = entity.getOriginUrl();
-        String fileUrl = entity.getFileUrl();
-        String domain = TextUtils.isEmpty(originUrl)
-                ? WebUtils.getDomainName(fileUrl) : WebUtils.getDomainName(originUrl);
+        // Domain parse is URI + getHost + regex per call. Cache per
+        // holder so repeated re-binds of the same row (selection
+        // payload, action-mode toggles that miss the partial-bind path,
+        // aggregate refresh) skip the parse. Keyed on entity id +
+        // (originUrl|fileUrl) string identity, which is stable for any
+        // row that hasn't actually changed source.
+        long entityId = entity.getId();
+        String domain;
+        if (holder.cachedDomain != null
+                && holder.cachedDomainEntityId == entityId) {
+            // Same entity id → URL is stable (URL changes go through
+            // delete+reinsert, so the id changes too). Skip the parse.
+            // Was previously also gated on a string-identity check of
+            // the URL ref, which broke on Room re-hydration: aggregate
+            // / paging refresh rebuilds the DownloadEntity with a new
+            // String for the same logical URL, missing the identity
+            // check and dropping the cache. Trace showed 100% miss rate.
+            domain = holder.cachedDomain;
+        } else {
+            String originUrl = entity.getOriginUrl();
+            String fileUrl = entity.getFileUrl();
+            String urlSource = TextUtils.isEmpty(originUrl) ? fileUrl : originUrl;
+            Trace.beginSection("bind:domainParse");
+            try {
+                domain = WebUtils.getDomainName(urlSource);
+            } finally { Trace.endSection(); }
+            holder.cachedDomainEntityId = entityId;
+            holder.cachedDomain = domain;
+        }
 
         // ── Common fields ───────────────────────────────────────────
         holder.item.setEnabled(mEnabled);
@@ -432,14 +536,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         holder.selected.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
         holder.selected.setImageDrawable(mActionMode ? (contains ? mChecked : mUnChecked) : null);
         // List mode renders mime as a text label that prefixes the
-        // domain ('VÍDEO · youtube.com'), so append the separator
-        // here; grid keeps the chip styling, no separator.
-        String mimeLabel = FileUriHelper.getLongMimeText(mContext, mimeType);
+        // domain ('VÍDEO · youtube.com'); grid keeps the chip styling
+        // (no separator). Both forms are cached per mime type — see
+        // mMimeLabelCache / mMimeLabelListCache. Without the cache,
+        // every bind paid for a resource lookup (theme + LocaleList
+        // resolution) plus a String concat on the list-mode path.
+        String mimeLabel = mimeLabelFor(mimeType, isGrid);
         if (TextUtils.isEmpty(mimeLabel)) {
             holder.mimeText.setVisibility(View.GONE);
         } else {
             holder.mimeText.setVisibility(View.VISIBLE);
-            holder.mimeText.setText(isGrid ? mimeLabel : mimeLabel + " · ");
+            holder.mimeText.setText(mimeLabel);
         }
 
         // ── Row surface ─────────────────────────────────────────────
@@ -469,9 +576,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
 
         // ── Reset all status views ──────────────────────────────────
         setVisible(holder.progressRow, false);
-        setVisible(holder.finishedText, false);
-        setVisible(holder.errorText, false);
-        setVisible(holder.queuedText, false);
+        setVisible(holder.statusText, false);
         setVisible(holder.imageProgress, false);
         setVisible(holder.topScrim, false);
         setVisible(holder.mimeDuration, false);
@@ -480,12 +585,19 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         switch (status) {
             case Download.PROGRESS -> bindProgress(holder, entity, isGrid);
             case Download.FINISHED -> bindFinished(holder, entity, isGrid);
-            case Download.ERROR -> bindError(holder, entity);
+            case Download.ERROR -> bindError(holder, entity, isGrid);
             case Download.QUEUED -> bindQueued(holder, entity, isGrid);
         }
     }
 
     private void bindProgress(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
+        Trace.beginSection(isGrid ? "bind:progress(grid)" : "bind:progress(list)");
+        try {
+            bindProgressInner(holder, entity, isGrid);
+        } finally { Trace.endSection(); }
+    }
+
+    private void bindProgressInner(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
         boolean retrieving = entity.getFileIsLive();
 
         if(isGrid){
@@ -522,13 +634,20 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                 holder.progressBar.setIndeterminate(retrieving);
                 if (!retrieving) holder.progressBar.setProgress(entity.getFileProgress());
             }
-            GlideHelper.loadFallback(entity, holder.image);
+            Trace.beginSection("Glide.loadFallback");
+            try { GlideHelper.loadFallback(entity, holder.image); }
+            finally { Trace.endSection(); }
         }
-
-
     }
 
     private void bindFinished(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
+        Trace.beginSection(isGrid ? "bind:finished(grid)" : "bind:finished(list)");
+        try {
+            bindFinishedInner(holder, entity, isGrid);
+        } finally { Trace.endSection(); }
+    }
+
+    private void bindFinishedInner(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
         String mimeType = entity.getFileMimeType();
         String durationFormat = entity.getDurationFormatted();
         boolean hasDuration = !TextUtils.isEmpty(durationFormat)
@@ -542,13 +661,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             }
         }
 
-        if (holder.finishedText != null) {
-            holder.finishedText.setVisibility(isGrid ? View.GONE : View.VISIBLE);
-            holder.finishedText.setText(getFinishedLabel(holder, entity));
+        if (!isGrid && holder.statusText != null) {
+            holder.statusText.setTextColor(MaterialColors.getColor(
+                    holder.statusText,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant));
+            holder.statusText.setText(getFinishedLabel(holder, entity));
+            holder.statusText.setVisibility(View.VISIBLE);
         }
 
-        // Finished items always load the real thumbnail
-        GlideHelper.load(entity, mRequestOptions, holder.image);
+        Trace.beginSection("Glide.load(finished)");
+        try { GlideHelper.load(entity, mRequestOptions, holder.image); }
+        finally { Trace.endSection(); }
     }
 
 
@@ -569,31 +692,70 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                 && holder.cachedFinishedKeyDate == date) {
             return holder.cachedFinishedLabel;
         }
-        String label = holder.itemView.getContext().getString(
-                R.string.download_finished_meta,
-                Utils.getFileSize(size),
-                DateUtils.getFileDate(date));
-        holder.cachedFinishedKeyId = id;
-        holder.cachedFinishedKeySize = size;
-        holder.cachedFinishedKeyDate = date;
-        holder.cachedFinishedLabel = label;
-        return label;
+        Trace.beginSection("finishedLabel:miss");
+        try {
+            String label = holder.itemView.getContext().getString(
+                    R.string.download_finished_meta,
+                    Utils.getFileSize(size),
+                    DateUtils.getFileDate(date));
+            holder.cachedFinishedKeyId = id;
+            holder.cachedFinishedKeySize = size;
+            holder.cachedFinishedKeyDate = date;
+            holder.cachedFinishedLabel = label;
+            return label;
+        } finally { Trace.endSection(); }
     }
 
-    private void bindError(DownloadViewHolder holder, DownloadEntity entity) {
-        if (holder.errorText != null) {
-            holder.errorText.setVisibility(View.VISIBLE);
+    private void bindError(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
+        Trace.beginSection(isGrid ? "bind:error(grid)" : "bind:error(list)");
+        try {
+            bindErrorInner(holder, entity, isGrid);
+        } finally { Trace.endSection(); }
+    }
+
+    private void bindErrorInner(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
+        if (holder.statusText != null) {
+            // Grid scrim is darker so the error reads better on
+            // colorPrimaryContainer; the list row is on plain surface
+            // and uses colorPrimary for the same legibility against a
+            // lighter ground. mDefaultPrimary is the same
+            // android.R.attr.colorPrimary already cached in the
+            // constructor — reuse it instead of running a MaterialColors
+            // lookup every bind. (com.google.android.material.R.attr
+            // does not export colorPrimary; it lives in the platform /
+            // appcompat namespace.)
+            int color = isGrid
+                    ? MaterialColors.getColor(holder.statusText,
+                            com.google.android.material.R.attr.colorPrimaryContainer)
+                    : mDefaultPrimary;
+            holder.statusText.setTextColor(color);
             int errorId = MessageHelper.getResourceIdFromCode(entity.getFileErrorType());
-            holder.errorText.setText(errorId);
+            holder.statusText.setText(errorId);
+            holder.statusText.setVisibility(View.VISIBLE);
         }
-        GlideHelper.loadFallback(entity, holder.image);
+        Trace.beginSection("Glide.loadFallback");
+        try { GlideHelper.loadFallback(entity, holder.image); }
+        finally { Trace.endSection(); }
     }
 
     private void bindQueued(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
-        if (!isGrid && holder.queuedText != null) {
-            holder.queuedText.setVisibility(View.VISIBLE);
+        Trace.beginSection(isGrid ? "bind:queued(grid)" : "bind:queued(list)");
+        try {
+            bindQueuedInner(holder, entity, isGrid);
+        } finally { Trace.endSection(); }
+    }
+
+    private void bindQueuedInner(DownloadViewHolder holder, DownloadEntity entity, boolean isGrid) {
+        if (!isGrid && holder.statusText != null) {
+            holder.statusText.setTextColor(MaterialColors.getColor(
+                    holder.statusText,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant));
+            holder.statusText.setText(R.string.download_queued);
+            holder.statusText.setVisibility(View.VISIBLE);
         }
-        GlideHelper.loadFallback(entity, holder.image);
+        Trace.beginSection("Glide.loadFallback");
+        try { GlideHelper.loadFallback(entity, holder.image); }
+        finally { Trace.endSection(); }
     }
 
 
@@ -603,15 +765,38 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-    private static void setActionIcon(DownloadViewHolder holder, boolean isGrid, int iconRes) {
+    /**
+     * Returns the cached mime label for the given mime type, lazily
+     * populating both the bare and list-mode (with " · " suffix)
+     * variants on first miss. Null-safe — a null mime type returns
+     * null (the caller hides the label).
+     */
+    private @Nullable String mimeLabelFor(@Nullable String mimeType, boolean isGrid) {
+        if (mimeType == null) return null;
+        java.util.HashMap<String, String> cache = isGrid ? mMimeLabelCache : mMimeLabelListCache;
+        String cached = cache.get(mimeType);
+        if (cached != null) return cached;
+        Trace.beginSection("mimeLabel:miss");
+        try {
+            String base = FileUriHelper.getLongMimeText(mContext, mimeType);
+            if (base == null) return null;
+            String label = isGrid ? base : base + " · ";
+            cache.put(mimeType, label);
+            return label;
+        } finally { Trace.endSection(); }
+    }
+
+    private void setActionIcon(DownloadViewHolder holder, boolean isGrid, int iconRes) {
         // Works for both AppCompatImageButton (list) and MaterialButton (grid)
 
         if (holder.actionButton instanceof MaterialButton btn) {
             btn.setIconResource(iconRes);
-            btn.setIconTint(ColorStateList.valueOf(
-                    isGrid ? Color.WHITE
-                            : MaterialColors.getColor(btn, com.google.android.material.R.attr.colorOnSurfaceVariant)
-            ));
+            // Cached tint CSL — see mActionIconTintListCsl. Was a
+            // MaterialColors.getColor + ColorStateList.valueOf on every
+            // bind; both are tiny on their own, but the bind path runs
+            // for every visible row on every scroll, and the int never
+            // changes after the theme is resolved.
+            btn.setIconTint(isGrid ? mActionIconTintGridCsl : mActionIconTintListCsl);
         }
     }
 
@@ -634,9 +819,12 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         final @Nullable View progressRow;
         final @Nullable TextView progressText;
         final @Nullable LinearProgressIndicator progressBar;
-        final @Nullable TextView finishedText;
-        final @Nullable TextView errorText;
-        final @Nullable TextView queuedText;
+        // Unified FINISHED / QUEUED / ERROR slot. Replaces the three
+        // separate TextViews — finishedText / queuedText / errorText —
+        // that the layout used to carry as mutually-exclusive
+        // children. The recycler builds one view per row instead of
+        // three, and bind* methods set text + color directly.
+        final @Nullable TextView statusText;
         final @Nullable TextView mimeDuration;
         final @Nullable View topScrim;
 
@@ -651,6 +839,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         long cachedFinishedKeySize = Long.MIN_VALUE;
         long cachedFinishedKeyDate = Long.MIN_VALUE;
         @Nullable String cachedFinishedLabel;
+
+        // Cache for the parsed domain string. WebUtils.getDomainName
+        // does URI construction + getHost + regex strip per call;
+        // keyed by entity id only — URL field changes go through a
+        // delete+reinsert (different id), so a matching id implies
+        // the same logical URL. Earlier version also checked
+        // string-identity of the URL reference and broke when Room
+        // re-hydrated the entity (new String for same logical URL,
+        // identity mismatch, cache always missed).
+        long cachedDomainEntityId = Long.MIN_VALUE;
+        @Nullable String cachedDomain;
 
         DownloadViewHolder(View view, OnItemClickListener onItemClickListener) {
             super(view);
@@ -671,9 +870,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             progressRow = view.findViewById(R.id.progress_row);
             progressText = view.findViewById(R.id.progress_text);
             progressBar = view.findViewById(R.id.progress_bar);
-            finishedText = view.findViewById(R.id.item_download_finished);
-            errorText = view.findViewById(R.id.error_text);
-            queuedText = view.findViewById(R.id.queued_text);
+            statusText = view.findViewById(R.id.status_text);
             mimeDuration = view.findViewById(R.id.mime_duration);
             topScrim = view.findViewById(R.id.top_scrim);
 

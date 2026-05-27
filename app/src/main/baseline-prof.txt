@@ -1,0 +1,98 @@
+# Baseline profile for the downloads-list cold-start scroll path.
+#
+# SCOPE — trace-confirmed only:
+# Every class in this file either showed up as `JIT compiling
+# com.solarized.firedown.*` in a perfetto trace of cold-start scroll
+# OR is called from the per-bind hot path that those JIT'd classes
+# call into (the trace was captured AFTER cache fixes that suppressed
+# some of those utilities' JIT events, but the per-bind utilities
+# still run for every visible row and benefit from AOT). No
+# speculative cold-start coverage for paths we haven't profiled:
+# BrowserActivity, VaultActivity, BaseActivity, the GeckoView wiring,
+# the ViewModels and repositories — all left to ART's normal JIT
+# warmup, which on a fast device finishes during the initial
+# inflation pass before the user starts scrolling.
+#
+# Format: HRF — Human Readable Format.
+#   - Class:  `L<class>;`           (no flags allowed on class rules)
+#   - Method: `<flags>L<class>;-><method><signature>`
+#
+# We use class-level rules everywhere — AOT-compiles all methods in
+# the class, doesn't silently rot when method descriptors change
+# during refactor.
+#
+# Verify after install:
+#   adb shell cmd package compile -m speed-profile -f com.solarized.firedown
+#   adb shell dumpsys package dexopt | grep -A2 com.solarized.firedown
+#   (expect status=speed-profile reason=cmdline on base.apk)
+
+# ── Downloads adapter bind path ──────────────────────────────────────
+# DownloadItemAdapter.bindFull was the top app-side JIT-compile event
+# during cold-start scroll. View holders share the same hot path —
+# each holder construction + recycle round-trip runs a bunch of
+# inner-class methods. DiffCallback runs on every Paging snapshot.
+Lcom/solarized/firedown/ui/adapters/DownloadItemAdapter;
+Lcom/solarized/firedown/ui/adapters/DownloadItemAdapter$DownloadViewHolder;
+Lcom/solarized/firedown/ui/adapters/DownloadItemAdapter$HeaderViewHolder;
+Lcom/solarized/firedown/ui/adapters/DownloadItemAdapter$EmptyViewHolder;
+Lcom/solarized/firedown/ui/diffs/DownloadDiffCallback;
+
+# ── Per-row entity access ────────────────────────────────────────────
+# DownloadEntity getters fire 6+ times per bind (status, mime, url,
+# origin, name, date, size, finished label, etc).
+Lcom/solarized/firedown/data/entity/DownloadEntity;
+Lcom/solarized/firedown/data/entity/DownloadSeparatorEntity;
+
+# ── Per-bind utilities ───────────────────────────────────────────────
+# All called from DownloadItemAdapter.bindFull for every visible row:
+#   WebUtils.getDomainName       — URI parse + getHost + regex
+#   FileUriHelper.getLongMimeText + isVideo/isAudio/isImage checks
+#   Utils.getFileSize / readableFileSize  — file-size formatting
+#   DateUtils.getFileDate        — date formatting
+# Cached at the adapter level by recent commits, but the cache-miss
+# (first sight of a mime / first bind of a row) still runs these and
+# benefits from AOT.
+Lcom/solarized/firedown/utils/WebUtils;
+Lcom/solarized/firedown/utils/FileUriHelper;
+Lcom/solarized/firedown/utils/Utils;
+Lcom/solarized/firedown/utils/DateUtils;
+
+# ── Per-row custom views (drawn every frame during scroll) ───────────
+# ProgressOverlayView's draw + indeterminate tick run for every
+# in-flight PROGRESS row visible on screen.
+Lcom/solarized/firedown/ui/ProgressOverlayView;
+Lcom/solarized/firedown/ui/EqualSpacingItemDecoration;
+
+# ── Glide app-side ──────────────────────────────────────────────────
+# GlideHelper.load was a JIT-compile event during the trace; it's the
+# entry the bind path calls for every FINISHED row. MimeTypeThumbnail
+# generates the fallback bitmap (per-mime-per-size; cache hits most
+# of the time but the first-sight allocation path still runs through).
+Lcom/solarized/firedown/GlideHelper;
+Lcom/solarized/firedown/GlideRequestOptions;
+Lcom/solarized/firedown/glide/MimeTypeThumbnail;
+
+# ── Glide internals (Glide doesn't ship its own baseline profile) ───
+# Engine.load, DecodeJob.init, SingleRequest.<init>, RequestBuilder,
+# RequestManager were all JIT-compile events in the cold-start trace.
+# BaseRequestOptions / RequestOptions / Image targets are on the same
+# request-dispatch path. RecyclerViewPreloader is called per scroll
+# event by BaseDownloadFragment.installThumbnailPreloader.
+Lcom/bumptech/glide/Glide;
+Lcom/bumptech/glide/GlideContext;
+Lcom/bumptech/glide/RequestBuilder;
+Lcom/bumptech/glide/RequestManager;
+Lcom/bumptech/glide/load/engine/Engine;
+Lcom/bumptech/glide/load/engine/EngineJob;
+Lcom/bumptech/glide/load/engine/EngineKey;
+Lcom/bumptech/glide/load/engine/EngineResource;
+Lcom/bumptech/glide/load/engine/DecodeJob;
+Lcom/bumptech/glide/load/engine/DecodeJob$DecodeCallback;
+Lcom/bumptech/glide/request/SingleRequest;
+Lcom/bumptech/glide/request/BaseRequestOptions;
+Lcom/bumptech/glide/request/RequestOptions;
+Lcom/bumptech/glide/request/target/ImageViewTarget;
+Lcom/bumptech/glide/request/target/DrawableImageViewTarget;
+Lcom/bumptech/glide/integration/recyclerview/RecyclerViewPreloader;
+Lcom/bumptech/glide/ListPreloader;
+Lcom/bumptech/glide/util/FixedPreloadSizeProvider;

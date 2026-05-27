@@ -326,6 +326,8 @@
 <string name="task_decryption_finished">Расшифровка завершена.</string>
     <string name="task_encryption_finished">Шифрование завершено</string>
     <string name="task_gif_finished">GIF создан</string>
+    <string name="task_gif_cancelled">Создание GIF отменено</string>
+    <string name="task_audio_cancelled">Извлечение аудио отменено</string>
     <string name="vault_decrypting">Расшифровка файла, пожалуйста, подождите…</string>
     <string name="vault_encrypting">Шифрование файла, пожалуйста, подождите…</string>
     <string name="vault_unsupported">Не могу открыть этот файл. Чтобы открыть, переместите его из безопасной папки и повторите попытку.</string>

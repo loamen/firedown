@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -42,10 +44,10 @@ import com.solarized.firedown.data.entity.OptionEntity;
 import com.solarized.firedown.data.models.DownloadsViewModel;
 import com.solarized.firedown.data.models.TaskViewModel;
 import com.solarized.firedown.manager.ServiceActions;
+import com.solarized.firedown.manager.tasks.TaskManager;
 import com.solarized.firedown.phone.DownloadsActivity;
 import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.phone.VaultActivity;
-import com.solarized.firedown.ui.CardViewListItemDecoration;
 import com.solarized.firedown.ui.EqualSpacingItemDecoration;
 import com.solarized.firedown.ui.adapters.DownloadItemAdapter;
 import com.solarized.firedown.utils.NavigationUtils;
@@ -201,6 +203,23 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
                 } else if (handle.contains(IntentActions.ACTION_TASK)) {
                     handleTaskCancellation();
                     handle.remove(IntentActions.ACTION_TASK);
+                } else if (handle.contains(IntentActions.DOWNLOAD_START_MAKE_GIF)) {
+                    // GifMakerFragment hands its params back here instead
+                    // of starting the service itself, so the resulting
+                    // TaskEvent.Started lands while DownloadFragment's
+                    // observer is active and handleTaskStart actually
+                    // gets to show the bottom progress bar (mirrors the
+                    // audio-encode flow). See the explanation comment in
+                    // GifMakerFragment.startGifMakerTask.
+                    Bundle gifArgs = handle.get(IntentActions.DOWNLOAD_START_MAKE_GIF);
+                    handle.remove(IntentActions.DOWNLOAD_START_MAKE_GIF);
+                    if (gifArgs != null && mActivity != null) {
+                        Intent gifIntent = new Intent(mActivity, TaskManager.class);
+                        gifIntent.setAction(IntentActions.DOWNLOAD_START_MAKE_GIF);
+                        gifIntent.putExtras(gifArgs);
+                        mActivity.startService(gifIntent);
+                        mOperationActive = true;
+                    }
                 }
             }
         };
@@ -309,18 +328,46 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
     }
 
 
+    /**
+     * Releases the postponed enter transition once the list has laid
+     * out the first paging page. Two release paths:
+     *
+     * <ul>
+     *   <li>onPreDraw — fires after the first frame's measure/layout
+     *       completes, so the user sees the populated list rather
+     *       than a blank window during the transition.</li>
+     *   <li>Hard timeout — guards against pathological slow DB / IO
+     *       on cold-start. Without it, the postponed transition could
+     *       leave the user staring at a blank window for hundreds of
+     *       ms if the first paging page is unusually slow.
+     *       startPostponedEnterTransition is idempotent on a fragment
+     *       that's already released, so racing the two paths is safe.</li>
+     * </ul>
+     */
     protected void handleTransitionTiming() {
         final ViewGroup parent = (ViewGroup) requireView().getParent();
-        if (parent != null) {
-            parent.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override public boolean onPreDraw() {
-                    parent.getViewTreeObserver().removeOnPreDrawListener(this);
-                    startPostponedEnterTransition();
-                    return true;
-                }
-            });
+        if (parent == null) {
+            startPostponedEnterTransition();
+            return;
         }
+        parent.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override public boolean onPreDraw() {
+                parent.getViewTreeObserver().removeOnPreDrawListener(this);
+                startPostponedEnterTransition();
+                return true;
+            }
+        });
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (isAdded()) startPostponedEnterTransition();
+        }, TRANSITION_RELEASE_TIMEOUT_MS);
     }
+
+    /** Upper bound on how long we'll keep the cold-start enter transition
+     *  postponed while waiting for the first paging page to land. Picked
+     *  to comfortably exceed a fast SSD-backed query (~50 ms) and a slow
+     *  cold DB open (~150 ms) without leaving the user staring at a
+     *  blank window if something goes wrong upstream. */
+    private static final long TRANSITION_RELEASE_TIMEOUT_MS = 350L;
 
 
     protected void handleTaskFinish(ServiceActions action, Object obj) {
@@ -359,6 +406,18 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
             mBottomProgressView.setTitle(R.string.task_gif_failed);
             mBottomProgressView.setActionButtonVisibility(View.GONE);
             showErrorSnackbar(R.string.task_gif_failed);
+        } else if (action == ServiceActions.CANCEL_AUDIO_ENCODE) {
+            /* User-initiated cancel — brief acknowledgment in the bar
+             * itself before the existing slide-down hides it. No
+             * snackbar: the user just tapped Cancel, they know what
+             * they did; the title flip is enough to confirm the task
+             * actually stopped (vs. e.g. failing silently). Cancel
+             * button hidden because there's nothing left to cancel. */
+            mBottomProgressView.setTitle(R.string.task_audio_cancelled);
+            mBottomProgressView.setActionButtonVisibility(View.GONE);
+        } else if (action == ServiceActions.CANCEL_MAKE_GIF) {
+            mBottomProgressView.setTitle(R.string.task_gif_cancelled);
+            mBottomProgressView.setActionButtonVisibility(View.GONE);
         } else if (action == ServiceActions.ENCRYPTION) {
             setupEncryptionFinishUI((int) obj);
         } else if(action == ServiceActions.DECRYPTION) {
@@ -424,8 +483,12 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
         mRecyclerView.setHasFixedSize(true);
         // Default off-screen view cache is 2; bumping it means a quick
         // scroll-back doesn't re-bind (and re-trigger Glide loads) for the
-        // rows that just left the viewport.
-        mRecyclerView.setItemViewCacheSize(8);
+        // rows that just left the viewport. Sized to roughly half the
+        // paging page size (Preferences.LIST_LIMIT = 25) so the cache
+        // typically holds the previous viewport plus a row or two of
+        // headroom — past that the recycled-view pool takes over and
+        // re-bind is cheap.
+        mRecyclerView.setItemViewCacheSize(12);
 
         installThumbnailPreloader(adapter);
 
@@ -464,15 +527,21 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
             }
         });
 
-        // 2. Handle Decorations
+        // 2. Handle Decorations — same EqualSpacingItemDecoration for
+        // list and grid. List rows are 1-span, full-width; the decoration
+        // gives them list_spacing on every side and halfSpacing between,
+        // matching the gutter grid tiles get. Was CardViewListItemDecoration
+        // for list (which only emitted top/bottom on the first/last item
+        // and relied on per-card marginStart/marginEnd for horizontal
+        // spacing). With the card margins removed, list items lost their
+        // gutter; switching the list to EqualSpacingItemDecoration too
+        // restores it without re-adding per-row layout margins.
         int spacing = getResources().getDimensionPixelSize(R.dimen.list_spacing);
         while (mRecyclerView.getItemDecorationCount() > 0) {
             mRecyclerView.removeItemDecorationAt(0);
         }
 
-        mRecyclerView.addItemDecoration(isGrid
-                ? new EqualSpacingItemDecoration(spacing)
-                : new CardViewListItemDecoration(spacing));
+        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(spacing));
 
         // 3. Update Adapter state
         adapter.enableGrid(isGrid);
@@ -534,6 +603,15 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
                 new FixedPreloadSizeProvider<>(
                         GlideHelper.downloadThumbWidth(),
                         GlideHelper.downloadThumbHeight()),
+                // 8 ahead — kept conservative on purpose. Bumping this
+                // floods Glide with concurrent FFmpeg decodes during
+                // fast cold-start scroll (every preload kicks a fresh
+                // MediaMetadataRetriever / FFmpegThumbnailer chain),
+                // and the decode contention hurts the visible bind more
+                // than the prefetch helps the next viewport. A larger
+                // window only pays off if Glide's decoders can finish
+                // ahead of the scroll, which isn't true with FFmpeg in
+                // the chain.
                 8);
         mRecyclerView.addOnScrollListener(preloader);
         mPreloaderInstalledOn = mRecyclerView;

@@ -19,6 +19,17 @@ public class ProgressOverlayView extends android.view.View {
     private boolean indeterminate = false;
     private float indeterminateAngle = 0f;
 
+    /** Single shared Runnable so removeCallbacks(this) actually finds and
+     *  removes the queued tick. Method-ref expressions allocate a new
+     *  Runnable each evaluation, which makes removeCallbacks a no-op and
+     *  lets duplicate loops accumulate. */
+    private final Runnable mAnimateTick = this::animateIndeterminate;
+    /** True between a successful schedule and the matching tick firing.
+     *  Guards against scheduling a parallel loop when the view's
+     *  visibility cycles back to VISIBLE during a bind that didn't
+     *  actually stop the prior loop. */
+    private boolean mTickScheduled = false;
+
     public ProgressOverlayView(@NonNull Context context) {
         this(context, null);
     }
@@ -63,23 +74,44 @@ public class ProgressOverlayView extends android.view.View {
         return progress;
     }
 
-
-
     public void setIndeterminate(boolean indeterminate) {
-        if (this.indeterminate != indeterminate) {
-            this.indeterminate = indeterminate;
-            if (indeterminate) {
-                post(this::animateIndeterminate);
-            }
-            invalidate();
+        if (this.indeterminate == indeterminate) return;
+        this.indeterminate = indeterminate;
+        if (indeterminate) {
+            scheduleTick();
+        } else {
+            removeCallbacks(mAnimateTick);
+            mTickScheduled = false;
         }
+        invalidate();
+    }
+
+    /** Single entry point for posting the tick — dedupes against the
+     *  shared Runnable so duplicate kicks (visibility cycles, attach
+     *  fires, setIndeterminate(true) calls) collapse into a single
+     *  scheduled tick instead of spawning parallel loops. */
+    private void scheduleTick() {
+        if (mTickScheduled) return;
+        if (!indeterminate || getVisibility() != VISIBLE || !isAttachedToWindow()) return;
+        mTickScheduled = true;
+        post(mAnimateTick);
     }
 
     private void animateIndeterminate() {
-        if (!indeterminate) return;
+        mTickScheduled = false;
+        // Stop the loop the moment we're hidden / unattached / off-state.
+        // Recycled holders in the RecyclerView's pool used to keep their
+        // animate callback queued because the previous loop only exited
+        // when setIndeterminate(false) was called explicitly — flipping
+        // visibility GONE on rebind didn't break the chain, so during
+        // cold-start scroll several offscreen holders were still ticking
+        // an invalidate every 16ms each, competing with bind work and
+        // Glide decodes for the main looper.
+        if (!indeterminate || getVisibility() != VISIBLE || !isAttachedToWindow()) return;
         indeterminateAngle = (indeterminateAngle + 6f) % 360f;
         invalidate();
-        postDelayed(this::animateIndeterminate, 16);
+        mTickScheduled = true;
+        postDelayed(mAnimateTick, 16);
     }
 
     @Override
@@ -119,5 +151,32 @@ public class ProgressOverlayView extends android.view.View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         indeterminate = false;
+        removeCallbacks(mAnimateTick);
+        mTickScheduled = false;
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        // If we were re-attached while still indeterminate (RecyclerView
+        // pulled the holder back out of the pool with the flag still
+        // set), restart the loop via the dedupe-aware scheduler.
+        if (indeterminate) scheduleTick();
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        int prev = getVisibility();
+        super.setVisibility(visibility);
+        if (visibility != VISIBLE) {
+            // Hidden — kill the queued tick so the offscreen view stops
+            // burning frames.
+            removeCallbacks(mAnimateTick);
+            mTickScheduled = false;
+        } else if (indeterminate && prev != VISIBLE) {
+            // Back to VISIBLE while still flagged indeterminate; kick
+            // through the dedupe-aware scheduler.
+            scheduleTick();
+        }
     }
 }

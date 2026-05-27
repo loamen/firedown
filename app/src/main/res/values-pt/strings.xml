@@ -262,6 +262,8 @@
     <string name="task_decryption_finished">Descriptografia concluída</string>
     <string name="task_encryption_finished">Criptografia concluída</string>
     <string name="task_gif_finished">GIF criado</string>
+    <string name="task_gif_cancelled">Criação de GIF cancelada</string>
+    <string name="task_audio_cancelled">Extração de áudio cancelada</string>
     <string name="vault_decrypting">Descriptografando arquivo, aguarde…</string>
     <string name="vault_encrypting">Criptografando arquivo, aguarde…</string>
     <string name="vault_unsupported">Não é possível abrir este arquivo. Para abrir, retire-o da Pasta segura e tente novamente.</string>

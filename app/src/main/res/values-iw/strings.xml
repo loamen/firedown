@@ -284,6 +284,8 @@
 <string name="task_decryption_finished">הפענוח הסתיים</string>
     <string name="task_encryption_finished">ההצפנה הסתיימה</string>
     <string name="task_gif_finished">GIF נוצר</string>
+    <string name="task_gif_cancelled">יצירת GIF בוטלה</string>
+    <string name="task_audio_cancelled">חילוץ אודיו בוטל</string>
     <string name="vault_decrypting">מפענח קובץ, אנא המתן…</string>
     <string name="vault_encrypting">מצפין קובץ, אנא המתן…</string>
     <string name="vault_unsupported">לא ניתן לפתוח את הקובץ הזה. כדי לפתוח, העבר אותו מהתיקייה הבטוחה ונסה שוב.</string>

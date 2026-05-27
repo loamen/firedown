@@ -227,6 +227,8 @@
     <string name="task_decryption_finished">Dekryptering fullført</string>
     <string name="task_encryption_finished">Kryptering fullført</string>
     <string name="task_gif_finished">GIF opprettet</string>
+    <string name="task_gif_cancelled">GIF-oppretting avbrutt</string>
+    <string name="task_audio_cancelled">Lydutpakking avbrutt</string>
     <string name="vault_decrypting">Dekrypterer fil, vennligst vent…</string>
     <string name="vault_encrypting">Krypterer fil, vennligst vent…</string>
     <string name="vault_unsupported">Kan ikke åpne denne filen. For å åpne, flytt den ut av sikker mappe og prøv igjen.</string>

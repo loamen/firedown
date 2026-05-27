@@ -99,6 +99,13 @@ ext {
 
 dependencies {
 
+    // Installs the bundled baseline profile (app/src/main/baseline-prof.txt)
+    // at first launch so ART AOT-compiles the listed hot methods instead of
+    // JITing them during the first cold-start scroll. Pulled transitively by
+    // some AndroidX libs already, but pinned explicitly so the profile path
+    // doesn't silently regress if those transitive deps move.
+    implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
+
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
 
     def paging_version = "3.5.0"

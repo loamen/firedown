@@ -474,6 +474,8 @@
     <string name="task_encryption_finished">Verschlüsselung abgeschlossen</string>
     <string name="task_gif_failed">GIF konnte nicht erstellt werden</string>
     <string name="task_gif_finished">GIF erstellt</string>
+    <string name="task_gif_cancelled">GIF-Erstellung abgebrochen</string>
+    <string name="task_audio_cancelled">Audio-Extraktion abgebrochen</string>
     <string name="task_stop">Stoppen</string>
     <string name="update_auto_update_success_body">Du wurdest automatisch auf Version %1$s aktualisiert.</string>
     <string name="update_auto_update_success_default_body">Du wurdest automatisch auf die neueste Version aktualisiert.</string>
