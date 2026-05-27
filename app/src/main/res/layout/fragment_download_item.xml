@@ -36,6 +36,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardCornerRadius="8dp"
+    app:cardElevation="0dp"
     app:strokeWidth="0dp">
 
     <!-- Files-by-Google pattern: card has no stroke and (per the
@@ -132,7 +133,7 @@
                 style="@style/TextAppearance.Material3.TitleSmall"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="marquee"
+                android:ellipsize="end"
                 android:singleLine="true"
                 android:textColor="?attr/colorOnSurface"
                 tools:text="The Knight Who Chose the Dawn" />

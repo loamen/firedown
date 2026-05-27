@@ -98,6 +98,19 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
      *  ("N files · X MB"). Empty until the ViewModel's aggregator emits. */
     @NonNull private Map<Integer, GroupAggregate> mAggregates = Collections.emptyMap();
 
+    /** Localized "VÍDEO" / "IMAGEN" / etc. label per mime type, computed
+     *  the first time we see a given mime then reused for every subsequent
+     *  bind. The label is a resource string lookup, which goes through
+     *  the theme + LocaleList; doing it on every bind for every visible
+     *  row added up during cold-start scroll. Per-adapter (not static)
+     *  so a configuration change that rebuilds the adapter under a new
+     *  locale rebuilds the cache too. */
+    private final java.util.HashMap<String, String> mMimeLabelCache = new java.util.HashMap<>(16);
+    /** Same string with the list-mode trailing " · " separator already
+     *  appended — saves a String concat per list-mode bind in addition
+     *  to the resource lookup. */
+    private final java.util.HashMap<String, String> mMimeLabelListCache = new java.util.HashMap<>(16);
+
 
 
 
@@ -159,6 +172,12 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             // nulling here lets the String be GC'd while the holder sits
             // in the RecycledViewPool.
             h.cachedFinishedLabel = null;
+            // Same for the domain string — the cached parse is only
+            // valid against the holder's last bound entity, and pinning
+            // the URL reference here would keep the prior entity's URL
+            // string reachable from the pool.
+            h.cachedDomain = null;
+            h.cachedDomainUrlSource = null;
         }
     }
 
@@ -453,10 +472,27 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         boolean contains = mSelected.contains(entity.getId());
 
         String mimeType = entity.getFileMimeType();
+        // Domain parse is URI + getHost + regex per call. Cache per
+        // holder so repeated re-binds of the same row (selection
+        // payload, action-mode toggles that miss the partial-bind path,
+        // aggregate refresh) skip the parse. Keyed on entity id +
+        // (originUrl|fileUrl) string identity, which is stable for any
+        // row that hasn't actually changed source.
+        long entityId = entity.getId();
         String originUrl = entity.getOriginUrl();
         String fileUrl = entity.getFileUrl();
-        String domain = TextUtils.isEmpty(originUrl)
-                ? WebUtils.getDomainName(fileUrl) : WebUtils.getDomainName(originUrl);
+        String urlSource = TextUtils.isEmpty(originUrl) ? fileUrl : originUrl;
+        String domain;
+        if (holder.cachedDomain != null
+                && holder.cachedDomainEntityId == entityId
+                && holder.cachedDomainUrlSource == urlSource) {
+            domain = holder.cachedDomain;
+        } else {
+            domain = WebUtils.getDomainName(urlSource);
+            holder.cachedDomainEntityId = entityId;
+            holder.cachedDomainUrlSource = urlSource;
+            holder.cachedDomain = domain;
+        }
 
         // ── Common fields ───────────────────────────────────────────
         holder.item.setEnabled(mEnabled);
@@ -464,14 +500,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         holder.selected.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
         holder.selected.setImageDrawable(mActionMode ? (contains ? mChecked : mUnChecked) : null);
         // List mode renders mime as a text label that prefixes the
-        // domain ('VÍDEO · youtube.com'), so append the separator
-        // here; grid keeps the chip styling, no separator.
-        String mimeLabel = FileUriHelper.getLongMimeText(mContext, mimeType);
+        // domain ('VÍDEO · youtube.com'); grid keeps the chip styling
+        // (no separator). Both forms are cached per mime type — see
+        // mMimeLabelCache / mMimeLabelListCache. Without the cache,
+        // every bind paid for a resource lookup (theme + LocaleList
+        // resolution) plus a String concat on the list-mode path.
+        String mimeLabel = mimeLabelFor(mimeType, isGrid);
         if (TextUtils.isEmpty(mimeLabel)) {
             holder.mimeText.setVisibility(View.GONE);
         } else {
             holder.mimeText.setVisibility(View.VISIBLE);
-            holder.mimeText.setText(isGrid ? mimeLabel : mimeLabel + " · ");
+            holder.mimeText.setText(mimeLabel);
         }
 
         // ── Row surface ─────────────────────────────────────────────
@@ -661,6 +700,24 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         if (view != null) view.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
+    /**
+     * Returns the cached mime label for the given mime type, lazily
+     * populating both the bare and list-mode (with " · " suffix)
+     * variants on first miss. Null-safe — a null mime type returns
+     * null (the caller hides the label).
+     */
+    private @Nullable String mimeLabelFor(@Nullable String mimeType, boolean isGrid) {
+        if (mimeType == null) return null;
+        java.util.HashMap<String, String> cache = isGrid ? mMimeLabelCache : mMimeLabelListCache;
+        String cached = cache.get(mimeType);
+        if (cached != null) return cached;
+        String base = FileUriHelper.getLongMimeText(mContext, mimeType);
+        if (base == null) return null;
+        String label = isGrid ? base : base + " · ";
+        cache.put(mimeType, label);
+        return label;
+    }
+
     private void setActionIcon(DownloadViewHolder holder, boolean isGrid, int iconRes) {
         // Works for both AppCompatImageButton (list) and MaterialButton (grid)
 
@@ -714,6 +771,17 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         long cachedFinishedKeySize = Long.MIN_VALUE;
         long cachedFinishedKeyDate = Long.MIN_VALUE;
         @Nullable String cachedFinishedLabel;
+
+        // Cache for the parsed domain string. WebUtils.getDomainName
+        // does URI construction + getHost + regex strip per call; the
+        // input URL doesn't change unless the holder rebinds to a
+        // different entity (or the entity's origin/file URL itself
+        // changes, which only happens on edit). Keyed by id + the
+        // exact URL string reference we ran the parse on, so a string-
+        // identity mismatch on rebind invalidates without an equals().
+        long cachedDomainEntityId = Long.MIN_VALUE;
+        @Nullable String cachedDomainUrlSource;
+        @Nullable String cachedDomain;
 
         DownloadViewHolder(View view, OnItemClickListener onItemClickListener) {
             super(view);
