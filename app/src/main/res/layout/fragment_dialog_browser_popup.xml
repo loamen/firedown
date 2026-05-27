@@ -10,14 +10,20 @@
     rows (toggles vs drill-downs) carry less self-evident structure.
 
     Shape (top→bottom):
-      1. Drag handle (shared include).
-      2. Site-identity row: favicon + page title + hostname + close X.
-         Same identity vocabulary the SecuritySheet uses, scoped to
-         "act on this page".
-      3. Quick-row header: Back · Forward · Share · Refresh.
-      4. Page actions    — Bookmark page, Find in page, Desktop site
-      5. Library         — Bookmarks, History, Safe Folder
-      6. App + exit      — Settings, optional Quit
+      1. Drag handle (shared include).                    [pinned]
+      2. Site-identity row: favicon + page title +        [pinned]
+         hostname + close X. Same identity vocabulary
+         the SecuritySheet uses, scoped to "act on this
+         page". Stays pinned — it's the anchor, scrolling
+         the title away would lose the context the rest
+         of the rows act on.
+      3. Identity / quick-row divider.                    [pinned]
+      4. ─── scroll boundary ───
+      5. Quick-row header: Back · Forward · Share · Refresh.
+      6. Quick-row / menu divider.
+      7. Page actions    — Bookmark page, Find in page, Desktop site
+      8. Library         — Bookmarks, History, Safe Folder
+      9. App + exit      — Settings, optional Quit
 
     Row anatomy:
       • 56dp tall, 16dp horizontal padding
@@ -114,10 +120,14 @@
     </LinearLayout>
 
 
-    <include
-        layout="@layout/fragment_dialog_browser_popup_header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+    <!-- Pinned divider seals the identity row off from the scrolling
+         content below; the title stays in view as the rest of the
+         sheet scrolls past. Matches the visual break the SecuritySheet
+         renders between its identity block and its first section. -->
+    <View
+        style="@style/Firedown.Divider.InCard"
+        android:layout_marginTop="8dp" />
+
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -129,8 +139,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingTop="4dp"
             android:paddingBottom="8dp">
+
+
+            <include
+                layout="@layout/fragment_dialog_browser_popup_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+
+            <View
+                style="@style/Firedown.Divider.InCard"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp" />
 
 
             <!-- Bookmark page — drawableStart + label flip in
