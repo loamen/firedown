@@ -3,6 +3,7 @@ package com.solarized.firedown.phone.dialogs;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,22 +11,33 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageView;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.solarized.firedown.GlideHelper;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
+import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.data.entity.OptionEntity;
 import com.solarized.firedown.data.models.BrowserDialogViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
+import com.solarized.firedown.geckoview.GeckoResources;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.ui.browser.BackwardBrowserButton;
 import com.solarized.firedown.ui.browser.BasicBrowserButton;
 import com.solarized.firedown.ui.browser.ForwardBrowserButton;
 import com.solarized.firedown.ui.browser.ReloadBrowserButton;
 import com.solarized.firedown.utils.NavigationUtils;
+import com.solarized.firedown.utils.WebUtils;
+
+import java.util.List;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -64,9 +76,18 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         implements View.OnClickListener {
 
     private BrowserDialogViewModel mBrowserDialogViewModel;
+    private GeckoStateViewModel mGeckoStateViewModel;
+    private IncognitoStateViewModel mIncognitoStateViewModel;
     private boolean mHasBookmark;
     private ReloadBrowserButton mReloadBrowserButton;
     private GeckoState mGeckoState;
+    private AppCompatImageView mFavicon;
+    private TextView mTitle;
+    private TextView mHost;
+    private String mDomain;
+    private String mLastIconUrl;
+    private String mLastTitle;
+    private String mLastUri;
 
     @Inject SharedPreferences mSharedPreferences;
 
@@ -74,6 +95,9 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
     public void onDestroyView() {
         super.onDestroyView();
         mReloadBrowserButton = null;
+        mFavicon = null;
+        mTitle = null;
+        mHost = null;
     }
 
 
@@ -92,6 +116,7 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
             return mView;
         }
 
+        bindIdentity();
         bindQuickRow();
         bindRows();
         applyBookmarkState();
@@ -100,6 +125,71 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         applyQuitVisibility();
 
         return mView;
+    }
+
+
+    /**
+     * Populates the site-identity row: favicon, page title, hostname.
+     * Mirrors the identity block the SecuritySheet uses on the same
+     * browser surface so the two sheets read as siblings. Onboarding
+     * pages get the static about:firedown placeholder title rather
+     * than the live tab title, matching SecuritySheet's behaviour.
+     */
+    private void bindIdentity() {
+        mTitle = mView.findViewById(R.id.popup_identity_title);
+        mHost = mView.findViewById(R.id.popup_identity_host);
+        mFavicon = mView.findViewById(R.id.popup_identity_favicon);
+
+        mLastUri = mGeckoState.getEntityUri();
+        mLastTitle = mGeckoState.getEntityTitle();
+        mLastIconUrl = mGeckoState.getEntityIcon();
+        mDomain = WebUtils.getDomainName(mLastUri);
+
+        renderTitle();
+        renderHost();
+        loadFavicon();
+    }
+
+
+    /**
+     * Paints the identity title TextView from the cached
+     * {@code mGeckoState}. Onboarding pages render the static
+     * about:firedown label rather than whatever live title the
+     * placeholder tab happens to expose, matching SecuritySheet's
+     * carve-out.
+     */
+    private void renderTitle() {
+        if (mTitle == null) return;
+        mTitle.setText(GeckoResources.isOnboarding(mLastUri)
+                ? GeckoResources.ABOUT_ONBOARDING
+                : mLastTitle);
+    }
+
+
+    /**
+     * Paints the identity host TextView from the cached domain.
+     */
+    private void renderHost() {
+        if (mHost != null) mHost.setText(mDomain);
+    }
+
+
+    /**
+     * Renders the current {@code mGeckoState}'s favicon into the
+     * identity row. Mirrors {@code SecurityStateSheetDialogFragment}'s
+     * loader so the popup picks up the same icon resolution / rounded-
+     * corner treatment, and short-circuits when the view is gone so
+     * the live-update observer is safe to call after onDestroyView
+     * fires.
+     */
+    private void loadFavicon() {
+        if (mFavicon == null) return;
+        int radius = getResources().getDimensionPixelOffset(R.dimen.icon_rounded);
+        String fullDomain = TextUtils.isEmpty(mDomain)
+                ? null
+                : (mDomain.startsWith("http") ? mDomain : "https://" + mDomain);
+        GlideHelper.load(mGeckoState.getEntityIcon(), fullDomain, mFavicon,
+                RequestOptions.bitmapTransform(new RoundedCorners(radius)));
     }
 
 
@@ -225,6 +315,55 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
                 mReloadBrowserButton.setLoading(loading);
             }
         });
+
+        // Page identity (favicon, title, URL) resolves asynchronously —
+        // when the popup opens immediately after a navigation,
+        // GeckoSession's onPageTitleChange / onLocationChange /
+        // onPageFavicon callbacks routinely land after bindIdentity
+        // has already snapshotted whatever values were cached. Observe
+        // the tabs LiveData (notified by GeckoStateDataRepository's
+        // update* methods) and re-render whenever *this* entity's
+        // title / URI / icon string actually changes. Other tab-list
+        // events (new tab, close tab, sibling-tab updates) short-
+        // circuit on the equality checks, keeping per-emission work
+        // O(1). Same pattern SecuritySheet uses on the same surface.
+        LiveData<List<GeckoStateEntity>> tabsLive = mIsIncognito
+                ? mIncognitoStateViewModel.getTabs()
+                : mGeckoStateViewModel.getTabs();
+        tabsLive.observe(getViewLifecycleOwner(), tabs -> {
+            if (tabs == null || mGeckoState == null) return;
+            int id = mGeckoState.getEntityId();
+            for (GeckoStateEntity entity : tabs) {
+                if (entity.getId() != id) continue;
+
+                String uri = entity.getUri();
+                if (!Objects.equals(uri, mLastUri)) {
+                    mLastUri = uri;
+                    mGeckoState.setEntityUri(uri);
+                    mDomain = WebUtils.getDomainName(uri);
+                    renderHost();
+                    // Title carve-out for about:firedown is URL-driven,
+                    // so a URI swap can flip the rendered title even
+                    // when the entity's title string hasn't moved yet.
+                    renderTitle();
+                }
+
+                String title = entity.getTitle();
+                if (!Objects.equals(title, mLastTitle)) {
+                    mLastTitle = title;
+                    mGeckoState.setEntityTitle(title);
+                    renderTitle();
+                }
+
+                String icon = entity.getIcon();
+                if (!Objects.equals(icon, mLastIconUrl)) {
+                    mLastIconUrl = icon;
+                    mGeckoState.setEntityIcon(icon);
+                    loadFavicon();
+                }
+                break;
+            }
+        });
     }
 
 
@@ -235,17 +374,12 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         Bundle bundle = getArguments();
         mHasBookmark = bundle != null && bundle.getBoolean(Keys.ITEM_BOOKMARK, false);
         mBrowserDialogViewModel = new ViewModelProvider(mActivity).get(BrowserDialogViewModel.class);
+        mGeckoStateViewModel = new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
+        mIncognitoStateViewModel = new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
 
-        GeckoStateViewModel geckoStateViewModel =
-                new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
-        IncognitoStateViewModel incognitoStateViewModel =
-                new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
-
-        if (mIsIncognito) {
-            mGeckoState = incognitoStateViewModel.peekCurrentGeckoState();
-        } else {
-            mGeckoState = geckoStateViewModel.peekCurrentGeckoState();
-        }
+        mGeckoState = mIsIncognito
+                ? mIncognitoStateViewModel.peekCurrentGeckoState()
+                : mGeckoStateViewModel.peekCurrentGeckoState();
     }
 
 
