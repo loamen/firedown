@@ -72,7 +72,7 @@ Lcom/solarized/firedown/data/Download;
 Lcom/solarized/firedown/GlideHelper;
 Lcom/solarized/firedown/glide/MimeTypeThumbnail;
 Lcom/solarized/firedown/glide/DomainThumbnail;
-Lcom/solarized/firedown/glide/GlideRequestOptions;
+Lcom/solarized/firedown/GlideRequestOptions;
 
 # ── App: bind-path utilities (hot per-row) ───────────────────────────
 Lcom/solarized/firedown/utils/WebUtils;
@@ -111,3 +111,68 @@ Lcom/bumptech/glide/request/target/DrawableImageViewTarget;
 Lcom/bumptech/glide/integration/recyclerview/RecyclerViewPreloader;
 Lcom/bumptech/glide/ListPreloader;
 Lcom/bumptech/glide/util/FixedPreloadSizeProvider;
+
+# ── Cold-start spine (shared across Browser / Downloads / Vault) ─────
+# BaseActivity owns the splash gate + intent routing; IntentHandler
+# drives cold-start navigation; the BaseFocusFragment superclass is
+# already listed above for the downloads cold path but is hot for
+# every activity entry too.
+Lcom/solarized/firedown/BaseActivity;
+Lcom/solarized/firedown/IntentHandler;
+Lcom/solarized/firedown/Keys;
+Lcom/solarized/firedown/IntentActions;
+Lcom/solarized/firedown/Preferences;
+
+# ── App: Browser cold-start path ─────────────────────────────────────
+# Tab-restore cold start lands on BrowserFragment; home variants are
+# possible alternate destinations on the same cold-start intent path.
+Lcom/solarized/firedown/phone/BrowserActivity;
+Lcom/solarized/firedown/phone/fragments/BaseBrowserFragment;
+Lcom/solarized/firedown/phone/fragments/BrowserFragment;
+Lcom/solarized/firedown/phone/fragments/HomeFragment;
+Lcom/solarized/firedown/phone/fragments/HomeIncognitoFragment;
+Lcom/solarized/firedown/phone/fragments/TabsFragment;
+Lcom/solarized/firedown/phone/fragments/TabsHolderFragment;
+Lcom/solarized/firedown/phone/fragments/TabsIncognitoFragment;
+
+# ── GeckoView wiring exercised on browser cold-start ─────────────────
+# GeckoState wraps the session lifecycle; GeckoRuntimeHelper owns the
+# runtime singleton; the behaviors / toolbar / observer chain is what
+# CoordinatorLayout calls on first frame to lay out the browser shell.
+Lcom/solarized/firedown/geckoview/GeckoState;
+Lcom/solarized/firedown/geckoview/GeckoRuntimeHelper;
+Lcom/solarized/firedown/geckoview/GeckoComponents;
+Lcom/solarized/firedown/geckoview/GeckoToolbar;
+Lcom/solarized/firedown/geckoview/GeckoToolbarBehavior;
+Lcom/solarized/firedown/geckoview/NestedGeckoViewBehavior;
+Lcom/solarized/firedown/geckoview/toolbar/BottomNavigationBehavior;
+Lcom/solarized/firedown/geckoview/media/GeckoMediaController;
+Lcom/solarized/firedown/geckoview/GeckoObserver;
+Lcom/solarized/firedown/geckoview/GeckoObserverInvoker;
+Lcom/solarized/firedown/geckoview/prompt/GeckoPromptManager;
+Lcom/solarized/firedown/geckoview/prompt/PromptViewFactory;
+Lcom/solarized/firedown/geckoview/prompt/GeckoChoiceAdapter;
+Lcom/solarized/firedown/geckoview/PoTokenGenerator;
+
+# ── Browser-side ViewModels + repositories ───────────────────────────
+# All four ViewModels are observed in BrowserFragment.onViewCreated,
+# so the first scroll / first tab-switch hits them while interpreted
+# if not AOT'd.
+Lcom/solarized/firedown/data/models/GeckoStateViewModel;
+Lcom/solarized/firedown/data/models/IncognitoStateViewModel;
+Lcom/solarized/firedown/data/models/BrowserURIViewModel;
+Lcom/solarized/firedown/data/models/BrowserDialogViewModel;
+Lcom/solarized/firedown/data/repository/GeckoStateDataRepository;
+Lcom/solarized/firedown/data/repository/IncognitoStateRepository;
+Lcom/solarized/firedown/data/repository/SearchRepository;
+Lcom/solarized/firedown/data/entity/GeckoStateEntity;
+Lcom/solarized/firedown/data/entity/CertificateInfoEntity;
+
+# ── App: Vault cold-start path ───────────────────────────────────────
+# VaultActivity → VaultFragment, which extends BaseDownloadFragment
+# (already in the profile above). Only the activity + the fragment
+# itself need adding; the adapter / view holders / paging /
+# aggregator / utilities are shared with DownloadFragment and
+# already covered.
+Lcom/solarized/firedown/phone/VaultActivity;
+Lcom/solarized/firedown/phone/fragments/VaultFragment;
