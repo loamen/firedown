@@ -76,7 +76,15 @@ public class ProgressOverlayView extends android.view.View {
     }
 
     private void animateIndeterminate() {
-        if (!indeterminate) return;
+        // Stop the loop the moment we're hidden / unattached / off-state.
+        // Recycled holders in the RecyclerView's pool used to keep their
+        // animate callback queued because the previous loop only exited
+        // when setIndeterminate(false) was called explicitly — flipping
+        // visibility GONE on rebind didn't break the chain, so during
+        // cold-start scroll several offscreen holders were still ticking
+        // an invalidate every 16ms each, competing with bind work and
+        // Glide decodes for the main looper.
+        if (!indeterminate || getVisibility() != VISIBLE || !isAttachedToWindow()) return;
         indeterminateAngle = (indeterminateAngle + 6f) % 360f;
         invalidate();
         postDelayed(this::animateIndeterminate, 16);
@@ -119,5 +127,32 @@ public class ProgressOverlayView extends android.view.View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         indeterminate = false;
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        // If we were re-attached while still indeterminate (RecyclerView
+        // pulled the holder back out of the pool with the flag still
+        // set), restart the loop. Without this the animation would stop
+        // on first detach and never resume even after the row scrolls
+        // back into view.
+        if (indeterminate) {
+            post(this::animateIndeterminate);
+        }
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        int prev = getVisibility();
+        super.setVisibility(visibility);
+        // Coming back to VISIBLE while still flagged indeterminate?
+        // animateIndeterminate guards on visibility now, so we'd
+        // otherwise drop the next tick and never resume. Kick the loop
+        // back to life — the guards inside animateIndeterminate make
+        // double-kicks idempotent.
+        if (indeterminate && visibility == VISIBLE && prev != VISIBLE) {
+            post(this::animateIndeterminate);
+        }
     }
 }
