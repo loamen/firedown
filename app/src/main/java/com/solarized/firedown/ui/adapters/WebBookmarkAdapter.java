@@ -67,8 +67,7 @@ public class WebBookmarkAdapter extends PagingDataAdapter<WebBookmarkEntity, Rec
         RoundedCorners mRoundedCorners = new RoundedCorners(mRoundedPixels);
         mColorNormal = ContextCompat.getColor(context, R.color.transparent);
         mColorSelected = ContextCompat.getColor(context, R.color.md_theme_primaryContainer);
-        mDefaultCardBg = MaterialColors.getColor(context,
-                com.google.android.material.R.attr.colorSurface, 0);
+        mDefaultCardBg = ContextCompat.getColor(context, R.color.transparent);
         mSelectedCardBg = SelectionStyling.selectedCardWashOver(context,
                 com.google.android.material.R.attr.colorSurface);
         mChecked =  Utils.tintDrawable(context, R.drawable.ic_baseline_check_circle_24, R.color.md_theme_primaryContainer);

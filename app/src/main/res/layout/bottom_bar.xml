@@ -37,7 +37,7 @@
         android:padding="6dp"
         android:scaleType="centerInside"
         android:tint="?attr/colorOnSurface"
-        android:src="@drawable/ic_bookmarks_24" />
+        android:src="@drawable/ic_bookmark_border_24" />
 
     <androidx.appcompat.widget.AppCompatImageButton
         android:id="@+id/downloads_button"

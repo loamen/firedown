@@ -149,7 +149,7 @@ public class BottomNavigationBar extends FrameLayout implements View.OnClickList
         // not the action.
         AppCompatImageButton searchBtn = findViewById(R.id.search_button);
         if (searchBtn != null) {
-            searchBtn.setImageResource(incognito ? R.drawable.ic_search_24 : R.drawable.ic_bookmarks_24);
+            searchBtn.setImageResource(incognito ? R.drawable.ic_search_24 : R.drawable.ic_bookmark_border_24);
             searchBtn.setContentDescription(getContext().getString(
                     incognito ? R.string.search : R.string.library_bookmarks));
             ImageViewCompat.setImageTintList(searchBtn, iconTint);
