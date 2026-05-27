@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.solarized.firedown.data.dao.DownloadDao;
 import com.solarized.firedown.data.entity.DownloadEntity;
 
-@Database(entities = {DownloadEntity.class}, version = 10, exportSchema = true)
+@Database(entities = {DownloadEntity.class}, version = 11, exportSchema = true)
 public abstract class DownloadDatabase extends RoomDatabase {
 
     public static final String DATABASE_NAME = "download-db";
@@ -97,6 +97,28 @@ public abstract class DownloadDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE 'download' ADD COLUMN 'file_thumbnail_unavailable' INTEGER NOT NULL DEFAULT 0");
+        }
+    };
+
+    /**
+     * Indices for the paging queries. Pre-migration the downloads list
+     * fell back to a full table scan on every page request because every
+     * paging query filters on file_safe and sorts on file_date /
+     * file_status — and the table had no index covering either.
+     *
+     * Index names follow Room's generated convention
+     * ({@code index_<table>_<col>[_<col>...]}) so the schema validator
+     * matches the @Entity declaration on first load after the bump.
+     */
+    public static final Migration MIGRATION_10_11 = new Migration(10, 11) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_download_file_safe_file_date` "
+                            + "ON `download` (`file_safe`, `file_date`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_download_file_safe_file_status` "
+                            + "ON `download` (`file_safe`, `file_status`)");
         }
     };
 }

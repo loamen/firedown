@@ -7,11 +7,38 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import com.solarized.firedown.data.Download;
 
-@Entity(tableName = "download")
+/**
+ * Indices match the actual paging query shapes in DownloadDao:
+ *
+ * <ul>
+ *   <li>(file_safe, file_date) — getDownloads / getSafe, the default
+ *       sort. Also the filter the home active-strip and the per-group
+ *       aggregator both walk.</li>
+ *   <li>(file_safe, file_status) — getActiveRegularLive
+ *       (file_status IN (0,2)), getRegularFinishedCountLive
+ *       (file_status = 1), getRegularFinishedSizeLive (same), the
+ *       home vault count, and as a side-effect the
+ *       (file_status IN (0,2)) DESC expression in every paging
+ *       ORDER BY (SQLite can use the leading (file_safe, file_status)
+ *       pair to pre-partition rows before the secondary sort).</li>
+ * </ul>
+ *
+ * Other sort orderings (name / size / origin_url) still fall back to
+ * sort-on-scan within each (file_safe, file_status) partition. Not
+ * worth a third / fourth composite index for write-rare sort modes
+ * — the partition is already small enough after the first two
+ * columns.
+ */
+@Entity(tableName = "download",
+        indices = {
+                @Index(value = {"file_safe", "file_date"}),
+                @Index(value = {"file_safe", "file_status"})
+        })
 public class DownloadEntity implements Download, Parcelable {
 
     @PrimaryKey
