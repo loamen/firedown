@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -309,18 +311,46 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
     }
 
 
+    /**
+     * Releases the postponed enter transition once the list has laid
+     * out the first paging page. Two release paths:
+     *
+     * <ul>
+     *   <li>onPreDraw — fires after the first frame's measure/layout
+     *       completes, so the user sees the populated list rather
+     *       than a blank window during the transition.</li>
+     *   <li>Hard timeout — guards against pathological slow DB / IO
+     *       on cold-start. Without it, the postponed transition could
+     *       leave the user staring at a blank window for hundreds of
+     *       ms if the first paging page is unusually slow.
+     *       startPostponedEnterTransition is idempotent on a fragment
+     *       that's already released, so racing the two paths is safe.</li>
+     * </ul>
+     */
     protected void handleTransitionTiming() {
         final ViewGroup parent = (ViewGroup) requireView().getParent();
-        if (parent != null) {
-            parent.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-                @Override public boolean onPreDraw() {
-                    parent.getViewTreeObserver().removeOnPreDrawListener(this);
-                    startPostponedEnterTransition();
-                    return true;
-                }
-            });
+        if (parent == null) {
+            startPostponedEnterTransition();
+            return;
         }
+        parent.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override public boolean onPreDraw() {
+                parent.getViewTreeObserver().removeOnPreDrawListener(this);
+                startPostponedEnterTransition();
+                return true;
+            }
+        });
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (isAdded()) startPostponedEnterTransition();
+        }, TRANSITION_RELEASE_TIMEOUT_MS);
     }
+
+    /** Upper bound on how long we'll keep the cold-start enter transition
+     *  postponed while waiting for the first paging page to land. Picked
+     *  to comfortably exceed a fast SSD-backed query (~50 ms) and a slow
+     *  cold DB open (~150 ms) without leaving the user staring at a
+     *  blank window if something goes wrong upstream. */
+    private static final long TRANSITION_RELEASE_TIMEOUT_MS = 350L;
 
 
     protected void handleTaskFinish(ServiceActions action, Object obj) {
