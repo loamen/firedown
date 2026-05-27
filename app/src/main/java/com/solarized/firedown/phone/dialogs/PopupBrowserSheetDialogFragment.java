@@ -12,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.request.RequestOptions;
@@ -21,6 +22,7 @@ import com.solarized.firedown.GlideHelper;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
+import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.data.entity.OptionEntity;
 import com.solarized.firedown.data.models.BrowserDialogViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
@@ -33,6 +35,9 @@ import com.solarized.firedown.ui.browser.ForwardBrowserButton;
 import com.solarized.firedown.ui.browser.ReloadBrowserButton;
 import com.solarized.firedown.utils.NavigationUtils;
 import com.solarized.firedown.utils.WebUtils;
+
+import java.util.List;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -71,9 +76,14 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         implements View.OnClickListener {
 
     private BrowserDialogViewModel mBrowserDialogViewModel;
+    private GeckoStateViewModel mGeckoStateViewModel;
+    private IncognitoStateViewModel mIncognitoStateViewModel;
     private boolean mHasBookmark;
     private ReloadBrowserButton mReloadBrowserButton;
     private GeckoState mGeckoState;
+    private AppCompatImageView mFavicon;
+    private String mDomain;
+    private String mLastIconUrl;
 
     @Inject SharedPreferences mSharedPreferences;
 
@@ -81,6 +91,7 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
     public void onDestroyView() {
         super.onDestroyView();
         mReloadBrowserButton = null;
+        mFavicon = null;
     }
 
 
@@ -121,26 +132,39 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
     private void bindIdentity() {
         TextView title = mView.findViewById(R.id.popup_identity_title);
         TextView host = mView.findViewById(R.id.popup_identity_host);
-        AppCompatImageView favicon = mView.findViewById(R.id.popup_identity_favicon);
+        mFavicon = mView.findViewById(R.id.popup_identity_favicon);
 
         String url = mGeckoState.getEntityUri();
-        String domain = WebUtils.getDomainName(url);
+        mDomain = WebUtils.getDomainName(url);
+        mLastIconUrl = mGeckoState.getEntityIcon();
         if (title != null) {
             title.setText(GeckoResources.isOnboarding(url)
                     ? GeckoResources.ABOUT_ONBOARDING
                     : mGeckoState.getEntityTitle());
         }
         if (host != null) {
-            host.setText(domain);
+            host.setText(mDomain);
         }
-        if (favicon != null) {
-            int radius = getResources().getDimensionPixelOffset(R.dimen.icon_rounded);
-            String fullDomain = TextUtils.isEmpty(domain)
-                    ? null
-                    : (domain.startsWith("http") ? domain : "https://" + domain);
-            GlideHelper.load(mGeckoState.getEntityIcon(), fullDomain, favicon,
-                    RequestOptions.bitmapTransform(new RoundedCorners(radius)));
-        }
+        loadFavicon();
+    }
+
+
+    /**
+     * Renders the current {@code mGeckoState}'s favicon into the
+     * identity row. Mirrors {@code SecurityStateSheetDialogFragment}'s
+     * loader so the popup picks up the same icon resolution / rounded-
+     * corner treatment, and short-circuits when the view is gone so
+     * the live-update observer is safe to call after onDestroyView
+     * fires.
+     */
+    private void loadFavicon() {
+        if (mFavicon == null) return;
+        int radius = getResources().getDimensionPixelOffset(R.dimen.icon_rounded);
+        String fullDomain = TextUtils.isEmpty(mDomain)
+                ? null
+                : (mDomain.startsWith("http") ? mDomain : "https://" + mDomain);
+        GlideHelper.load(mGeckoState.getEntityIcon(), fullDomain, mFavicon,
+                RequestOptions.bitmapTransform(new RoundedCorners(radius)));
     }
 
 
@@ -266,6 +290,32 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
                 mReloadBrowserButton.setLoading(loading);
             }
         });
+
+        // Favicon resolution is async — when the popup opens immediately
+        // after a navigation, GeckoSession's onPageFavicon callback can
+        // land seconds later. Observe the tabs LiveData (notified by
+        // GeckoStateDataRepository.updateIcon) and re-render whenever
+        // *this* entity's icon string actually changes. Other tab-list
+        // events (new tab, close tab, title update) short-circuit on
+        // the equality check, keeping per-emission work O(1). Same
+        // pattern SecuritySheet uses on the same surface.
+        LiveData<List<GeckoStateEntity>> tabsLive = mIsIncognito
+                ? mIncognitoStateViewModel.getTabs()
+                : mGeckoStateViewModel.getTabs();
+        tabsLive.observe(getViewLifecycleOwner(), tabs -> {
+            if (tabs == null || mGeckoState == null || mFavicon == null) return;
+            int id = mGeckoState.getEntityId();
+            for (GeckoStateEntity entity : tabs) {
+                if (entity.getId() != id) continue;
+                String icon = entity.getIcon();
+                if (!Objects.equals(icon, mLastIconUrl)) {
+                    mLastIconUrl = icon;
+                    mGeckoState.setEntityIcon(icon);
+                    loadFavicon();
+                }
+                break;
+            }
+        });
     }
 
 
@@ -276,17 +326,12 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         Bundle bundle = getArguments();
         mHasBookmark = bundle != null && bundle.getBoolean(Keys.ITEM_BOOKMARK, false);
         mBrowserDialogViewModel = new ViewModelProvider(mActivity).get(BrowserDialogViewModel.class);
+        mGeckoStateViewModel = new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
+        mIncognitoStateViewModel = new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
 
-        GeckoStateViewModel geckoStateViewModel =
-                new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
-        IncognitoStateViewModel incognitoStateViewModel =
-                new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
-
-        if (mIsIncognito) {
-            mGeckoState = incognitoStateViewModel.peekCurrentGeckoState();
-        } else {
-            mGeckoState = geckoStateViewModel.peekCurrentGeckoState();
-        }
+        mGeckoState = mIsIncognito
+                ? mIncognitoStateViewModel.peekCurrentGeckoState()
+                : mGeckoStateViewModel.peekCurrentGeckoState();
     }
 
 
