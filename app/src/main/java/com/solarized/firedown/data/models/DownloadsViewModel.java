@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
@@ -141,12 +142,38 @@ public class DownloadsViewModel extends ViewModel {
         // recompute. Heavier than the paging path on raw row count, but the
         // aggregator runs in ~O(N) over a small projection and only when the
         // sort actually changed or the table mutated.
+        //
+        // Off-main: Transformations.map(...) invokes the function on the
+        // main thread. The aggregator walks the full download table —
+        // hundreds to thousands of rows on a long-running install — and
+        // that walk was blocking cold-start (Room emits the list LiveData
+        // after a background fetch, but the .map() handler ran inline on
+        // the dispatching thread, which is main for LiveData observers).
+        // mExecutor is the same single-threaded executor the paging
+        // filter / separator path already runs on, so re-using it here
+        // serialises all heavy paging-side work onto one background
+        // thread instead of fragmenting it across the main looper.
         mDownloadAggregates = Transformations.switchMap(mStateTrigger, state ->
-                Transformations.map(mRepository.getAllRegularLive(),
-                        list -> DownloadAggregator.aggregate(list, state.sortType)));
+                aggregatesOffMain(mRepository.getAllRegularLive(), state.sortType));
         mSafeAggregates = Transformations.switchMap(mStateTrigger, state ->
-                Transformations.map(mRepository.getAllSafeLive(),
-                        list -> DownloadAggregator.aggregate(list, state.sortType)));
+                aggregatesOffMain(mRepository.getAllSafeLive(), state.sortType));
+    }
+
+    private LiveData<Map<Integer, GroupAggregate>> aggregatesOffMain(
+            LiveData<List<DownloadEntity>> source, int sortType) {
+        MediatorLiveData<Map<Integer, GroupAggregate>> mediator = new MediatorLiveData<>();
+        mediator.addSource(source, list -> {
+            if (list == null) {
+                mediator.postValue(java.util.Collections.emptyMap());
+                return;
+            }
+            // Dispatch off the main looper; postValue routes the result
+            // back to observers on the main thread, which is what
+            // Transformations.map would normally provide.
+            mExecutor.execute(() ->
+                    mediator.postValue(DownloadAggregator.aggregate(list, sortType)));
+        });
+        return mediator;
     }
 
     @Override
