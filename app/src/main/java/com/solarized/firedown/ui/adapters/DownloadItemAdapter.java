@@ -107,8 +107,16 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                         com.google.android.material.R.attr.colorPrimaryContainer, Color.TRANSPARENT));
         mRequestOptions = new RequestOptions();
 
-        mDefaultListBg = MaterialColors.getColor(context,
-                com.google.android.material.R.attr.colorSurface, Color.TRANSPARENT);
+        // Default list-row card background is transparent — the
+        // RecyclerView's parent already paints colorSurface, so
+        // resolving the attr and re-painting the same colour on every
+        // card was a no-op. The selected wash still blends primaryContainer
+        // over the resolved colorSurface (selectedCardWashOver does
+        // need a concrete base to layer onto; without it the 20% alpha
+        // would read as a faint hint instead of a clear wash). Grid
+        // tiles do live on a different elevation (colorSurfaceContainerHigh)
+        // than the page, so their default still resolves the attr.
+        mDefaultListBg = Color.TRANSPARENT;
         mDefaultGridBg = MaterialColors.getColor(context,
                 com.google.android.material.R.attr.colorSurfaceContainerHigh, Color.TRANSPARENT);
         mSelectedListBg = SelectionStyling.selectedCardWashOver(context,
