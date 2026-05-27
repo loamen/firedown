@@ -342,6 +342,45 @@ public class FFmpegOkhttp {
             Log.e(TAG, "okhttpOpen failed: " + mUrl, e);
             okhttpClose();
             return FFMPEG_AVERROR_EOF;
+        } catch (Throwable t) {
+            // okhttp's blocking call paths (e.g.
+            // FastFallbackExchangeFinder.awaitTcpConnect →
+            // LinkedBlockingDeque.poll) sit on top of Kotlin code that
+            // doesn't enforce checked-exception declarations at compile
+            // time. When the calling thread is interrupted mid-flight
+            // (DownloadRunnable.stop → Thread.interrupt() from
+            // RunnableManager.finishDownloadToExecutor), poll() raises
+            // InterruptedException, which propagates through okhttp's
+            // Kotlin frames and out of okHttpClient.newCall(...).execute()
+            // — neither declared on the Java signature nor a subtype of
+            // IOException, so the IOException catch above misses it.
+            //
+            // Net effect of the old code: the exception bubbles out of
+            // okhttpOpen back into the native JNI caller with a PENDING
+            // exception set on the JNIEnv. The next native→Java call
+            // (any JNI CallXMethod / GetField, including the FFmpeg
+            // av_log path that calls back into our log callback) trips
+            // CheckJNI's pending-exception assertion and aborts the
+            // process with "JNI DETECTED ERROR IN APPLICATION:
+            // JNI CallObjectMethod called with pending exception
+            // java.lang.InterruptedException".
+            //
+            // Catch Throwable so anything that escapes okhttp (the
+            // interrupt path, OOM mid-allocation, an okhttp
+            // assertion, a transitive RuntimeException) is swallowed
+            // here and returned as AVERROR_EOF — FFmpeg cleanly winds
+            // its read loop, the download thread exits, no zombie
+            // exception left on the JNIEnv.
+            //
+            // Restore the interrupt status so any Java-side cleanup
+            // code that polls Thread.interrupted() further up still
+            // sees the request.
+            if (t instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            Log.e(TAG, "okhttpOpen aborted: " + mUrl, t);
+            okhttpClose();
+            return FFMPEG_AVERROR_EOF;
         }
     }
 
@@ -479,6 +518,16 @@ public class FFmpegOkhttp {
             }
 
         } catch (IOException e) {
+            return FFMPEG_AVERROR_EOF;
+        } catch (Throwable t) {
+            // Same trap as okhttpOpen — see the comment there. The read
+            // path can also block in okhttp's connection-related code
+            // (range-chunking re-opens, server-side EOF reconnects), so
+            // an interrupt mid-read manifests with the same
+            // InterruptedException-leaks-to-JNI shape.
+            if (t instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             return FFMPEG_AVERROR_EOF;
         }
     }
