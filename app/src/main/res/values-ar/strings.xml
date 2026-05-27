@@ -295,6 +295,8 @@
     <string name="switch_to_tab_description">انتقل إلى اللسان</string>
 <string name="task_encryption_finished">تم الانتهاء من التشفير</string>
     <string name="task_gif_finished">تم إنشاء GIF</string>
+    <string name="task_gif_cancelled">تم إلغاء إنشاء GIF</string>
+    <string name="task_audio_cancelled">تم إلغاء استخراج الصوت</string>
     <string name="vault_decrypting">جارٍ فك تشفير الملف، يرجى الانتظار…</string>
     <string name="vault_encrypting">يتم الآن تشفير الملف، الرجاء الانتظار…</string>
     <string name="vault_unsupported">لا يمكن فتح هذا الملف. لفتحه، انقله خارج المجلد الآمن وحاول مرة أخرى.</string>

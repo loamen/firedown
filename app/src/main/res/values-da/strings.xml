@@ -284,6 +284,8 @@
 <string name="task_decryption_finished">Dekryptering er afsluttet</string>
     <string name="task_encryption_finished">Kryptering er afsluttet</string>
     <string name="task_gif_finished">GIF oprettet</string>
+    <string name="task_gif_cancelled">GIF-oprettelse annulleret</string>
+    <string name="task_audio_cancelled">Lydudtræk annulleret</string>
     <string name="vault_decrypting">Dekrypterer fil, vent venligst…</string>
     <string name="vault_encrypting">Krypterer fil, vent venligst…</string>
     <string name="vault_unsupported">Kan ikke åbne denne fil. For at åbne skal du flytte den ud af sikker mappe og prøve igen.</string>

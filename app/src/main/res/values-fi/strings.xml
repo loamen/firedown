@@ -288,6 +288,8 @@
 <string name="task_decryption_finished">Salauksen purku on valmis</string>
     <string name="task_encryption_finished">Salaus valmis</string>
     <string name="task_gif_finished">GIF luotu</string>
+    <string name="task_gif_cancelled">GIF-luonti peruutettu</string>
+    <string name="task_audio_cancelled">Äänen poiminta peruutettu</string>
     <string name="vault_decrypting">Puretaan tiedostoa, odota…</string>
     <string name="vault_encrypting">Salataan tiedostoa, odota…</string>
     <string name="vault_unsupported">Tätä tiedostoa ei voi avata. Avaa se siirtämällä se pois Turvakansiosta ja yritä uudelleen.</string>

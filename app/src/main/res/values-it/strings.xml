@@ -311,6 +311,8 @@
 <string name="task_decryption_finished">Decifratura completata</string>
     <string name="task_encryption_finished">Crittografia completata</string>
     <string name="task_gif_finished">GIF creata</string>
+    <string name="task_gif_cancelled">Creazione GIF annullata</string>
+    <string name="task_audio_cancelled">Estrazione audio annullata</string>
     <string name="vault_decrypting">Decifratura file, attendere…</string>
     <string name="vault_encrypting">Crittografia file, attendere…</string>
     <string name="vault_unsupported">Impossibile aprire questo file. Per aprirlo, spostalo fuori dalla Cartella di sicurezza e riprova.</string>

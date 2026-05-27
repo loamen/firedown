@@ -310,6 +310,8 @@
 <string name="task_decryption_finished">복호화 완료</string>
     <string name="task_encryption_finished">암호화 완료</string>
     <string name="task_gif_finished">GIF 생성됨</string>
+    <string name="task_gif_cancelled">GIF 생성 취소됨</string>
+    <string name="task_audio_cancelled">오디오 추출 취소됨</string>
     <string name="vault_decrypting">파일을 해독하는 중입니다. 잠시 기다려 주십시오…</string>
     <string name="vault_encrypting">파일을 암호화하는 중입니다. 잠시 기다려 주세요…</string>
     <string name="vault_unsupported">이 파일을 열 수 없습니다. 열려면 보안 폴더 밖으로 이동한 후 다시 시도하세요.</string>

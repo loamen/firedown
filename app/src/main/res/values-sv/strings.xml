@@ -227,6 +227,8 @@
     <string name="task_decryption_finished">Dekryptering avslutad</string>
     <string name="task_encryption_finished">Kryptering avslutad</string>
     <string name="task_gif_finished">GIF skapad</string>
+    <string name="task_gif_cancelled">GIF-skapande avbrutet</string>
+    <string name="task_audio_cancelled">Ljudextrahering avbruten</string>
     <string name="vault_decrypting">Dekrypterar fil, vänta…</string>
     <string name="vault_encrypting">Krypterar fil, vänta…</string>
     <string name="vault_unsupported">Det går inte att öppna den här filen. För att öppna, flytta den från Säker mapp och försök igen.</string>
