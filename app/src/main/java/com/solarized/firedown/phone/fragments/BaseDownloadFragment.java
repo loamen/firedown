@@ -202,6 +202,23 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment implements 
                 } else if (handle.contains(IntentActions.ACTION_TASK)) {
                     handleTaskCancellation();
                     handle.remove(IntentActions.ACTION_TASK);
+                } else if (handle.contains(IntentActions.DOWNLOAD_START_MAKE_GIF)) {
+                    // GifMakerFragment hands its params back here instead
+                    // of starting the service itself, so the resulting
+                    // TaskEvent.Started lands while DownloadFragment's
+                    // observer is active and handleTaskStart actually
+                    // gets to show the bottom progress bar (mirrors the
+                    // audio-encode flow). See the explanation comment in
+                    // GifMakerFragment.startGifMakerTask.
+                    Bundle gifArgs = handle.get(IntentActions.DOWNLOAD_START_MAKE_GIF);
+                    handle.remove(IntentActions.DOWNLOAD_START_MAKE_GIF);
+                    if (gifArgs != null && mActivity != null) {
+                        Intent gifIntent = new Intent(mActivity, com.solarized.firedown.manager.TaskManager.class);
+                        gifIntent.setAction(IntentActions.DOWNLOAD_START_MAKE_GIF);
+                        gifIntent.putExtras(gifArgs);
+                        mActivity.startService(gifIntent);
+                        mOperationActive = true;
+                    }
                 }
             }
         };

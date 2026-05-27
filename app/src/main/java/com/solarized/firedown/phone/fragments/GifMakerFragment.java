@@ -525,14 +525,46 @@ public class GifMakerFragment extends BaseFocusFragment {
         ArrayList<DownloadEntity> entities = new ArrayList<>(1);
         entities.add(mDownloadEntity);
 
-        Intent intent = new Intent(requireContext(), TaskManager.class);
-        intent.setAction(IntentActions.DOWNLOAD_START_MAKE_GIF);
-        intent.putExtra(Keys.ITEM_LIST_ID, entities);
-        intent.putExtra(Keys.GIF_START_MS, start);
-        intent.putExtra(Keys.GIF_END_MS, end);
-        intent.putExtra(Keys.GIF_FPS, currentFps());
-        intent.putExtra(Keys.GIF_WIDTH, FFmpegGifMaker.DEFAULT_WIDTH);
-        requireContext().startService(intent);
+        // Hand the params back to DownloadFragment via the previous
+        // back-stack entry's SavedStateHandle instead of starting the
+        // service from here. Why: this fragment sits on top of
+        // DownloadFragment, so DownloadFragment's TaskEvent observer is
+        // PAUSED while we're foregrounded. If we fired the intent here
+        // and popped back, TaskEvent.Started would land on the shared
+        // LiveData with no active observer; by the time DownloadFragment
+        // resumes the value might have been overwritten by a Progress
+        // event (FFmpeg gif encoding fires Progress within a few
+        // hundred ms of Started), and handleTaskStart — the only thing
+        // that calls mBottomProgressView.setVisibility(VISIBLE) — never
+        // runs. Net visible bug: bottom progress bar never appears for
+        // gif tasks even though it does for audio.
+        //
+        // Mirror the audio-encode path instead: DownloadFragment kicks
+        // the service intent itself, while still resumed, so the
+        // Started event is delivered live to the active observer.
+        Bundle gifArgs = new Bundle();
+        gifArgs.putParcelableArrayList(Keys.ITEM_LIST_ID, entities);
+        gifArgs.putLong(Keys.GIF_START_MS, start);
+        gifArgs.putLong(Keys.GIF_END_MS, end);
+        gifArgs.putInt(Keys.GIF_FPS, currentFps());
+        gifArgs.putInt(Keys.GIF_WIDTH, FFmpegGifMaker.DEFAULT_WIDTH);
+
+        androidx.navigation.NavBackStackEntry previous = mNavController.getPreviousBackStackEntry();
+        if (previous != null) {
+            previous.getSavedStateHandle().set(IntentActions.DOWNLOAD_START_MAKE_GIF, gifArgs);
+        } else {
+            // Defensive fallback: nothing to return to (deep link?). Fire
+            // the intent directly. The bottom bar may not show in this
+            // edge case but the gif still gets made.
+            Intent intent = new Intent(requireContext(), TaskManager.class);
+            intent.setAction(IntentActions.DOWNLOAD_START_MAKE_GIF);
+            intent.putExtra(Keys.ITEM_LIST_ID, entities);
+            intent.putExtra(Keys.GIF_START_MS, start);
+            intent.putExtra(Keys.GIF_END_MS, end);
+            intent.putExtra(Keys.GIF_FPS, currentFps());
+            intent.putExtra(Keys.GIF_WIDTH, FFmpegGifMaker.DEFAULT_WIDTH);
+            requireContext().startService(intent);
+        }
 
         NavigationUtils.popBackStackSafe(mNavController, R.id.gif_maker);
     }
