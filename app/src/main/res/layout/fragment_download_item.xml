@@ -43,25 +43,36 @@
 
         <!-- Horizontal margin intentionally 0 so the thumbnail sits flush
              against the card edge, matching grid mode where the tile *is*
-             the thumbnail. With list_margin on the sides too, list-row
-             content sat 8dp further in than grid tiles and 8dp further
-             in than the section headers (which use list_spacing from
-             screen edge), making the header look offset to the left of
-             everything beneath it. Keep top/bottom margin for vertical
-             breathing room — without it the action button at the right
-             edge would hug the card stroke. -->
+             the thumbnail. Vertical: 4dp top + 4dp bottom is the minimum
+             that keeps the thumbnail's 4dp rounded corner from visually
+             colliding with the 8dp card corner + 2dp stroke; further
+             padding would just bulk the row without changing the look.
+             Combined with the 72dp thumbnail below, the total inner card
+             height is 80dp — M3 three-line-list territory, matching the
+             filename + mime · domain + status text rows in the column
+             beside the thumbnail. -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/list_margin"
-            android:layout_marginBottom="@dimen/list_margin"
-            android:minHeight="@dimen/list_download_image_height">
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="4dp"
+            android:minHeight="72dp">
 
-            <!-- Thumbnail -->
+            <!-- Thumbnail. 72x72 square — M3 list-with-thumbnail metric,
+                 large enough to balance the three-line text column on
+                 its right without overshooting into 'media tile'
+                 territory. The previous 78x64 inherited from earlier
+                 layouts had an unusual ~1.22:1 aspect that left video
+                 thumbnails letterboxed inside the row; square +
+                 centerCrop gives a tighter visual. The dimens
+                 list_download_image_width / _height are still shared
+                 with browser-options and tabs list rows, so the values
+                 here are intentionally inline rather than a dimen
+                 rename. -->
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/image"
-                android:layout_width="@dimen/list_download_image_width"
-                android:layout_height="@dimen/list_download_image_height"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
                 android:adjustViewBounds="true"
                 android:background="@drawable/mask_image_rounded"
                 android:contentDescription="@null"
