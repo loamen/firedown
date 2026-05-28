@@ -581,8 +581,20 @@ import { PageStore } from './pagestore.js';
                 tabId = tab.id;
             }
             const items = pageBlocksList(tabId);
-            console.log('[firedown] pushPageBlocks tabId=' + tabId
-                + ' items=' + items.length);
+            // Diagnostic: piggyback the full pageBlocks map state on the
+            // response so Java's existing logcat (handleUblockMessage)
+            // surfaces what's actually stored. The console.log path
+            // doesn't reach the user's logcat filter because WebExt
+            // console output goes through GeckoConsole, not
+            // GeckoRuntimeHelper. Remove this "_debug" block once the
+            // pageBlocks-empty bug is resolved — temporary scaffolding.
+            const debugDump = {};
+            for (const [k, v] of pageBlocks) {
+                debugDump[k] = {};
+                for (const [host, count] of v) {
+                    debugDump[k][host] = count;
+                }
+            }
             browser.runtime.sendNativeMessage("ublock", {
                 pageBlocks: {
                     tabId,
@@ -593,6 +605,12 @@ import { PageStore } from './pagestore.js';
                     // itself.
                     isIncognito: incognitoTabIds.has(tabId),
                     items,
+                    _debug: {
+                        requestedTabId: tabId,
+                        requestedTabIdType: typeof tabIdArg,
+                        knownTabIds: Array.from(pageBlocks.keys()),
+                        allEntries: debugDump,
+                    },
                 }
             });
         } catch (_) { /* port not ready */ }
