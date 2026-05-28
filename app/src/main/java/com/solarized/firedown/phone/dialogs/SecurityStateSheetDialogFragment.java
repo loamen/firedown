@@ -120,10 +120,11 @@ public class SecurityStateSheetDialogFragment extends BaseBottomSheetDialogFragm
         // - Trackers card → BlockedTrackersDetailDialogFragment (ETP blocks)
         // Both nav actions popUpTo dialog_security_info inclusive, so
         // back from a detail sheet returns to the browser rather than
-        // re-opening the security parent (mirrors the prior summary-row
-        // behavior). The Trackers card only fires when ETP is on for
-        // this site and at least one tracker has been blocked — drilling
-        // into "zero blocked" wouldn't show anything useful.
+        // re-opening the security parent. Both fragments paint their
+        // own "nothing blocked yet" empty state, so the rows always
+        // open regardless of count — the prior tracker-row gating
+        // (require ETP on + count > 0) gave the two rows inconsistent
+        // tap affordances.
         mAdsStatCard.setOnClickListener(v -> {
             Bundle args = new Bundle();
             args.putBoolean(Keys.IS_INCOGNITO, mIsIncognito);
@@ -133,7 +134,6 @@ public class SecurityStateSheetDialogFragment extends BaseBottomSheetDialogFragm
                     args);
         });
         mTrackersStatCard.setOnClickListener(v -> {
-            if (!mTrackingEnabledForSite || mTrackersBlockedTotal <= 0) return;
             Bundle args = new Bundle();
             args.putBoolean(Keys.IS_INCOGNITO, mIsIncognito);
             NavigationUtils.navigateSafe(mNavController,
