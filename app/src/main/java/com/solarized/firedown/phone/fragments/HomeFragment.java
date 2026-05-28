@@ -934,13 +934,16 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             }
         }
 
-        // Otherwise the newest non-home tab by creation date.
+        // Otherwise the most recently used non-home tab. Rank by
+        // lastAccess (bumped on every activation) rather than creation
+        // date, so re-visiting an older tab promotes it ahead of a
+        // newer-but-untouched one.
         if (target == null) {
             java.util.List<GeckoStateEntity> tabs = mGeckoStateViewModel.getTabs().getValue();
             if (tabs != null) {
                 for (GeckoStateEntity entity : tabs) {
                     if (entity == null || entity.isHome() || entity.isIncognito()) continue;
-                    if (target == null || entity.getCreationDate() > target.getCreationDate()) {
+                    if (target == null || entity.getLastAccess() > target.getLastAccess()) {
                         target = entity;
                     }
                 }
