@@ -48,9 +48,4 @@
     <color name="md_theme_surfaceContainerHigh">#292A2C</color>
     <color name="md_theme_surfaceContainerHighest">#343537</color>
     <color name="md_theme_surfaceContainerLow_highContrast">#1B1B1E</color>
-
-    <!-- ~27 luminance units brighter than the #292A2C dark sheet bg
-         so the favicon tile reads as a raised chip. See the
-         values/colors.xml entry for rationale. -->
-    <color name="popup_favicon_background">#44474C</color>
 </resources>

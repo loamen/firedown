@@ -7,16 +7,10 @@
     coherent identity chip rather than floating on the sheet.
 
     The sheet itself paints colorSurfaceContainerHigh
-    (dialog_rounded_top.xml). In the standard theme that's
-    #E9E7EA (light) / #292A2C (dark); the standard sheet theme maps
-    popupFaviconBackgroundColor to @color/popup_favicon_background,
-    a night-qualified color whose values are picked per-mode for
-    visible contrast against the sheet bg (#FBF9FB in light, #44474C
-    in dark — ~18 and ~27 luminance units brighter, respectively).
-    The obvious M3 tokens don't have enough lift in both modes on
-    their own (colorSurfaceVariant disappears in light mode at only
-    ~5 units off the sheet bg; colorSurfaceBright is too close in
-    dark at ~16).
+    (dialog_rounded_top.xml). In the standard theme the favicon
+    tile uses colorSurfaceVariant (#E1E2E9 light / #44474C dark) —
+    the same tone the chip shipped with before the incognito-aware
+    rework.
 
     Incognito sheets paint a purple container_high (#4a2779) instead
     — there a gray-blue tone would clash with the purple, so the
