@@ -119,6 +119,37 @@ public class App extends Application implements Configuration.Provider{
         // shortcuts DB. Idempotent — guarded by a SharedPreferences
         // flag and a presence check for the legacy DB file.
         mLegacyShortcutsMigrator.runIfNeeded();
+
+        migrateDohServerPref();
+    }
+
+    /**
+     * Migrate the DoH provider selection from the old positional index
+     * ("0".."5" into settings_doh_servers) to the new URL-valued scheme
+     * where SETTINGS_DOH stores the endpoint URL itself, or the "custom"
+     * sentinel. Idempotent: a migrated value is a URL or "custom", neither
+     * of which matches the numeric guard, so this no-ops on every run after
+     * the first. A null value (never set) is left for the ListPreference
+     * default to fill in.
+     */
+    private void migrateDohServerPref() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(mAppContext);
+        String value = prefs.getString(Preferences.SETTINGS_DOH, null);
+        if (value == null || !value.matches("\\d+")) return;
+
+        int index;
+        try {
+            index = Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return;
+        }
+        // servers[0..4] are URLs, servers[5] is the "custom" sentinel, so a
+        // single in-range lookup covers both presets and custom.
+        String[] servers = getResources().getStringArray(R.array.settings_doh_servers);
+        String mapped = (index >= 0 && index < servers.length)
+                ? servers[index]
+                : Preferences.DEFAULT_SETTINGS_DOH;
+        prefs.edit().putString(Preferences.SETTINGS_DOH, mapped).apply();
     }
 
 

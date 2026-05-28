@@ -44,22 +44,22 @@
     </string-array>
 
 
+    <!--
+      DoH ListPreference entryValues. The persisted SETTINGS_DOH value IS
+      the DoH endpoint URL for presets; the trailing "custom" sentinel
+      means "use the user-entered URL in SETTINGS_DOH_CUSTOM". Order must
+      stay aligned with @array/settings_doh (display names). No positional
+      index is stored — reordering or inserting a provider can't remap a
+      user's saved choice, and there's no empty placeholder slot to
+      special-case.
+    -->
     <string-array name="settings_doh_servers">
         <item>https://mozilla.cloudflare-dns.com/dns-query</item>
         <item>https://cloudflare-dns.com/dns-query</item>
         <item>https://dns.google/dns-query</item>
         <item>https://dns.quad9.net/dns-query</item>
         <item>https://dns.adguard-dns.com/dns-query</item>
-        <item></item>
-    </string-array>
-
-    <string-array name="settings_doh_values">
-        <item>0</item>
-        <item>1</item>
-        <item>2</item>
-        <item>3</item>
-        <item>4</item>
-        <item>5</item>
+        <item>custom</item>
     </string-array>
 
 

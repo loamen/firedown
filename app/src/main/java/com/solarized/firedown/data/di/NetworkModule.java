@@ -1,5 +1,8 @@
 package com.solarized.firedown.data.di;
 
+import android.content.SharedPreferences;
+
+import com.solarized.firedown.okhttp.DohDns;
 import com.solarized.firedown.okhttp.GzipInterceptor;
 import com.solarized.firedown.okhttp.OriginInterceptor;
 import com.solarized.firedown.okhttp.RateLimitInterceptor;
@@ -36,11 +39,26 @@ public class NetworkModule {
 
     @Provides
     @Singleton
-    public OkHttpClient provideOkHttpClient() {
+    public OkHttpClient provideOkHttpClient(SharedPreferences prefs) {
 
         List<Protocol> protocols = new ArrayList<>();
         protocols.add(Protocol.HTTP_1_1);
         protocols.add(Protocol.HTTP_2);
+
+        // Bootstrap client for DoH: a vanilla client (system DNS, none of
+        // the media interceptors) used solely to reach the DoH endpoint and
+        // to resolve its own host. Kept separate from the main client below
+        // so DohDns never recurses into itself.
+        OkHttpClient bootstrapClient = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build();
+
+        // Mirror the browser's DoH setting on the app's own networking:
+        // when the DoH toggle is on, resolve through the configured server
+        // and fall back to system DNS on error; when off, straight
+        // system-DNS pass-through (no added latency). See DohDns.
+        DohDns dns = new DohDns(prefs, bootstrapClient);
 
         /*
          * Interceptor order matters. On requests, interceptors run top-down;
@@ -59,6 +77,7 @@ public class NetworkModule {
          *     prepared request and only fires once per physical call.
          */
         OkHttpClient client = new OkHttpClient.Builder()
+                .dns(dns)
                 .addInterceptor(new OriginInterceptor())
                 .addInterceptor(new GzipInterceptor())
                 .addInterceptor(new TSInterceptor())

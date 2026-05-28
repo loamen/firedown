@@ -10,9 +10,9 @@
     </SwitchPreferenceCompat>
 
     <ListPreference
-        android:defaultValue="0"
+        android:defaultValue="https://mozilla.cloudflare-dns.com/dns-query"
         android:entries="@array/settings_doh"
-        android:entryValues="@array/settings_doh_values"
+        android:entryValues="@array/settings_doh_servers"
         android:key="com.solarized.firedown.preferences.browser.doh"
         android:title="@string/settings_doh_server_title"
         app:enabled="false"
