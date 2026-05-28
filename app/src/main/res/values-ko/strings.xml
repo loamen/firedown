@@ -9,7 +9,7 @@
     <string name="browser_bookmark_added">북마크가 저장되었습니다!</string>
     <string name="browser_cache_cleared">인터넷 사용정보가 삭제되었습니다</string>
     <string name="browser_desktop">데스크톱 사이트</string>
-    <string name="browser_enter_url">검색하거나 URL을 입력하세요.</string>
+    <string name="browser_enter_url">검색하거나 URL을 입력하세요</string>
     <string name="browser_error_image_title">불이 사라졌습니다</string>
     <string name="browser_find_in_page">페이지에서 찾기</string>
     <string name="browser_menu_back">뒤로</string>

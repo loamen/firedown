@@ -6,7 +6,7 @@
     <string name="browser_bookmark_added">Отметката е запазена!</string>
     <string name="browser_cache_cleared">Данните за сърфирането са изчистени</string>
     <string name="browser_desktop">Сайт на десктопа</string>
-    <string name="browser_enter_url">Търсете или въведете URL.</string>
+    <string name="browser_enter_url">Търсете или въведете URL</string>
     <string name="browser_error_image_title">Огънят изчезна</string>
     <string name="browser_find_in_page">Търсене в страницата</string>
     <string name="browser_menu_back">Назад</string>

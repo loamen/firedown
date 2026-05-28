@@ -6,7 +6,7 @@
     <string name="browser_bookmark_added">تم حفظ الإشارة المرجعية!</string>
     <string name="browser_cache_cleared">تم مسح بيانات التصفح</string>
     <string name="browser_desktop">موقع سطح المكتب</string>
-    <string name="browser_enter_url">ابحث أو اكتب عنوان URL.</string>
+    <string name="browser_enter_url">ابحث أو اكتب عنوان URL</string>
     <string name="browser_error_image_title">ذهب النار</string>
     <string name="browser_find_in_page">ابحث في الصفحة</string>
     <string name="browser_menu_back">السابق</string>

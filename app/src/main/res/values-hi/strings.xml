@@ -6,7 +6,7 @@
     <string name="browser_bookmark_added">बुकमार्क सहेजा गया!</string>
     <string name="browser_cache_cleared">ब्राउज़िंग डेटा साफ़ किया गया</string>
     <string name="browser_desktop">डेस्कटॉप साइट</string>
-    <string name="browser_enter_url">URL खोजें या टाइप करें.</string>
+    <string name="browser_enter_url">URL खोजें या टाइप करें</string>
     <string name="browser_error_image_title">आग ख़त्म हो गई है</string>
     <string name="browser_find_in_page">पेज में ढूंढें</string>
     <string name="browser_settings">सेटिंग्स</string>

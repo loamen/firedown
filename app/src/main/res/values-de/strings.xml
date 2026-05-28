@@ -9,7 +9,7 @@
     <string name="browser_bookmark_added">Lesezeichen gespeichert!</string>
     <string name="browser_cache_cleared">Browserdaten gelöscht</string>
     <string name="browser_desktop">Desktop-Site</string>
-    <string name="browser_enter_url">Suchen oder geben Sie die URL ein.</string>
+    <string name="browser_enter_url">Suchen oder geben Sie die URL ein</string>
     <string name="browser_error_image_title">Das Feuer ist weg</string>
     <string name="browser_find_in_page">Seite durchsuchen</string>
     <string name="browser_menu_back">Zurück</string>

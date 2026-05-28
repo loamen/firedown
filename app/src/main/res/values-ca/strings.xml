@@ -6,7 +6,7 @@
     <string name="browser_bookmark_added">Marcador desat!</string>
     <string name="browser_cache_cleared">S\'han esborrat les dades de navegació</string>
     <string name="browser_desktop">Lloc d\'escriptori</string>
-    <string name="browser_enter_url">Cerqueu o escriviu l\'URL.</string>
+    <string name="browser_enter_url">Cerqueu o escriviu l\'URL</string>
     <string name="browser_error_image_title">El foc està apagat</string>
     <string name="browser_find_in_page">Cerca a la pàgina</string>
     <string name="browser_menu_back">Enrere</string>

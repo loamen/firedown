@@ -6,7 +6,7 @@
     <string name="browser_bookmark_added">Järjehoidja salvestatud!</string>
     <string name="browser_cache_cleared">Sirvimisandmed on kustutatud</string>
     <string name="browser_desktop">Töölaua sait</string>
-    <string name="browser_enter_url">Otsige või sisestage URL.</string>
+    <string name="browser_enter_url">Otsige või sisestage URL</string>
     <string name="browser_error_image_title">Tuli on kadunud</string>
     <string name="browser_find_in_page">Otsi lehelt</string>
     <string name="browser_menu_back">Tagasi</string>

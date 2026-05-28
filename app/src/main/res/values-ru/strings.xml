@@ -9,7 +9,7 @@
     <string name="browser_bookmark_added">Закладка сохранена!</string>
     <string name="browser_cache_cleared">Данные о просмотре удалены</string>
     <string name="browser_desktop">Десктопный сайт</string>
-    <string name="browser_enter_url">Найдите или введите URL-адрес.</string>
+    <string name="browser_enter_url">Найдите или введите URL-адрес</string>
     <string name="browser_error_image_title">Огонь ушел</string>
     <string name="browser_find_in_page">Найти на странице</string>
     <string name="browser_menu_back">Назад</string>

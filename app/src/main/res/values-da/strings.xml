@@ -6,7 +6,7 @@
     <string name="browser_bookmark_added">Bogmærke er gemt!</string>
     <string name="browser_cache_cleared">Browserdata blev ryddet</string>
     <string name="browser_desktop">Desktop websted</string>
-    <string name="browser_enter_url">Søg eller indtast URL.</string>
+    <string name="browser_enter_url">Søg eller indtast URL</string>
     <string name="browser_error_image_title">Ilden er væk</string>
     <string name="browser_find_in_page">Find på siden</string>
     <string name="browser_menu_back">Tilbage</string>
