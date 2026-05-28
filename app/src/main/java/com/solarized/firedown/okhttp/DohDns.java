@@ -1,13 +1,11 @@
 package com.solarized.firedown.okhttp;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import com.solarized.firedown.Preferences;
-import com.solarized.firedown.R;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -36,9 +34,10 @@ import okhttp3.dnsoverhttps.DnsOverHttps;
  * is zero added latency for users who never enabled DoH.
  *
  * <p>The server URL is resolved per-lookup from SharedPreferences using the
- * exact same selection logic as {@code DohFragment.applyDohToGecko} (server
- * index into {@code R.array.settings_doh_servers}, or the custom URL when
- * the index is {@link Preferences#SETTINGS_DOH_CUSOTM_INT}). The built
+ * exact same logic as {@code DohFragment.resolveDohUri}: the persisted
+ * SETTINGS_DOH value is itself the endpoint URL for presets, or the
+ * user-entered SETTINGS_DOH_CUSTOM when the {@link
+ * Preferences#SETTINGS_DOH_CUSTOM_VALUE} sentinel is selected. The built
  * {@link DnsOverHttps} instance is cached and only rebuilt when the
  * resolved URL changes, so flipping the setting at runtime is picked up
  * without rebuilding the (immutable) OkHttpClient.
@@ -47,7 +46,6 @@ public final class DohDns implements Dns {
 
     private static final String TAG = "DohDns";
 
-    private final Context appContext;
     private final SharedPreferences prefs;
     /**
      * Plain client used only to fetch from the DoH endpoint. Must NOT be the
@@ -64,10 +62,8 @@ public final class DohDns implements Dns {
     private volatile String cachedUrl;
     private volatile DnsOverHttps cachedDoh;
 
-    public DohDns(@NonNull Context appContext,
-                  @NonNull SharedPreferences prefs,
+    public DohDns(@NonNull SharedPreferences prefs,
                   @NonNull OkHttpClient bootstrapClient) {
-        this.appContext = appContext.getApplicationContext();
         this.prefs = prefs;
         this.bootstrapClient = bootstrapClient;
     }
@@ -122,27 +118,16 @@ public final class DohDns implements Dns {
 
     /**
      * Resolves the configured DoH endpoint URL. Mirrors
-     * {@code DohFragment.applyDohToGecko}: a server index into
-     * {@code settings_doh_servers}, except the custom slot
-     * ({@link Preferences#SETTINGS_DOH_CUSOTM_INT}) which reads the
-     * user-entered URL.
+     * {@code DohFragment.resolveDohUri}: the persisted SETTINGS_DOH value is
+     * itself the endpoint URL for presets, or the user-entered
+     * SETTINGS_DOH_CUSTOM when the custom sentinel is selected.
      */
     private String resolveServerUrl() {
-        int index;
-        try {
-            index = Integer.parseInt(prefs.getString(
-                    Preferences.SETTINGS_DOH, Preferences.DEFAULT_SETTINGS_DOH));
-        } catch (NumberFormatException e) {
-            index = 0;
-        }
-        if (index == Preferences.SETTINGS_DOH_CUSOTM_INT) {
+        String value = prefs.getString(
+                Preferences.SETTINGS_DOH, Preferences.DEFAULT_SETTINGS_DOH);
+        if (Preferences.SETTINGS_DOH_CUSTOM_VALUE.equals(value)) {
             return prefs.getString(Preferences.SETTINGS_DOH_CUSTOM, "");
         }
-        String[] servers = appContext.getResources()
-                .getStringArray(R.array.settings_doh_servers);
-        if (index < 0 || index >= servers.length) {
-            return null;
-        }
-        return servers[index];
+        return value;
     }
 }

@@ -1,6 +1,5 @@
 package com.solarized.firedown.data.di;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.solarized.firedown.okhttp.DohDns;
@@ -18,7 +17,6 @@ import javax.inject.Singleton;
 import dagger.Module;
 import dagger.Provides;
 import dagger.hilt.InstallIn;
-import dagger.hilt.android.qualifiers.ApplicationContext;
 import dagger.hilt.components.SingletonComponent;
 import okhttp3.OkHttpClient;
 import okhttp3.Protocol;
@@ -41,8 +39,7 @@ public class NetworkModule {
 
     @Provides
     @Singleton
-    public OkHttpClient provideOkHttpClient(@ApplicationContext Context context,
-                                            SharedPreferences prefs) {
+    public OkHttpClient provideOkHttpClient(SharedPreferences prefs) {
 
         List<Protocol> protocols = new ArrayList<>();
         protocols.add(Protocol.HTTP_1_1);
@@ -61,7 +58,7 @@ public class NetworkModule {
         // when the DoH toggle is on, resolve through the configured server
         // and fall back to system DNS on error; when off, straight
         // system-DNS pass-through (no added latency). See DohDns.
-        DohDns dns = new DohDns(context, prefs, bootstrapClient);
+        DohDns dns = new DohDns(prefs, bootstrapClient);
 
         /*
          * Interceptor order matters. On requests, interceptors run top-down;

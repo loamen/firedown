@@ -7,7 +7,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.preference.Preference;
+import androidx.preference.ListPreference;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.data.models.EditPreferenceViewModel;
@@ -23,7 +23,7 @@ public class DohFragment extends BasePreferenceFragment implements SharedPrefere
 
     private static final String TAG = DohFragment.class.getSimpleName();
     private EditPreferenceViewModel mEditPreferenceViewModel;
-    private Preference dohPreference;
+    private ListPreference dohPreference;
     private DohEditPreference dohEditPreference;
 
     @Override
@@ -73,7 +73,7 @@ public class DohFragment extends BasePreferenceFragment implements SharedPrefere
     private void refreshUiState() {
         boolean isDohEnabled = mSharedPreferences.getBoolean(Preferences.SETTINGS_DOH_SWITCH, false);
         String dohValue = mSharedPreferences.getString(Preferences.SETTINGS_DOH, Preferences.DEFAULT_SETTINGS_DOH);
-        int dohIndex = getDohInt(dohValue);
+        boolean isCustom = Preferences.SETTINGS_DOH_CUSTOM_VALUE.equals(dohValue);
 
         // Update Main DNS Preference
         if (dohPreference != null) {
@@ -81,29 +81,23 @@ public class DohFragment extends BasePreferenceFragment implements SharedPrefere
             dohPreference.setIcon(Utils.tintDrawable(mActivity, R.drawable.dns_24,
                     isDohEnabled ? R.color.md_theme_onSurfaceVariant : R.color.md_theme_surfaceVariant));
 
-            String[] names = getResources().getStringArray(R.array.settings_doh);
-            if (dohIndex < names.length) {
-                dohPreference.setSummary(names[dohIndex]);
+            // entries/entryValues are aligned, so the ListPreference resolves
+            // the display name for the current value itself.
+            CharSequence entry = dohPreference.getEntry();
+            if (entry != null) {
+                dohPreference.setSummary(entry);
             }
         }
 
         // Update Custom URL Preference
         if (dohEditPreference != null) {
-            boolean isCustom = (dohIndex == Preferences.SETTINGS_DOH_CUSOTM_INT);
             dohEditPreference.setEnabled(isDohEnabled && isCustom);
 
-            if (isCustom) {
-                // Show the user's saved custom URL — the custom slot in
-                // settings_doh_servers is an empty placeholder, so feeding
-                // that to the field would blank the input.
-                dohEditPreference.setTextInputText(
-                        mSharedPreferences.getString(Preferences.SETTINGS_DOH_CUSTOM, ""));
-            } else {
-                String[] servers = getResources().getStringArray(R.array.settings_doh_servers);
-                if (dohIndex < servers.length) {
-                    dohEditPreference.setTextInputText(servers[dohIndex]);
-                }
-            }
+            // Custom → show the user's saved URL; preset → the selected
+            // value already IS the endpoint URL, shown in the disabled field.
+            dohEditPreference.setTextInputText(isCustom
+                    ? mSharedPreferences.getString(Preferences.SETTINGS_DOH_CUSTOM, "")
+                    : dohValue);
         }
     }
 
@@ -115,17 +109,21 @@ public class DohFragment extends BasePreferenceFragment implements SharedPrefere
                 GeckoRuntimeSettings.TRR_MODE_FIRST : GeckoRuntimeSettings.TRR_MODE_OFF);
 
         if (enabled) {
-            String dohValue = mSharedPreferences.getString(Preferences.SETTINGS_DOH, Preferences.DEFAULT_SETTINGS_DOH);
-            int dohInt = getDohInt(dohValue);
-
-            if (dohInt == Preferences.SETTINGS_DOH_CUSOTM_INT) {
-                settings.setTrustedRecursiveResolverUri(mSharedPreferences.getString(
-                        Preferences.SETTINGS_DOH_CUSTOM, ""));
-            } else {
-                String[] servers = getResources().getStringArray(R.array.settings_doh_servers);
-                settings.setTrustedRecursiveResolverUri(servers[dohInt]);
-            }
+            settings.setTrustedRecursiveResolverUri(resolveDohUri());
         }
+    }
+
+    /**
+     * The configured DoH endpoint URL: the persisted SETTINGS_DOH value is
+     * itself the URL for presets, or the user-entered SETTINGS_DOH_CUSTOM
+     * when the custom sentinel is selected.
+     */
+    private String resolveDohUri() {
+        String value = mSharedPreferences.getString(Preferences.SETTINGS_DOH, Preferences.DEFAULT_SETTINGS_DOH);
+        if (Preferences.SETTINGS_DOH_CUSTOM_VALUE.equals(value)) {
+            return mSharedPreferences.getString(Preferences.SETTINGS_DOH_CUSTOM, "");
+        }
+        return value;
     }
 
     @Override
@@ -137,14 +135,6 @@ public class DohFragment extends BasePreferenceFragment implements SharedPrefere
                 refreshUiState();
                 applyDohToGecko();
             }
-        }
-    }
-
-    private int getDohInt(String value) {
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            return 0;
         }
     }
 

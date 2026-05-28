@@ -4,7 +4,6 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import org.mozilla.geckoview.ContentBlocking;
-import org.mozilla.geckoview.GeckoRuntimeSettings;
 
 
 public class Preferences {
@@ -206,7 +205,13 @@ public class Preferences {
 
     public static final String SETTINGS_DOH_CUSTOM = "com.solarized.firedown.preferences.browser.doh.custom";
 
-    public static final int SETTINGS_DOH_CUSOTM_INT = 5;
+    /**
+     * Sentinel SETTINGS_DOH value meaning "use the user-entered URL in
+     * SETTINGS_DOH_CUSTOM". Every other SETTINGS_DOH value is itself a DoH
+     * endpoint URL (see @array/settings_doh_servers). Must match the
+     * trailing entryValue in that array.
+     */
+    public static final String SETTINGS_DOH_CUSTOM_VALUE = "custom";
 
     public static final String SETTINGS_TABS = "com.solarized.firedown.preferences.browser.tabs";
     public static final String SETTINGS_QUIT = "com.solarized.firedown.preferences.browser.quit";
@@ -223,7 +228,11 @@ public class Preferences {
 
     public static final String SETTINGS_COOKIES = "com.solarized.firedown.preferences.browser.cookies";
 
-    public static final String DEFAULT_SETTINGS_DOH = String.valueOf(GeckoRuntimeSettings.TRR_MODE_OFF);
+    // Default DoH endpoint when the toggle is enabled without an explicit
+    // pick. Must match the first entry of @array/settings_doh_servers.
+    // (DoH is gated by SETTINGS_DOH_SWITCH, off by default, so this only
+    // takes effect once the user turns DoH on.)
+    public static final String DEFAULT_SETTINGS_DOH = "https://mozilla.cloudflare-dns.com/dns-query";
 
     public static final String DEFAULT_SETTINGS_COOKIES = String.valueOf(ContentBlocking.CookieBehavior.ACCEPT_NON_TRACKERS);
 
