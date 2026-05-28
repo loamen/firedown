@@ -974,13 +974,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             mHomeReturnTabSubtitle.setVisibility(View.GONE);
         }
 
-        String icon = target.getIcon();
-        if (icon != null && !icon.isEmpty()) {
-            com.solarized.firedown.GlideHelper.load(icon, target.getUri(),
-                    mHomeReturnTabIcon, new com.bumptech.glide.request.RequestOptions());
-        } else {
-            mHomeReturnTabIcon.setImageDrawable(null);
-        }
+        // GlideHelper.load falls back to the generated domain thumbnail
+        // (same letter-tile generator used by the tabs / bookmarks
+        // lists) when the icon is missing or fails to load, so the card
+        // never shows a blank slot.
+        com.solarized.firedown.GlideHelper.load(target.getIcon(), target.getUri(),
+                mHomeReturnTabIcon, new com.bumptech.glide.request.RequestOptions());
     }
 
     @Nullable
