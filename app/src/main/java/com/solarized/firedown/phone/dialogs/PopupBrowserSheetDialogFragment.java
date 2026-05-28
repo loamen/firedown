@@ -250,6 +250,13 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
 
         mView.findViewById(R.id.popup_vault).setOnClickListener(view -> dispatch(
                 mIsIncognito ? R.id.popup_downloads : R.id.popup_vault));
+
+        // Fixed-meaning new-tab rows: New tab always opens a regular
+        // tab, New private tab always incognito — in both modes. The
+        // view ids differ from the dispatched ids, so dispatch inline
+        // rather than through the shared id-as-event onClick listener.
+        mView.findViewById(R.id.popup_new_tab).setOnClickListener(view -> dispatch(R.id.new_tab));
+        mView.findViewById(R.id.popup_new_incognito_tab).setOnClickListener(view -> dispatch(R.id.new_incognito_tab));
     }
 
 

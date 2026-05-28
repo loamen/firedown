@@ -158,6 +158,68 @@
                 android:layout_marginBottom="8dp" />
 
 
+            <!-- New tab — always opens a REGULAR tab (dispatches
+                 R.id.new_tab, which BrowserFragment forces to
+                 non-incognito), so from incognito chrome this is the
+                 explicit exit-to-normal-tab action. Mirrors the
+                 fixed-meaning rows browsers like Chrome/Firefox show. -->
+            <LinearLayout
+                android:id="@+id/popup_new_tab"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="16dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/popup_tabs_new"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="15sp"
+                    app:drawableStartCompat="@drawable/ic_web_24"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+
+            <!-- New private tab — always opens an INCOGNITO tab
+                 (dispatches R.id.new_incognito_tab). Fixed meaning in
+                 both modes, matching the New tab row above. -->
+            <LinearLayout
+                android:id="@+id/popup_new_incognito_tab"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawablePadding="16dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/open_new_private_tab_2"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="15sp"
+                    app:drawableStartCompat="@drawable/ic_incognito_24"
+                    app:drawableTint="?attr/colorOnSurfaceVariant" />
+
+            </LinearLayout>
+
+
             <!-- Bookmark page — drawableStart + label flip in
                  applyBookmarkState; dispatched id flips in bindRows. -->
             <LinearLayout

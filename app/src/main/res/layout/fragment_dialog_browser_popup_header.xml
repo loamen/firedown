@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Browser popup quick-row: page-context transient actions only —
-    Back · Forward · New tab · Share · Refresh. Bookmarking is a
+    Back · Forward · Share · Refresh. New-tab actions moved to the
+    body list (above Bookmark page) — they aren't page-context verbs
+    and the 5-up row was too cramped at 360dp. Bookmarking is a
     page-state toggle and lives as the first row of the page-state
     card below, not here.
 
-    Five equal columns. New tab is high-frequency enough to earn a
-    quick-row slot rather than burying it in the body; it sits next
-    to Forward so the navigation triplet (Back · Forward · New tab)
-    reads as a unit before the page-state pair (Share · Refresh).
-
-    All five buttons share Firedown.Widget.PopupQuickRowButton —
-    zero inset + 0dp inner horizontal padding + 11sp text — so at
-    5-up the labels fit on a 360dp screen and long localised labels
+    Four equal columns. All buttons share
+    Firedown.Widget.PopupQuickRowButton — zero inset + 0dp inner
+    horizontal padding + 11sp text — so long localised labels
     (e.g. de "Aktualisieren") still render in one ellipsised line
     rather than wrapping or pushing the icon stack off-centre.
 -->
@@ -38,17 +35,6 @@
         style="@style/Firedown.Widget.PopupQuickRowButton"
         app:icon="@drawable/ic_arrow_forward_24"
         android:text="@string/browser_menu_forward" />
-
-
-    <!-- New tab: reuses @id/new_tab so the popup's view-id-as-
-         dispatch wire matches BrowserFragment's existing handler
-         (BrowserFragment.onOptionSelected R.id.new_tab branch) —
-         no fragment changes needed. -->
-    <com.solarized.firedown.ui.browser.BasicBrowserButton
-        android:id="@id/new_tab"
-        style="@style/Firedown.Widget.PopupQuickRowButton"
-        app:icon="@drawable/add_24"
-        android:text="@string/popup_tabs_new" />
 
 
     <com.solarized.firedown.ui.browser.ShareBrowserButton

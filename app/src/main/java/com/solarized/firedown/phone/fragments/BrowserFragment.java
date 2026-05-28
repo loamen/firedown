@@ -625,14 +625,19 @@ public class BrowserFragment extends BaseBrowserFragment
                     mBrowserDialogViewModel.setLoading(false);
                 }
             } else if(id == R.id.new_tab){
-                boolean isIncognito = mIsIncognitoThemed;
+                // Fixed meaning: New tab always opens a REGULAR tab,
+                // even from incognito chrome (where it acts as the
+                // explicit exit-to-normal-tab action). The incognito
+                // counterpart is R.id.new_incognito_tab below. Matches
+                // the new-tab picker, which labels this option with the
+                // regular-web icon alongside the incognito one.
                 GeckoStateEntity geckoStateEntity = new GeckoStateEntity(true);
-                geckoStateEntity.setIncognito(isIncognito);
+                geckoStateEntity.setIncognito(false);
                 // Route through setActiveSession so creation and repo-insert
                 // stay consistent across the codebase and repo lookup-first
                 // semantics are preserved.
                 setActiveSession(geckoStateEntity, true);
-                popToCorrectHome(isIncognito);
+                popToCorrectHome(false);
             } else if(id == R.id.new_incognito_tab){
                 GeckoStateEntity geckoStateEntity = new GeckoStateEntity(true);
                 geckoStateEntity.setIncognito(true);
