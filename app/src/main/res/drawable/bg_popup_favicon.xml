@@ -6,20 +6,15 @@
     favicon (square, transparent, monochrome) reads as a single
     coherent identity chip rather than floating on the sheet.
 
-    The sheet itself paints colorSurfaceContainerHigh
-    (dialog_rounded_top.xml). In the standard theme the favicon
-    tile uses colorSurfaceVariant (#E1E2E9 light / #44474C dark) —
-    the same tone the chip shipped with before the incognito-aware
-    rework.
-
-    Incognito sheets paint a purple container_high (#4a2779) instead
-    — there a gray-blue tone would clash with the purple, so the
-    incognito sheet theme remaps popupFaviconBackgroundColor to
-    incognito_surface_container_highest (#553090), which stays in the
-    purple family while still reading as a tile.
+    Uses ?attr/colorSurfaceVariant directly so the drawable resolves
+    correctly regardless of inflation context — a custom theme attr
+    didn't resolve in some inflater contexts and the frame
+    disappeared. The incognito sheet theme overrides
+    colorSurfaceVariant to a purple-family tone so the tile reads
+    against the purple sheet bg instead of clashing as gray.
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="?attr/popupFaviconBackgroundColor" />
+    <solid android:color="?attr/colorSurfaceVariant" />
     <corners android:radius="10dp" />
 </shape>
