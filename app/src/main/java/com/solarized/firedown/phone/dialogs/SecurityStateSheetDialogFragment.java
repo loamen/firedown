@@ -1,6 +1,7 @@
 package com.solarized.firedown.phone.dialogs;
 
 import android.app.Dialog;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -29,6 +30,7 @@ import com.solarized.firedown.geckoview.GeckoResources;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.TrackingCategory;
 import com.solarized.firedown.Keys;
+import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.utils.NavigationUtils;
 import com.solarized.firedown.utils.UrlStringUtils;
 import com.solarized.firedown.utils.WebUtils;
@@ -151,6 +153,16 @@ public class SecurityStateSheetDialogFragment extends BaseBottomSheetDialogFragm
         // has already painted (favicon resolution is async and routinely
         // races the user opening this dialog).
         mHostImage = mView.findViewById(R.id.host_image);
+
+        // bg_popup_favicon resolves to ?attr/colorSurfaceVariant which
+        // lands on a gray-blue tone — fine on the standard sheet bg
+        // but a clash on the incognito sheet's purple container_high.
+        // Tint the tile to the purple-family container_highest only
+        // when incognito so the chip stays in family.
+        if (mIsIncognito) {
+            mHostImage.setBackgroundTintList(ColorStateList.valueOf(
+                    IncognitoColors.getSurfaceContainerHighest(mHostImage.getContext(), true)));
+        }
 
         View hostClear = mView.findViewById(R.id.host_clear);
 

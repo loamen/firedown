@@ -83,12 +83,7 @@
         <item name="colorOnBackground">@color/incognito_on_surface</item>
         <item name="colorSurface">@color/incognito_surface</item>
         <item name="colorOnSurface">@color/incognito_on_surface</item>
-        <!-- Step into the purple family (#553090) instead of the
-             gray-blue incognito_surface_variant (#44474C). This is
-             the tone bg_popup_favicon picks up via ?attr/colorSurfaceVariant
-             — a gray frame would clash with the incognito sheet's
-             purple container_high bg, while this stays in family. -->
-        <item name="colorSurfaceVariant">@color/incognito_surface_container_highest</item>
+        <item name="colorSurfaceVariant">@color/incognito_surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/incognito_on_surface_variant</item>
         <item name="colorOutline">@color/incognito_outline</item>
         <item name="colorOutlineVariant">@color/incognito_outline_variant</item>
@@ -132,12 +127,7 @@
         <item name="colorOnBackground">@color/incognito_on_surface</item>
         <item name="colorSurface">@color/incognito_surface</item>
         <item name="colorOnSurface">@color/incognito_on_surface</item>
-        <!-- Step into the purple family (#553090) instead of the
-             gray-blue incognito_surface_variant (#44474C). This is
-             the tone bg_popup_favicon picks up via ?attr/colorSurfaceVariant
-             — a gray frame would clash with the incognito sheet's
-             purple container_high bg, while this stays in family. -->
-        <item name="colorSurfaceVariant">@color/incognito_surface_container_highest</item>
+        <item name="colorSurfaceVariant">@color/incognito_surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/incognito_on_surface_variant</item>
         <item name="colorOutline">@color/incognito_outline</item>
         <item name="colorOutlineVariant">@color/incognito_outline_variant</item>

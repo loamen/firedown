@@ -2,6 +2,7 @@ package com.solarized.firedown.phone.dialogs;
 
 
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -29,6 +30,7 @@ import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoResources;
 import com.solarized.firedown.geckoview.GeckoState;
+import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.ui.browser.BackwardBrowserButton;
 import com.solarized.firedown.ui.browser.BasicBrowserButton;
 import com.solarized.firedown.ui.browser.ForwardBrowserButton;
@@ -139,6 +141,16 @@ public class PopupBrowserSheetDialogFragment extends BaseBottomSheetDialogFragme
         mTitle = mView.findViewById(R.id.popup_identity_title);
         mHost = mView.findViewById(R.id.popup_identity_host);
         mFavicon = mView.findViewById(R.id.popup_identity_favicon);
+
+        // bg_popup_favicon resolves to ?attr/colorSurfaceVariant which
+        // lands on a gray-blue tone — fine on the standard sheet bg
+        // but a clash on the incognito sheet's purple container_high.
+        // Tint the tile to the purple-family container_highest only
+        // when incognito so the chip stays in family.
+        if (mIsIncognito) {
+            mFavicon.setBackgroundTintList(ColorStateList.valueOf(
+                    IncognitoColors.getSurfaceContainerHighest(mFavicon.getContext(), true)));
+        }
 
         mLastUri = mGeckoState.getEntityUri();
         mLastTitle = mGeckoState.getEntityTitle();

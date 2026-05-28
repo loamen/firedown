@@ -9,9 +9,11 @@
     Uses ?attr/colorSurfaceVariant directly so the drawable resolves
     correctly regardless of inflation context — a custom theme attr
     didn't resolve in some inflater contexts and the frame
-    disappeared. The incognito sheet theme overrides
-    colorSurfaceVariant to a purple-family tone so the tile reads
-    against the purple sheet bg instead of clashing as gray.
+    disappeared. Incognito sheets override the tile fill
+    programmatically via IncognitoColors (see
+    SecurityStateSheetDialogFragment / PopupBrowserSheetDialogFragment)
+    so the chip lands in the purple family instead of clashing as
+    gray, without retheming colorSurfaceVariant globally.
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
