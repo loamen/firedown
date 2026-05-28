@@ -98,4 +98,14 @@
     <color name="incognito_outline">#FF8F9097</color>
     <color name="incognito_outline_variant">#FF696d75</color>
 
+    <!-- Fill behind the popup/security identity favicon. Light value
+         needs noticeable contrast against the #E9E7EA sheet bg; the
+         night-qualified value lives in values-night/colors.xml and
+         picks a brighter step over the #292A2C dark sheet bg. The
+         obvious M3 token colorSurfaceVariant is too close to the
+         sheet in light (#E1E2E9, ~5 units apart) and colorSurfaceBright
+         is too close in dark (#39393B, ~16 units) — neither works in
+         both modes on its own. -->
+    <color name="popup_favicon_background">#FBF9FB</color>
+
 </resources>
