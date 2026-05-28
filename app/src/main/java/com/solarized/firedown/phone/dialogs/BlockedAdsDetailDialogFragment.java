@@ -17,7 +17,9 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoUblockHelper;
+import com.solarized.firedown.ui.adapters.BlockedTrackerDetailAdapter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,7 +47,7 @@ public class BlockedAdsDetailDialogFragment extends BaseBottomSheetDialogFragmen
 
     private GeckoStateViewModel mGeckoStateViewModel;
     private IncognitoStateViewModel mIncognitoStateViewModel;
-    private com.solarized.firedown.ui.adapters.TopTrackersAdapter mAdapter;
+    private BlockedTrackerDetailAdapter mAdapter;
     private TextView mSubtitle;
     private TextView mEmptyView;
     private RecyclerView mRecyclerView;
@@ -71,10 +73,14 @@ public class BlockedAdsDetailDialogFragment extends BaseBottomSheetDialogFragmen
         mEmptyView = mView.findViewById(R.id.detail_empty);
         mRecyclerView = mView.findViewById(R.id.detail_recycler);
 
-        // TopTrackersAdapter already binds the (host, count) tuple
-        // shape we want — same row layout (item_top_tracker.xml)
-        // shipped by TrackersInfoSheet. No need for a new adapter.
-        mAdapter = new com.solarized.firedown.ui.adapters.TopTrackersAdapter();
+        // Reuse the blocked-trackers detail adapter (host on the left,
+        // ×N count on the right) so this sheet and its sibling
+        // BlockedTrackersDetailDialogFragment read identically. We feed
+        // it HostRow items only — no category Headers — since uBlock
+        // blocks carry no category. The Home "Top trackers" card keeps
+        // its own count-left leaderboard row (item_top_tracker); that's
+        // a ranking, not a per-page host list.
+        mAdapter = new BlockedTrackerDetailAdapter();
         mRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setHasFixedSize(false);
@@ -112,13 +118,15 @@ public class BlockedAdsDetailDialogFragment extends BaseBottomSheetDialogFragmen
         }
 
         int total = 0;
+        List<BlockedTrackerDetailAdapter.Item> rows = new ArrayList<>(items.size());
         for (GeckoUblockHelper.HostCount hc : items) {
             total += hc.count;
+            rows.add(new BlockedTrackerDetailAdapter.HostRow(hc.host, (int) hc.count));
         }
 
         mEmptyView.setVisibility(View.GONE);
         mRecyclerView.setVisibility(View.VISIBLE);
-        mAdapter.submitList(items);
+        mAdapter.submitList(rows);
 
         mSubtitle.setText(getResources().getQuantityString(
                 R.plurals.blocked_ads_summary, total, total));
