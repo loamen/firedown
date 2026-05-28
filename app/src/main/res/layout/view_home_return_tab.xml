@@ -12,11 +12,14 @@
   the bind logic skips any incognito session, so no private tab
   can surface here.
 
-  Neutral surfaceContainerHigh tint (matching the Safe Folder card)
-  rather than a tonal accent — the favicon is a real site icon and
-  reads cleanly against a neutral surface; a coloured ground would
-  fight it. Shape and metrics mirror view_home_media_strip so the
-  two read as siblings.
+  Outlined (transparent fill + 1dp outlineVariant stroke) rather than
+  a filled tint — this is a navigation affordance, not a content
+  shelf, so the outline reads as a deliberate "header" above the
+  filled Downloads / Vault / Trackers cards instead of a content card
+  that failed to take the user's palette. Stays neutral in every
+  palette; the favicon (a real site icon) is the visual anchor. Shape
+  and metrics mirror view_home_media_strip so the cards read as
+  siblings.
 -->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -27,10 +30,11 @@
     android:clickable="true"
     android:focusable="true"
     android:visibility="gone"
-    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+    app:cardBackgroundColor="@android:color/transparent"
     app:cardCornerRadius="12dp"
     app:cardElevation="0dp"
-    app:strokeWidth="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp"
     tools:visibility="visible">
 
     <LinearLayout
