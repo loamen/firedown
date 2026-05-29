@@ -30,6 +30,7 @@
     <string name="capture_empty_svgs_message">Tidak ada SVG yang tersedia.</string>
     <string name="capture_empty_video_message">Tidak ada video yang tersedia.</string>
     <string name="clipboard">Disalin ke papan klip</string>
+    <string name="clipboard_from">Dari papan klip</string>
     <string name="close_tab">Tutup tab</string>
 <string name="close_tabs_after_one_day">Setelah satu hari</string>
     <string name="close_tabs_after_one_day_summary">Tutup setelah satu hari</string>

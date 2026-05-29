@@ -63,6 +63,7 @@
     <string name="cert_section_technical">Detalles técnicos</string>
     <string name="cert_section_validity">Periodo de validez</string>
     <string name="clipboard">Copiado al portapapeles</string>
+    <string name="clipboard_from">Del portapapeles</string>
     <string name="clipboard_delete">¿Eliminar sugerencia del portapapeles?</string>
     <string name="close_tab">Cerrar pestaña</string>
 <string name="close_tabs_after_one_day">Después de un día</string>

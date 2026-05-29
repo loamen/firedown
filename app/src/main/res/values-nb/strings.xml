@@ -21,6 +21,7 @@
     <string name="capture_empty_svgs_message">Ingen SVG-er tilgjengelig.</string>
     <string name="capture_empty_video_message">Ingen videoer tilgjengelig.</string>
     <string name="clipboard">Kopiert til utklippstavlen</string>
+    <string name="clipboard_from">Fra utklippstavlen</string>
 <string name="connection_secure">Tilkoblingen er sikker</string>
     <string name="delete">Slett</string>
     <string name="delete_all_bookmarks">Dette vil slette alle bokmerkedataene dine.</string>

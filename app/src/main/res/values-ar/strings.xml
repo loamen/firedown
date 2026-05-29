@@ -30,6 +30,7 @@
     <string name="capture_empty_svgs_message">لا توجد ملفات SVG متاحة.</string>
     <string name="capture_empty_video_message">لا توجد مقاطع فيديو متاحة.</string>
     <string name="clipboard">نسخ إلى الحافظة</string>
+    <string name="clipboard_from">من الحافظة</string>
     <string name="close_tab">أغلِق اللسان</string>
 <string name="close_tabs_after_one_day">بعد يوم واحد</string>
     <string name="close_tabs_after_one_day_summary">أغلِق بعد يوم واحد</string>

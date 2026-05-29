@@ -34,6 +34,7 @@
     <string name="capture_empty_svgs_message">Brak dostępnych plików SVG.</string>
     <string name="capture_empty_video_message">Brak dostępnych filmów.</string>
     <string name="clipboard">Skopiowane do schowka</string>
+    <string name="clipboard_from">Ze schowka</string>
     <string name="close_tab">Zamknij kartę</string>
 <string name="close_tabs_after_one_day">Po jednym dniu</string>
     <string name="close_tabs_after_one_day_summary">Zamykane po jednym dniu</string>

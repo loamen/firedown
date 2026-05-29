@@ -31,6 +31,7 @@
     <string name="capture_empty_svgs_message">Δεν υπάρχουν διαθέσιμα SVG.</string>
     <string name="capture_empty_video_message">Δεν υπάρχουν διαθέσιμα βίντεο.</string>
     <string name="clipboard">Αντιγράφηκε στο πρόχειρο</string>
+    <string name="clipboard_from">Από το πρόχειρο</string>
     <string name="close_tab">Κλείσιμο καρτέλας</string>
 <string name="close_tabs_after_one_day">Μετά από μία μέρα</string>
     <string name="close_tabs_after_one_day_summary">Κλείσιμο μετά από μία ημέρα</string>

@@ -63,6 +63,7 @@
     <string name="cert_section_technical">技术细节</string>
     <string name="cert_section_validity">有效期</string>
     <string name="clipboard">已复制到剪贴板</string>
+    <string name="clipboard_from">来自剪贴板</string>
     <string name="clipboard_delete">从剪贴板中移除建议？</string>
     <string name="close_tab">关闭标签页</string>
 <string name="close_tabs_after_one_day">1 天后</string>

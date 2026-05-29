@@ -28,6 +28,7 @@
     <string name="capture_empty_svgs_message">Nenhum SVG disponível.</string>
     <string name="capture_empty_video_message">Nenhum vídeo disponível.</string>
     <string name="clipboard">Copiado para a área de transferência</string>
+    <string name="clipboard_from">Da área de transferência</string>
     <string name="close_tab">Fechar separador</string>
 <string name="close_tabs_after_one_day">Depois de um dia</string>
     <string name="close_tabs_after_one_day_summary">Fechar depois de um dia</string>

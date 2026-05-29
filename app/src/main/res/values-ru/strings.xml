@@ -34,6 +34,7 @@
     <string name="capture_empty_svgs_message">Нет доступных файлов SVG.</string>
     <string name="capture_empty_video_message">Нет доступных видео.</string>
     <string name="clipboard">Скопировано в буфер обмена</string>
+    <string name="clipboard_from">Из буфера обмена</string>
     <string name="close_tab">Закрыть вкладку</string>
 <string name="close_tabs_after_one_day">Через день</string>
     <string name="close_tabs_after_one_day_summary">Закрывать через день</string>

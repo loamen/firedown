@@ -34,6 +34,7 @@
     <string name="capture_empty_svgs_message">SVG mevcut değil.</string>
     <string name="capture_empty_video_message">Hiçbir video mevcut değil.</string>
     <string name="clipboard">Panoya kopyalandı</string>
+    <string name="clipboard_from">Panodan</string>
     <string name="close_tab">Sekmeyi kapat</string>
 <string name="close_tabs_after_one_day">Bir gün sonra</string>
     <string name="close_tabs_after_one_day_summary">Bir gün sonra kapat</string>

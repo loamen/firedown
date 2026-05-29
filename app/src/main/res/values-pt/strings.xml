@@ -21,6 +21,7 @@
     <string name="capture_empty_svgs_message">Nenhum SVG disponível.</string>
     <string name="capture_empty_video_message">Nenhum vídeo disponível.</string>
     <string name="clipboard">Copiado para a área de transferência</string>
+    <string name="clipboard_from">Da área de transferência</string>
 <string name="quick_settings_sheet_tracking_site_title">Proteção de rastreamento neste site</string>
     <plurals name="blocked_trackers_summary">
         <item quantity="one">%d bloqueado nesta página</item>

@@ -40,6 +40,8 @@ public class AutoCompleteView extends FrameLayout {
 
     private TextView mClipboardTextView;
 
+    private ImageView mClipboardImage;
+
     private View mClipboardView;
 
     private OnClipboardListener mCallback;
@@ -87,17 +89,14 @@ public class AutoCompleteView extends FrameLayout {
 
         mClipboardTextView = v.findViewById(R.id.clipboard_subtitle);
 
-        mVisibilityView = v.findViewById(R.id.clipboard_button);
+        mClipboardImage = v.findViewById(R.id.clipboard_image);
 
+        // Trailing forward action. The content is shown by default now
+        // (Option A), so this is a 'go' affordance, not the old reveal/hide
+        // eye toggle — tapping it acts on the clip just like tapping the card.
+        mVisibilityView = v.findViewById(R.id.clipboard_button);
         mVisibilityView.setOnClickListener(v1 -> {
-            int visibility = mClipboardTextView.getVisibility();
-            if(visibility == View.VISIBLE){
-                mVisibilityView.setIconResource(R.drawable.ic_visibility_20);
-                mClipboardTextView.setVisibility(View.GONE);
-            }else{
-                mVisibilityView.setIconResource(R.drawable.ic_visibility_off_20);
-                mClipboardTextView.setVisibility(View.VISIBLE);
-            }
+            if (mCallback != null) mCallback.onClipboardClick(mClipboardTextView.getText());
         });
 
         mSearchView = v.findViewById(R.id.search_view);
@@ -158,16 +157,24 @@ public class AutoCompleteView extends FrameLayout {
             mClipboardTextView.setTextColor(onSurfaceVariant);
         }
 
-        // 5. Clipboard icon
-        ImageView clipboardImage = findViewById(R.id.clipboard_image);
-        if (clipboardImage != null) {
-            ImageViewCompat.setImageTintList(clipboardImage,
+        // 5. Clipboard icon + its chip background (the chip uses
+        //    ?attr/colorSurfaceContainerHigh, which doesn't follow the
+        //    incognito palette, so retint it here for incognito parity).
+        if (mClipboardImage != null) {
+            ImageViewCompat.setImageTintList(mClipboardImage,
                     ColorStateList.valueOf(onSurfaceVariant));
         }
+        View clipboardChip = findViewById(R.id.clipboard_icon_chip);
+        if (clipboardChip != null) {
+            clipboardChip.setBackgroundTintList(ColorStateList.valueOf(
+                    IncognitoColors.getSurfaceContainerHigh(activity, incognito)));
+        }
 
-        // 6. Visibility toggle button
+        // 6. Trailing forward ('go') button — themed primary so it reads as
+        //    the action accent (matches the layout's ?attr/colorPrimary).
         if (mVisibilityView != null) {
-            mVisibilityView.setIconTint(ColorStateList.valueOf(onSurfaceVariant));
+            mVisibilityView.setIconTint(ColorStateList.valueOf(
+                    IncognitoColors.getPrimary(activity, incognito)));
         }
 
         // 7. Suggestion container card. Carries the single list surface now
@@ -214,8 +221,6 @@ public class AutoCompleteView extends FrameLayout {
 
     public void updateVisibility(boolean hasFocus){
         setVisibility(hasFocus ? View.VISIBLE : View.GONE);
-        mVisibilityView.setIconResource(R.drawable.ic_visibility_20);
-        mClipboardTextView.setVisibility(View.GONE);
     }
 
     public void showClipboard(){
@@ -244,6 +249,16 @@ public class AutoCompleteView extends FrameLayout {
             return;
         }
         mClipboardTextView.setText(text);
+        mClipboardTextView.setVisibility(View.VISIBLE);
+        // Adaptive leading icon: a globe when the clip looks like a URL
+        // (tap navigates), a magnifier otherwise (tap searches it) — mirrors
+        // what openUri()/parseUri does with the same text downstream.
+        if (mClipboardImage != null) {
+            mClipboardImage.setImageResource(
+                    com.solarized.firedown.utils.UrlStringUtils.isURLLike(text.trim())
+                            ? R.drawable.ic_globe_24
+                            : R.drawable.ic_search_24);
+        }
         if (mClipboardView.getVisibility() == View.GONE) {
             mClipboardView.setVisibility(View.VISIBLE);
         }

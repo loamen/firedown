@@ -31,6 +31,7 @@
     <string name="capture_empty_svgs_message">Nu există SVG-uri disponibile.</string>
     <string name="capture_empty_video_message">Nu există videoclipuri disponibile.</string>
     <string name="clipboard">Copiat în clipboard</string>
+    <string name="clipboard_from">Din clipboard</string>
     <string name="close_tab">Închide fila</string>
 <string name="close_tabs_after_one_day">După o zi</string>
     <string name="close_tabs_after_one_day_summary">Închide după o zi</string>

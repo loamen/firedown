@@ -63,6 +63,7 @@
     <string name="cert_section_technical">技術的詳細</string>
     <string name="cert_section_validity">有効期間</string>
     <string name="clipboard">クリップボードにコピーされました</string>
+    <string name="clipboard_from">クリップボードから</string>
     <string name="clipboard_delete">クリップボードから候補を削除しますか？</string>
     <string name="close_tab">タブを閉じる</string>
 <string name="close_tabs_after_one_day">1 日後</string>

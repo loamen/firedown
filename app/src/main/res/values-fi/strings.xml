@@ -31,6 +31,7 @@
     <string name="capture_empty_svgs_message">SVG-tiedostoja ei ole saatavilla.</string>
     <string name="capture_empty_video_message">Ei videoita saatavilla.</string>
     <string name="clipboard">Kopioitu leikepöydälle</string>
+    <string name="clipboard_from">Leikepöydältä</string>
     <string name="close_tab">Sulje välilehti</string>
 <string name="close_tabs_after_one_day">Yhden päivän jälkeen</string>
     <string name="close_tabs_after_one_day_summary">Sulje päivän kuluttua</string>

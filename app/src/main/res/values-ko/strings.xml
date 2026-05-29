@@ -34,6 +34,7 @@
     <string name="capture_empty_svgs_message">사용 가능한 SVG가 없습니다.</string>
     <string name="capture_empty_video_message">사용 가능한 동영상이 없습니다.</string>
     <string name="clipboard">클립보드에 복사됨</string>
+    <string name="clipboard_from">클립보드에서</string>
     <string name="close_tab">탭 닫기</string>
 <string name="close_tabs_after_one_day">하루 후</string>
     <string name="close_tabs_after_one_day_summary">하루 후 닫기</string>

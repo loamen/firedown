@@ -31,6 +31,7 @@
     <string name="capture_empty_svgs_message">Ingen tilgængelige SVG\'er.</string>
     <string name="capture_empty_video_message">Ingen tilgængelige videoer.</string>
     <string name="clipboard">Kopieret til udklipsholder</string>
+    <string name="clipboard_from">Fra udklipsholder</string>
     <string name="close_tab">Luk faneblad</string>
 <string name="close_tabs_after_one_day">Efter en dag</string>
     <string name="close_tabs_after_one_day_summary">Luk efter en dag</string>

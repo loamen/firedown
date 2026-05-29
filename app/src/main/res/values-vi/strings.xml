@@ -31,6 +31,7 @@
     <string name="capture_empty_svgs_message">Không có sẵn SVG.</string>
     <string name="capture_empty_video_message">Không có video nào.</string>
     <string name="clipboard">Sao chép vào clipboard</string>
+    <string name="clipboard_from">Từ bộ nhớ tạm</string>
     <string name="close_tab">Đóng thẻ</string>
 <string name="close_tabs_after_one_day">Sau một ngày</string>
     <string name="close_tabs_after_one_day_summary">Đóng sau một ngày</string>

@@ -63,6 +63,7 @@
     <string name="cert_section_technical">Détails techniques</string>
     <string name="cert_section_validity">Période de validité</string>
     <string name="clipboard">Copié dans le presse-papier</string>
+    <string name="clipboard_from">Du presse-papiers</string>
     <string name="clipboard_delete">Retirer la suggestion du presse-papiers ?</string>
     <string name="close_tab">Fermer l’onglet</string>
 <string name="close_tabs_after_one_day">Après un jour</string>

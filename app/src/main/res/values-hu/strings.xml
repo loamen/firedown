@@ -31,6 +31,7 @@
     <string name="capture_empty_svgs_message">Nem állnak rendelkezésre SVG-k.</string>
     <string name="capture_empty_video_message">Nincsenek elérhető videók.</string>
     <string name="clipboard">Vágólapra másolva</string>
+    <string name="clipboard_from">A vágólapról</string>
     <string name="close_tab">Lap bezárása</string>
 <string name="close_tabs_after_one_day">Egy nap után</string>
     <string name="close_tabs_after_one_day_summary">Bezárás egy nap után</string>

@@ -34,6 +34,7 @@
     <string name="capture_empty_svgs_message">Geen SVG\'s beschikbaar.</string>
     <string name="capture_empty_video_message">Geen video\'s beschikbaar.</string>
     <string name="clipboard">Gekopieerd naar het klembord</string>
+    <string name="clipboard_from">Van klembord</string>
     <string name="close_tab">Tabblad sluiten</string>
 <string name="close_tabs_after_one_day">Na een dag</string>
     <string name="close_tabs_after_one_day_summary">Na een dag sluiten</string>

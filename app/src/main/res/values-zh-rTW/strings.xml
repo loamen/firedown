@@ -34,6 +34,7 @@
     <string name="capture_empty_svgs_message">沒有可用的 SVG。</string>
     <string name="capture_empty_video_message">沒有可用的影片。</string>
     <string name="clipboard">已複製到剪貼簿</string>
+    <string name="clipboard_from">來自剪貼簿</string>
     <string name="close_tab">關閉分頁</string>
 <string name="close_tabs_after_one_day">1 天後</string>
     <string name="close_tabs_after_one_day_summary">1 天後關閉</string>

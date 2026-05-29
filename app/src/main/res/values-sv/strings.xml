@@ -21,6 +21,7 @@
     <string name="capture_empty_svgs_message">Inga SVG:er tillgängliga.</string>
     <string name="capture_empty_video_message">Inga videor tillgängliga.</string>
     <string name="clipboard">Kopierade till urklipp</string>
+    <string name="clipboard_from">Från urklipp</string>
 <string name="connection_secure">Anslutningen är säker</string>
     <string name="delete">Radera</string>
     <string name="delete_all_bookmarks">Detta kommer att radera alla dina bokmärkesdata.</string>

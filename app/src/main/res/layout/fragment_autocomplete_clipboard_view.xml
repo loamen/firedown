@@ -1,81 +1,94 @@
+<!--
+    Empty-autocomplete clipboard card (Option A, content-forward). Shown
+    under the address bar when the field is empty and the clipboard holds
+    usable text. 16dp corners to match the suggestion container card.
+
+    Layout: leading icon chip (globe for a URL / search for plain text,
+    set in AutoCompleteView.showClipboard) + two lines (an action label —
+    "Open copied link" / "Search clipboard" — over the actual clipboard
+    content) + a trailing forward arrow. Tapping the card acts on the
+    content; the clipboard itself is left intact.
+-->
 <com.google.android.material.card.MaterialCardView
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
     app:cardBackgroundColor="?attr/colorSurfaceContainerHighest"
-    app:strokeWidth="0dp"
-    android:padding="8dp">
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:id="@+id/clipboard_holder"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="12dp">
 
-        <ImageView
-            android:id="@+id/clipboard_image"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:contentDescription="@null"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:src="@drawable/ic_search_24" />
+        <FrameLayout
+            android:id="@+id/clipboard_icon_chip"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_incognito_chip"
+            android:backgroundTint="?attr/colorSurfaceContainerHigh">
+
+            <ImageView
+                android:id="@+id/clipboard_image"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_globe_24"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:descendantFocusability="beforeDescendants"
-            app:layout_constraintEnd_toStartOf="@id/clipboard_button"
-            app:layout_constraintStart_toEndOf="@id/clipboard_image"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
             android:orientation="vertical">
-
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/clipboard_title"
-                style="@style/TextAppearance.Material3.LabelLarge"
+                style="@style/TextAppearance.Material3.LabelMedium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:text="@string/clipboard" />
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:text="@string/clipboard_from" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/clipboard_subtitle"
-                style="@style/TextAppearance.Material3.LabelSmall"
-                android:singleLine="true"
-                android:ellipsize="marquee"
+                style="@style/TextAppearance.Material3.BodyMedium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:visibility="gone"
-                android:text="@string/clipboard" />
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:textColor="?attr/colorOnSurface" />
 
         </LinearLayout>
 
-
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/clipboard_button"
+            style="@style/Widget.Material3.Button.IconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            style="@style/Widget.Material3.Button.IconOnly"
-            android:padding="12dp"
+            android:layout_marginStart="8dp"
             android:background="@null"
             android:contentDescription="@null"
             app:backgroundTint="@color/transparent"
-            app:rippleColor="?attr/colorControlNormal"
-            app:icon="@drawable/ic_visibility_20"
-            app:iconTint="?attr/colorControlNormal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:icon="@drawable/ic_arrow_forward_24"
+            app:iconTint="?attr/colorPrimary"
+            app:rippleColor="?attr/colorControlNormal" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>

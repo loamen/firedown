@@ -63,6 +63,7 @@
     <string name="cert_section_technical">Technische Details</string>
     <string name="cert_section_validity">Gültigkeitszeitraum</string>
     <string name="clipboard">In die Zwischenablage kopiert</string>
+    <string name="clipboard_from">Aus der Zwischenablage</string>
     <string name="clipboard_delete">Vorschlag aus Zwischenablage entfernen?</string>
     <string name="close_tab">Tab schließen</string>
 <string name="close_tabs_after_one_day">Nach einem Tag</string>
