@@ -51,4 +51,11 @@ between them show *why* we ended up where we did.
   downloads in progress" header. CURRENT reads as a static content row
   (surface card, mask icon, no progress, no chevron) vs A live+branded
   (primaryContainer tint + progress bar + lock chip + chevron), B
-  neutral+actionable, C compact pill, D minimal delta. Proposed A.
+  neutral+actionable, C compact pill, D minimal delta. Shipped: lock
+  icon + chevron + brand wash, no progress bar (count-only data).
+- `tabs-archive-banner.html` — Tabs list "N tabs archived" banner.
+  Already well-built (correct archive icon, dismiss ✕) — the gap is tint
+  consistency with the incognito banner. CURRENT (plain surface) vs A
+  brand wash + icon chip (keep dismiss), B wash + "View archive ›" body
+  cue, C split view/dismiss zones. Proposed A. Note: the ✕ must stay
+  (this banner is genuinely dismissible, unlike the incognito one).
