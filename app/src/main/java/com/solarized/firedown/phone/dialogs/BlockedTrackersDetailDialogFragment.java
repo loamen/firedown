@@ -58,6 +58,28 @@ public class BlockedTrackersDetailDialogFragment extends BaseBottomSheetDialogFr
     private TextView mEmptyView;
     private RecyclerView mRecyclerView;
 
+    /** Re-poll cadence while the sheet is visible. New blocks land via
+     *  onContentBlocked into the GeckoState host map, but the counts
+     *  LiveData only re-emits when a block fires on the *current* page
+     *  while we're open — which rarely happens, since trackers mostly fire
+     *  during page load before the sheet opens. Re-snapshotting on an
+     *  interval keeps the list live regardless. Started in onResume,
+     *  stopped in onPause. */
+    private static final long POLL_INTERVAL_MS = 1000L;
+    private final android.os.Handler mPollHandler =
+            new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable mPollRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (mIsIncognito) {
+                mIncognitoStateViewModel.refreshBlockedTrackerCounts();
+            } else {
+                mGeckoStateViewModel.refreshBlockedTrackerCounts();
+            }
+            mPollHandler.postDelayed(this, POLL_INTERVAL_MS);
+        }
+    };
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -98,13 +120,29 @@ public class BlockedTrackersDetailDialogFragment extends BaseBottomSheetDialogFr
                 ? mIncognitoStateViewModel.getBlockedTrackerCounts()
                 : mGeckoStateViewModel.getBlockedTrackerCounts();
 
-        if (mIsIncognito) {
-            mIncognitoStateViewModel.refreshBlockedTrackerCounts();
-        } else {
-            mGeckoStateViewModel.refreshBlockedTrackerCounts();
-        }
-
         counts.observe(getViewLifecycleOwner(), this::rebuildList);
+        // Initial refresh + ongoing live polling are driven by
+        // onResume/onPause so the list both populates on open and keeps
+        // refreshing as new trackers are blocked while the sheet stays open.
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mPollHandler.removeCallbacks(mPollRunnable);
+        mPollHandler.post(mPollRunnable);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mPollHandler.removeCallbacks(mPollRunnable);
+    }
+
+    @Override
+    public void onDestroyView() {
+        mPollHandler.removeCallbacks(mPollRunnable);
+        super.onDestroyView();
     }
 
 
