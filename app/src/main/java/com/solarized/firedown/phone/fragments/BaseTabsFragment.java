@@ -125,6 +125,13 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
     /** Empty state text resource. */
     protected abstract int getEmptyTextRes();
 
+    /** Empty-state illustration. Defaults to the neutral tabs art; the
+     *  incognito subclass overrides it with the private-browsing mascot
+     *  so the empty incognito switcher reads as distinctly private. */
+    protected int getEmptyImageRes() {
+        return R.drawable.ill_small_tabs2;
+    }
+
     /**
      * Adapter-space → tab-list-index. The only header the adapter ever
      * renders is the archive-banner row at position 0 (regular tabs
@@ -358,7 +365,7 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
 
         mLCEERecyclerView = view.findViewById(R.id.list_recycler_lcee);
         mLCEERecyclerView.setEmptyText(getEmptyTextRes());
-        mLCEERecyclerView.setEmptyImageView(R.drawable.ill_small_tabs2);
+        mLCEERecyclerView.setEmptyImageView(getEmptyImageRes());
 
         mRecyclerView = mLCEERecyclerView.getRecyclerView();
         // LCEE starts in showLoading() — RV is GONE, loading view

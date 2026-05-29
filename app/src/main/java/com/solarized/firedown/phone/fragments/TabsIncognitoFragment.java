@@ -58,6 +58,14 @@ public class TabsIncognitoFragment extends BaseTabsFragment {
     }
 
     @Override
+    protected int getEmptyImageRes() {
+        // Private-browsing mascot (relocated from the incognito home) gives
+        // the empty incognito switcher its own identity, instead of the same
+        // folder art the regular tabs page uses.
+        return R.drawable.ill_privacy_purple;
+    }
+
+    @Override
     protected void onTabSelected(GeckoStateEntity entity, GeckoState geckoState) {
         if (entity.isHome()) {
             getParentFragmentManager().setFragmentResult(
