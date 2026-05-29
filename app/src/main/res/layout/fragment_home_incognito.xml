@@ -39,29 +39,20 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp">
 
-            <!-- Spacer to push content toward center -->
+            <!-- Spacer to push content toward center. The mascot that used to
+                 sit here moved to the incognito tabs empty state, where it
+                 gives that screen its own identity; the title + three facts
+                 carry Home on their own. -->
             <Space
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
-
-            <!-- Mascot illustration. Kept (private mode benefits from a
-                 friendly 'you're somewhere different' signal) but sized down
-                 from 180dp so the three facts below carry the screen. -->
-            <androidx.appcompat.widget.AppCompatImageView
-                android:id="@+id/incognito_illustration"
-                android:layout_width="104dp"
-                android:layout_height="104dp"
-                android:layout_gravity="center_horizontal"
-                android:src="@drawable/ill_privacy_purple"
-                android:contentDescription="@string/tabs_incognito" />
 
             <!-- Title -->
             <TextView
                 android:id="@+id/incognito_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
                 android:text="@string/incognito_home_title"
                 android:textAppearance="?attr/textAppearanceHeadlineSmall"
                 android:textColor="@color/incognito_on_surface" />
