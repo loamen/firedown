@@ -503,7 +503,7 @@ public class TabsHolderFragment extends BaseFocusFragment {
                     if (mIsIncognitoThemed && !targetIsIncognito) {
                         applyIncognitoTheme(false);
                     }
-                    NavigationUtils.navigateSafe(mNavController, R.id.action_tabs_to_browser);
+                    NavigationUtils.navigateToBrowser(mNavController, targetIsIncognito);
                 });
     }
 
@@ -675,7 +675,7 @@ public class TabsHolderFragment extends BaseFocusFragment {
         } else {
             mBrowserURIViewModel.onEventSelected(
                     targetState.getGeckoStateEntity(), IntentActions.OPEN_SESSION);
-            NavigationUtils.navigateSafe(mNavController, R.id.action_tabs_to_browser);
+            NavigationUtils.navigateToBrowser(mNavController, targetIsIncognito);
         }
     }
 

@@ -410,7 +410,7 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
                     mIncognitoStateViewModel.setGeckoState(geckoState, true);
                     GeckoStateEntity entity = geckoState.getGeckoStateEntity();
                     mBrowserURIViewModel.onEventSelected(entity, IntentActions.OPEN_SESSION);
-                    NavigationUtils.navigateSafe(mNavController, R.id.browser);
+                    NavigationUtils.navigateToBrowser(mNavController, true);
                 }
             } else {
                 String text = mSearchRepository.parseUri(searchEntity.getSubText());
@@ -457,7 +457,7 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
         // symmetry so the two home flows can't diverge.
         geckoStateEntity.setSessionState("");
         mBrowserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_URI);
-        NavigationUtils.navigateSafe(mNavController, R.id.browser);
+        NavigationUtils.navigateToBrowser(mNavController, true);
     }
 
     private void addNewIncognitoTab() {

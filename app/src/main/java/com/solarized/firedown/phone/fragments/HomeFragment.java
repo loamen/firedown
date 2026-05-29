@@ -804,7 +804,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         geckoStateEntity.setSessionState("");
         mBrowserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_URI);
         Log.d(TAG, "openUri: event fired, navigating to browser");
-        NavigationUtils.navigateSafe(mNavController, R.id.browser);
+        NavigationUtils.navigateToBrowser(mNavController, false);
     }
 
 
@@ -820,7 +820,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         Log.d(TAG, "openSessionId: firing OPEN_SESSION for id=" + geckoStateEntity.getId()
                 + " uri=" + geckoStateEntity.getUri());
         mBrowserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_SESSION);
-        NavigationUtils.navigateSafe(mNavController, R.id.browser);
+        NavigationUtils.navigateToBrowser(mNavController, false);
     }
 
 

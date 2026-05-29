@@ -104,7 +104,7 @@ public class IntentHandler {
         } else {
             browserURIViewModel.onEventSelected(
                     incognitoState.getGeckoStateEntity(), IntentActions.OPEN_SESSION);
-            navigateToBrowserIfNeeded(navController);
+            navigateToBrowserIfNeeded(navController, true);
         }
 
         intent.setAction("");
@@ -148,7 +148,7 @@ public class IntentHandler {
         } else {
             // Active tab has a URL — resume in browser
             browserURIViewModel.onEventSelected(entity, IntentActions.OPEN_SESSION);
-            navigateToBrowserIfNeeded(navController);
+            navigateToBrowserIfNeeded(navController, entity.isIncognito());
         }
 
         intent.setAction("");
@@ -159,7 +159,7 @@ public class IntentHandler {
         GeckoStateEntity geckoStateEntity = new GeckoStateEntity(false, url);
         geckoStateEntity.setExternal(true);
         browserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_EXTERNAL_URI);
-        navigateToBrowserIfNeeded(navController);
+        navigateToBrowserIfNeeded(navController, geckoStateEntity.isIncognito());
         intent.setAction("");
     }
 
@@ -209,15 +209,15 @@ public class IntentHandler {
         if (navDestination != null) {
             int navId = navDestination.getId();
             if (navId == R.id.dialog_browser_options) {
+                // Pop the sheet to reveal the existing browser beneath it;
+                // its observer picks up the event. (navigateToBrowser would
+                // pop the browser too and recreate it.)
                 NavigationUtils.popBackStackSafe(navController, R.id.dialog_browser_options);
-            } else if (navId != R.id.browser) {
-                // Only navigate if NOT already on BrowserFragment.
-                // If already there, the existing fragment picks up the event
-                // via its LiveData observer — no need to push a duplicate.
-                NavigationUtils.navigateSafe(navController, R.id.browser);
+            } else {
+                // Enter the browser enforcing the invariant; no-op if already
+                // there (the live fragment observes the event and loads).
+                NavigationUtils.navigateToBrowser(navController, geckoStateEntity.isIncognito());
             }
-            // If already on BrowserFragment: no-op. The event is already set
-            // on the ViewModel and the active fragment will observe it.
         }
         intent.setAction("");
     }
@@ -252,54 +252,26 @@ public class IntentHandler {
         } else {
             GeckoStateEntity geckoStateEntity = geckoState.getGeckoStateEntity();
             browserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_SESSION);
-            navigateToBrowserIfNeeded(navController);
+            navigateToBrowserIfNeeded(navController, geckoStateEntity.isIncognito());
         }
         intent.setAction("");
     }
 
 
     private void navigateToHomeIfNeeded(NavController navController, boolean incognito) {
-        NavDestination dest = navController.getCurrentDestination();
-        if (dest == null) return;
-
-        int targetHome = incognito ? R.id.home_incognito : R.id.home;
-        int currentId = dest.getId();
-
-        if (currentId == targetHome) return;
-
-        // Pop browser if on it
-        if (currentId == R.id.browser) {
-            NavigationUtils.popBackStackSafe(navController, R.id.browser);
-            dest = navController.getCurrentDestination();
-            if (dest == null) return;
-            currentId = dest.getId();
-        }
-
-        if (currentId == targetHome) return;
-
-        // Use nav actions to swap home destinations cleanly
-        if (currentId == R.id.home) {
-            NavigationUtils.navigateSafe(navController, R.id.action_home_to_home_incognito);
-        } else if (currentId == R.id.home_incognito) {
-            NavigationUtils.navigateSafe(navController, R.id.action_home_incognito_to_home);
-        } else {
-            // Fallback — shouldn't happen but safe
-            NavigationUtils.navigateSafe(navController, targetHome);
-        }
+        // Invariant-enforcing path: pops to the existing home, or clears +
+        // re-roots on a mode switch. Replaces the old pop-then-swap-or-push.
+        NavigationUtils.navigateToHome(navController, incognito);
     }
 
     /**
-     * Navigates to BrowserFragment only if it's not already the current destination.
-     * Prevents stacking duplicate BrowserFragments on the back stack, which causes
-     * "new tab" pop to reveal a stale BrowserFragment instead of HomeFragment.
+     * Navigates to BrowserFragment enforcing the single-browser invariant
+     * (no-op if already there). Prevents stacking duplicate BrowserFragments
+     * on the back stack, which causes "new tab" pop to reveal a stale
+     * BrowserFragment instead of HomeFragment.
      */
-    private void navigateToBrowserIfNeeded(NavController navController) {
-        NavDestination dest = navController.getCurrentDestination();
-        if (dest == null || dest.getId() != R.id.browser) {
-            NavigationUtils.navigateSafe(navController, R.id.browser);
-        } else {
-            Log.d(TAG, "navigateToBrowserIfNeeded: already on BrowserFragment, skipping");
-        }
+    private void navigateToBrowserIfNeeded(NavController navController, boolean incognito) {
+        NavigationUtils.navigateToBrowser(navController, incognito);
     }
 
     /**
@@ -316,11 +288,7 @@ public class IntentHandler {
         GeckoStateEntity geckoStateEntity = geckoState.getGeckoStateEntity();
         browserURIViewModel.onEventSelected(geckoStateEntity, IntentActions.OPEN_SESSION);
 
-        NavDestination navDestination = navController.getCurrentDestination();
-        int currentId = navDestination != null ? navDestination.getId() : R.id.browser;
-        if (currentId != R.id.browser) {
-            NavigationUtils.navigateSafe(navController, R.id.browser);
-        }
+        NavigationUtils.navigateToBrowser(navController, geckoStateEntity.isIncognito());
         intent.removeExtra(IntentActions.MAIN_MEDIA);
         intent.setAction("");
     }

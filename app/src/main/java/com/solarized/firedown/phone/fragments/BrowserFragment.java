@@ -2186,25 +2186,11 @@ public class BrowserFragment extends BaseBrowserFragment
      * tab opened from {@code home_incognito}. We check and swap if needed.</p>
      */
     private void popToCorrectHome(boolean isIncognito) {
-        NavigationUtils.popBackStackSafe(mNavController, R.id.browser);
-
-        NavDestination dest = mNavController.getCurrentDestination();
-        if (dest == null) return;
-
-        int currentId = dest.getId();
-        int targetHome = isIncognito ? R.id.home_incognito : R.id.home;
-
-        if (currentId == targetHome) return;
-
-        // Swap home destinations
-        if (currentId == R.id.home && isIncognito) {
-            NavigationUtils.navigateSafe(mNavController, R.id.action_home_to_home_incognito);
-        } else if (currentId == R.id.home_incognito && !isIncognito) {
-            NavigationUtils.navigateSafe(mNavController, R.id.action_home_incognito_to_home);
-        } else {
-            // Fallback — shouldn't happen but safe
-            NavigationUtils.navigateSafe(mNavController, targetHome);
-        }
+        // Single invariant-enforcing path (pops to the existing home, or
+        // clears + re-roots on a mode switch) — replaces the old
+        // pop-browser-then-swap-or-push logic whose fallback could leave a
+        // duplicate home on the stack.
+        NavigationUtils.navigateToHome(mNavController, isIncognito);
     }
 
     private void findNextResult(String currentText, int flags) {

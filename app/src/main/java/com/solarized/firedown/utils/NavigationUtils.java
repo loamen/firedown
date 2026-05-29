@@ -304,6 +304,69 @@ public abstract class NavigationUtils {
         }
     }
 
+    /**
+     * Enter the browser while enforcing the single-home / single-browser
+     * invariant: pop everything above the active home (a stale browser,
+     * the tabs switcher, a bookmarks / history list) and push one browser,
+     * yielding {@code [home, browser]}.
+     *
+     * <p>No-op when already on the browser — the live fragment loads the
+     * new content through its BrowserURIViewModel observer, so re-navigating
+     * would needlessly tear it down and recreate it.</p>
+     *
+     * <p>{@code incognito} selects which home anchors the pop, so the
+     * regular and incognito stacks each stay {@code [home*, browser]}.</p>
+     */
+    public static void navigateToBrowser(NavController navController, boolean incognito) {
+        if (navController == null) return;
+        NavDestination dest = navController.getCurrentDestination();
+        if (dest == null || dest.getId() == R.id.browser) return;
+        // Pop up to whichever home is actually on the back stack — prefer the
+        // tab's mode, but fall back to the other home (cross-mode tab pick from
+        // the switcher) so we never popUpTo a destination that isn't present
+        // (which is undefined behaviour). If neither is on the stack, just push.
+        int preferred = incognito ? R.id.home_incognito : R.id.home;
+        int other = incognito ? R.id.home : R.id.home_incognito;
+        int popTarget = onBackStack(navController, preferred) ? preferred
+                : (onBackStack(navController, other) ? other : 0);
+        NavOptions.Builder opts = new NavOptions.Builder().setLaunchSingleTop(true);
+        if (popTarget != 0) opts.setPopUpTo(popTarget, false);
+        navController.navigate(R.id.browser, null, opts.build());
+    }
+
+    /** True if {@code destId} is currently on the back stack. */
+    private static boolean onBackStack(NavController navController, int destId) {
+        try {
+            navController.getBackStackEntry(destId);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Return to the active home while enforcing the invariant. If the
+     * target home is already on the back stack, pop straight to it —
+     * clearing any browser / tabs / list / duplicate sitting above. If it
+     * isn't (we're in the other mode), clear the whole stack and make the
+     * target home the new root. Replaces the per-fragment popToCorrectHome /
+     * navigateToHomeIfNeeded logic, whose fallback used to *push* a second
+     * home onto the stack.
+     */
+    public static void navigateToHome(NavController navController, boolean incognito) {
+        if (navController == null) return;
+        NavDestination dest = navController.getCurrentDestination();
+        if (dest == null) return;
+        int target = incognito ? R.id.home_incognito : R.id.home;
+        if (dest.getId() == target) return;
+        if (navController.popBackStack(target, false)) return;
+        NavOptions opts = new NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .setPopUpTo(R.id.nav_graph, true)
+                .build();
+        navController.navigate(target, null, opts);
+    }
+
     public static void popBackStackSafe(NavController navController, int id){
 
         if(navController == null)
