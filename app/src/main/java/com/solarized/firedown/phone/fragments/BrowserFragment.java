@@ -32,7 +32,6 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleEventObserver;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavDestination;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -41,7 +40,6 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.autocomplete.AutoCompleteView;
 import com.solarized.firedown.data.entity.CertificateInfoEntity;
 import com.solarized.firedown.data.entity.ContextElementEntity;
-import com.solarized.firedown.data.Download;
 import com.solarized.firedown.data.entity.AutoCompleteEntity;
 import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.data.models.BrowserDialogViewModel;

@@ -211,6 +211,7 @@ public class CertDialogFragment extends BaseBottomSheetDialogFragment {
                     return;
                 Window window = getDialog().getWindow();
                 Snackbar snackbar = Snackbar.make(window.getDecorView(), R.string.cert_copied, Snackbar.LENGTH_LONG);
+                snackbar.setAnchorView(mView.findViewById(R.id.anchor_view));
                 snackbar.show();
             }
         });

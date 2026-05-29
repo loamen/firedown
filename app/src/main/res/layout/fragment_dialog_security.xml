@@ -133,20 +133,14 @@
             android:gravity="center_horizontal"
             android:orientation="vertical">
 
-            <!-- Hero total in a tonal card (TrackersInfoSheet stat-card style:
-                 colorSurfaceContainer, 12dp, flat). The big sum is the
-                 headline, so it gets the surface; the ads/trackers chips below
-                 are plain. -->
-            <com.google.android.material.card.MaterialCardView
-                style="@style/TrackersInfoStatCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_horizontal"
                     android:orientation="vertical"
+                    android:paddingHorizontal="64dp"
                     android:paddingVertical="16dp">
 
                     <TextView
@@ -169,7 +163,6 @@
 
                 </LinearLayout>
 
-            </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:layout_width="wrap_content"

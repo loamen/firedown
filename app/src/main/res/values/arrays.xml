@@ -352,7 +352,7 @@
 
 
     <integer-array name="new_tab_items_icon">
-        <item>@drawable/ic_web_24</item>
+        <item>@drawable/ic_tabs_new_24</item>
         <item>@drawable/ic_incognito_24</item>
     </integer-array>
 

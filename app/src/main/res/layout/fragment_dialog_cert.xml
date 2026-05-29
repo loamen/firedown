@@ -385,6 +385,13 @@
             android:text="@string/cert_copy_pem"
             app:icon="@drawable/ic_content_copy" />
 
+        <View
+            android:id="@+id/anchor_view"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_gravity="bottom" />
+
     </LinearLayout>
+
 
 </androidx.core.widget.NestedScrollView>
