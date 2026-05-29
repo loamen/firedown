@@ -55,7 +55,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical">
 
     <include
@@ -133,10 +133,16 @@
         android:layout_marginTop="8dp" />
 
 
+    <!-- wrap_content (not 0dp + weight): the sheet hugs its content so it
+         opens exactly as tall as the rows need, instead of the root
+         match_parent + weighted scroller forcing it to fill the viewport and
+         leaving the inner list scrollable even with space to spare. The
+         NestedScrollView still scrolls when content genuinely exceeds the
+         bottom_sheet_max_height cap, with the identity header above staying
+         pinned (it's outside this scroller). -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:overScrollMode="never">
 
         <LinearLayout
