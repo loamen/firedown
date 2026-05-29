@@ -195,11 +195,6 @@
     <string name="gif_maker_speed_very_slow">非常に遅い</string>
     <string name="gif_maker_title">GIFを作成</string>
     <string name="if_preferences_security">セキュリティ</string>
-    <string name="incognito_bullet_cookies">Cookie</string>
-    <string name="incognito_bullet_searches">検索履歴</string>
-    <string name="incognito_bullet_temp_files">一時ファイル</string>
-    <string name="incognito_bullet_visited">閲覧したページ</string>
-    <string name="incognito_home_description">プライベートウィンドウで閲覧する場合、Firedown は次の情報を保存しません:</string>
     <string name="incognito_home_title">プライベートブラウジング</string>
     <string name="incognito_home_warning">プライベートブラウジングでは、ネットワーク管理者、雇用主、または訪問先サイトからの追跡は防げません。</string>
     <string name="incognito_notification_channel">プライベートブラウジング</string>

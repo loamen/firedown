@@ -270,7 +270,6 @@
     <string name="bookmark_name">ชื่อ</string>
     <string name="home_vault_button">โฟลเดอร์ที่ปลอดภัย</string>
     <string name="settings_webrtc_enabled_summary">อนุญาตการโทรวิดีโอและเสียงแบบเรียลไทม์ การปิดใช้งานจะลดพื้นผิวการสำรวจเครือข่าย</string>
-    <string name="incognito_home_description">เมื่อท่องเว็บในหน้าต่างส่วนตัว Firedown จะไม่เก็บ:</string>
     <string name="incognito_home_warning">การท่องเว็บแบบส่วนตัวไม่ได้ซ่อนกิจกรรมของคุณจากเครือข่าย นายจ้าง หรือเว็บไซต์ที่คุณเข้าชม</string>
 <string name="settings_theme_app_category">ธีมแอป</string>
     <string name="settings_theme_home_category">หน้าหลัก</string>

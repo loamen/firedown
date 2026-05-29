@@ -222,7 +222,6 @@
     <string name="bookmark_name">Nome</string>
     <string name="home_vault_button">Pasta segura</string>
     <string name="settings_webrtc_enabled_summary">Permite chamadas de vídeo e voz em tempo real. Desativar reduz a superfície de sondagem de rede.</string>
-    <string name="incognito_home_description">Quando navegas numa janela privada, o Firedown não guarda:</string>
     <string name="incognito_home_warning">A navegação privada não esconde a tua atividade da tua rede, do teu empregador ou dos sites que visitas.</string>
     <string name="wasm_snackbar_message">%s precisa do WebAssembly para funcionar</string>
     <string name="wasm_snackbar_action_enable">Ativar</string>

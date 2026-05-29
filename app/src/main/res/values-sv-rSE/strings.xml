@@ -58,7 +58,6 @@
     <string name="switch_to_tab_description">Växla till flik</string>
     <string name="bookmark_name">Namn</string>
     <string name="settings_webrtc_enabled_summary">Tillåter video- och röstsamtal i realtid. Inaktivering minskar nätverkssonderingsytan.</string>
-    <string name="incognito_home_description">När du surfar i ett privat fönster sparar Firedown inte:</string>
     <string name="incognito_home_warning">Privat surfning döljer inte din aktivitet för ditt nätverk, din arbetsgivare eller webbplatserna du besöker.</string>
 <string name="settings_theme_app_category">Apptema</string>
     <string name="settings_theme_home_category">Startsida</string>

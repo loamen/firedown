@@ -91,6 +91,14 @@
     <color name="incognito_surface_container_highest">#FF553090</color>
     <color name="incognito_surface_container_lowest">#FF0D0E10</color>
 
+    <!-- Incognito-home fact chips: soft translucent fills (drawn over the
+         deep-purple surface) paired with a full-opacity accent icon. Each
+         fact owns a brand hue so the three read as distinct at a glance. -->
+    <color name="incognito_chip_history">#2EFAB186</color>
+    <color name="incognito_chip_cookies">#33F66A66</color>
+    <color name="incognito_chip_downloads">#3DC8417B</color>
+    <color name="incognito_fact_downloads_icon">#FFF48FBB</color>
+
     <!-- Background -->
     <color name="incognito_background">#FF391D5B</color>
 

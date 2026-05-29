@@ -340,7 +340,6 @@
     <string name="pip_pause">Пауза</string>
     <string name="home_vault_button">Безопасная папка</string>
     <string name="settings_webrtc_enabled_summary">Включает видео- и голосовые вызовы в реальном времени. Отключение уменьшает площадь зондирования сети.</string>
-    <string name="incognito_home_description">В приватном окне Firedown не сохраняет:</string>
     <string name="incognito_home_warning">Приватный просмотр не скрывает вашу активность от сети, работодателя или посещаемых сайтов.</string>
     <string name="wasm_snackbar_message">Для %s нужен WebAssembly</string>
     <string name="wasm_snackbar_action_enable">Включить</string>

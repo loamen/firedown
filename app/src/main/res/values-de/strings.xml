@@ -195,11 +195,6 @@
     <string name="gif_maker_speed_very_slow">Sehr langsam</string>
     <string name="gif_maker_title">GIF erstellen</string>
     <string name="if_preferences_security">Sicherheit</string>
-    <string name="incognito_bullet_cookies">Cookies</string>
-    <string name="incognito_bullet_searches">Suchanfragen</string>
-    <string name="incognito_bullet_temp_files">Temporäre Dateien</string>
-    <string name="incognito_bullet_visited">Besuchte Seiten</string>
-    <string name="incognito_home_description">Wenn du in einem privaten Fenster surfst, speichert Firedown nicht:</string>
     <string name="incognito_home_title">Privater Modus</string>
     <string name="incognito_home_warning">Privates Surfen verbirgt deine Aktivität nicht vor deinem Netzwerk, deinem Arbeitgeber oder den besuchten Webseiten.</string>
     <string name="incognito_notification_channel">Privater Modus</string>

@@ -268,7 +268,6 @@
     <string name="bookmark_name">Ime</string>
     <string name="home_vault_button">Sigurna mapa</string>
     <string name="settings_webrtc_enabled_summary">Omogućuje video- i glasovne pozive u stvarnom vremenu. Onemogućivanje smanjuje površinu mrežnog sondiranja.</string>
-    <string name="incognito_home_description">U privatnom prozoru Firedown ne sprema:</string>
     <string name="incognito_home_warning">Privatno pregledavanje ne skriva tvoju aktivnost od mreže, poslodavca ili stranica koje posjećuješ.</string>
 <string name="settings_theme_app_category">Tema aplikacije</string>
     <string name="settings_theme_home_category">Početni zaslon</string>

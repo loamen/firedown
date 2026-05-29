@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Rounded-square chip behind each incognito-home fact icon. Solid white
+    so the per-fact android:backgroundTint (a translucent brand hue) renders
+    cleanly over the deep-purple surface. Mirrors the 12dp corner of the
+    regular Home chips (bg_icon_container_*) so the two homes feel related.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="12dp" />
+</shape>

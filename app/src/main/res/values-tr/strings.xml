@@ -341,7 +341,6 @@
     <string name="incognito_downloads_in_progress_subtitle">Güvenli klasörde görüntülemek için dokunun</string>
     <string name="home_vault_button">Güvenli klasör</string>
     <string name="settings_webrtc_enabled_summary">Gerçek zamanlı görüntülü ve sesli aramaları etkinleştirir. Devre dışı bırakmak ağ tarama yüzeyini azaltır.</string>
-    <string name="incognito_home_description">Gizli pencerede gezinirken Firedown şunları saklamaz:</string>
     <string name="incognito_home_warning">Gizli gezinti, etkinliğinizi ağınızdan, işvereninizden veya ziyaret ettiğiniz sitelerden gizlemez.</string>
     <string name="wasm_snackbar_message">%s WebAssembly gerektiriyor</string>
     <string name="wasm_snackbar_action_enable">Etkinleştir</string>
