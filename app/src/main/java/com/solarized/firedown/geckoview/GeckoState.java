@@ -164,7 +164,11 @@ public class GeckoState {
     }
 
     public void reload(){
-        if(mGeckoSession == null){
+        // isOpen guard: a killed-but-not-discarded session (ref non-null,
+        // !isOpen — e.g. after onKill before discardGeckoSession runs) would
+        // otherwise silently swallow reload. Reopen via the normal attach
+        // path instead of no-opping on a dead session.
+        if(mGeckoSession == null || !mGeckoSession.isOpen()){
             return;
         }
         if(isInitialLoad()){
@@ -176,7 +180,9 @@ public class GeckoState {
 
 
     public void stop(){
-        if(mGeckoSession == null){
+        // Same isOpen guard as reload(): stop() on a dead session is a no-op
+        // in the engine, so don't pretend it did anything.
+        if(mGeckoSession == null || !mGeckoSession.isOpen()){
             return;
         }
         mGeckoSession.stop();

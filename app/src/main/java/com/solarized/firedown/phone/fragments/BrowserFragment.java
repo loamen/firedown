@@ -22,6 +22,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ShareCompat;
 import androidx.core.graphics.Insets;
@@ -1100,7 +1101,11 @@ public class BrowserFragment extends BaseBrowserFragment
             mAutoCompleteView.showEmpty();
             mGeckoToolbar.clearText();
         } else {
-            GeckoState geckoState = peekCurrentGeckoState();
+            // resolveActiveGeckoState (not peek): stop/reload must act on the
+            // session actually shown in the GeckoView even if mCurrentId has
+            // drifted (kill-on-trim → resume), otherwise the controls no-op on
+            // a visibly-loading tab.
+            GeckoState geckoState = resolveActiveGeckoState();
             if (geckoState == null)
                 return;
             if (id == R.id.security_button) {
@@ -1178,7 +1183,10 @@ public class BrowserFragment extends BaseBrowserFragment
             Editable editable = mAutoCompleteEditText.getText();
             String text = editable.toString();
             if (!TextUtils.isEmpty(text)) {
-                GeckoState geckoState = peekCurrentGeckoState();
+                // resolveActiveGeckoState so typing a new URL works on the
+                // visible tab even if mCurrentId drifted (otherwise the commit
+                // silently no-ops on a stuck tab).
+                GeckoState geckoState = resolveActiveGeckoState();
                 if(geckoState == null)
                     return;
                 geckoState.setEntityUri(mSearchRepository.parseUri(text));
@@ -1273,6 +1281,20 @@ public class BrowserFragment extends BaseBrowserFragment
         mGeckoToolbar.setLoading(progress > 0 && progress < 100);
         mBrowserDialogViewModel.setLoading(progress > 0 && progress < 100);
         mSwipeRefreshLayout.setProgressRefreshing(progress);
+    }
+
+    @Override
+    public void onStop(GeckoState geckoState) {
+        // Page finished (or was halted by the engine). The loading indicator
+        // is otherwise cleared only by onProgressChange(100); if a page stalls
+        // mid-load or its final progress tick never arrives, the stop button
+        // would stay up forever. onPageStop is the authoritative "no longer
+        // loading" signal, so clear the loading UI here regardless of progress.
+        if (mGeckoToolbar.isAutoCompleteVisible()) return;
+        mGeckoToolbar.setProgress(100);
+        mGeckoToolbar.setLoading(false);
+        mBrowserDialogViewModel.setLoading(false);
+        mSwipeRefreshLayout.setProgressRefreshing(100);
     }
 
     @Override
@@ -2173,6 +2195,31 @@ public class BrowserFragment extends BaseBrowserFragment
         return mIsIncognitoThemed
                 ? mIncognitoStateViewModel.peekCurrentGeckoState()
                 : mGeckoStateViewModel.peekCurrentGeckoState();
+    }
+
+    /**
+     * GeckoState the toolbar controls (stop / reload / URL commit) should act
+     * on. Prefers the current state by id, but falls back to the state that
+     * owns the session actually attached to the GeckoView.
+     *
+     * <p>Why the fallback: the toolbar resolves "current" via mCurrentId, but
+     * the visible page is whatever session is bound to mGeckoView. After a
+     * kill-on-trim → discard → resume, or any path that leaves mCurrentId
+     * pointing at a tab that no longer resolves, peekCurrentGeckoState()
+     * returns null and the stop/reload/commit handlers used to early-return —
+     * leaving a visibly-loading tab whose controls did nothing. Resolving the
+     * attached session keeps the controls acting on what the user sees.</p>
+     */
+    @Nullable
+    private GeckoState resolveActiveGeckoState() {
+        GeckoState current = peekCurrentGeckoState();
+        if (current != null) return current;
+        if (mGeckoView == null) return null;
+        GeckoSession attached = mGeckoView.getSession();
+        if (attached == null) return null;
+        GeckoState bySession = mGeckoStateViewModel.getGeckoState(attached);
+        if (bySession == null) bySession = mIncognitoStateViewModel.getGeckoState(attached);
+        return bySession;
     }
 
     /**
