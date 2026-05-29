@@ -606,6 +606,29 @@ public class GeckoStateDataRepository {
 
         mGeckoStates.removeAll(toArchive);
 
+        // Close the archived tabs' GeckoSessions. Dropping the GeckoState
+        // from the list is not enough — the underlying GeckoSession stays
+        // open() and registered with the runtime, leaking a content process
+        // per auto-archived tab (which, accumulated over a long session,
+        // is exactly the kind of pressure that triggers content-process
+        // kills and dead tabs). The serialized session state lives in the
+        // entity handed to mArchivedRepository below, so the tab still
+        // restores fully on reopen via getOrCreateGeckoSession →
+        // restoreState. closeGeckoSession() must run on the main thread
+        // (GeckoSession contract); this method runs on the disk executor
+        // during init and on a background thread for the periodic job, so
+        // post when off-main — mirror deleteAll().
+        if (!toArchive.isEmpty()) {
+            final List<GeckoState> toCloseSessions = new ArrayList<>(toArchive);
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                for (GeckoState state : toCloseSessions) state.closeGeckoSession();
+            } else {
+                new android.os.Handler(Looper.getMainLooper()).post(() -> {
+                    for (GeckoState state : toCloseSessions) state.closeGeckoSession();
+                });
+            }
+        }
+
         // Persist outside the critical section isn't needed here because
         // we're already on the disk executor thread during initialization
         long nowMs = System.currentTimeMillis();

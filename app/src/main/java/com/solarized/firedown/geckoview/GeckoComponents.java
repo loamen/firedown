@@ -1402,13 +1402,34 @@ public class GeckoComponents {
 
             final GeckoState geckoState = findGeckoState(session);
 
-            if(geckoState == null){
-                mGeckoObserverRegistry.notifyObservers(GeckoObserverInvoker.LOAD_REQUEST, geckoState, request.uri);
+            if(TextUtils.isEmpty(request.uri)){
                 return GeckoResult.deny();
             }
 
-
-            if(TextUtils.isEmpty(request.uri)){
+            // Self-heal for an orphaned session. If the GeckoView is actively
+            // loading a session that is no longer tracked in either repo
+            // (an upstream tab-list removal dropped its GeckoState while the
+            // session stayed attached to the view), the old hard-deny here
+            // permanently bricked the tab: every reload / typed-URL / Go was
+            // silently refused, with no crash and a fully responsive UI —
+            // the "all tabs stop responding" failure mode. Allow valid web
+            // content through so the tab keeps working even if its bookkeeping
+            // was lost; only the external-app + Play Store interception below
+            // (which needs a live GeckoState) is skipped when we can't
+            // resolve one.
+            if (geckoState == null) {
+                Log.w(TAG, "onLoadRequest: no GeckoState for session, uri=" + request.uri
+                        + " — allowing web content to avoid bricking an orphaned tab");
+                if (URLUtil.isValidUrl(request.uri)
+                        || UrlStringUtils.isURLDataLike(request.uri)
+                        || UrlStringUtils.isURLResouceLike(request.uri)
+                        || UrlStringUtils.isViewSource(request.uri)
+                        || UrlStringUtils.isMozExtensionLike(request.uri)
+                        || UrlStringUtils.isURLFileLike(request.uri)
+                        || UrlStringUtils.isBlobLike(request.uri)) {
+                    return GeckoResult.allow();
+                }
+                mGeckoObserverRegistry.notifyObservers(GeckoObserverInvoker.LOAD_REQUEST, geckoState, request.uri);
                 return GeckoResult.deny();
             }
 
