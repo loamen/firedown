@@ -1723,6 +1723,29 @@ public class BrowserFragment extends BaseBrowserFragment
         // Matches Fenix's onProcessKilled → KillEngineSessionAction:
         // tear down, no eager rebuild.
         //
+        // Detach the dead session from the GeckoView *before* discarding it.
+        // discardGeckoSession() only close()s the session and nulls the
+        // GeckoState's reference — it never touches the view. onKill almost
+        // always fires for the foreground tab (the OS reclaims our content
+        // process while we're backgrounded), so without this the GeckoView
+        // keeps the now-closed session attached, with its compositor/surface
+        // binding and all nine wired delegates pinned, until some later
+        // setSession() happens to swap it out. That stale attachment is what
+        // leaves the tab blank on return: the surface was never cleanly
+        // released, so when the user reselects and the session is already
+        // isOpen() (skipping setGeckoViewSession's !isOpen reload gate) the
+        // view comes back painting nothing.
+        //
+        // Guarded on identity: onKill also fires for *background* tabs under
+        // memory pressure, and releaseSession() detaches whatever the view is
+        // currently showing — calling it unconditionally would tear the live
+        // foreground tab off the view. Only release when the killed session is
+        // the one actually attached.
+        if (mGeckoView != null
+                && mGeckoView.getSession() == geckoState.getGeckoSession()) {
+            mGeckoView.releaseSession();
+        }
+
         // Discard the dead session reference so the lazy recovery path
         // reconstructs a fresh GeckoSession (which re-queues restoreState
         // and makes the saved history actually navigate on reopen).
