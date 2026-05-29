@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.solarized.firedown.R;
+import com.solarized.firedown.utils.SelectionStyling;
 
 /**
  * Single-item adapter that surfaces the "N incognito downloads in
@@ -65,6 +66,16 @@ public class IncognitoInProgressHeaderAdapter
     public HeaderViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_incognito_in_progress_header, parent, false);
+        // Brand wash (colorPrimaryContainer @ 20% over surface) — the same
+        // tonal lift the list uses for selected rows, via SelectionStyling.
+        // Subtle enough for an informational pointer (vs the full
+        // primaryContainer the home active-download card uses) while still
+        // setting it apart from the plain download rows. Set here, not in the
+        // layout, because the wash is composed in code.
+        if (v instanceof com.google.android.material.card.MaterialCardView card) {
+            card.setCardBackgroundColor(SelectionStyling.selectedCardWashOver(
+                    parent.getContext(), com.google.android.material.R.attr.colorSurface));
+        }
         return new HeaderViewHolder(v);
     }
 

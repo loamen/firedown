@@ -5,6 +5,15 @@
   downloads are in flight. Scrolls with the rest of the list
   (the ConcatAdapter places it at adapter position 0 above the
   paginated download entries).
+
+  Lock icon + trailing chevron: the card taps into the Vault, so the
+  lock maps to the destination and the chevron marks it as forward
+  navigation rather than a passive info row. No progress bar — this
+  adapter only has a count (TaskViewModel#getSafeCount), not per-download
+  progress, so a determinate bar is impossible and an averaged one would
+  mislead. The cardBackgroundColor below is a fallback; the adapter
+  overrides it at bind time with the SelectionStyling brand wash
+  (primaryContainer @ 20% over surface).
 -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -31,7 +40,8 @@
             android:id="@+id/incognito_in_progress_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:src="@drawable/ic_incognito_24"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_lock_24"
             app:tint="?attr/colorOnSurface"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -45,7 +55,7 @@
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:textColor="?attr/colorOnSurface"
             app:layout_constraintStart_toEndOf="@id/incognito_in_progress_icon"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/incognito_in_progress_chevron"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
@@ -58,8 +68,22 @@
             android:alpha="0.8"
             android:text="@string/incognito_downloads_in_progress_subtitle"
             app:layout_constraintStart_toEndOf="@id/incognito_in_progress_icon"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/incognito_in_progress_chevron"
             app:layout_constraintTop_toBottomOf="@id/incognito_in_progress_title" />
+
+        <!-- Trailing chevron — signals the whole card navigates forward
+             (into the Vault). Decorative; the card itself carries the click. -->
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/incognito_in_progress_chevron"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_chevron_right_24"
+            app:tint="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
