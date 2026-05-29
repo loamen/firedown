@@ -41,3 +41,9 @@ between them show *why* we ended up where we did.
   concepts) vs A merged rows (one row per concept: toggle + count pill
   that drills in), B hero "total blocked" summary, C minimal/dense.
   Proposed A. Not yet implemented.
+- `active-download-card.html` — Home active-download strip. CURRENT
+  (flame + label + filename + bar + bare %, no inline control) vs
+  A inline cancel ✕ + size/percent context, B pause + cancel,
+  C speed/ETA + cancel, D minimal (just add total size). Proposed A —
+  the card surfaces live state but offers no way to cancel/pause without
+  opening Downloads, though the backend supports both.
