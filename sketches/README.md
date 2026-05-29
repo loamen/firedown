@@ -47,3 +47,8 @@ between them show *why* we ended up where we did.
   C speed/ETA + cancel, D minimal (just add total size). Proposed A —
   the card surfaces live state but offers no way to cancel/pause without
   opening Downloads, though the backend supports both.
+- `incognito-downloads-banner.html` — Downloads list "incognito
+  downloads in progress" header. CURRENT reads as a static content row
+  (surface card, mask icon, no progress, no chevron) vs A live+branded
+  (primaryContainer tint + progress bar + lock chip + chevron), B
+  neutral+actionable, C compact pill, D minimal delta. Proposed A.

@@ -13,7 +13,7 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="@dimen/list_spacing"
     android:layout_marginTop="@dimen/list_spacing"
-    android:layout_marginBottom="@dimen/list_item_margin"
+    android:layout_marginBottom="@dimen/incognito_banner_margin_bottom"
     app:cardCornerRadius="12dp"
     app:cardElevation="0dp"
     app:strokeWidth="0dp"

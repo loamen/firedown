@@ -40,6 +40,12 @@
     <dimen name="list_web_empty_height">37dp</dimen>
     <dimen name="list_item_margin">6dp</dimen>
     <dimen name="list_spacing">8dp</dimen>
+    <!-- Incognito-in-progress banner bottom margin. The banner is always
+         followed by the first date header (fragment_item_header), which has a
+         fixed 20dp paddingTop. Negative margin cancels most of it so the gap
+         BELOW the banner (~8dp net) matches the gap ABOVE it (list_spacing),
+         instead of the lopsided 6 + 20 = 26dp. -->
+    <dimen name="incognito_banner_margin_bottom">-12dp</dimen>
     <dimen name="list_item_domain">12dp</dimen>
     <dimen name="list_spacing_search">18dp</dimen>
     <dimen name="list_spacing_search_bottom">12dp</dimen>
