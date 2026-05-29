@@ -95,8 +95,6 @@ import org.mozilla.geckoview.WebResponse;
 
 import java.util.Locale;
 
-import javax.annotation.Nullable;
-
 
 public class BrowserFragment extends BaseBrowserFragment
         implements OnItemClickListener {

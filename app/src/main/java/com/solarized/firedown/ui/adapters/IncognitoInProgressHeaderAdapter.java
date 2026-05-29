@@ -84,7 +84,7 @@ public class IncognitoInProgressHeaderAdapter
         holder.bind(mCount, mListener);
     }
 
-    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+    public static class HeaderViewHolder extends RecyclerView.ViewHolder {
 
         private final TextView mTitle;
 

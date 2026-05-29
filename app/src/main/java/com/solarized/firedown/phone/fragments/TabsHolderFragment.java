@@ -1,6 +1,7 @@
 package com.solarized.firedown.phone.fragments;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
@@ -42,6 +43,7 @@ import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.IntentActions;
+import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.utils.NavigationUtils;
 
@@ -220,6 +222,10 @@ public class TabsHolderFragment extends BaseFocusFragment {
                     return true;
                 } else if (id == R.id.action_tabs_archive) {
                     NavigationUtils.navigateSafe(mNavController, R.id.tabs_archive);
+                    return true;
+                } else if (id == R.id.action_settings) {
+                    Intent intent = new Intent(mActivity, SettingsActivity.class);
+                    startActivity(intent);
                     return true;
                 }
                 return false;
