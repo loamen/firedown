@@ -34,7 +34,6 @@ import org.mozilla.geckoview.GeckoResult;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoRuntimeSettings;
 import org.mozilla.geckoview.GeckoSession;
-import org.mozilla.geckoview.GeckoSessionSettings;
 import org.mozilla.geckoview.StorageController;
 import org.mozilla.geckoview.WebExtension;
 
@@ -249,28 +248,27 @@ public class GeckoRuntimeHelper {
 
     /**
      * TabDelegate handles browser.tabs.create calls from WebExtensions.
-     * Creates a new GeckoSession for the requested tab. Used by the YouTube
-     * extension to create a hidden youtube.com/robots.txt session for BotGuard
-     * PO token generation (no CSP on robots.txt allows eval injection).
+     *
+     * <p>We refuse them. Returning a session here would hand GeckoView a
+     * GeckoSession that is never tracked in the Java tab repo (findGeckoState
+     * returns null for it) nor closed — a leaked, invisible content process.
+     * Firedown drives everything through native Java messaging and exposes no
+     * extension UI (uBlock's dashboard/logger/etc.), so nothing legitimately
+     * needs this. The former use case (a hidden youtube.com/robots.txt tab for
+     * BotGuard PO tokens) is obsolete: {@link PoTokenGenerator} now creates and
+     * fully lifecycle-manages that session directly, without the Tabs API.
+     *
+     * <p>Returning {@code null} aborts the tab creation on the GeckoView side.
+     * Kept (rather than not setting a delegate) so any future attempt is
+     * logged instead of silently leaking.
      */
-
     private final WebExtension.TabDelegate mTabDelegate = new WebExtension.TabDelegate() {
         @Override
         public GeckoResult<GeckoSession> onNewTab(@NonNull WebExtension source,
                                                   @NonNull WebExtension.CreateTabDetails createDetails) {
-            Log.d(TAG, "onNewTab from " + source.id + ": " + createDetails.url);
-
-            GeckoSessionSettings settings = new GeckoSessionSettings.Builder()
-                    .usePrivateMode(false)
-                    .suspendMediaWhenInactive(true)
-                    .allowJavascript(true)
-                    .build();
-
-            // GeckoView requires an UNOPENED session — it opens it internally
-            GeckoSession session = new GeckoSession(settings);
-            registerSession(session);
-
-            return GeckoResult.fromValue(session);
+            Log.w(TAG, "onNewTab refused from " + source.id + ": " + createDetails.url
+                    + " — extension tab creation is disabled (would leak an untracked session)");
+            return GeckoResult.fromValue(null);
         }
     };
 
