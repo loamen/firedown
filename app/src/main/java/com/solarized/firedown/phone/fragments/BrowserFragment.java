@@ -538,14 +538,10 @@ public class BrowserFragment extends BaseBrowserFragment
                 }
             } else if (id == R.id.action_clear_browsing) {
                 String host = mOptionEntity.getAction();
-                Snackbar snackbar = makeSnackbar(getSnackAnchorView(), getString(R.string.settings_clear_browsing_success, host), mIsIncognitoThemed);
-                snackbar.setAnchorView(R.id.anchor_view);
-                snackbar.show();
+                makeAnchoredSnackbar(getString(R.string.settings_clear_browsing_success, host)).show();
             } else if (id == R.id.action_clear_error_browsing) {
                 String host = mOptionEntity.getAction();
-                Snackbar snackbar = makeSnackbar(getSnackAnchorView(), getString(R.string.settings_clear_browsing_error, host), mIsIncognitoThemed);
-                snackbar.setAnchorView(R.id.anchor_view);
-                snackbar.show();
+                makeAnchoredSnackbar(getString(R.string.settings_clear_browsing_error, host)).show();
             }else if (id == R.id.action_delete_clipboard) {
                 mAutoCompleteView.hideClipboard();
             } else if (id == R.id.popup_vault) {
@@ -594,9 +590,7 @@ public class BrowserFragment extends BaseBrowserFragment
                 GeckoState mGeckoState = peekCurrentGeckoState();
                 if (mGeckoState == null) return;
                 mWebBookmarkViewModel.add(mGeckoState);
-                Snackbar snackbar = makeSnackbar(getSnackAnchorView(), R.string.browser_bookmark_added, mIsIncognitoThemed);
-                snackbar.setAnchorView(R.id.anchor_view);
-                snackbar.show();
+                makeAnchoredSnackbar(R.string.browser_bookmark_added).show();
             } else if (id == R.id.popup_bookmark_edit) {
                 GeckoState mGeckoState = peekCurrentGeckoState();
                 if (mGeckoState == null) return;
@@ -708,9 +702,8 @@ public class BrowserFragment extends BaseBrowserFragment
                     mGeckoStateViewModel.notifyTabs();
                 }
 
-                Snackbar snackbar = makeSnackbar(getSnackAnchorView(), R.string.contextmenu_snackbar_new_tab_opened, mIsIncognitoThemed);
+                Snackbar snackbar = makeAnchoredSnackbar(R.string.contextmenu_snackbar_new_tab_opened);
                 snackbar.setAction(R.string.contextmenu_snackbar_action_switch, v -> openSession(geckoState));
-                snackbar.setAnchorView(R.id.anchor_view);
                 snackbar.show();
             } else if (id == R.string.contextmenu_open_image_in_new_tab) {
                 GeckoStateEntity geckoStateEntity = new GeckoStateEntity(false);
@@ -726,9 +719,7 @@ public class BrowserFragment extends BaseBrowserFragment
                 GeckoState geckoState = setActiveSession(geckoStateEntity, false);
                 openSession(geckoState);
 
-                Snackbar snackbar = makeSnackbar(getSnackAnchorView(), R.string.contextmenu_snackbar_new_tab_opened, mIsIncognitoThemed);
-                snackbar.setAnchorView(R.id.anchor_view);
-                snackbar.show();
+                makeAnchoredSnackbar(R.string.contextmenu_snackbar_new_tab_opened).show();
             }
         });
 
@@ -1014,6 +1005,30 @@ public class BrowserFragment extends BaseBrowserFragment
      * the global pref and reload — the pref change is async, the reload
      * waits for it.</p>
      */
+    /**
+     * Build a Snackbar parented to {@link #getSnackAnchorView()}, anchored
+     * above the bottom navigation bar ({@code R.id.anchor_view}) and tinted
+     * for the current theme ({@code mIsIncognitoThemed}). Collapses the
+     * repeated {@code makeSnackbar(getSnackAnchorView(), …)} +
+     * {@code setAnchorView(R.id.anchor_view)} pairing used across this
+     * fragment. Returns the Snackbar so callers can still chain
+     * {@code setAction(...)} before {@code show()}.
+     *
+     * <p>Deliberately not pushed down into {@link BaseFocusFragment}: the
+     * base {@code makeSnackbar} is also used by the fullscreen hint (parented
+     * to the bottom bar, not anchored) and by the download fragments, which
+     * don't anchor to {@code R.id.anchor_view}.
+     */
+    private Snackbar makeAnchoredSnackbar(String text) {
+        Snackbar snackbar = makeSnackbar(getSnackAnchorView(), text, mIsIncognitoThemed);
+        snackbar.setAnchorView(R.id.anchor_view);
+        return snackbar;
+    }
+
+    private Snackbar makeAnchoredSnackbar(int textResId) {
+        return makeAnchoredSnackbar(getString(textResId));
+    }
+
     private void showEnableWasmSnackbar(String reportedUrl, boolean incognito) {
         GeckoState current = peekCurrentGeckoState();
         if (current == null || current.getEntityUri() == null) {
@@ -1037,11 +1052,8 @@ public class BrowserFragment extends BaseBrowserFragment
         Log.d(TAG, "showEnableWasmSnackbar showing for " + reportedHost
                 + " incognito=" + incognito);
 
-        Snackbar snackbar = makeSnackbar(
-                anchor,
-                getString(R.string.wasm_snackbar_message, reportedHost),
-                mIsIncognitoThemed);
-        snackbar.setAnchorView(R.id.anchor_view);
+        Snackbar snackbar = makeAnchoredSnackbar(
+                getString(R.string.wasm_snackbar_message, reportedHost));
         snackbar.setAction(R.string.wasm_snackbar_action_enable, v -> {
             if (incognito) {
                 mIncognitoStateViewModel.allowWasmFor(reportedUrl);
@@ -1516,12 +1528,7 @@ public class BrowserFragment extends BaseBrowserFragment
         if (autoBlock) {
             // Pref is on — silent block path. Show a Snackbar so the
             // denial isn't invisible to the user.
-            Snackbar snackbar = makeSnackbar(
-                    getSnackAnchorView(),
-                    getString(R.string.block_redirect_snackbar),
-                    mIsIncognitoThemed);
-            snackbar.setAnchorView(R.id.anchor_view);
-            snackbar.show();
+            makeAnchoredSnackbar(getString(R.string.block_redirect_snackbar)).show();
 
             return;
         }
