@@ -57,5 +57,6 @@ between them show *why* we ended up where we did.
   Already well-built (correct archive icon, dismiss ✕) — the gap is tint
   consistency with the incognito banner. CURRENT (plain surface) vs A
   brand wash + icon chip (keep dismiss), B wash + "View archive ›" body
-  cue, C split view/dismiss zones. Proposed A. Note: the ✕ must stay
-  (this banner is genuinely dismissible, unlike the incognito one).
+  cue, C split view/dismiss zones. Shipped A (brand wash only; the bare
+  icon already matched the shipped incognito banner, so no icon chip).
+  Note: the ✕ stays — this banner is genuinely dismissible.

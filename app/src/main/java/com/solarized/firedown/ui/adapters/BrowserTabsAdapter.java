@@ -28,6 +28,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
 import com.solarized.firedown.GlideHelper;
 import com.solarized.firedown.R;
+import com.solarized.firedown.utils.SelectionStyling;
 import com.solarized.firedown.data.entity.GeckoStateEntity;
 import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.ui.OnItemClickListener;
@@ -181,6 +182,14 @@ public class BrowserTabsAdapter extends GridListBaseAdapter<GeckoStateEntity, Re
         if (viewType == TYPE_BANNER) {
             View view = LayoutInflater.from(viewGroup.getContext())
                     .inflate(R.layout.fragment_tabs_archive_banner, viewGroup, false);
+            // Brand wash (primaryContainer @ 20% over surface) — the same
+            // tonal lift the incognito-downloads banner and selected list rows
+            // use (SelectionStyling), so the two scrolling list-banners read as
+            // siblings. Composed in code, hence set here rather than in XML.
+            if (view instanceof MaterialCardView card) {
+                card.setCardBackgroundColor(SelectionStyling.selectedCardWashOver(
+                        viewGroup.getContext(), com.google.android.material.R.attr.colorSurface));
+            }
             return new BannerViewHolder(view);
         }
         if (viewType == TYPE_LIST) {

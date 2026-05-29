@@ -4,6 +4,11 @@
 <!--                                                                    -->
 <!-- A dismissible info card shown at the top of TabsFragment when      -->
 <!-- inactive tabs have been auto-archived.                             -->
+<!--                                                                    -->
+<!-- The cardBackgroundColor below is a fallback; BrowserTabsAdapter    -->
+<!-- overrides it at inflate with the SelectionStyling brand wash       -->
+<!-- (primaryContainer @ 20% over surface), matching the incognito-     -->
+<!-- downloads banner so the two list-banners read as siblings.         -->
 <!-- ──────────────────────────────────────────────────────────────────── -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
