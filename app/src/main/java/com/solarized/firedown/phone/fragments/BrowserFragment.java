@@ -24,7 +24,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ShareCompat;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -377,7 +376,12 @@ public class BrowserFragment extends BaseBrowserFragment
                 R.color.md_theme_primaryContainer,
                 R.color.md_theme_primaryContainer);
 
-        mGeckoView.coverUntilFirstPaint(ResourcesCompat.getColor(getResources(), R.color.white, null));
+        // GeckoView paints this colour over its surface until the compositor's
+        // first frame — and re-shows it whenever the surface is recreated, which
+        // the find-in-page relayout (bottom bar GONE→VISIBLE, dynamic-toolbar
+        // resize) can trigger. White there flashes over the dark chrome on
+        // find-mode exit; use the chrome surface so any cover matches instead.
+        mGeckoView.coverUntilFirstPaint(IncognitoColors.getSurface(mActivity, false));
         mGeckoView.setActivityContextDelegate(() -> mActivity);
         mGeckoView.setDynamicToolbarMaxHeight(mGeckoToolbarSize + mBottomBarSize);
         mGeckoView.setVerticalClipping(0);
