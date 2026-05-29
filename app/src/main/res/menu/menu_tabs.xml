@@ -23,4 +23,11 @@
         app:showAsAction="never"
         android:title="@string/popup_tabs_archive"/>
 
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_settings_24"
+        app:iconTint="?attr/colorOnSurface"
+        app:showAsAction="never"
+        android:title="@string/navigation_settings"/>
+
 </menu>
