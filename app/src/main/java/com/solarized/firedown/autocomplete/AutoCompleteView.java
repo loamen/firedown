@@ -44,6 +44,11 @@ public class AutoCompleteView extends FrameLayout {
 
     private View mClipboardView;
 
+    /** Clip text the user already acted on (tapped the chip). While the
+     *  system clipboard still holds this exact text, the chip stays hidden —
+     *  it only re-offers once the clipboard content actually changes. */
+    @Nullable private String mDismissedClipText;
+
     private OnClipboardListener mCallback;
 
     public interface OnClipboardListener{
@@ -95,9 +100,7 @@ public class AutoCompleteView extends FrameLayout {
         // (Option A), so this is a 'go' affordance, not the old reveal/hide
         // eye toggle — tapping it acts on the clip just like tapping the card.
         mVisibilityView = v.findViewById(R.id.clipboard_button);
-        mVisibilityView.setOnClickListener(v1 -> {
-            if (mCallback != null) mCallback.onClipboardClick(mClipboardTextView.getText());
-        });
+        mVisibilityView.setOnClickListener(v1 -> consumeClipboard());
 
         mSearchView = v.findViewById(R.id.search_view);
 
@@ -112,10 +115,7 @@ public class AutoCompleteView extends FrameLayout {
         mSectionDecoration = new com.solarized.firedown.ui.AutocompleteSectionDecoration(context);
         mSearchView.addItemDecoration(mSectionDecoration);
 
-        mClipboardView.setOnClickListener(v2 -> {
-            if(mCallback != null)
-                mCallback.onClipboardClick(mClipboardTextView.getText());
-        });
+        mClipboardView.setOnClickListener(v2 -> consumeClipboard());
 
         mClipboardView.setOnLongClickListener(view -> {
             if(mCallback != null){
@@ -223,6 +223,15 @@ public class AutoCompleteView extends FrameLayout {
         setVisibility(hasFocus ? View.VISIBLE : View.GONE);
     }
 
+    /** Acts on the clipboard chip and remembers the text as dismissed, so it
+     *  won't be re-offered until the clipboard content changes. */
+    private void consumeClipboard() {
+        CharSequence text = mClipboardTextView.getText();
+        mDismissedClipText = text == null ? null : text.toString();
+        hideClipboard();
+        if (mCallback != null) mCallback.onClipboardClick(text);
+    }
+
     public void showClipboard(){
         ClipboardManager clipboardManager = (ClipboardManager) mContext.getSystemService(CLIPBOARD_SERVICE);
         // Cache the clip locally — the previous five-time
@@ -245,6 +254,12 @@ public class AutoCompleteView extends FrameLayout {
         CharSequence raw = clip.getItemAt(0).coerceToText(mContext);
         String text = raw == null ? "" : raw.toString();
         if (text.isEmpty()) {
+            mClipboardView.setVisibility(View.GONE);
+            return;
+        }
+        // Already acted on this exact clip — don't re-offer it. Re-offer only
+        // once the clipboard content changes (text no longer matches).
+        if (text.equals(mDismissedClipText)) {
             mClipboardView.setVisibility(View.GONE);
             return;
         }
