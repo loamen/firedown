@@ -26,7 +26,6 @@ import './vapi-background-ext.js';
 /******************************************************************************/
 
 // The following modules are loaded here until their content is better organized
-import './commands.js';
 import './messaging.js';
 import './storage.js';
 import './tab.js';
