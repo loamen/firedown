@@ -29,3 +29,9 @@ between them show *why* we ended up where we did.
   throughout except the destructive-tinted Quit, ★ Bookmark
   initially in the quick-row (later moved to a page-state row
   during implementation).
+- `clipboard-card.html` — Empty-autocomplete clipboard card. CURRENT
+  (4dp corners, content hidden behind an eye toggle, generic label)
+  vs three directions: A content-forward (shows the clip + adaptive
+  globe/search icon + one forward arrow, 16dp corners), B two explicit
+  actions, C compact + dismiss. Shipped A — also matches the radius of
+  the single-container suggestion card.
