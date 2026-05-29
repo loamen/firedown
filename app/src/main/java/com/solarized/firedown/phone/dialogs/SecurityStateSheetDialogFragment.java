@@ -281,7 +281,10 @@ public class SecurityStateSheetDialogFragment extends BaseBottomSheetDialogFragm
 
     private void updateTrackingUI(boolean isEnabled) {
         mTrackingSwitch.setChecked(isEnabled);
-        mTrackingIcon.setImageResource(isEnabled ? R.drawable.ic_shield_24 : R.drawable.ic_shield_privacy_tip_24);
+        // Footprint (tracker) icon, not a shield — the summary row above
+        // already owns the shield, and the toggle itself communicates the
+        // on/off state so the icon doesn't need an enabled/disabled variant.
+        mTrackingIcon.setImageResource(R.drawable.footprint_24);
         mTrackingSubtext.setText(isEnabled ?
                 R.string.protection_panel_etp_toggle_enabled_description_2 :
                 R.string.protection_panel_etp_toggle_disabled_description_2);
