@@ -70,20 +70,24 @@
             android:orientation="vertical">
 
             <!--
-                Section header — uppercase label so the card
-                self-identifies. HomeFragment swaps in the
-                'Downloading · +N more' variant when extras exist.
+                Section header / eyebrow. HomeFragment builds the text:
+                "DOWNLOADING · 9%" (or · Pending / · Video for queued / live),
+                and "· +N more" when extra downloads are queued. The metric
+                lives here rather than on its own line so the card stays two
+                text rows + bar with no orphaned percent line.
             -->
             <TextView
                 android:id="@+id/active_download_label"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
                 android:letterSpacing="0.08"
+                android:maxLines="1"
                 android:text="@string/downloading"
                 android:textAllCaps="true"
                 android:textAppearance="?attr/textAppearanceLabelSmall"
                 android:textColor="?attr/colorOnPrimaryContainer"
-                tools:text="DOWNLOADING · +2 MORE" />
+                tools:text="DOWNLOADING · 9%" />
 
             <TextView
                 android:id="@+id/active_download_title"
@@ -96,35 +100,11 @@
                 android:textColor="?attr/colorOnPrimaryContainer"
                 tools:text="my_video_file_name.mp4" />
 
-            <!--
-                Progress context line: percent + total size (e.g. "37% · 11 MB"),
-                or 'Pending…' / live byte-size while the size is unknown. Lives
-                in the text column now (was a trailing-slot number) so the
-                trailing slot can hold the cancel button. Id preserved
-                (active_download_percent) — HomeFragment.bindActiveStrip sets
-                its text and applyHomeCardStyle tints it.
-            -->
-            <!-- Grouped with the bar below (not the title above): the percent
-                 labels the progress bar, so it gets more breathing room from
-                 the filename (6dp) and sits tight to the bar (4dp). Otherwise
-                 a lone short value (e.g. "2%" on an m3u8 with unknown size)
-                 reads as an orphaned subtitle of the filename. -->
-            <TextView
-                android:id="@+id/active_download_percent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="?attr/colorOnPrimaryContainer"
-                tools:text="37% · 11 MB" />
-
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/active_download_bar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 app:indicatorColor="?attr/colorOnPrimaryContainer"
                 app:indicatorTrackGapSize="0dp"
                 app:trackCornerRadius="2dp"

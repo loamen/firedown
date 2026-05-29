@@ -82,7 +82,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private MaterialCardView mActiveStrip;
     private TextView mActiveStripLabel;
     private TextView mActiveStripTitle;
-    private TextView mActiveStripPercent;
     private LinearProgressIndicator mActiveStripBar;
     private View mActiveStripCancel;
     private View mActiveStripIcon;
@@ -163,7 +162,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mActiveStripIcon = v.findViewById(R.id.active_download_icon);
         mActiveStripLabel = v.findViewById(R.id.active_download_label);
         mActiveStripTitle = v.findViewById(R.id.active_download_title);
-        mActiveStripPercent = v.findViewById(R.id.active_download_percent);
         mActiveStripBar = v.findViewById(R.id.active_download_bar);
         mActiveStripCancel = v.findViewById(R.id.active_download_cancel);
         mActiveStrip.setOnClickListener(view ->
@@ -493,7 +491,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mActiveStrip = null;
         mActiveStripLabel = null;
         mActiveStripTitle = null;
-        mActiveStripPercent = null;
         mActiveStripBar = null;
         mActiveStripCancel = null;
         stopActiveStripPulse();
@@ -599,10 +596,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
                     null,
                     mActiveStripLabel,
                     activeLook);
-            // Percent reads as a number, not a soft subtitle — keep it
-            // at full fg opacity instead of running it through the
-            // applyToCard subtitle (alpha B3) path.
-            if (mActiveStripPercent != null) mActiveStripPercent.setTextColor(activeLook.fg);
             if (mActiveStripBar != null) mActiveStripBar.setIndicatorColor(activeLook.fg);
         }
 
@@ -675,12 +668,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         DownloadEntity item = active.get(0);
         int extras = active.size() - 1;
 
-        if (extras > 0) {
-            mActiveStripLabel.setText(getString(R.string.home_active_downloads_more, extras));
-        } else {
-            mActiveStripLabel.setText(R.string.downloading);
-        }
-
         // Track + indicator both source from the picked HomeCardStyle's
         // active(night).fg so they stay coordinated if a future style
         // diverges from the default ACTIVE_BRAND tone. Indicator at
@@ -706,35 +693,32 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         boolean queued = item.getFileStatus() == Download.QUEUED;
         boolean indeterminate = live || queued;
         mActiveStripBar.setIndeterminate(indeterminate);
+
+        // Build the eyebrow: "DOWNLOADING · <metric>" (+ " · +N more"). The
+        // metric folds into the label so there's no separate percent row.
+        //  - queued : "Pending…"
+        //  - live   : bytes-so-far once known, else media type (m3u8/FFmpeg
+        //             muxes report 0 on disk until done — see bindActiveStrip)
+        //  - else   : "<pct>%"  (+ " · <size>" when a byte count exists)
+        String metric;
         if (queued) {
-            mActiveStripPercent.setText(R.string.download_queued);
+            metric = getString(R.string.download_queued);
         } else if (live) {
-            // Live / streamed: total size is unknown. getFileSize() is bytes
-            // flushed to disk, which is 0 for FFmpeg muxes until completion,
-            // so prefer the media-type label ("Video", "Audio") over a "0 B"
-            // — and only show a byte count once there's a real one.
-            long live_size = item.getFileSize();
-            mActiveStripPercent.setText(live_size > 0
-                    ? Utils.readableFileSize(live_size)
-                    : mediaTypeLabel(item));
+            long liveSize = item.getFileSize();
+            metric = liveSize > 0 ? Utils.readableFileSize(liveSize) : mediaTypeLabel(item);
         } else {
             int pct = item.getFileProgress();
             mActiveStripBar.setProgress(pct);
             long size = item.getFileSize();
-            // size here is bytes-on-disk-so-far (no total-size field exists).
-            // For FFmpeg/m3u8 it stays 0 until the mux finishes, so the line
-            // would otherwise be a lonely "2%". Pair the percent with the
-            // media-type label in that case — honest, and it explains why
-            // there's no size yet. When a byte count is available (direct HTTP
-            // downloads), show "37% · 11 MB".
-            if (size > 0) {
-                mActiveStripPercent.setText(String.format(java.util.Locale.US, "%d%% · %s",
-                        pct, Utils.readableFileSize(size)));
-            } else {
-                mActiveStripPercent.setText(String.format(java.util.Locale.US, "%d%% · %s",
-                        pct, mediaTypeLabel(item)));
-            }
+            metric = size > 0
+                    ? String.format(java.util.Locale.US, "%d%% · %s", pct, Utils.readableFileSize(size))
+                    : String.format(java.util.Locale.US, "%d%%", pct);
         }
+
+        String base = extras > 0
+                ? getString(R.string.home_active_downloads_more, extras)
+                : getString(R.string.downloading);
+        mActiveStripLabel.setText(base + " · " + metric);
     }
 
     /**
