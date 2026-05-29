@@ -260,6 +260,47 @@ public class AutoCompleteEditText extends FocusEditText {
         super.onDetachedFromWindow();
     }
 
+    /**
+     * BACK while the field has focus (keyboard up or down) must collapse the
+     * whole autocomplete surface in one press, and must be consumed so it can
+     * never fall through to the Activity's OnBackPressedDispatcher (which
+     * would pop the fragment / exit the app).
+     *
+     * <p>Previously the {@link OnKeyPreImeListener} was wired up
+     * (setOnKeyPreImeListener / the KeyPreImeListener field) but never
+     * actually invoked — there was no override delegating to it — so the
+     * platform TextView default ran: the first BACK only dismissed the IME,
+     * the overlay stayed, and a second BACK exited. This override restores
+     * the intended behaviour.</p>
+     *
+     * <p>Find-in-page (mEnableSearchMode) is left to its own BACK routing in
+     * GeckoToolbar/BrowserFragment.exitSearch — we don't clear focus here for
+     * that mode.</p>
+     */
+    @Override
+    public boolean onKeyPreIme(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && !mEnableSearchMode && hasFocus()) {
+            // Consume BOTH actions so the IME below us never gets BACK and the
+            // press can't fall through to the Activity's back dispatcher (which
+            // would pop the fragment / exit). Do the teardown once, on UP:
+            // clearFocus() cascades through onFocusChanged(false), which hides
+            // the keyboard, collapses the overlay and restores the toolbar — so
+            // a single press leaves the autocomplete surface entirely.
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                clearFocus();
+            }
+            return true;
+        }
+
+        // Non-BACK keys: defer to the installed listener (ENTER-commit, etc.).
+        if (mOnKeyPreImeListener != null
+                && mOnKeyPreImeListener.onKeyPreIme(keyCode, event)) {
+            return true;
+        }
+
+        return super.onKeyPreIme(keyCode, event);
+    }
+
 
     @Override
     public InputConnection onCreateInputConnection(@NonNull EditorInfo outAttrs) {
@@ -666,19 +707,9 @@ public class AutoCompleteEditText extends FocusEditText {
                 }
             }
 
-            if (keyCode == KeyEvent.KEYCODE_BACK) {
-
-                Editable content = getText();
-
-                if(content == null)
-                    return false;
-
-                removeAutocomplete(content);
-
-                clearFocus();
-
-                return false;
-            }
+            // BACK is handled by the onKeyPreIme override above (which consumes
+            // it and tears down the overlay in one press), so it's intentionally
+            // not handled here.
 
             return false;
         }
