@@ -1060,9 +1060,30 @@ browser.runtime.onMessage.addListener((msg, sender) => {
 
 const processedTwitterUrls = new Set();
 
+// GraphQL queries that resolve to a single focal tweet (open-tweet view /
+// embed). Parsed via extractTwitterFocalResult so we grab only the tweet the
+// user is looking at, not replies in the thread.
+const TWITTER_TWEET_QUERIES = ["TweetResultByRestId", "TweetDetail"];
+// Timeline queries — feeds / profiles / search / lists / bookmarks / likes.
+// These carry many tweets; we emit every video tweet in them so scrolling a
+// feed surfaces its videos without opening each one.
+const TWITTER_TIMELINE_QUERIES = [
+    "HomeTimeline", "HomeLatestTimeline",
+    "UserTweets", "UserTweetsAndReplies", "UserMedia",
+    "SearchTimeline", "ListLatestTweetsTimeline",
+    "Bookmarks", "Likes", "TweetActivity", "CommunityTweetsTimeline"
+];
+
+function twitterQueryKind(url) {
+    if (TWITTER_TWEET_QUERIES.some(q => url.includes(q))) return "tweet";
+    if (TWITTER_TIMELINE_QUERIES.some(q => url.includes(q))) return "timeline";
+    return null;
+}
+
 function handleTwitterHeaders(details) {
-    if (!details.url.includes("TweetResultByRestId") && !details.url.includes("TweetDetail")) return;
-    log("TWITTER", "header hit", { url: details.url.split('?')[0], type: details.type });
+    const kind = twitterQueryKind(details.url);
+    if (!kind) return;
+    log("TWITTER", "header hit", { kind, url: details.url.split('?')[0], type: details.type });
 
     const urlKey = details.url.split('&')[0];
     if (processedTwitterUrls.has(urlKey)) return;
@@ -1076,7 +1097,7 @@ function handleTwitterHeaders(details) {
         processedTwitterUrls.delete(processedTwitterUrls.values().next().value);
     }
 
-    fetchTwitterData(details, headers);
+    fetchTwitterData(details, headers, kind);
 }
 
 function extractScreenNameFromUrl(details) {
@@ -1092,23 +1113,44 @@ function extractScreenNameFromUrl(details) {
     return null;
 }
 
-// Pull the focal tweet's result object out of either Twitter/X GraphQL shape.
-// TweetResultByRestId (logged-out / embeds) puts it at data.tweetResult.result;
-// TweetDetail (the signed-in conversation view) nests it inside
-// threaded_conversation_with_injections_v2.instructions[].entries[]. The
-// listener accepts both queries, but only the former used to be parsed — so
-// signed-in users, who are served TweetDetail, got no video while anonymous
-// (TweetResultByRestId) worked.
+// Unwrap a tweet_results.result that may be a TweetWithVisibilityResults
+// wrapper (its real tweet lives under .tweet) or a raw Tweet.
+function unwrapTweet(result) {
+    return result?.tweet || result;
+}
+
+// Collect EVERY tweet_results.result reachable in a GraphQL response — works
+// across all the timeline/conversation shapes (TweetDetail's
+// threaded_conversation_with_injections_v2, HomeTimeline's
+// home.home_timeline_urt, UserTweets' user.result.timeline_v2, search, etc.)
+// by recursively scanning for the tweet_results.result key rather than hard-
+// coding each instruction path. Deduped by rest_id.
+function collectTweetResults(node, out, seen) {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) {
+        for (const v of node) collectTweetResults(v, out, seen);
+        return;
+    }
+    const r = node.tweet_results && node.tweet_results.result;
+    if (r) {
+        const t = unwrapTweet(r);
+        const id = t?.rest_id || t?.legacy?.id_str;
+        if (id && !seen.has(id)) { seen.add(id); out.push(r); }
+    }
+    for (const k in node) {
+        // tweet_results handled above; recurse the rest.
+        if (k === "tweet_results") continue;
+        collectTweetResults(node[k], out, seen);
+    }
+}
+
+// Pick the single focal tweet for TweetResultByRestId / TweetDetail. Prefers
+// the focalTweetId from the request variables so a reply's video in the thread
+// isn't grabbed instead of the tweet the user opened.
 function extractTwitterFocalResult(parsed, details) {
     const direct = parsed.data?.tweetResult?.result || parsed.data?.tweet?.result;
     if (direct) return direct;
 
-    const instructions =
-        parsed.data?.threaded_conversation_with_injections_v2?.instructions;
-    if (!Array.isArray(instructions)) return null;
-
-    // focalTweetId (from the request variables) identifies the tweet the user
-    // actually opened, so we don't pull a reply's video out of the thread.
     let focalTweetId = null;
     try {
         const m = details.url.match(/[?&]variables=([^&]+)/);
@@ -1116,37 +1158,77 @@ function extractTwitterFocalResult(parsed, details) {
     } catch (e) { /* malformed variables — fall through to heuristics */ }
 
     const candidates = [];
-    for (const instr of instructions) {
-        const entries = instr.entries || (instr.entry ? [instr.entry] : []);
-        for (const entry of entries) {
-            const r = entry.content?.itemContent?.tweet_results?.result;
-            if (r) candidates.push(r);
-            // self-thread / conversation modules carry their tweets under items[]
-            for (const it of entry.content?.items || []) {
-                const ir = it.item?.itemContent?.tweet_results?.result;
-                if (ir) candidates.push(ir);
-            }
-        }
-    }
+    collectTweetResults(parsed.data, candidates, new Set());
     if (candidates.length === 0) return null;
 
-    const unwrap = r => r?.tweet || r;
     if (focalTweetId) {
         const focal = candidates.find(r => {
-            const t = unwrap(r);
+            const t = unwrapTweet(r);
             return (t?.rest_id || t?.legacy?.id_str) === focalTweetId;
         });
         if (focal) return focal;
     }
     // No focalTweetId match: prefer the first candidate that actually has video.
     const withVideo = candidates.find(r => {
-        const t = unwrap(r);
+        const t = unwrapTweet(r);
         return t?.legacy?.extended_entities?.media?.some(med => med.video_info?.variants);
     });
     return withVideo || candidates[0];
 }
 
-async function fetchTwitterData(details, headers) {
+// Turn one tweet_results.result into download variants and send them.
+// Returns true if at least one video was emitted.
+function emitTwitterTweetVideos(details, result) {
+    const tweetResult = unwrapTweet(result);
+    const legacy = tweetResult?.legacy;
+    const media = legacy?.extended_entities?.media;
+    if (!media || media.length === 0) return false;
+
+    const screenName = tweetResult.core?.user_results?.result?.legacy?.screen_name
+        || result.core?.user_results?.result?.legacy?.screen_name
+        || extractScreenNameFromUrl(details)
+        || "unknown";
+    const tweetId = tweetResult.rest_id || legacy.id_str;
+    const originUrl = screenName !== "unknown"
+        ? `https://x.com/${screenName}/status/${tweetId}`
+        : `https://x.com/i/status/${tweetId}`;
+    const videoText = legacy.full_text || "";
+
+    let imageUrl = media[0]?.media_url_https;
+    if (!imageUrl) {
+        const bindings = tweetResult.card?.legacy?.binding_values;
+        const keys = ["thumbnail_image_original", "player_image_large", "player_image",
+                      "summary_photo_image_original", "thumbnail_image"];
+        for (const key of keys) {
+            const url = bindings?.find(b => b.key === key)?.value?.image_value?.url;
+            if (url) { imageUrl = url; break; }
+        }
+    }
+
+    let emitted = false;
+    for (const m of media) {
+        if (!m.video_info?.variants) continue;
+        const variants = m.video_info.variants
+            .filter(v => v.content_type === "video/mp4")
+            .map(v => {
+                const wh = v.url.match(/\/(\d+)x(\d+)\//);
+                return { url: v.url, width: wh ? parseInt(wh[1]) : 0, height: wh ? parseInt(wh[2]) : 0 };
+            });
+        if (variants.length === 0) continue;
+        emitted = true;
+        sendVariants(details, {
+            variants,
+            origin: originUrl,
+            description: videoText,
+            img: imageUrl,
+            name: screenName,
+            duration: m.video_info.duration_millis || 0
+        });
+    }
+    return emitted;
+}
+
+async function fetchTwitterData(details, headers, kind) {
     await ensureTabId(details);
 
     try {
@@ -1158,88 +1240,29 @@ async function fetchTwitterData(details, headers) {
             return;
         }
 
-        // Resolve the tweet across both GraphQL shapes (TweetResultByRestId for
-        // logged-out/embeds, TweetDetail for the signed-in conversation view).
+        if (kind === "timeline") {
+            // Feed / profile / search: emit every video tweet in the timeline.
+            const results = [];
+            collectTweetResults(parsed.data, results, new Set());
+            let withVideo = 0;
+            for (const r of results) {
+                if (emitTwitterTweetVideos(details, r)) withVideo++;
+            }
+            log("TWITTER", `timeline: ${withVideo}/${results.length} tweet(s) with video`);
+            return;
+        }
+
+        // Single-tweet view (TweetResultByRestId / TweetDetail).
         const rawResult = extractTwitterFocalResult(parsed, details);
         if (!rawResult) {
             log("TWITTER", "bail: no focal result", {
                 topKeys: Object.keys(parsed.data || {}),
-                hasInstructions: !!parsed.data?.threaded_conversation_with_injections_v2?.instructions,
                 errors: parsed.errors ? parsed.errors.map(e => e.message) : null
             });
             return;
         }
-        const tweetResult = rawResult.tweet || rawResult;
-
-        const legacy = tweetResult.legacy;
-        const userResult = tweetResult.core?.user_results?.result;
-        if (!legacy?.extended_entities?.media) {
-            log("TWITTER", "bail: no extended_entities.media", {
-                typename: tweetResult.__typename,
-                hasLegacy: !!legacy,
-                legacyKeys: legacy ? Object.keys(legacy).slice(0, 20) : null,
-                hasEntities: !!legacy?.entities,
-                hasNoteTweet: !!tweetResult.note_tweet
-            });
-            return;
-        }
-
-        const screenName = userResult?.legacy?.screen_name
-            || rawResult.core?.user_results?.result?.legacy?.screen_name
-            || extractScreenNameFromUrl(details)
-            || "unknown";
-        const tweetId = tweetResult.rest_id || legacy.id_str;
-        const originUrl = screenName !== "unknown"
-            ? `https://x.com/${screenName}/status/${tweetId}`
-            : `https://x.com/i/status/${tweetId}`;
-        const videoText = legacy.full_text || "";
-
-        // Resolve thumbnail
-        let imageUrl = legacy.extended_entities.media[0]?.media_url_https;
-        if (!imageUrl) {
-            const bindings = tweetResult.card?.legacy?.binding_values;
-            const keys = ["thumbnail_image_original", "player_image_large", "player_image",
-                          "summary_photo_image_original", "thumbnail_image"];
-            for (const key of keys) {
-                const url = bindings?.find(b => b.key === key)?.value?.image_value?.url;
-                if (url) { imageUrl = url; break; }
-            }
-        }
-
-        let videoCount = 0;
-        for (const media of legacy.extended_entities.media) {
-            if (!media.video_info?.variants) continue;
-
-            const variants = media.video_info.variants
-                .filter(v => v.content_type === "video/mp4")
-                .map(v => {
-                    const m = v.url.match(/\/(\d+)x(\d+)\//);
-                    return {
-                        url: v.url,
-                        width: m ? parseInt(m[1]) : 0,
-                        height: m ? parseInt(m[2]) : 0
-                    };
-                });
-
-            if (variants.length === 0) continue;
-            videoCount += variants.length;
-
-            sendVariants(details, {
-                variants,
-                origin: originUrl,
-                description: videoText,
-                img: imageUrl,
-                name: screenName,
-                duration: media.video_info.duration_millis || 0
-            });
-        }
-
-        log("TWITTER", `Found ${videoCount} variant(s)`, {
-            user: screenName,
-            tweetId,
-            mediaCount: legacy.extended_entities.media.length,
-            mediaTypes: legacy.extended_entities.media.map(m => m.type)
-        });
+        const ok = emitTwitterTweetVideos(details, rawResult);
+        log("TWITTER", ok ? "focal: video emitted" : "focal: no video in tweet");
     } catch (e) {
         log("TWITTER", `Error`, e.message);
     }
