@@ -1091,6 +1091,60 @@ function extractScreenNameFromUrl(details) {
     return null;
 }
 
+// Pull the focal tweet's result object out of either Twitter/X GraphQL shape.
+// TweetResultByRestId (logged-out / embeds) puts it at data.tweetResult.result;
+// TweetDetail (the signed-in conversation view) nests it inside
+// threaded_conversation_with_injections_v2.instructions[].entries[]. The
+// listener accepts both queries, but only the former used to be parsed — so
+// signed-in users, who are served TweetDetail, got no video while anonymous
+// (TweetResultByRestId) worked.
+function extractTwitterFocalResult(parsed, details) {
+    const direct = parsed.data?.tweetResult?.result || parsed.data?.tweet?.result;
+    if (direct) return direct;
+
+    const instructions =
+        parsed.data?.threaded_conversation_with_injections_v2?.instructions;
+    if (!Array.isArray(instructions)) return null;
+
+    // focalTweetId (from the request variables) identifies the tweet the user
+    // actually opened, so we don't pull a reply's video out of the thread.
+    let focalTweetId = null;
+    try {
+        const m = details.url.match(/[?&]variables=([^&]+)/);
+        if (m) focalTweetId = JSON.parse(decodeURIComponent(m[1])).focalTweetId || null;
+    } catch (e) { /* malformed variables — fall through to heuristics */ }
+
+    const candidates = [];
+    for (const instr of instructions) {
+        const entries = instr.entries || (instr.entry ? [instr.entry] : []);
+        for (const entry of entries) {
+            const r = entry.content?.itemContent?.tweet_results?.result;
+            if (r) candidates.push(r);
+            // self-thread / conversation modules carry their tweets under items[]
+            for (const it of entry.content?.items || []) {
+                const ir = it.item?.itemContent?.tweet_results?.result;
+                if (ir) candidates.push(ir);
+            }
+        }
+    }
+    if (candidates.length === 0) return null;
+
+    const unwrap = r => r?.tweet || r;
+    if (focalTweetId) {
+        const focal = candidates.find(r => {
+            const t = unwrap(r);
+            return (t?.rest_id || t?.legacy?.id_str) === focalTweetId;
+        });
+        if (focal) return focal;
+    }
+    // No focalTweetId match: prefer the first candidate that actually has video.
+    const withVideo = candidates.find(r => {
+        const t = unwrap(r);
+        return t?.legacy?.extended_entities?.media?.some(med => med.video_info?.variants);
+    });
+    return withVideo || candidates[0];
+}
+
 async function fetchTwitterData(details, headers) {
     await ensureTabId(details);
 
@@ -1099,8 +1153,9 @@ async function fetchTwitterData(details, headers) {
         const parsed = tryParseJson(await response.text());
         if (!parsed) return;
 
-        // Unwrap TweetWithVisibilityResults or similar wrappers
-        const rawResult = parsed.data?.tweetResult?.result || parsed.data?.tweet?.result;
+        // Resolve the tweet across both GraphQL shapes (TweetResultByRestId for
+        // logged-out/embeds, TweetDetail for the signed-in conversation view).
+        const rawResult = extractTwitterFocalResult(parsed, details);
         if (!rawResult) return;
         const tweetResult = rawResult.tweet || rawResult;
 
