@@ -1301,22 +1301,38 @@ async function fetchTwitterData(details, headers, kind) {
     }
 }
 
+// Logged-out / embeds use api.x.com/graphql/; signed-in TweetDetail and the
+// timelines use x.com/i/api/graphql/. Match both hosts + legacy twitter.com.
+const TWITTER_GRAPHQL_URLS = [
+    "*://api.x.com/graphql/*",
+    "*://x.com/i/api/graphql/*",
+    "*://api.twitter.com/graphql/*",
+    "*://twitter.com/i/api/graphql/*"
+];
+
+// Capture POST bodies before send (keyed by requestId) so handleTwitterHeaders
+// can replay HomeTimeline & co. with their original body. Only stash POSTs for
+// queries we handle; 15s expiry + 100-cap so a request that never reaches
+// onSendHeaders (blocked / dedup-skipped) can't leak the entry.
+browser.webRequest.onBeforeRequest.addListener(
+    (details) => {
+        if (details.method !== "POST") return;
+        if (!twitterQueryKind(details.url)) return;
+        const body = decodeTwitterRequestBody(details.requestBody);
+        if (body == null) return;
+        twitterRequestBodies.set(details.requestId, body);
+        setTimeout(() => twitterRequestBodies.delete(details.requestId), 15000);
+        if (twitterRequestBodies.size > 100) {
+            twitterRequestBodies.delete(twitterRequestBodies.keys().next().value);
+        }
+    },
+    { urls: TWITTER_GRAPHQL_URLS, types: ["xmlhttprequest"] },
+    ["requestBody"]
+);
+
 browser.webRequest.onSendHeaders.addListener(
     handleTwitterHeaders,
-    {
-        urls: [
-            // Logged-out / embeds use the api.x.com host…
-            "*://api.x.com/graphql/*",
-            // …but signed-in TweetDetail goes to x.com/i/api/graphql/ — the
-            // filter missed it, which is why signed-in video never parsed
-            // (confirmed from a captured TweetDetail request). Match both
-            // hosts and the twitter.com legacy domain.
-            "*://x.com/i/api/graphql/*",
-            "*://api.twitter.com/graphql/*",
-            "*://twitter.com/i/api/graphql/*"
-        ],
-        types: ["xmlhttprequest"]
-    },
+    { urls: TWITTER_GRAPHQL_URLS, types: ["xmlhttprequest"] },
     ["requestHeaders"]
 );
 
