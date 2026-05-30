@@ -1062,6 +1062,7 @@ const processedTwitterUrls = new Set();
 
 function handleTwitterHeaders(details) {
     if (!details.url.includes("TweetResultByRestId") && !details.url.includes("TweetDetail")) return;
+    log("TWITTER", "header hit", { url: details.url.split('?')[0], type: details.type });
 
     const urlKey = details.url.split('&')[0];
     if (processedTwitterUrls.has(urlKey)) return;
@@ -1150,18 +1151,38 @@ async function fetchTwitterData(details, headers) {
 
     try {
         const response = await fetch(details.url, { method: "GET", headers, credentials: "include" });
-        const parsed = tryParseJson(await response.text());
-        if (!parsed) return;
+        const bodyText = await response.text();
+        const parsed = tryParseJson(bodyText);
+        if (!parsed) {
+            log("TWITTER", "bail: response not JSON", { status: response.status, len: bodyText.length, head: bodyText.slice(0, 120) });
+            return;
+        }
 
         // Resolve the tweet across both GraphQL shapes (TweetResultByRestId for
         // logged-out/embeds, TweetDetail for the signed-in conversation view).
         const rawResult = extractTwitterFocalResult(parsed, details);
-        if (!rawResult) return;
+        if (!rawResult) {
+            log("TWITTER", "bail: no focal result", {
+                topKeys: Object.keys(parsed.data || {}),
+                hasInstructions: !!parsed.data?.threaded_conversation_with_injections_v2?.instructions,
+                errors: parsed.errors ? parsed.errors.map(e => e.message) : null
+            });
+            return;
+        }
         const tweetResult = rawResult.tweet || rawResult;
 
         const legacy = tweetResult.legacy;
         const userResult = tweetResult.core?.user_results?.result;
-        if (!legacy?.extended_entities?.media) return;
+        if (!legacy?.extended_entities?.media) {
+            log("TWITTER", "bail: no extended_entities.media", {
+                typename: tweetResult.__typename,
+                hasLegacy: !!legacy,
+                legacyKeys: legacy ? Object.keys(legacy).slice(0, 20) : null,
+                hasEntities: !!legacy?.entities,
+                hasNoteTweet: !!tweetResult.note_tweet
+            });
+            return;
+        }
 
         const screenName = userResult?.legacy?.screen_name
             || rawResult.core?.user_results?.result?.legacy?.screen_name
@@ -1213,7 +1234,12 @@ async function fetchTwitterData(details, headers) {
             });
         }
 
-        log("TWITTER", `Found ${videoCount} variant(s)`, { user: screenName, tweetId });
+        log("TWITTER", `Found ${videoCount} variant(s)`, {
+            user: screenName,
+            tweetId,
+            mediaCount: legacy.extended_entities.media.length,
+            mediaTypes: legacy.extended_entities.media.map(m => m.type)
+        });
     } catch (e) {
         log("TWITTER", `Error`, e.message);
     }
