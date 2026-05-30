@@ -133,6 +133,7 @@
           return undefined;
         }
       });
+      }
     }
   } catch (_) { /* trap setup failed — nothing we can do, leave the page alone */ }
 })();
