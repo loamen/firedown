@@ -1061,30 +1061,26 @@ browser.runtime.onMessage.addListener((msg, sender) => {
 const processedTwitterUrls = new Set();
 
 // HomeTimeline (and some other timelines) are sent as POST with their
-// `variables`/`features` in the REQUEST BODY, not the URL. onSendHeaders
-// doesn't carry the body, so we capture it in onBeforeRequest keyed by
-// requestId and replay the fetch with the original method + body. Replaying
-// a POST as GET (the old behaviour) dropped the body, so x.com returned an
-// error and no feed videos were parsed — which looked VPN-specific but was
-// really just the GET-vs-POST timeline variant.
+// variables/features in the REQUEST BODY, not the URL. onSendHeaders doesn't
+// carry the body, so capture it in onBeforeRequest keyed by requestId and
+// replay the fetch with the original method + body. Replaying a POST as GET
+// dropped the body, so x.com returned an error and no feed videos parsed —
+// it looked VPN-specific but was really the POST timeline variant.
 const twitterRequestBodies = new Map();
 
 function decodeTwitterRequestBody(requestBody) {
     if (!requestBody) return null;
     try {
         if (requestBody.raw && requestBody.raw.length) {
-            // raw is an array of { bytes: ArrayBuffer }
             const dec = new TextDecoder("utf-8");
             return requestBody.raw.map(p => p.bytes ? dec.decode(p.bytes) : "").join("");
         }
         if (requestBody.formData) {
-            // GraphQL is JSON, not form-encoded, but handle defensively.
             return JSON.stringify(requestBody.formData);
         }
     } catch (e) { /* fall through */ }
     return null;
 }
-
 
 // GraphQL queries that resolve to a single focal tweet (open-tweet view /
 // embed). Parsed via extractTwitterFocalResult so we grab only the tweet the
@@ -1258,7 +1254,8 @@ async function fetchTwitterData(details, headers, kind) {
     await ensureTabId(details);
 
     // Replay with the ORIGINAL method + body. POST timelines (HomeTimeline)
-    // carry variables in the body; a GET replay loses them and x.com errors.
+    // carry their variables in the body; a GET replay loses them and x.com
+    // errors out, so no feed videos parse.
     const method = details.method || "GET";
     const body = (method !== "GET" && method !== "HEAD")
         ? twitterRequestBodies.get(details.requestId)
@@ -1272,7 +1269,7 @@ async function fetchTwitterData(details, headers, kind) {
         const bodyText = await response.text();
         const parsed = tryParseJson(bodyText);
         if (!parsed) {
-            log("TWITTER", "bail: response not JSON", { method, status: response.status, len: bodyText.length, head: bodyText.slice(0, 120) });
+            log("TWITTER", "bail: response not JSON", { status: response.status, len: bodyText.length, head: bodyText.slice(0, 120) });
             return;
         }
 
