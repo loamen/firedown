@@ -21,15 +21,17 @@
 
     <include layout="@layout/dialog_drag_handle" />
 
-    <!-- Header: thumbnail + name + meta, like a list row. -->
+    <!-- Header: thumbnail + name + meta, like a list row. No top padding
+         of its own — the handle include's 10dp under the pill is the gap
+         on every sheet — and 10dp under it, which with the first card's
+         2dp is the 12dp rhythm. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp">
+        android:paddingBottom="10dp">
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/cb_sheet_thumb"

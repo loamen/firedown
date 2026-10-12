@@ -67,6 +67,7 @@ public final class SheetGroups {
                 continue;
             }
             MaterialCardView card = (MaterialCardView) child;
+            card.setPreventCornerOverlap(false);
             card.setShapeAppearanceModel(shape(card.getContext(), card == first, card == last));
         }
     }
@@ -89,8 +90,25 @@ public final class SheetGroups {
         return shape(context, position == 0, position >= count - 1);
     }
 
-    /** Set the group corners of one card from its first/last role. */
+    /**
+     * Set the group corners of one card from its first/last role.
+     *
+     * <p>Both this and {@link #applyCorners(ViewGroup)} also switch the
+     * card's {@code preventCornerOverlap} OFF before shaping it. With
+     * CardView's default (true) a MaterialCardView pads its CONTENT by
+     * ~4.6dp on every side whenever its four corners are not all equal
+     * (the Top and Bottom group shapes), computed at inflate from the XML
+     * shape and never recomputed by a runtime shape change — so a row
+     * inflated with a Top overlay keeps that padding after this method
+     * makes it a Middle, and a group's first and last rows rendered 65dp
+     * tall with their icon and label 4.6dp further in than the 56dp rows
+     * between them (issue #306's follow-up: the browser popup's History
+     * row). The {@code Firedown.Widget.SheetRowCard} style carries the
+     * attribute for every card inflated with it; this is the belt for a
+     * card shaped at runtime, and a no-op when the flag is already off.</p>
+     */
     public static void apply(@NonNull MaterialCardView card, boolean first, boolean last) {
+        card.setPreventCornerOverlap(false);
         card.setShapeAppearanceModel(shape(card.getContext(), first, last));
     }
 

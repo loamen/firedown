@@ -323,7 +323,22 @@
          when a row of the group can hide (see that class). The parent
          supplies the 16dp inset (its paddingHorizontal), so a card never
          carries side margins of its own and a group label above it sits
-         on the same gutter. -->
+         on the same gutter.
+         cardPreventCornerOverlap is OFF, and that is load-bearing: with
+         CardView's default (true) MaterialCardView pads the CONTENT of
+         any card whose four corners are not all equal — the group's Top
+         and Bottom shapes — by (1 - cos 45°) × the 16dp outer corner,
+         ~4.6dp on every side, computed once at inflate from the XML
+         shape (a runtime setShapeAppearanceModel never recomputes it).
+         So the first and last rows of a group measured 65dp tall with
+         their icon and label 4.6dp further in than the Middle rows (56dp,
+         uniform 4dp corners, no padding), while adapter-shaped rows had
+         none of it. Issue #306's follow-up caught it as the History row
+         of the browser popup's three-row group sitting 4dp left of
+         Bookmarks and Safe Folder. Every grouped card carries this style
+         (the security sheet's rows included — don't fork the attributes
+         inline again), and SheetGroups sets the flag as a belt on every
+         card it shapes. -->
     <style name="Firedown.Widget.SheetRowCard" parent="Widget.Material3.CardView.Filled">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
@@ -332,6 +347,7 @@
         <item name="android:focusable">true</item>
         <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
         <item name="cardElevation">0dp</item>
+        <item name="cardPreventCornerOverlap">false</item>
         <item name="strokeWidth">0dp</item>
     </style>
 

@@ -2,7 +2,7 @@
 
 - Updated the GeckoView browser engine to 157.0.20261005135250
 - Tabs: long-press and drag to reorder in the tab switcher; settings and menus use grouped cards
-- Browser menu: the empty band under the drag handle is gone; the long-press context menu uses the same grouped cards and no longer touches the screen edges (issue #306)
+- Menus: the empty band under the drag handle is gone from every sheet, and the first and last rows of a group are no longer taller or indented than the rest; the long-press context menu uses the same grouped cards and no longer touches the screen edges (issue #306)
 
 ## [1.1.99] - 2026-10-01
 

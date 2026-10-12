@@ -28,6 +28,7 @@
         style="@style/Firedown.Widget.SheetRowCard"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="0dp"
+        android:layout_marginBottom="10dp"
         android:clickable="false"
         android:focusable="false"
         android:visibility="gone"
@@ -80,14 +81,19 @@
 
     <!-- The option rows: grouped sheet cards (fragment_dialog_options_item),
          inset 16dp by the recycler's own padding (clipToPadding off so the
-         ripple and the cards' corners are never clipped), 10dp + the first
-         card's 2dp under the handle / quick row. OptionsAdapter sets each
-         card's group corners from its position. -->
+         ripple and the cards' corners are never clipped). The recycler adds
+         NO top margin of its own: the first card's 2dp lands on the handle
+         include's 10dp under the pill (12dp, the rhythm of every sheet),
+         and when the quick row is shown ITS 10dp bottom margin plus that
+         2dp make the 12dp group gap. A 10dp margin here used to stack on
+         the handle's 10dp whenever the quick row was GONE — the History /
+         Bookmarks ⋮ sheets opened 22dp under the pill while the Home
+         popup opened 12dp (issue #306's follow-up). OptionsAdapter sets
+         each card's group corners from its position. -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="10dp"
         android:clipToPadding="false"
         android:paddingHorizontal="16dp"
         android:paddingBottom="8dp"

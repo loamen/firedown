@@ -127,14 +127,9 @@
                  (compound drawable on host_secure_text). -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/host_secure"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-                app:cardElevation="0dp"
-                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupTop"
-                app:strokeWidth="0dp">
+                style="@style/Firedown.Widget.SheetRowCard"
+                android:layout_marginTop="0dp"
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupTop">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -177,15 +172,8 @@
                  this ground is under 3:1 for 16sp text in light theme. -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/ads_stat_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-                app:cardElevation="0dp"
-                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupBottom"
-                app:strokeWidth="0dp">
+                style="@style/Firedown.Widget.SheetRowCard"
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupBottom">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -244,15 +232,9 @@
                  not two. The subtext is the broken-site hint. -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/ads_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                style="@style/Firedown.Widget.SheetRowCard"
+                android:layout_marginTop="@dimen/sheet_group_gap"
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupSingle">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -309,15 +291,9 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/host_clear"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                style="@style/Firedown.Widget.SheetRowCard"
+                android:layout_marginTop="@dimen/sheet_group_gap"
+                app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupSingle">
 
                 <LinearLayout
                     android:layout_width="match_parent"

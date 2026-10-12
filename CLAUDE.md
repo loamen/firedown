@@ -5485,7 +5485,9 @@ The invariants, each protecting against a shipped bug:
   sight** (maintainer call: the host floating mid-pill between the shield
   and the reload glyph read as a title, not an address); the
   `applyDisplayGravity` machinery that kept the centring keyed on the
-  painted text went with it. Don't bring the centring back. `mLocationUri`
+  painted text went with it. Don't bring the centring back — issue #306's
+  2026-10-11 follow-up asked for it again with a Chrome screenshot, and
+  the maintainer's call stands. `mLocationUri`
   is never the host form; only the PAINTED resting text is transformed
   (`displayTextFor`), through every path that repaints it (`setLocation`,
   blur, `reset`) — so `GeckoToolbar.setUri(uri, false)` now routes through
@@ -7827,7 +7829,24 @@ maintainer call after sketches on the design canvas:
   and the view is clickable only under touch exploration, where TalkBack
   activates the focused node whatever its size. Every sheet's content
   moved 12dp closer to the pill with that one edit; don't give a sheet
-  its own handle spacing back. **The
+  its own handle spacing back. **And a sheet's FIRST content adds no top
+  spacing of its own — the include's 10dp under the pill IS the gap**:
+  an identity row, a header row or a label sits at 10dp, a card at 12dp
+  (its own 2dp row gap), on every sheet. The follow-up round (2026-10-11,
+  six more sheets outlined in red on a build that predated the trim)
+  found three sheets stacking their own spacing on the band even after
+  it: the options sheet's recycler carried a 10dp top margin meant as
+  the gap under the quick-action card, which made the History /
+  Bookmarks / Safe Folder ⋮ sheets (quick row GONE) open 22dp under the
+  pill while the Home popup opened 12dp — the margin moved onto the
+  quick card's bottom; the browser popup's identity row centred inside
+  a 72dp `minHeight` with 12dp of top padding (favicon 26dp under the
+  pill, the security sheet's at 10dp) — both gone, 12dp under it kept;
+  the Cloud Backup item sheet's header had 14dp of top padding, the
+  search-engine / Sort / Download-info sheets 4dp each — all zero now.
+  The Captured sheet is the one exception by design: its toolbar
+  overlaps the band (a FrameLayout, `content_frame` 10dp from the top),
+  the pill floating in the toolbar's top edge. **The
   style's `padding*/margin*SystemWindowInsets` flags are all `false` on
   purpose**: `BaseBottomSheetDialogFragment` applies the window insets as
   padding on the sheet view itself, and the M3 defaults would add a second
@@ -7846,6 +7865,28 @@ maintainer call after sketches on the design canvas:
   cap. A sheet that sets an EXACT content height must get its ceiling
   from `resolveMaxHeightPx()` and let the base add the padding — never
   add the inset in the subclass too.
+- **`cardPreventCornerOverlap` is OFF on every grouped card, in the
+  `Firedown.Widget.SheetRowCard` style — the first and last rows of a
+  group were 65dp tall and their content 4.6dp further in than the rows
+  between them.** CardView's default (`true`) makes `MaterialCardView` pad
+  its CONTENT by `(1 − cos 45°) × corner` on every side whenever its four
+  corners are not all equal — exactly the `SheetGroupTop` / `SheetGroupBottom`
+  shapes (16dp outer, 4dp inner → ~4.6dp), never the uniform `Middle` /
+  `Single` ones. It is computed ONCE at inflate from the XML shape and a
+  runtime `setShapeAppearanceModel` never recomputes it, so the rows the
+  adapters shape at bind (`OptionsAdapter`, the search-engine list,
+  `InfoAdapter`) measured a clean 56dp while every XML-overlay row at a
+  group's edge measured 65dp with its icon and label indented — on the
+  2026-10-11 screenshots (1.75 px/dp): browser popup library group
+  65 / 56 / 65dp, every two-row group of the Home popup 65dp, the
+  adapter sheets 56dp throughout. The reporter saw it as "the History
+  row is not centred" in the browser popup's three-row group, the one
+  Middle card between two edge cards. The style sets the flag, the
+  security sheet's four cards now USE the style instead of an inline copy
+  of its attributes (the copy is how a style fix would have missed them),
+  and `SheetGroups.apply` / `applyCorners` set it again as a belt on any
+  card they shape. Don't "tidy" the attribute away as redundant with the
+  M3 default — the default is the bug.
 - **The card rows are the rule for EVERY sheet now, not the security
   sheet's own look** (maintainer request after the v3 security sheet:
   "check every bottom sheet, apply the same material card approach").

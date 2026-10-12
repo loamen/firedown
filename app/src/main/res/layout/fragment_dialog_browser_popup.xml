@@ -110,18 +110,23 @@
 
     <!-- Site identity. Mirrors the SecuritySheet's identity block
          (favicon + title + host) so the two sheets read as siblings
-         on the browser surface. Renders taller than the menu rows
-         (minHeight 72dp via 12dp vertical padding) so it reads as a
-         header, not just another list row. -->
+         on the browser surface — the SAME geometry: no top padding of
+         its own (the handle include's 10dp under the pill is the gap,
+         as on every sheet), 12dp under it to the first card. It used
+         to add 12dp of top padding and centre inside a 72dp minHeight
+         "so it reads as a header", which put the favicon 26dp under
+         the pill where the security sheet's sits at 10dp — the void
+         issue #306's follow-up outlined even after the handle band was
+         trimmed. The 10 + 40 + 12dp block still reads as a header
+         against the 56dp rows below it. -->
     <LinearLayout
         android:id="@+id/popup_identity"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:minHeight="72dp"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:paddingVertical="12dp">
+        android:paddingBottom="12dp">
 
         <!-- 40dp tinted surface tile with the 24dp favicon centred
              inside (8dp padding → 24dp content). DuckDuckGo-style
