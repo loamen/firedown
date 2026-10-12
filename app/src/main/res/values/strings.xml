@@ -1075,7 +1075,7 @@
          top of the ETP settings screen — what the protection has done, above
          the control that adjusts it. A SEPARATE measurement from uBlock's
          filter-list stats, deliberately not shown beside them. The SAME
-         string also titles the home's blocked card with uBlock's lifetime
+         string also titles the home's blocked line with uBlock's lifetime
          count (HomeFragment, canvas frame H2's wording): the words name no
          engine, and the two counts never share a screen. -->
     <string name="tracking_status_blocked">%1$s trackers blocked</string>

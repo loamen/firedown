@@ -17,7 +17,8 @@
     sites … in our case we have bottom navigation bar so we break harmony" — a
     lone field between two voids, while a bottom bar already frames the page
     from below. Firedown's own mark is the subject; the blocked line (frame
-    H2, on a Material card at the maintainer's request) is the one figure, the
+    H2's bare shield line — a tonal card shipped for one build and read as a
+    second search field, see the line's own comment) is the one figure, the
     door to Settings → Privacy → "Trackers and ads blocked". There is
     deliberately NO top-sites row, no recents, no download rows and no second
     counter: top sites and recents are what Chrome and Brave do, download
@@ -83,7 +84,7 @@
             android:paddingTop="@dimen/address_bar_height"
             android:paddingBottom="8dp">
 
-            <!-- The brand mark — flame over wordmark over the blocked card —
+            <!-- The brand mark — flame over wordmark over the blocked line —
                  CENTRED in the page under the bar. -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -145,34 +146,48 @@
 
                 <!-- The one figure on the home: lifetime requests blocked by
                      the built-in ad blocker (uBlock's cumulative count,
-                     GeckoUblockHelper.getCumulativeBlockedLive), on a tonal
-                     Material card under the wordmark — frame H2's shield
-                     line, "put in a material card background" (maintainer,
-                     2026-10-12). A tap opens Settings → Privacy → "Trackers
-                     and ads blocked" (SettingsActivity.EXTRA_OPEN_BLOCKED_STATS,
-                     Back returns here). TONAL, never a brand fill: a fill on
-                     this screen is earned by work (the retired transfer
-                     chip), a tally gets the surfaceContainerHigh pill the
-                     backup pill had (20dp radius, 14/10/16/10 padding, 18dp
-                     glyph, 13sp), glyph and text both in colorOnSurfaceVariant
-                     — H2's grey — so the card stays quieter than the wordmark
-                     above it. wrap_content and centred; the text may WRAP to
-                     two lines (a count plus "trackers blocked" in a long
-                     locale) rather than ellipsize the number away. Reads
-                     "Protection active" at 0 (trackers_info_idle, the
-                     settings row's rule: a "0 blocked" reads as broken
-                     protection), so it is never empty and never GONE. The
-                     incognito home carries NO such line — a figure there
-                     would leak activity. -->
+                     GeckoUblockHelper.getCumulativeBlockedLive), as the BARE
+                     LINE frame H2 drew — shield glyph + "N trackers blocked"
+                     in the variant grey, NO container (maintainer,
+                     2026-10-12: "make it transparent"). It shipped for one
+                     build on a tonal surfaceContainerHigh pill and the
+                     screenshot named the fault: that fill is the address
+                     field's own token, in the field's own stadium shape, so
+                     the card read as a second, smaller search field — a
+                     glyph + label in a pill is Material's chip/button shape,
+                     an ACTION, on a page whose point is one action ("takes
+                     attention from the address bar"). A coloured card would
+                     be louder still (the flame is the page's only colour; a
+                     fill is earned by work, a tally gets none — the chip-era
+                     rule), an outlined chip is the fallback if the bare line
+                     ever reads as dead text. The line is a FACT, a caption of
+                     the mark — Brave prints its new-tab stats as plain text,
+                     no big browser puts a pill under its logo. It is still a
+                     door: a tap opens Settings → Privacy → "Trackers and ads
+                     blocked" (SettingsActivity.EXTRA_OPEN_BLOCKED_STATS, Back
+                     returns here), and the MaterialCardView stays ONLY as the
+                     touch target — transparent, zero elevation, no stroke —
+                     for its rounded ripple bounded to the line (H2's
+                     border-radius button; the Settings row is the primary
+                     door, so the resting affordance may be invisible). H2's
+                     geometry: 16dp glyph, 6dp gap, 13sp, the text 16dp under
+                     the wordmark (6dp margin + 10dp padding). wrap_content and
+                     centred; the text may WRAP to two lines (a count plus
+                     "trackers blocked" in a long locale) rather than ellipsize
+                     the number away. Reads "Protection active" at 0
+                     (trackers_info_idle, the settings row's rule: a "0
+                     blocked" reads as broken protection), so it is never
+                     empty and never GONE. The incognito home carries NO such
+                     line — a figure there would leak activity. -->
                 <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/home_blocked_card"
+                    android:id="@+id/home_blocked_line"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="6dp"
                     android:clickable="true"
                     android:focusable="true"
-                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                    app:cardBackgroundColor="@android:color/transparent"
                     app:cardCornerRadius="20dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="0dp">
@@ -182,14 +197,12 @@
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingTop="10dp"
-                        android:paddingEnd="16dp"
-                        android:paddingBottom="10dp">
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="10dp">
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
                             android:importantForAccessibility="no"
                             android:src="@drawable/ic_shield_24"
                             app:tint="?attr/colorOnSurfaceVariant" />
@@ -198,7 +211,7 @@
                             android:id="@+id/home_blocked_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
+                            android:layout_marginStart="6dp"
                             android:maxLines="2"
                             android:text="@string/trackers_info_idle"
                             android:textColor="?attr/colorOnSurfaceVariant"

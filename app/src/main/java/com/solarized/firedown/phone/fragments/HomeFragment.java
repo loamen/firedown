@@ -91,11 +91,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private View mHomeScroll;
     // The home is the address bar and the mark (home v6, frame N2): the
     // search pill in the browser's exact toolbar rect, the flame, the wordmark
-    // and the blocked card centred in the page below it — nothing moves on
+    // and the blocked line centred in the page below it — nothing moves on
     // focus. The pill is the REAL GeckoToolbar; the layout file comment holds
     // the composition and its history (the retired HomeToolbarDock, the P1
     // field-in-page build). The one figure is the ad blocker's lifetime count
-    // on a tonal card under the wordmark (canvas frame H2), the door to
+    // as a bare line under the wordmark (canvas frame H2 — a tonal card read as
+    // a second search field and lasted one build), the door to
     // Settings → Privacy → "Trackers and ads blocked"; the "blocked · saved"
     // PAIR that used to sit there is gone — it wrapped onto two rows on 360dp
     // phones in the long locales. Everything else (tabs, downloads badge,
@@ -191,12 +192,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mBottomNavigationBar = v.findViewById(R.id.bottom_app_bar);
 
 
-        // The ember glow behind the flame, and the blocked card under the
+        // The ember glow behind the flame, and the blocked line under the
         // wordmark (bound in onViewCreated; its tap opens the stats screen,
         // which replaces the settings list so Back returns here).
         mBrandGlow = v.findViewById(R.id.home_brand_glow);
         mBlockedText = v.findViewById(R.id.home_blocked_text);
-        v.findViewById(R.id.home_blocked_card).setOnClickListener(view -> {
+        v.findViewById(R.id.home_blocked_line).setOnClickListener(view -> {
             Intent statsIntent = new Intent(mActivity, SettingsActivity.class);
             statsIntent.putExtra(SettingsActivity.EXTRA_OPEN_BLOCKED_STATS, true);
             mStartForResult.launch(statsIntent);
@@ -289,7 +290,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
                 -> mBottomNavigationBar.onTabsCount(count == null ? 1 : Math.max(1, count)));
 
         // The one figure on the home: the ad blocker's lifetime count on the
-        // card under the wordmark (frame H2 on a tonal card). Same source and
+        // bare line under the wordmark (frame H2). Same source and
         // the same two states as the Settings → Privacy row
         // (SettingsFragment.bindBlockedStats): the locale-formatted count, or
         // "Protection active" at 0 — a "0 blocked" reads as broken protection.

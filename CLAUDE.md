@@ -3501,15 +3501,15 @@ Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
 composition: the search pill EXACTLY where the browser's address bar is
 (the same 64dp toolbar rect under the status strip, the pill 8dp inside
 it), the mark CENTRED in the page under it (the 48dp flame + the 22sp
-wordmark + the blocked card; the 128dp privacy illustration + "Private
+wordmark + the blocked line; the 128dp privacy illustration + "Private
 Browsing" in incognito), and the bottom navigation bar — nothing else at
 rest except the ember behind the flame while a download runs. The cloud
 transfer chip and deadline card went earlier (see "The home carries NO
 cloud state" under Cloud Backup). The brief it answers: a calm identity
 surface, not a dashboard — no top sites or recents (Chrome's and Brave's
 shape), no download status (the Downloads screen's job). **ONE figure: the
-ad blocker's lifetime count on a tonal card under the wordmark** (frame H2,
-see the card bullet) — the "blocked · saved" PAIR that sat there through
+ad blocker's lifetime count as a bare line under the wordmark** (frame H2,
+see the line bullet) — the "blocked · saved" PAIR that sat there through
 home v5 is GONE, and so is the lifetime trackers sheet that was its only
 door (`TrackersInfoSheet`, `TopTrackersAdapter`, `TopTrackerDiffCallback`,
 `MaxHeightRecyclerView`, `RecentDownloadsViewModel`, their two layouts, the
@@ -3530,7 +3530,7 @@ and hidden under three rows, and a footnote naming the estimate. All of it
 reads `GeckoUblockHelper`'s uBlock tallies live, exactly what the retired
 sheet read; the per-PAGE count stays on the security sheet, and Gecko's
 own ETP count stays on the Enhanced Tracking Protection screen, a separate
-measurement never shown beside this one. The home card is that screen's
+measurement never shown beside this one. The home line is that screen's
 second door (`SettingsActivity.EXTRA_OPEN_BLOCKED_STATS`); the old
 `EXTRA_OPEN_TRACKING` deep link went with the sheet's "Manage protection"
 button.
@@ -3597,25 +3597,40 @@ button.
   the maintainer picked N2, N3 stays the optional polish. The dock, the
   slot `Space`, the rest-resolve and the fraction tween are retired code;
   don't rebuild a field-in-page composition over a bottom bar.
-- **The blocked card — frame H2's shield line on a Material card
-  (maintainer, 2026-10-12: "bring the blocked shield glyph and text back
-  to home screen below the logo like H2 … and probably put in a material
-  card background").** One line: `ic_shield_24` + "N trackers blocked"
-  (`tracking_status_blocked` — zero new strings, the words name no engine)
-  on a `colorSurfaceContainerHigh` pill with the retired backup pill's
-  geometry (20dp radius, 14/10/16/10 padding, 18dp glyph, 13sp), glyph and
-  text both `colorOnSurfaceVariant` (H2's grey), 16dp under the wordmark,
-  `maxLines=2` so a long locale wraps rather than ellipsizes the number.
-  Bound in `HomeFragment.onViewCreated` from
+- **The blocked line — frame H2's shield line, BARE (maintainer,
+  2026-10-12: "bring the blocked shield glyph and text back to home screen
+  below the logo like H2", then, after one build on a card, "make it
+  transparent").** One line: `ic_shield_24` (16dp) + "N trackers blocked"
+  (`tracking_status_blocked` — zero new strings, the words name no engine),
+  glyph and text both `colorOnSurfaceVariant` (H2's grey), 6dp gap, 13sp,
+  the text 16dp under the wordmark, `maxLines=2` so a long locale wraps
+  rather than ellipsizes the number. NO container: it shipped for one
+  build on a `colorSurfaceContainerHigh` pill ("and probably put in a
+  material card background") and the on-device screenshot named the fault
+  — that fill is the address field's own token (#292A2C in dark, both
+  measured identical) in the field's own stadium shape, so the card read
+  as a second, smaller search field, and a glyph + label in a pill is
+  Material's chip/button shape, an ACTION, on a page whose point is one
+  action ("takes attention from the address bar"). The take that settled
+  it: the line is a FACT, a caption of the mark — Brave prints its new-tab
+  stats as plain text, no big browser puts a pill under its logo. A
+  COLOURED card was weighed and rejected (louder, not quieter: the flame
+  is the page's only colour, and a fill is earned by work, a tally gets
+  none — the chip-era rule); an OUTLINED chip is the recorded fallback if
+  the bare line ever reads as dead text on-device, still a control shape,
+  so not the first move. Bound in `HomeFragment.onViewCreated` from
   `GeckoUblockHelper.getCumulativeBlockedLive()` with the settings row's two
   states — the locale-formatted count, else "Protection active"
   (`trackers_info_idle`) — so it is never empty and never GONE. Tap →
   `SettingsActivity.EXTRA_OPEN_BLOCKED_STATS` → `settings_blocked_stats`,
   replacing the settings list on the back stack (the `EXTRA_OPEN_SYNC`
-  contract) so Back returns to the home. TONAL, never a brand fill — a
-  fill on this screen is earned by work (the chip-era rule), a tally gets
-  the ground. The "saved" half stays gone (the two-row wrap above), and the
-  incognito home carries no line (a figure there leaks activity).
+  contract) so Back returns to the home; the `MaterialCardView`
+  (`home_blocked_line`) survives ONLY as the touch target — transparent,
+  zero elevation, no stroke — for its rounded ripple bounded to the line,
+  H2's border-radius button; the resting affordance may be invisible
+  because the Settings row is the primary door. The "saved" half stays
+  gone (the two-row wrap above), and the incognito home carries no line (a
+  figure there leaks activity).
 - **What stays a cut, deliberately:** the home → browser swap (same rect,
   no shared element needed). Not built: N3's expand morph, a dedicated
   fakebox, any change to `GeckoToolbarBehavior` (browser only). The pill
@@ -3631,9 +3646,11 @@ button.
   it was when a stat line shared the block), the name is a label. Don't
   grow either without re-measuring the block against the pill.
 - **Verified on-device** (2026-10-12): the real toolbar taking the tap on
-  the home (the mechanism N2 keeps), and the three field-in-page builds —
-  each read wrong, see the history bullet. Not yet: N2 itself, the blocked
-  card, the overlay fade, landscape.
+  the home (the mechanism N2 keeps), the three field-in-page builds — each
+  read wrong, see the history bullet — and N2 itself (the mark measured
+  centred in the page under the bar) with the blocked line on its one-build
+  card (read as a second search field, see the line bullet). Not yet: the
+  bare line, the overlay fade, landscape.
 
 ### Empty-focus "most visited" — the existing list, filled (not a new widget)
 
