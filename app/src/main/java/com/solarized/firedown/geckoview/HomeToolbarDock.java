@@ -1,21 +1,17 @@
 package com.solarized.firedown.geckoview;
 
-import android.animation.ValueAnimator;
 import android.view.View;
-import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
 /**
  * Docks the home's {@link GeckoToolbar} over a slot in the page content at
- * rest, and raises it to the top of the screen while the URL field has focus.
+ * rest, and puts it at the top of the screen while the URL field has focus.
  *
  * <p>The home is "the mark over the field": the flame, the wordmark and the
  * search pill sit together in the middle of the screen, and when the user
- * taps the pill it rises into the position the browser's address bar
- * occupies, with the suggestions opening under it. The pill is the REAL
+ * taps the pill it takes the position the browser's address bar occupies,
+ * with the suggestions opening under it. The pill is the REAL
  * {@code GeckoToolbar} the whole time — Chrome's fakebox model, where the
  * omnibox is drawn over the NTP placeholder — so a tap on it is a tap on the
  * real {@code AutoCompleteEditText}: the keyboard opens natively, the focus
@@ -34,23 +30,23 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
  * the toolbar or the scroll view lays out, or the content scrolls, so it
  * follows the centred mark through an IME resize ({@code adjustResize} moves
  * the mark while the keyboard opens and closes) and a rotation (the activity
- * handles {@code configChanges} in place). Raising is a 0→1 fraction with the
- * translation computed from the CURRENT rest value on every frame, so a
- * re-solve mid-flight re-targets rather than fights the animator.
+ * handles {@code configChanges} in place).
  *
- * <p>The content group fades out as the pill rises (1 − fraction): the
- * toolbar's holder is an opaque surface, so without the fade the rising bar
- * would wipe across the wordmark and flame. Chrome fades its NTP content the
- * same way.
+ * <p>The move is a CUT, not a tween (maintainer, 2026-10-12: "is the
+ * animation really necessary … it feels weak"). It shipped first as a 240 ms
+ * slide with the mark fading under it, and a lone short slide of one bar —
+ * the keyboard on its own clock, the suggestions panel simply appearing —
+ * read as a wobble rather than a transition; making it read as one would
+ * have meant choreographing the panel and the IME for a quarter second
+ * nobody waits for. Firefox for Android cuts straight to its search screen
+ * the same way. So on focus the pill is at the top on the next frame with
+ * the panel under it, and on blur it is back over the slot; the overlay
+ * covers the mark the moment it opens, so nothing needs fading either.
  *
  * <p>Owned by the fragment: created in {@code onCreateView}, driven from
  * {@code onFocusChanged}, released in {@code onDestroyView}.
  */
 public final class HomeToolbarDock {
-
-    private static final long DURATION_MS = 240;
-
-    private static final Interpolator INTERPOLATOR = new FastOutSlowInInterpolator();
 
     private final GeckoToolbar mToolbar;
 
@@ -63,20 +59,10 @@ public final class HomeToolbarDock {
     /** The content's scroll view; a scroll moves the slot on screen. */
     private final View mScroll;
 
-    /** The brand mark group, faded while the toolbar is raised; may be null. */
-    @Nullable
-    private final View mFade;
-
-    /** 0 = docked over the slot, 1 = at the top of the screen. */
-    private float mFraction;
-
     /** The toolbar's translation at rest, in px; 0 until the first resolve. */
     private int mRest;
 
     private boolean mRaised;
-
-    @Nullable
-    private ValueAnimator mAnimator;
 
     private final View.OnLayoutChangeListener mOnLayout =
             (v, l, t, r, b, oldL, oldT, oldR, oldB) -> resolve();
@@ -85,12 +71,11 @@ public final class HomeToolbarDock {
             (v, x, y, oldX, oldY) -> resolve();
 
     public HomeToolbarDock(@NonNull GeckoToolbar toolbar, @NonNull View slot,
-                           @NonNull View scroll, @Nullable View fade) {
+                           @NonNull View scroll) {
         mToolbar = toolbar;
         mPill = toolbar.getAddressBarBackground();
         mSlot = slot;
         mScroll = scroll;
-        mFade = fade;
         mSlot.addOnLayoutChangeListener(mOnLayout);
         mScroll.addOnLayoutChangeListener(mOnLayout);
         mToolbar.addOnLayoutChangeListener(mOnLayout);
@@ -99,36 +84,21 @@ public final class HomeToolbarDock {
     }
 
     /**
-     * Raises the toolbar to the top (focus gained) or docks it back over the
-     * slot (focus lost). Idempotent per state, so the callers' redundant
-     * focus-lost calls (the back-press dismissal path clears focus after the
-     * field already reported it) are no-ops; a reversal mid-flight continues
-     * from the current fraction.
+     * Puts the toolbar at the top (focus gained) or back over the slot (focus
+     * lost). Idempotent per state, so the callers' redundant focus-lost calls
+     * (the back-press dismissal path clears focus after the field already
+     * reported it) are no-ops.
      */
     public void setRaised(boolean raised) {
         if (raised == mRaised) {
             return;
         }
         mRaised = raised;
-        if (mAnimator != null) {
-            mAnimator.cancel();
-        }
-        float target = raised ? 1f : 0f;
-        ValueAnimator animator = ValueAnimator.ofFloat(mFraction, target);
-        animator.setDuration(Math.round(DURATION_MS * Math.abs(target - mFraction)));
-        animator.setInterpolator(INTERPOLATOR);
-        animator.addUpdateListener(va -> apply((float) va.getAnimatedValue()));
-        mAnimator = animator;
-        animator.start();
+        apply();
     }
 
-    /** Stops the animation and detaches from the views; the fragment's view
-     *  is going away. */
+    /** Detaches from the views; the fragment's view is going away. */
     public void release() {
-        if (mAnimator != null) {
-            mAnimator.cancel();
-            mAnimator = null;
-        }
         mSlot.removeOnLayoutChangeListener(mOnLayout);
         mScroll.removeOnLayoutChangeListener(mOnLayout);
         mToolbar.removeOnLayoutChangeListener(mOnLayout);
@@ -137,7 +107,7 @@ public final class HomeToolbarDock {
 
     /**
      * Re-derives the rest translation from where the slot and the pill are
-     * right now, and re-applies the current fraction so a docked toolbar
+     * right now, and re-applies the current state so a docked toolbar
      * follows the slot and a raised one stays put. Window coordinates on
      * purpose: they include the scroll offset and every ancestor's position,
      * and the pill's includes the toolbar's own translation, which is
@@ -155,15 +125,11 @@ public final class HomeToolbarDock {
         int rest = slotXy[1] - pillTopAtRest;
         if (rest != mRest) {
             mRest = rest;
-            apply(mFraction);
+            apply();
         }
     }
 
-    private void apply(float fraction) {
-        mFraction = fraction;
-        mToolbar.setTranslationY(mRest * (1f - fraction));
-        if (mFade != null) {
-            mFade.setAlpha(1f - fraction);
-        }
+    private void apply() {
+        mToolbar.setTranslationY(mRaised ? 0f : mRest);
     }
 }

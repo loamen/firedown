@@ -17,10 +17,10 @@
     THE PILL IS THE REAL GeckoToolbar. It is a direct child of this
     CoordinatorLayout laid out at the TOP (the exact rect the browser's
     toolbar occupies), and HomeToolbarDock translates it DOWN over the
-    home_search_slot Space the content reserves; on focus it rises back to the
-    top and the suggestions open under it (AutoCompleteViewBehavior follows
-    the toolbar's translation, as in the browser). Three things this layout
-    must keep for that to work:
+    home_search_slot Space the content reserves; on focus it is back at the
+    top — a cut, not a tween — and the suggestions open under it
+    (AutoCompleteViewBehavior follows the toolbar's translation, as in the
+    browser). Three things this layout must keep for that to work:
       - the toolbar is NOT inside an AppBarLayout (a LinearLayout clips a
         translated child to its own bounds, so the docked pill would vanish),
         and it is declared AFTER the scroll view so it draws above the content
@@ -74,8 +74,7 @@
                  bottom margin is the OPTICAL LIFT: FrameLayout
                  centres the box including margins, so the group sits that much
                  above the true centre (a start page's field sits above the
-                 middle, not on it; values-land shrinks it). HomeToolbarDock
-                 fades this whole group while the pill is raised. -->
+                 middle, not on it; values-land shrinks it). -->
             <LinearLayout
                 android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"

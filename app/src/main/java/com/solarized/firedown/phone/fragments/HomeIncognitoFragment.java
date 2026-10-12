@@ -90,9 +90,6 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
     private BottomNavigationBar mBottomNavigationBar;
     private View mNewTabView;
     private View mHomeScroll;
-    /** The mark group (illustration + title + the field's slot), faded while
-     *  the pill is raised — the regular home's shape, see HomeFragment. */
-    private View mBrandMark;
     private HomeToolbarDock mToolbarDock;
 
 
@@ -161,14 +158,13 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
 
         // Same two pieces as HomeFragment: the overlay follows the toolbar
         // (AutoCompleteViewBehavior, installed in code), and the pill IS the
-        // toolbar — docked over home_search_slot at rest, raised on focus.
+        // toolbar — docked over home_search_slot at rest, at the top on focus.
         CoordinatorLayout.LayoutParams overlayParams =
                 (CoordinatorLayout.LayoutParams) mAutoCompleteView.getLayoutParams();
         overlayParams.setBehavior(new AutoCompleteViewBehavior(
                 mAutoCompleteView.getContext(), null, mAutoCompleteView));
-        mBrandMark = v.findViewById(R.id.home_brand_mark);
         mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
-                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark);
+                v.findViewById(R.id.home_search_slot), mHomeScroll);
 
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
@@ -357,7 +353,6 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
             mToolbarDock.release();
             mToolbarDock = null;
         }
-        mBrandMark = null;
         mHomeScroll = null;
         mNewTabView = null;
         mAutoCompleteView = null;
@@ -426,8 +421,8 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
-        // Raise the pill to the top on focus, dock it back on blur (the one
-        // hook the dock needs — every blur path ends here).
+        // The pill goes to the top on focus and back over the slot on blur
+        // (the one hook the dock needs — every blur path ends here).
         if (mToolbarDock != null) {
             mToolbarDock.setRaised(hasFocus);
         }

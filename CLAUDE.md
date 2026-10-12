@@ -3572,12 +3572,18 @@ sheet's "Manage protection" button, its only sender.
   out), re-solved on every layout of the slot, the scroll view and the
   toolbar, and on scroll: `adjustResize` moves the centred mark while the
   IME opens and closes, and rotation re-lays out in place (`configChanges`).
-  Raising is a 0→1 fraction (240 ms, FastOutSlowIn) with the translation
-  computed from the CURRENT rest on every frame, so a mid-flight re-solve
-  re-targets instead of fighting the animator; the mark group fades with
-  1 − fraction because the toolbar's holder is an opaque surface that would
-  otherwise wipe across the wordmark and flame (Chrome fades its NTP content
-  the same way). A reversal continues from the current fraction.
+- **The move is a CUT, not a tween (maintainer, 2026-10-12: "is the
+  animation really necessary … it feels weak").** It shipped first as a
+  240 ms FastOutSlowIn slide driven by a 0→1 fraction, with the mark group
+  fading under it, and read as a wobble: a lone short slide of one bar while
+  the keyboard animates on its own clock and the suggestions panel simply
+  appears. Making it read as a transition would have meant choreographing
+  the panel and the IME (Chrome's fakebox does) for a quarter second nobody
+  waits for; Firefox for Android cuts straight to its search screen instead,
+  and so does this. `setRaised` applies translation 0 or the rest value on
+  the spot; the fade went with the tween (the overlay covers the mark the
+  moment it opens), so the fragments no longer hand the dock the mark group.
+  Don't re-add a tween without the choreography.
 - **What stays a cut, deliberately:** returning from the browser pops to a
   home whose view is recreated, so the toolbar appears already docked; a
   dock-down animation on first layout is cheap if ever wanted. Not built: a

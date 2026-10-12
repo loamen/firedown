@@ -4,7 +4,7 @@
     read its file comment first) with the mode's own mark: the privacy-bandit
     illustration in place of the flame, the "Private Browsing" title in place
     of the wordmark, and the SAME real GeckoToolbar docked over a slot under
-    them, raised to the top on focus by HomeToolbarDock. One composition in
+    them, put at the top on focus by HomeToolbarDock. One composition in
     both modes is what makes the shape recognisable in either. The one
     addition private mode genuinely needs is the faint, bottom-anchored
     disclaimer that private browsing isn't anonymity. No stats, no counters:
@@ -49,8 +49,7 @@
 
             <!-- The mark group: illustration, title, the field's slot. Centred
                  with the same optical lift as the regular home (the bottom
-                 margin, see fragment_home.xml); faded by HomeToolbarDock while
-                 the pill is raised. -->
+                 margin, see fragment_home.xml). -->
             <LinearLayout
                 android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"

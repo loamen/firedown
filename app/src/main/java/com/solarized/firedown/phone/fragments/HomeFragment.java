@@ -92,7 +92,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     // two rows on 360dp phones in the long locales, and a figure is not what
     // the home is for. Everything else (tabs, downloads badge, vault) lives in
     // the bottom bar / menu — no dashboard.
-    private View mBrandMark;
     private HomeToolbarDock mToolbarDock;
 
     // No cloud state on the home (maintainer, 2026-10-12: "we don't need all
@@ -181,9 +180,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mBottomNavigationBar = v.findViewById(R.id.bottom_app_bar);
 
 
-        // The brand mark group (faded while the pill is raised) and the ember
-        // glow behind the flame.
-        mBrandMark = v.findViewById(R.id.home_brand_mark);
+        // The ember glow behind the flame.
         mBrandGlow = v.findViewById(R.id.home_brand_glow);
 
         mBottomNavigationBar.setListener(this);
@@ -205,10 +202,11 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         overlayParams.setBehavior(new AutoCompleteViewBehavior(
                 mAutoCompleteView.getContext(), null, mAutoCompleteView));
 
-        // The pill IS the toolbar: docked over home_search_slot at rest, raised
-        // to the browser's toolbar rect on focus (see HomeToolbarDock).
+        // The pill IS the toolbar: docked over home_search_slot at rest, at
+        // the browser's toolbar rect on focus — a cut, not a tween (see
+        // HomeToolbarDock).
         mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
-                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark);
+                v.findViewById(R.id.home_search_slot), mHomeScroll);
 
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
@@ -510,7 +508,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             mToolbarDock.release();
             mToolbarDock = null;
         }
-        mBrandMark = null;
         mBrandGlow = null;
         mHomeScroll = null;
         mAutoCompleteView = null;
@@ -573,8 +570,8 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
-        // The pill rises to the top of the screen on focus and docks back over
-        // the slot on blur — every blur path (back, outside tap, commit) ends
+        // The pill goes to the top of the screen on focus and back over the
+        // slot on blur — every blur path (back, outside tap, commit) ends
         // here, so this is the one hook the dock needs.
         if (mToolbarDock != null) {
             mToolbarDock.setRaised(hasFocus);
