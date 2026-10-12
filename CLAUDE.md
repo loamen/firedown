@@ -3495,155 +3495,132 @@ nothing to take down — Firedown stays not-a-host.
   that delivers them puts bytes on a public URL and brings the whole abuse desk
   with it. Accept the loss explicitly rather than reopening it.
 
-### Home — the mark over the field (home v6): the pill IS the toolbar, docked
+### Home — the address bar and the mark (home v6, frame N2): the field IS the browser's bar, nothing moves
 
 Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
-composition: the search pill a little UNDER the address bar's place
-(`home_field_rest`, 88dp below the status strip — an 80dp rise on focus),
-the mark CENTRED in the viewport below it (the 48dp flame + the 22sp
-wordmark; the 128dp privacy illustration + "Private Browsing" in incognito),
-decoupled from the field (see the P1 bullet), and nothing
-else at rest except the ember behind the flame while a download runs — the
-cloud transfer chip and deadline card went too (see "The home carries NO
-cloud state" under Cloud Backup). The Google / DuckDuckGo
-start-page shape with Firedown's own mark as the subject — chosen (maintainer,
-2026-10-12, from the design-canvas frames H1–H5) over a stat line, and the
-brief it answers: a calm identity surface, not a dashboard — no top sites or
-recents (Chrome's and Brave's shape), no download status (the Downloads
-screen's job), no figures. **The one-line counters that sat under the
-wordmark (trackers blocked · bytes saved) are GONE**, and the lifetime
-trackers sheet went with them as its only door (`TrackersInfoSheet`,
-`TopTrackersAdapter`, `TopTrackerDiffCallback`, `MaxHeightRecyclerView`,
-`RecentDownloadsViewModel`, their two layouts, the `TrackersInfo*` styles,
-the `MaxHeightView` attr and 17 strings in every locale): on a 360dp phone at
-normal font scale in Spanish the two chips plus the dot needed 304dp of a
-296dp line and wrapped onto two rows (reported as "blocked and download
-stack on top of each other on some devices"), and no inset or glyph trim
-buys the long locales enough. **The blocked-ads stats live in Settings →
-Privacy → "Trackers and ads blocked" now** (maintainer: "move the blocked
-ads stats to the settings"): a root row whose summary is the LIVE lifetime
-count (`SettingsFragment.bindBlockedStats`, "Protection active" at 0) over a
-`BlockedStatsFragment` sub-screen — the `BlockedStatsPreference` hero (blocked
-since install / estimated data saved at ~50 KB per request / blocked today,
-flat above the cards like the Cloud hero), a "Blocked by type" card of
-read-only `CountPreference` rows (title + a trailing count), a "Top trackers"
-card rebuilt from the pushed top-10 and hidden under three rows, and a
-footnote naming the estimate. All of it reads `GeckoUblockHelper`'s uBlock
-tallies live, exactly what the retired sheet read; the per-PAGE count stays
-on the security sheet, and Gecko's own ETP count stays on the Enhanced
-Tracking Protection screen, a separate measurement never shown beside this
-one. The deep link `SettingsActivity.EXTRA_OPEN_TRACKING` went with the
-sheet's "Manage protection" button, its only sender.
+composition: the search pill EXACTLY where the browser's address bar is
+(the same 64dp toolbar rect under the status strip, the pill 8dp inside
+it), the mark CENTRED in the page under it (the 48dp flame + the 22sp
+wordmark + the blocked card; the 128dp privacy illustration + "Private
+Browsing" in incognito), and the bottom navigation bar — nothing else at
+rest except the ember behind the flame while a download runs. The cloud
+transfer chip and deadline card went earlier (see "The home carries NO
+cloud state" under Cloud Backup). The brief it answers: a calm identity
+surface, not a dashboard — no top sites or recents (Chrome's and Brave's
+shape), no download status (the Downloads screen's job). **ONE figure: the
+ad blocker's lifetime count on a tonal card under the wordmark** (frame H2,
+see the card bullet) — the "blocked · saved" PAIR that sat there through
+home v5 is GONE, and so is the lifetime trackers sheet that was its only
+door (`TrackersInfoSheet`, `TopTrackersAdapter`, `TopTrackerDiffCallback`,
+`MaxHeightRecyclerView`, `RecentDownloadsViewModel`, their two layouts, the
+`TrackersInfo*` styles, the `MaxHeightView` attr and 17 strings in every
+locale): on a 360dp phone at normal font scale in Spanish the two chips
+plus the dot needed 304dp of a 296dp line and wrapped onto two rows
+(reported as "blocked and download stack on top of each other on some
+devices"), and no inset or glyph trim buys the long locales enough. **The
+blocked-ads stats live in Settings → Privacy → "Trackers and ads blocked"**
+(maintainer: "move the blocked ads stats to the settings"): a root row
+whose summary is the LIVE lifetime count (`SettingsFragment.bindBlockedStats`,
+"Protection active" at 0) over a `BlockedStatsFragment` sub-screen — the
+`BlockedStatsPreference` hero (blocked since install / estimated data saved
+at ~50 KB per request / blocked today, flat above the cards like the Cloud
+hero), a "Blocked by type" card of read-only `CountPreference` rows (title
++ a trailing count), a "Top trackers" card rebuilt from the pushed top-10
+and hidden under three rows, and a footnote naming the estimate. All of it
+reads `GeckoUblockHelper`'s uBlock tallies live, exactly what the retired
+sheet read; the per-PAGE count stays on the security sheet, and Gecko's
+own ETP count stays on the Enhanced Tracking Protection screen, a separate
+measurement never shown beside this one. The home card is that screen's
+second door (`SettingsActivity.EXTRA_OPEN_BLOCKED_STATS`); the old
+`EXTRA_OPEN_TRACKING` deep link went with the sheet's "Manage protection"
+button.
 
-- **The pill is the REAL `GeckoToolbar`, translated — never a second fake
-  field.** `HomeToolbarDock` (`geckoview/`) docks the toolbar over a 48dp
-  `Space` (`home_search_slot`) in the content at rest and raises it to the
-  top on focus: Chrome's fakebox model, the omnibox drawn over the NTP
-  placeholder. Because it is the real `AutoCompleteEditText`, a tap opens
-  the IME natively (no `showSoftInput`), each home's `onFocusChanged` is the
-  only hook (true → raise, false → dock; every blur path — back, outside
-  tap, commit — ends there, and the dock is idempotent per state because the
-  back-press dismissal clears focus after the field already reported it),
-  the pill's colour lift and the home's search-engine glyph are untouched,
-  and no second accessibility node exists. The hand-off to the browser costs
-  nothing: `openUri` navigates only once the field is focused, i.e. with the
-  toolbar at translation 0, laid out at a top MARGIN of the status inset —
-  the same rect the browser's root-padded toolbar occupies — so the fragment
-  swap is the same seamless cut it was before the dock existed.
-- **Layout rules the dock depends on, in both homes.** The toolbar is a
-  DIRECT child of the `CoordinatorLayout` (the `AppBarLayout` is gone: a
-  LinearLayout clips a translated child to its own bounds, so the docked
-  pill vanished below the bar slot), declared AFTER the scroll view (equal
-  elevation → child order decides z, and the `NestedScrollView` would
-  otherwise take the tap). The status inset is a top MARGIN set in the
-  fragment's insets listener, never padding (a self-padded box carries the
-  whole status strip down with it and paints, opaque, over the wordmark;
-  with a margin the box is a plain 64dp bar whose pill lands 8dp inside it).
-  The slot is exactly the pill's 48dp, a direct child of the content's
-  FrameLayout anchored to the top at `home_field_rest` — NOT inside the mark
-  group (the group is centred and fades; the slot must not move) — and the
-  docked box extends 8dp past it both ways on an opaque holder, so nothing
-  may sit within 16dp of it. The
-  content's `NestedScrollView` pads top AND bottom insets itself. The
-  overlay's behavior is `AutoCompleteViewBehavior` installed in code (as in
-  the browser), which now positions off the toolbar's laid-out BOTTOM
-  (`top + translationY + height − child.top`): docked, the GONE overlay sits
-  under the docked pill, and on focus it rides up with it; in the browser
-  both tops are the root padding, so it reduces to the old sum.
-- **The rest position is resolved from WINDOW coordinates, live.** Slot top
-  minus the pill's untranslated top (`getLocationInWindow` includes the
-  scroll offset and the toolbar's own translation, which is subtracted back
-  out), re-solved on every layout of the slot, the scroll view and the
-  toolbar, and on scroll: rotation re-lays out in place (`configChanges`),
-  and a scrolled content (a short landscape viewport) moves the slot. The
-  IME's `adjustResize` no longer moves it — the slot is top-anchored (see
-  the tween bullet; the centred MARK does re-centre under the keyboard, but
-  it is fading out, so that is invisible) — and the re-solve stays, because
-  it is what keeps a docked toolbar on its slot through anything else.
-- **The tween, second iteration (maintainer, 2026-10-12, against Chrome
-  on the device: "their animation is way smoother, also their bar is not at
+- **The pill is the REAL `GeckoToolbar`, in the browser's rect — never a
+  second fake field, and never translated.** Because it is the real
+  `AutoCompleteEditText`, a tap opens the IME natively (no
+  `showSoftInput`), each home's `onFocusChanged` is the only hook (every
+  blur path — back, outside tap, commit — ends there), the pill's colour
+  lift and the home's search-engine glyph are untouched, and no second
+  accessibility node exists. The hand-off to the browser costs nothing:
+  `openUri` navigates with the toolbar laid out at a top MARGIN of the
+  status inset — the same rect the browser's root-padded toolbar occupies
+  — so the fragment swap is a seamless cut. Layout rules, both homes: the
+  toolbar is a DIRECT child of the `CoordinatorLayout` (no `AppBarLayout`),
+  declared AFTER the scroll view (equal elevation → child order decides z,
+  and the `NestedScrollView` would otherwise take the tap); the status
+  inset is a top MARGIN set in the fragment's insets listener, never
+  padding (a self-padded box would be inset + 64dp tall, not the browser's
+  bar); the content's `NestedScrollView` pads top AND bottom insets itself
+  and its FrameLayout pads `address_bar_height` on top, so the centred mark
+  group centres in the space UNDER the bar in portrait and landscape alike
+  — no per-orientation dimens (`home_field_rest` / `home_mark_offset` are
+  gone with the dock); the overlay's behavior is `AutoCompleteViewBehavior`
+  installed in code (as in the browser), positioning off the toolbar's
+  laid-out BOTTOM (`top + translationY + height − child.top`, which in the
+  browser reduces to the old sum). The home toolbar carries no hairline
+  (`toolbar_divider` is keyed on `!mHomeEnabled`): the page under it is the
+  same tone, and a line would cut the mark off from its bar.
+- **The focus motion is the pill's own colour/corner animation plus the
+  suggestions FADING IN under it, on one clock.** `AutoCompleteView.
+  showFadingIn(GeckoToolbar.FOCUS_ANIMATION_MS)` (225 ms, Chrome's
+  URL-focus duration, fast-out-slow-in, on a hardware layer — alpha on a
+  deep ViewGroup is an offscreen pass per frame otherwise); a hide is a
+  plain `updateVisibility(false)` cut, which also cancels a running fade
+  and resets alpha, so the home never sits under a half-transparent overlay
+  while the keyboard closes. The browser keeps its cut both ways. Nothing
+  translates and the mark does not fade.
+- **Why nothing moves — the field-inside-the-page compositions, all three
+  failed on-device (maintainer, 2026-10-12).** The day's history, kept so
+  it is not re-derived: (1) the mark-over-field stack with the toolbar
+  DOCKED mid-screen over a `Space` in the content and raised to the top on
+  focus — Chrome's fakebox model, `HomeToolbarDock` (translation resolved
+  from window coordinates, a 0→1 fraction tween, the mark fading out and
+  the overlay fading in with the fraction); the ~350dp trip read weak next
+  to Chrome ("their animation is way smoother, also their bar is not at
   the middle, is way upper but not at the top, so the animation does not
-  take that long path").** The first tween (240 ms, from a vertically
-  CENTRED mark) read as weak and was cut to a snap for one commit; the
-  maintainer then compared with Chrome and asked to iterate instead. What
-  made it weak, each now fixed: (1) the TRIP — a mid-screen pill travelled
-  ~350dp; it was first cut to ~170dp by anchoring the whole mark-over-field
-  stack near the top, then to 80dp by the P1 composition (next bullet),
-  which parks the field alone just under its raised place; (2) the slot
-  MOVED during the slide — `adjustResize` shrinks the
-  scroll view as the keyboard opens, and a centred group re-centred under
-  the rising pill, so the live re-solve re-targeted mid-flight; a
-  top-anchored slot does not move; (3) the overlay rode up OPAQUE like a
-  second bar — it now FADES IN with the fraction under the moving pill (the
-  fragments call `setRaised` before `updateVisibility(true)`, so it appears
-  at the fraction's alpha), on a hardware layer for the fade's duration
-  (alpha on a deep ViewGroup is an offscreen pass per frame otherwise); (4)
-  the curve — Chrome's 225 ms fast-out-slow-in, and the pill's own
-  colour/corner animation runs on the SAME clock
-  (`GeckoToolbar.FOCUS_ANIMATION_MS`, read by the dock — it was a separate
-  150 ms, so the pill finished changing shape before it arrived); the mark
-  still fades out with the fraction. A reversal continues from the current
-  fraction.
-- **P1 — the field high, the mark centred (maintainer, 2026-10-12: "why
-  not keep the logo at the center and the bar … a little lower from the
-  top, and when pressed it does the animation to move to the top").** The
-  top-anchored stack shipped for one build and read "weird" on-device;
-  measured from the screenshot (1.875 px/dp) the pill rested 208dp down,
-  the mark spanned 93–256dp and 485 of 853dp were empty under it — a
-  splash-screen stack (mark over name over field) pinned to the top with
-  nothing holding the lower two thirds, where Chrome's fakebox at that
-  height has tiles under it and a one-line logo over it. Five frames went
-  on the design canvas (P0 as built, P1 this, P2 a horizontal masthead
-  lockup over the field, P3 the stack lowered to the upper third, P4 P1
-  without the wordmark) and the maintainer picked P1. The layout:
-  `home_search_slot` is a SIBLING of the mark group, a direct child of the
-  content FrameLayout anchored to the top at `home_field_rest` (88dp under
-  the status strip; the raised pill's top is inset + 8dp, so the rise is
-  80dp — Chrome's nudge), and the mark group is `layout_gravity="center"`
-  with a `home_mark_offset` top margin: 0 in portrait (the true centre, the
-  frame as drawn), and in landscape the field's bottom edge
-  (`home_field_rest` + 48dp), which centres the group in the space UNDER
-  the field — a FrameLayout centres the box margins included, so a margin
-  of F puts the content's centre at (F + H)/2 — because at the true centre
-  of a ~280dp landscape viewport the mark overlapped the field. The
-  incognito illustration stays 128dp (it was 168dp) for the same reason:
-  that space is ~180dp tall in landscape. Firefox's and Samsung Internet's
-  shape: bar high, brand in the middle. The resting field sits where a user
-  expects the browser's bar, so it must read as AT REST: the home toolbar
-  carries no hairline (`toolbar_divider` is keyed on `!mHomeEnabled`) and
-  the 80dp gap is what says "not the toolbar yet" — don't shrink
-  `home_field_rest` to where the rest and raised positions blur.
-- **What stays a cut, deliberately:** returning from the browser pops to a
-  home whose view is recreated, so the toolbar appears already docked; a
-  dock-down animation on first layout is cheap if ever wanted. Not built: a
-  dedicated fakebox, a cross-fragment shared element (none is needed), any
-  change to `GeckoToolbarBehavior` (browser only). The real pill is inset
-  8dp (344dp on a 360dp phone) — the canvas frames drew 16dp; the toolbar's
-  own inset was kept so the move is purely vertical. The slot is the LAST
-  thing in the mark group now; anything ever placed under it needs ≥16dp of
-  clearance (the docked box extends 8dp past the slot). A width tween
-  (Chrome's fakebox is narrower than its omnibox) is the next knob if the
-  rise still reads flat — it needs margins animated per frame, not a scale.
+  take that long path"); (2) the stack anchored near the top (170dp trip)
+  — "the logo and firedown look weird there": measured from the screenshot
+  the mark spanned 93–256dp and 485 of 853dp were empty under it, a splash
+  screen pinned to the top; (3) P1 — the field alone 88dp down (an 80dp
+  rise), the mark at the true centre, picked from canvas frames P0–P4 —
+  "no does not work. In chrome works because above the bar we have a
+  toolbar and in the bottom the recent sites … in our case we have bottom
+  navigation bar so we break harmony we need to keep it above". The take
+  that settled it: the field is CHROME. Firedown's chrome lives on the two
+  edges — the address bar on top, the navigation bar below — and the home
+  is the page between; a field inside the page is chrome stranded in
+  content, which Chrome's NTP affords only because its fakebox has a
+  toolbar row above it and shortcut tiles below. Frames N1 (the field
+  docked over the bottom bar — right only if the address bar moves to the
+  bottom app-wide), N2 (this), N3 (N2 whose pill EXPANDS into the
+  suggestions sheet on focus, Material's search-bar → search-view morph);
+  the maintainer picked N2, N3 stays the optional polish. The dock, the
+  slot `Space`, the rest-resolve and the fraction tween are retired code;
+  don't rebuild a field-in-page composition over a bottom bar.
+- **The blocked card — frame H2's shield line on a Material card
+  (maintainer, 2026-10-12: "bring the blocked shield glyph and text back
+  to home screen below the logo like H2 … and probably put in a material
+  card background").** One line: `ic_shield_24` + "N trackers blocked"
+  (`tracking_status_blocked` — zero new strings, the words name no engine)
+  on a `colorSurfaceContainerHigh` pill with the retired backup pill's
+  geometry (20dp radius, 14/10/16/10 padding, 18dp glyph, 13sp), glyph and
+  text both `colorOnSurfaceVariant` (H2's grey), 16dp under the wordmark,
+  `maxLines=2` so a long locale wraps rather than ellipsizes the number.
+  Bound in `HomeFragment.onViewCreated` from
+  `GeckoUblockHelper.getCumulativeBlockedLive()` with the settings row's two
+  states — the locale-formatted count, else "Protection active"
+  (`trackers_info_idle`) — so it is never empty and never GONE. Tap →
+  `SettingsActivity.EXTRA_OPEN_BLOCKED_STATS` → `settings_blocked_stats`,
+  replacing the settings list on the back stack (the `EXTRA_OPEN_SYNC`
+  contract) so Back returns to the home. TONAL, never a brand fill — a
+  fill on this screen is earned by work (the chip-era rule), a tally gets
+  the ground. The "saved" half stays gone (the two-row wrap above), and the
+  incognito home carries no line (a figure there leaks activity).
+- **What stays a cut, deliberately:** the home → browser swap (same rect,
+  no shared element needed). Not built: N3's expand morph, a dedicated
+  fakebox, any change to `GeckoToolbarBehavior` (browser only). The pill
+  keeps the toolbar's own 8dp inset (344dp on a 360dp phone) — the canvas
+  frames drew 16dp.
 - **Sizes are MEASURED, not picked (maintainer, 2026-10-12: "is the logo
   too big and the text?").** It shipped at a 56dp flame over a 26sp
   wordmark; measured against the 48dp pill in the device screenshot, the
@@ -3653,9 +3630,10 @@ sheet's "Manage protection" button, its only sender.
   wordmark): the flame stays the subject (40dp reads as an app icon, which
   it was when a stat line shared the block), the name is a label. Don't
   grow either without re-measuring the block against the pill.
-- **Verified on-device** (2026-10-12): the docked pill taking the tap, the
-  first tween, and the top-anchored stack (which read weird — see P1). Not
-  yet: P1 itself, the tween on its 80dp trip, landscape.
+- **Verified on-device** (2026-10-12): the real toolbar taking the tap on
+  the home (the mechanism N2 keeps), and the three field-in-page builds —
+  each read wrong, see the history bullet. Not yet: N2 itself, the blocked
+  card, the overlay fade, landscape.
 
 ### Empty-focus "most visited" — the existing list, filled (not a new widget)
 

@@ -1074,7 +1074,10 @@
          unlocked by the GeckoView 153 bump). Shown as ONE quiet line at the
          top of the ETP settings screen — what the protection has done, above
          the control that adjusts it. A SEPARATE measurement from uBlock's
-         filter-list stats, deliberately not shown beside them. -->
+         filter-list stats, deliberately not shown beside them. The SAME
+         string also titles the home's blocked card with uBlock's lifetime
+         count (HomeFragment, canvas frame H2's wording): the words name no
+         engine, and the two counts never share a screen. -->
     <string name="tracking_status_blocked">%1$s trackers blocked</string>
     <string name="tracking_status_since">Recording since %1$s</string>
     <!-- The stats row's summary and the screen's hero while the count is 0

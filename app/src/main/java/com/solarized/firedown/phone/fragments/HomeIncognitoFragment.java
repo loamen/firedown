@@ -41,7 +41,6 @@ import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.GeckoToolbar;
-import com.solarized.firedown.geckoview.HomeToolbarDock;
 import com.solarized.firedown.geckoview.toolbar.BottomNavigationBar;
 import com.solarized.firedown.manager.DownloadRequest;
 import com.solarized.firedown.phone.DownloadsActivity;
@@ -90,10 +89,6 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
     private BottomNavigationBar mBottomNavigationBar;
     private View mNewTabView;
     private View mHomeScroll;
-    /** The mark group (illustration + title), centred under the field and
-     *  faded as the pill rises — the regular home's shape, see HomeFragment. */
-    private View mBrandMark;
-    private HomeToolbarDock mToolbarDock;
 
 
     @Override
@@ -159,18 +154,13 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
         mGeckoToolbar = v.findViewById(R.id.toolbar_layout);
         mGeckoToolbar.setListener(this);
 
-        // Same two pieces as HomeFragment: the overlay follows the toolbar
-        // (AutoCompleteViewBehavior, installed in code), and the pill IS the
-        // toolbar — docked over home_search_slot at rest, raised on focus
-        // with the mark fading out and the overlay fading in under it.
+        // Same as HomeFragment: the overlay opens under the toolbar's bottom
+        // (AutoCompleteViewBehavior, installed in code); the pill IS the
+        // toolbar, in the browser's exact rect, and never moves (frame N2).
         CoordinatorLayout.LayoutParams overlayParams =
                 (CoordinatorLayout.LayoutParams) mAutoCompleteView.getLayoutParams();
         overlayParams.setBehavior(new AutoCompleteViewBehavior(
                 mAutoCompleteView.getContext(), null, mAutoCompleteView));
-        mBrandMark = v.findViewById(R.id.home_brand_mark);
-        mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
-                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark,
-                mAutoCompleteView);
 
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
@@ -255,8 +245,8 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
         });
 
         // Window insets for the toolbar: the status inset as a top MARGIN,
-        // never padding — the docked box must be a plain 64dp bar, see the
-        // matching listener in HomeFragment for the why.
+        // never padding — the box must be the browser's plain 64dp bar, see
+        // the matching listener in HomeFragment for the why.
         ViewCompat.setOnApplyWindowInsetsListener(mGeckoToolbar, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
@@ -355,11 +345,6 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (mToolbarDock != null) {
-            mToolbarDock.release();
-            mToolbarDock = null;
-        }
-        mBrandMark = null;
         mHomeScroll = null;
         mNewTabView = null;
         mAutoCompleteView = null;
@@ -428,18 +413,19 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
-        // The pill rises to the top on focus and docks back on blur (the one
-        // hook the dock needs — every blur path ends here); called BEFORE the
-        // overlay is shown, so it fades in from the fraction's alpha.
-        if (mToolbarDock != null) {
-            mToolbarDock.setRaised(hasFocus);
-        }
+        // Nothing moves on focus (frame N2, as HomeFragment): the pill
+        // changes colour and corner in place and the suggestions fade in
+        // under it on the same clock; a blur is a plain cut.
         mGeckoToolbar.updateViewVisibility(hasFocus);
         mGeckoToolbar.setAutoCompleteVisible(hasFocus);
         mGeckoToolbar.startAnimation(hasFocus);
         mAutoCompleteViewModel.resetEngines();
         mAutoCompleteView.showEmpty();
-        mAutoCompleteView.updateVisibility(hasFocus);
+        if (hasFocus) {
+            mAutoCompleteView.showFadingIn(GeckoToolbar.FOCUS_ANIMATION_MS);
+        } else {
+            mAutoCompleteView.updateVisibility(false);
+        }
     }
 
     @Override

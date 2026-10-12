@@ -8,9 +8,4 @@
     <!-- Landscape height is already small enough that capping further
          leaves a tiny sheet; portrait sets a real cap, here we opt out. -->
     <dimen name="bottom_sheet_max_height">0dp</dimen>
-    <!-- The home field's rest, shortened for a short viewport (a 48dp rise),
-         and the mark group's top margin = the field's bottom edge, which
-         centres the mark in the space under the field (see values/dimens.xml). -->
-    <dimen name="home_field_rest">56dp</dimen>
-    <dimen name="home_mark_offset">104dp</dimen>
 </resources>

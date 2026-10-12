@@ -21,6 +21,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.widget.ImageViewCompat;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -349,7 +350,34 @@ public class AutoCompleteView extends FrameLayout {
     }
 
     public void updateVisibility(boolean hasFocus){
+        if (!hasFocus) {
+            // A fade-in still running (showFadingIn) must not leave the
+            // overlay half-transparent for its next show.
+            animate().cancel();
+            setAlpha(1f);
+        }
         setVisibility(hasFocus ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Shows the overlay fading in over {@code durationMs} — the home's one
+     * focus motion: the pill changes colour and corner in place on the same
+     * clock ({@code GeckoToolbar.FOCUS_ANIMATION_MS}) and the suggestions
+     * fade in under it; nothing translates. On a hardware layer for the
+     * fade (alpha on a deep ViewGroup is an offscreen pass per frame
+     * otherwise). The browser shows the overlay with a plain
+     * {@link #updateVisibility} cut, and a hide is always a cut — the home
+     * must not sit under a fading overlay while the keyboard closes.
+     */
+    public void showFadingIn(long durationMs) {
+        animate().cancel();
+        setAlpha(0f);
+        setVisibility(View.VISIBLE);
+        animate().alpha(1f)
+                .setDuration(durationMs)
+                .setInterpolator(new FastOutSlowInInterpolator())
+                .withLayer()
+                .start();
     }
 
     /** Acts on the clipboard chip and remembers the text as dismissed, so it

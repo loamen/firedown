@@ -38,10 +38,11 @@ public class GeckoToolbar extends FrameLayout implements View.OnClickListener, V
 
     /**
      * The focus animation's duration — the pill's colour lift + corner
-     * change here, AND the home's rise to the top ({@link HomeToolbarDock}
-     * reads it), so the pill never finishes changing shape before it
-     * arrives. Chrome's URL-focus duration; it was 150 ms here while the
-     * dock ran its own 225, two clocks on one pill.
+     * change here, AND the home's suggestions fade-in under it
+     * ({@code AutoCompleteView.showFadingIn} reads it), so the two run on
+     * one clock. Chrome's URL-focus duration; it was 150 ms here while the
+     * since-retired HomeToolbarDock slid the home's pill on its own 225,
+     * two clocks on one pill.
      */
     public static final int FOCUS_ANIMATION_MS = 225;
 
@@ -335,12 +336,6 @@ public class GeckoToolbar extends FrameLayout implements View.OnClickListener, V
 
     public AutoCompleteEditText getAutoCompleteEditText() {
         return mEditText;
-    }
-
-    /** The pill (the rounded address-bar background) — what
-     *  {@link HomeToolbarDock} lands on the home's search slot. */
-    public View getAddressBarBackground() {
-        return mBackground;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

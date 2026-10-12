@@ -1,49 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    THE HOME IS THE FIELD HIGH AND THE MARK CENTRED (home v6, frame P1).
-    Top-down: the search pill a little under the address bar's place
-    (home_field_rest below the status strip, an 80dp rise on focus), then the
-    flame and the wordmark centred in the viewport, decoupled from the field
-    — Firefox's and Samsung Internet's shape (bar high, brand in the middle),
-    the maintainer's pick (2026-10-12, canvas frames P0–P4) over the
-    mark-over-field stack, which pinned near the top read as a splash screen
-    with nothing under it and centred made the pill's rise ~350dp. Firedown's
-    own mark is the subject. There
-    is deliberately NO stat line, no top sites, no recent history, no download
-    rows and no chip row: top sites and recents are what Chrome and Brave do,
-    download status overlaps the Downloads screen, and the one-line counters
-    that used to sit under the wordmark wrapped onto two rows on 360dp phones
-    in the long locales (two chips plus a dot needed 304dp of a 296dp line).
-    What the home still carries: the ember behind the flame while a download
-    runs (status with no number). No cloud state either (maintainer, 2026-10-12):
-    the transfer chip and the grace deadline card that sat under the field went
-    with their plumbing — the Backups list and CloudWatchWorker's notifications
-    carry those.
+    THE HOME IS THE ADDRESS BAR AND THE MARK (home v6, frame N2).
+    Top-down: the search pill EXACTLY where the browser's address bar is (the
+    same 64dp toolbar rect, the pill 8dp inside it), then the flame, the
+    wordmark and one tonal "N trackers blocked" card centred in the page UNDER
+    the bar, and the bottom navigation bar. Nothing moves on focus: the pill
+    changes colour and corner in place (its own 225 ms animation) and the
+    suggestions fade in under it on the same clock. Firedown's chrome lives on
+    the two edges — the address bar above, the navigation bar below — and the
+    home is the page between them: the shape of Edge, Samsung Internet and
+    Firefox with its toolbar on top. The maintainer's pick (2026-10-12, canvas
+    frames N1–N3) after two compositions that put the field INSIDE the page
+    failed on-device: the mark-over-field stack read as a splash screen, and
+    P1 (the field 88dp down, rising 80dp on focus) "does not work. In Chrome
+    works because above the bar we have a toolbar and in the bottom the recent
+    sites … in our case we have bottom navigation bar so we break harmony" — a
+    lone field between two voids, while a bottom bar already frames the page
+    from below. Firedown's own mark is the subject; the blocked line (frame
+    H2, on a Material card at the maintainer's request) is the one figure, the
+    door to Settings → Privacy → "Trackers and ads blocked". There is
+    deliberately NO top-sites row, no recents, no download rows and no second
+    counter: top sites and recents are what Chrome and Brave do, download
+    status overlaps the Downloads screen, and the "blocked · saved" PAIR that
+    used to sit under the wordmark wrapped onto two rows on 360dp phones in the
+    long locales (two chips plus a dot needed 304dp of a 296dp line) — one
+    line, one figure, fits. What the home still carries: the ember behind the
+    flame while a download runs (status with no number). No cloud state either
+    (maintainer, 2026-10-12): the transfer chip and the grace deadline card
+    that sat under the field went with their plumbing — the Backups list and
+    CloudWatchWorker's notifications carry those.
 
-    THE PILL IS THE REAL GeckoToolbar. It is a direct child of this
-    CoordinatorLayout laid out at the TOP (the exact rect the browser's
-    toolbar occupies), and HomeToolbarDock translates it DOWN over the
-    home_search_slot Space the content reserves; on focus it rises back to the
-    top (Chrome's fakebox tween, see HomeToolbarDock) and the suggestions fade
-    in under it (AutoCompleteViewBehavior follows the toolbar's translation, as
-    in the browser). Three things this layout must keep for that to work:
-      - the toolbar is NOT inside an AppBarLayout (a LinearLayout clips a
-        translated child to its own bounds, so the docked pill would vanish),
-        and it is declared AFTER the scroll view so it draws above the content
-        and receives the tap;
-      - the toolbar carries NO self-padding for the status inset — HomeFragment
-        gives it a top MARGIN instead, so the box is a plain 64dp bar whose
-        pill lands 8dp inside it, and the docked box's top edge sits 8dp above
-        the slot rather than a whole status inset above it (which would paint
-        over the wordmark);
-      - the slot is exactly the pill's height and a direct, top-anchored
-        child of the content — NOT inside the mark group, which is centred and
-        fades; the slot must not move — and the docked box extends 8dp past
-        the slot on both sides on an opaque holder, so nothing may sit within
-        16dp of it.
-    The AutoCompleteView has no XML behavior: HomeFragment installs
-    AutoCompleteViewBehavior in code (it needs the view reference), the same
-    way the browser does.
+    THE PILL IS THE REAL GeckoToolbar, IN THE BROWSER'S RECT. A direct child of
+    this CoordinatorLayout laid out at the top with a top MARGIN of the status
+    inset (HomeFragment's insets listener; the browser's root pads the same
+    inset, so the two toolbars occupy the same rect and the commit hand-off to
+    the browser is a seamless cut). It never translates: the content reserves
+    the toolbar's 64dp box as top padding (address_bar_height) so the mark
+    centres in the space UNDER the bar, in portrait and landscape alike, and
+    AutoCompleteViewBehavior (installed in code, as in the browser) opens the
+    overlay at the toolbar's bottom. The home toolbar carries no hairline
+    (toolbar_divider is keyed on !mHomeEnabled): the page under it is the same
+    tone, and a line would cut the mark off from its bar. Two structural rules
+    survive from the retired HomeToolbarDock (which translated this toolbar
+    down over a Space in the content and raised it on focus, Chrome's fakebox
+    model): the toolbar is declared AFTER the scroll view (equal elevation, so
+    child order decides z and the content must not take the tap) and outside
+    any AppBarLayout. The translation, the slot and the per-orientation rest
+    dimens did not survive — see the CLAUDE.md home section for the record.
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -68,49 +71,24 @@
         android:fillViewport="true"
         android:overScrollMode="never">
 
+        <!-- paddingTop = the toolbar's box: the bar is drawn over this
+             content at the top (see the file comment), so the page starts
+             under it and the centred group is centred in the space BELOW the
+             field — no per-orientation offset needed. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipChildren="false"
             android:clipToPadding="false"
+            android:paddingTop="@dimen/address_bar_height"
             android:paddingBottom="8dp">
 
-
-            <!-- Where the pill rests: a little UNDER its raised place, not on
-                 it. Exactly the pill's 48dp, top-anchored at home_field_rest
-                 below the status strip; the raised pill's top is inset + 8dp
-                 (8dp inside the 64dp toolbar bar), so the rise on focus is
-                 home_field_rest minus 8dp — 80dp in portrait, Chrome's nudge.
-                 A SIBLING of the mark group, never its last child: the slot
-                 must not move while the keyboard resizes the page (a moving
-                 target re-aims the slide mid-flight), and the group is
-                 centred. The toolbar is drawn over it (see the file
-                 comment). -->
-            <Space
-                android:id="@+id/home_search_slot"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_gravity="top"
-                android:layout_marginTop="@dimen/home_field_rest" />
-
-            <!-- The brand mark — flame over wordmark — CENTRED in the viewport,
-                 decoupled from the field above. It fades out as the pill
-                 rises (HomeToolbarDock), so adjustResize re-centring it under
-                 the keyboard is invisible; the thing that must not move is
-                 the slot, which is why the slot is a sibling above rather
-                 than this group's last child. home_mark_offset is 0 in
-                 portrait (the true centre, the frame as drawn) and in
-                 landscape the field's bottom edge, which centres the group in
-                 the space UNDER the field: a FrameLayout centres the box
-                 margins included, so a margin of F puts the content's centre
-                 at (F + H)/2 — at the true centre of a ~280dp landscape
-                 viewport the mark overlapped the field. -->
+            <!-- The brand mark — flame over wordmark over the blocked card —
+                 CENTRED in the page under the bar. -->
             <LinearLayout
-                android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginTop="@dimen/home_mark_offset"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:gravity="center_horizontal"
@@ -165,6 +143,70 @@
                     android:textSize="22sp"
                     android:textStyle="bold" />
 
+                <!-- The one figure on the home: lifetime requests blocked by
+                     the built-in ad blocker (uBlock's cumulative count,
+                     GeckoUblockHelper.getCumulativeBlockedLive), on a tonal
+                     Material card under the wordmark — frame H2's shield
+                     line, "put in a material card background" (maintainer,
+                     2026-10-12). A tap opens Settings → Privacy → "Trackers
+                     and ads blocked" (SettingsActivity.EXTRA_OPEN_BLOCKED_STATS,
+                     Back returns here). TONAL, never a brand fill: a fill on
+                     this screen is earned by work (the retired transfer
+                     chip), a tally gets the surfaceContainerHigh pill the
+                     backup pill had (20dp radius, 14/10/16/10 padding, 18dp
+                     glyph, 13sp), glyph and text both in colorOnSurfaceVariant
+                     — H2's grey — so the card stays quieter than the wordmark
+                     above it. wrap_content and centred; the text may WRAP to
+                     two lines (a count plus "trackers blocked" in a long
+                     locale) rather than ellipsize the number away. Reads
+                     "Protection active" at 0 (trackers_info_idle, the
+                     settings row's rule: a "0 blocked" reads as broken
+                     protection), so it is never empty and never GONE. The
+                     incognito home carries NO such line — a figure there
+                     would leak activity. -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/home_blocked_card"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="14dp"
+                        android:paddingTop="10dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="10dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_shield_24"
+                            app:tint="?attr/colorOnSurfaceVariant" />
+
+                        <TextView
+                            android:id="@+id/home_blocked_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:maxLines="2"
+                            android:text="@string/trackers_info_idle"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="13sp"
+                            tools:text="12,345 trackers blocked" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
             </LinearLayout>
 
         </FrameLayout>
@@ -173,9 +215,9 @@
 
 
     <!-- The URL bar — declared AFTER the content so it draws above it and
-         takes the tap while docked over the slot. Laid out at the top (a top
-         MARGIN of the status inset, set in HomeFragment); HomeToolbarDock owns
-         its translation. -->
+         takes the tap. Laid out at the top (a top MARGIN of the status inset,
+         set in HomeFragment): the browser's exact toolbar rect, never
+         translated. -->
     <com.solarized.firedown.geckoview.GeckoToolbar
         android:id="@+id/toolbar_layout"
         android:layout_width="match_parent"

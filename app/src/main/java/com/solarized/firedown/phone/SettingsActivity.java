@@ -42,6 +42,10 @@ public class SettingsActivity extends BaseActivity {
      *  to this phone" confirmation once it knows what is cloud-only (the home
      *  grace card's RESTORE action). */
     public static final String EXTRA_RESTORE_ALL = "com.solarized.firedown.extra.RESTORE_ALL";
+    /** Open Settings → Privacy → "Trackers and ads blocked" (the stats screen)
+     *  directly, replacing the settings list on the back stack so Back returns
+     *  to the caller — the home's blocked card is its sender. */
+    public static final String EXTRA_OPEN_BLOCKED_STATS = "com.solarized.firedown.extra.OPEN_BLOCKED_STATS";
 
     /** Activity-scoped, so {@link #restoreToolbarUp} can re-install the
      *  canonical Up listener after a fragment borrowed the toolbar. */
@@ -87,6 +91,16 @@ public class SettingsActivity extends BaseActivity {
                     .setPopUpTo(R.id.settings, true)
                     .build();
             navController.navigate(R.id.settings_sync, null, opts);
+        }
+
+        // Deep-link from the home's "N trackers blocked" card straight to the
+        // stats screen, replacing the settings list so Back returns to the
+        // home (the EXTRA_OPEN_SYNC contract above).
+        if (getIntent().getBooleanExtra(EXTRA_OPEN_BLOCKED_STATS, false)) {
+            NavOptions opts = new NavOptions.Builder()
+                    .setPopUpTo(R.id.settings, true)
+                    .build();
+            navController.navigate(R.id.settings_blocked_stats, null, opts);
         }
 
         // Deep-link for the bookmarks-list overflow + sync banner: the merged

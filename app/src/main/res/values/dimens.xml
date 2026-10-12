@@ -17,23 +17,6 @@
          browser's -6dp, so the text begins after the home search glyph's caret
          instead of under it. Browser keeps -6dp (the shield needs no extra room). -->
     <dimen name="address_bar_home_text_inset">8dp</dimen>
-    <!-- Home: where the search field RESTS — its slot's top margin below the
-         status strip. The raised pill's top is 8dp into the 64dp toolbar bar,
-         so the rise on focus is this minus 8dp: 80dp in portrait, Chrome's
-         URL-focus nudge (the maintainer's call from the canvas frames P0–P4,
-         after a mark-over-field stack at 64dp read as a splash screen and the
-         centred one made a ~350dp trip). Landscape shortens it (values-land).
-         Don't shrink it to where the rest and raised positions blur: the gap
-         is what says "not the toolbar yet". -->
-    <dimen name="home_field_rest">88dp</dimen>
-    <!-- Home: the mark group's top margin. 0 in portrait — the mark at the
-         viewport's true centre, the P1 frame as drawn. Landscape sets it to
-         the field's bottom edge (home_field_rest + 48dp), which centres the
-         group in the space UNDER the field: a FrameLayout centres the box
-         margins included, so a margin of F puts the content's centre at
-         (F + H)/2, and at the true centre of a ~280dp landscape viewport the
-         mark overlapped the field. -->
-    <dimen name="home_mark_offset">0dp</dimen>
     <dimen name="app_bar_fab_elevation">12dp</dimen>
     <dimen name="app_bar_fab_margin">16dp</dimen>
     <dimen name="autocomplete_elevation">20dp</dimen>

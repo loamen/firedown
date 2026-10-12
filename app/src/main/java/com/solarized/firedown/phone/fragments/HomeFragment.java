@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -42,7 +43,7 @@ import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.GeckoToolbar;
-import com.solarized.firedown.geckoview.HomeToolbarDock;
+import com.solarized.firedown.geckoview.GeckoUblockHelper;
 import com.solarized.firedown.manager.DownloadRequest;
 
 import com.solarized.firedown.phone.DownloadsActivity;
@@ -61,6 +62,11 @@ import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.utils.NavigationUtils;
 
 
+
+import java.text.NumberFormat;
+import java.util.Locale;
+
+import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -83,18 +89,21 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private GeckoToolbar mGeckoToolbar;
     private BottomNavigationBar mBottomNavigationBar;
     private View mHomeScroll;
-    // The home is the field high and the mark centred (home v6, frame P1):
-    // the search pill a little under the address bar's place, the flame and
-    // the wordmark centred below it — nothing else at rest. The pill is the
-    // REAL GeckoToolbar, docked over a top-anchored slot in the content by
-    // HomeToolbarDock and raised the last 80dp on focus; see the dock's class
-    // doc and the layout file comment. The one-line pair of counters that used to sit under the
-    // wordmark (trackers blocked · bytes saved) went with it: it wrapped onto
-    // two rows on 360dp phones in the long locales, and a figure is not what
-    // the home is for. Everything else (tabs, downloads badge, vault) lives in
-    // the bottom bar / menu — no dashboard.
-    private View mBrandMark;
-    private HomeToolbarDock mToolbarDock;
+    // The home is the address bar and the mark (home v6, frame N2): the
+    // search pill in the browser's exact toolbar rect, the flame, the wordmark
+    // and the blocked card centred in the page below it — nothing moves on
+    // focus. The pill is the REAL GeckoToolbar; the layout file comment holds
+    // the composition and its history (the retired HomeToolbarDock, the P1
+    // field-in-page build). The one figure is the ad blocker's lifetime count
+    // on a tonal card under the wordmark (canvas frame H2), the door to
+    // Settings → Privacy → "Trackers and ads blocked"; the "blocked · saved"
+    // PAIR that used to sit there is gone — it wrapped onto two rows on 360dp
+    // phones in the long locales. Everything else (tabs, downloads badge,
+    // vault) lives in the bottom bar / menu — no dashboard.
+    private TextView mBlockedText;
+
+    @Inject
+    GeckoUblockHelper mGeckoUblockHelper;
 
     // No cloud state on the home (maintainer, 2026-10-12: "we don't need all
     // the plumbing for backups, downloaded bytes and blocked ads in home").
@@ -182,10 +191,16 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mBottomNavigationBar = v.findViewById(R.id.bottom_app_bar);
 
 
-        // The mark group (faded as the pill rises) and the ember glow behind
-        // the flame.
-        mBrandMark = v.findViewById(R.id.home_brand_mark);
+        // The ember glow behind the flame, and the blocked card under the
+        // wordmark (bound in onViewCreated; its tap opens the stats screen,
+        // which replaces the settings list so Back returns here).
         mBrandGlow = v.findViewById(R.id.home_brand_glow);
+        mBlockedText = v.findViewById(R.id.home_blocked_text);
+        v.findViewById(R.id.home_blocked_card).setOnClickListener(view -> {
+            Intent statsIntent = new Intent(mActivity, SettingsActivity.class);
+            statsIntent.putExtra(SettingsActivity.EXTRA_OPEN_BLOCKED_STATS, true);
+            mStartForResult.launch(statsIntent);
+        });
 
         mBottomNavigationBar.setListener(this);
 
@@ -197,21 +212,15 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mGeckoToolbar = v.findViewById(R.id.toolbar_layout);
         mGeckoToolbar.setListener(this);
 
-        // The suggestions overlay follows the toolbar's translation + height
+        // The suggestions overlay opens under the toolbar's laid-out bottom
         // (the browser's behavior, installed in code because it needs the
-        // view reference): docked, it sits under the docked pill; raised,
-        // it rides up with the pill and opens under it at the top.
+        // view reference). The toolbar sits in the browser's exact rect and
+        // never moves (frame N2); on focus the overlay fades in under it —
+        // see onFocusChanged.
         CoordinatorLayout.LayoutParams overlayParams =
                 (CoordinatorLayout.LayoutParams) mAutoCompleteView.getLayoutParams();
         overlayParams.setBehavior(new AutoCompleteViewBehavior(
                 mAutoCompleteView.getContext(), null, mAutoCompleteView));
-
-        // The pill IS the toolbar: docked over home_search_slot at rest, raised
-        // to the browser's toolbar rect on focus, with the mark fading out and
-        // the overlay fading in under it (see HomeToolbarDock).
-        mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
-                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark,
-                mAutoCompleteView);
 
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
@@ -278,6 +287,26 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         // the list yet - the current tab is still at least tab 1).
         mGeckoStateViewModel.getTabsCount().observe(getViewLifecycleOwner(), count
                 -> mBottomNavigationBar.onTabsCount(count == null ? 1 : Math.max(1, count)));
+
+        // The one figure on the home: the ad blocker's lifetime count on the
+        // card under the wordmark (frame H2 on a tonal card). Same source and
+        // the same two states as the Settings → Privacy row
+        // (SettingsFragment.bindBlockedStats): the locale-formatted count, or
+        // "Protection active" at 0 — a "0 blocked" reads as broken protection.
+        // The LiveData replays the last pushed value, and GeckoUblockHelper
+        // seeds it from prefs at boot, so the card is never blank.
+        mGeckoUblockHelper.getCumulativeBlockedLive().observe(getViewLifecycleOwner(), blocked -> {
+            if (mBlockedText == null) {
+                return;
+            }
+            long n = blocked == null ? 0L : blocked;
+            if (n > 0L) {
+                mBlockedText.setText(getString(R.string.tracking_status_blocked,
+                        NumberFormat.getInstance(Locale.getDefault()).format(n)));
+            } else {
+                mBlockedText.setText(R.string.trackers_info_idle);
+            }
+        });
 
         mAutoCompleteViewModel.setIncognito(false);
 
@@ -371,12 +400,11 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
         ViewCompat.setOnApplyWindowInsetsListener(mGeckoToolbar, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            // The status inset is a top MARGIN here, never padding. The
-            // toolbar is docked over the content at rest (HomeToolbarDock): a
-            // self-padded box would carry the whole status strip down with
-            // it and paint, opaque, over the wordmark. With a margin the box
-            // is a plain 64dp bar laid out at y = inset — the browser's exact
-            // toolbar rect, which is what makes the commit hand-off seamless.
+            // The status inset is a top MARGIN here, never padding: with a
+            // margin the box is a plain 64dp bar laid out at y = inset — the
+            // browser's root-padded toolbar rect exactly, which is what makes
+            // the commit hand-off to the browser a seamless cut and what the
+            // content's address_bar_height top padding reserves.
             ViewGroup.MarginLayoutParams params =
                     (ViewGroup.MarginLayoutParams) v.getLayoutParams();
             if (params.topMargin != insets.top) {
@@ -509,11 +537,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             mBrandGlowAnimator.cancel();
             mBrandGlowAnimator = null;
         }
-        if (mToolbarDock != null) {
-            mToolbarDock.release();
-            mToolbarDock = null;
-        }
-        mBrandMark = null;
+        mBlockedText = null;
         mBrandGlow = null;
         mHomeScroll = null;
         mAutoCompleteView = null;
@@ -576,14 +600,10 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
-        // The pill rises to the top of the screen on focus and docks back over
-        // the slot on blur — every blur path (back, outside tap, commit) ends
-        // here, so this is the one hook the dock needs. Called BEFORE the
-        // overlay is shown below, so the overlay appears at the fraction's
-        // alpha and fades in from there.
-        if (mToolbarDock != null) {
-            mToolbarDock.setRaised(hasFocus);
-        }
+        // Nothing moves on focus (frame N2): the pill changes colour and
+        // corner in place (startAnimation below) and the suggestions fade in
+        // under it on the same clock; every blur path (back, outside tap,
+        // commit) ends here with a plain cut.
         mGeckoToolbar.updateViewVisibility(hasFocus);
         mGeckoToolbar.setAutoCompleteVisible(hasFocus);
         mGeckoToolbar.startAnimation(hasFocus);
@@ -596,7 +616,11 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             mAutoCompleteViewModel.resetEngines();
         }
         mAutoCompleteView.showEmpty();
-        mAutoCompleteView.updateVisibility(hasFocus);
+        if (hasFocus) {
+            mAutoCompleteView.showFadingIn(GeckoToolbar.FOCUS_ANIMATION_MS);
+        } else {
+            mAutoCompleteView.updateVisibility(false);
+        }
     }
 
     @Override

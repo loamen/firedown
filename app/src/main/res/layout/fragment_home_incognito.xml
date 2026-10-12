@@ -2,20 +2,20 @@
 <!--
     The incognito home is the regular home's composition (fragment_home.xml —
     read its file comment first) with the mode's own mark: the privacy-bandit
-    illustration in place of the flame, the "Private Browsing" title in place
-    of the wordmark, and the SAME real GeckoToolbar docked over a slot a
-    little under its raised place, with the mark centred below it (frame P1),
-    raised the last 80dp on focus by HomeToolbarDock. One composition in
-    both modes is what makes the shape recognisable in either. The one
-    addition private mode genuinely needs is the faint, bottom-anchored
-    disclaimer that private browsing isn't anonymity. No stats, no counters:
-    a figure here would itself leak activity.
+    illustration in place of the flame and the "Private Browsing" title in
+    place of the wordmark, centred in the page under the SAME real
+    GeckoToolbar sitting in the browser's exact rect (frame N2 — nothing moves
+    on focus). One composition in both modes is what makes the shape
+    recognisable in either. The one addition private mode genuinely needs is
+    the faint, bottom-anchored disclaimer that private browsing isn't
+    anonymity. No stats, no counters, no blocked card: a figure here would
+    itself leak activity.
 
-    Structural rules shared with fragment_home.xml: no AppBarLayout (it would
-    clip the docked toolbar), the toolbar declared AFTER the scroll view (it
-    draws above the content and takes the tap), a top MARGIN for the status
-    inset instead of self-padding, the slot exactly the pill's height, and
-    AutoCompleteViewBehavior installed in code.
+    Structural rules shared with fragment_home.xml: no AppBarLayout, the
+    toolbar declared AFTER the scroll view (it draws above the content and
+    takes the tap), a top MARGIN for the status inset instead of self-padding,
+    the content's top padding = the toolbar's box, and AutoCompleteViewBehavior
+    installed in code.
 -->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -40,41 +40,22 @@
         android:fillViewport="true"
         android:overScrollMode="never">
 
-        <!-- The FrameLayout (stretched to the viewport by fillViewport)
-             anchors the field's slot at the top, centres the mark group and
-             pins the disclaimer to the bottom. -->
+        <!-- The FrameLayout (stretched to the viewport by fillViewport) pads
+             the toolbar's box on top, centres the mark group in the space
+             under it and pins the disclaimer to the bottom. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:paddingTop="@dimen/address_bar_height"
             android:paddingBottom="8dp">
 
-            <!-- Where the pill rests: a little UNDER its raised place, not on
-                 it. Exactly the pill's 48dp, top-anchored at home_field_rest
-                 below the status strip; the raised pill's top is inset + 8dp
-                 (8dp inside the 64dp toolbar bar), so the rise on focus is
-                 home_field_rest minus 8dp — 80dp in portrait, Chrome's nudge.
-                 A SIBLING of the mark group, never its last child (see
-                 fragment_home.xml): the slot
-                 must not move while the keyboard resizes the page (a moving
-                 target re-aims the slide mid-flight), and the group is
-                 centred. The toolbar is drawn over it (see the file
-                 comment). -->
-            <Space
-                android:id="@+id/home_search_slot"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_gravity="top"
-                android:layout_marginTop="@dimen/home_field_rest" />
-
-            <!-- The mark group: illustration + title, centred in the viewport
-                 like the regular home's (home_mark_offset: 0 in portrait, the
-                 field's bottom edge in landscape — see fragment_home.xml). -->
+            <!-- The mark group: illustration + title, centred under the field
+                 like the regular home's. -->
             <LinearLayout
-                android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginTop="@dimen/home_mark_offset"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
                 android:paddingHorizontal="@dimen/address_bar_inset">
@@ -84,7 +65,7 @@
                      of the regular home's flame — richer and clearly
                      private-mode, no recolouring needed. adjustViewBounds keeps
                      its 6:5 aspect at a fixed width; 128dp (it was 168dp):
-                     the mark centres in the space UNDER the field, ~180dp
+                     the mark centres in the space UNDER the field, ~200dp
                      tall in landscape, where 168dp plus the title does not
                      fit. -->
                 <androidx.appcompat.widget.AppCompatImageView
@@ -131,7 +112,8 @@
     </androidx.core.widget.NestedScrollView>
 
     <!-- The URL bar — declared AFTER the content so it draws above it and
-         takes the tap while docked over the slot (same as HomeFragment). -->
+         takes the tap; the browser's exact rect, never translated (same as
+         HomeFragment). -->
     <com.solarized.firedown.geckoview.GeckoToolbar
         android:id="@+id/toolbar_layout"
         android:layout_width="match_parent"
