@@ -361,6 +361,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Ваші резервні копії буде видалено після закінчення пільгового періоду. Поповніть рахунок або відновіть їх на цей телефон.</string>
     <string name="cloud_reap_notif_title">Резервні копії скоро буде видалено</string>
+    <string name="cloud_sunset_title">Хмарне резервне копіювання закривається</string>
+    <string name="cloud_sunset_body">Нові резервні копії вимкнено. Збережені файли можна відновити на цей телефон до %1$s. Після цього їх буде видалено.</string>
+    <string name="cloud_sunset_body_empty">Нові резервні копії вимкнено, а сервіс закривається %1$s. Ваших даних там немає.</string>
+    <string name="cloud_sunset_header">Закривається %1$s · відновіть файли, які хочете зберегти</string>
+    <string name="cloud_sunset_banner_subtitle">Відновіть на цей телефон файли, які хочете зберегти, до %1$s.</string>
+    <string name="cloud_sunset_notif_title">Хмарне резервне копіювання закривається %1$s</string>
+    <string name="cloud_sunset_notif_text">Відновіть на цей телефон файли, які хочете зберегти. Після цієї дати їх буде видалено.</string>
+    <string name="cloud_sunset_backup_off">Хмарне резервне копіювання закривається — нові копії вимкнено.</string>
+    <string name="cloud_backup_transfer_closed">Не завантажено: хмарне резервне копіювання закривається</string>
     <string name="most_visited">Найвідвідуваніші</string>
     <string name="most_visited_remove_title">Вилучити з найвідвідуваніших?</string>
     <string name="most_visited_remove">Вилучити</string>

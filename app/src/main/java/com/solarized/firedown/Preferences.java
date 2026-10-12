@@ -177,6 +177,14 @@ public class Preferences {
      *  stage 2) was already posted — once per grace episode. */
     public static final String CLOUD_GRACE_NOTIFIED_UNTIL = "com.solarized.firedown.preferences.cloud.grace.notified.until";
     public static final String CLOUD_REAP_NOTIFIED_UNTIL = "com.solarized.firedown.preferences.cloud.reap.notified.until";
+    /**
+     * Cloud Backup SUNSET markers ({@code CloudSunset.ACTIVE}): the Downloads
+     * banner's own dismissal key (the discovery/activation stages retire on
+     * theirs, independently), and the stage of the closing notification the
+     * account watch has posted (1 = the first notice, 2 = the final-week one).
+     */
+    public static final String CLOUD_SUNSET_BANNER_DISMISSED = "com.solarized.firedown.preferences.cloud.sunset.banner.dismissed";
+    public static final String CLOUD_SUNSET_NOTIFIED_STAGE = "com.solarized.firedown.preferences.cloud.sunset.notified.stage";
     /** CACHE, not a setting: the last successfully-read total bytes held in Cloud
      *  Backup (-1 = unknown). The in-memory {@code lastStatus()} snapshot dies
      *  with the process, so on a COLD start the home backup pill had nothing to

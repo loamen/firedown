@@ -526,6 +526,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Vos fichiers sauvegardés seront supprimés à la fin du délai de grâce. Rechargez, ou restaurez-les sur ce téléphone.</string>
     <string name="cloud_reap_notif_title">Fichiers sauvegardés bientôt supprimés</string>
+    <string name="cloud_sunset_title">La sauvegarde cloud ferme</string>
+    <string name="cloud_sunset_body">Les nouvelles sauvegardes sont désactivées. Vos fichiers sauvegardés peuvent être restaurés sur ce téléphone jusqu\'au %1$s. Ensuite, ils sont supprimés.</string>
+    <string name="cloud_sunset_body_empty">Les nouvelles sauvegardes sont désactivées et le service s\'arrête le %1$s. Rien de vous n\'y est stocké.</string>
+    <string name="cloud_sunset_header">Ferme le %1$s · restaurez les fichiers que vous voulez garder</string>
+    <string name="cloud_sunset_banner_subtitle">Restaurez sur ce téléphone les fichiers que vous voulez garder avant le %1$s.</string>
+    <string name="cloud_sunset_notif_title">La sauvegarde cloud ferme le %1$s</string>
+    <string name="cloud_sunset_notif_text">Restaurez sur ce téléphone les fichiers que vous voulez garder. Après cette date, ils sont supprimés.</string>
+    <string name="cloud_sunset_backup_off">La sauvegarde cloud ferme — les nouvelles sauvegardes sont désactivées.</string>
+    <string name="cloud_backup_transfer_closed">Non envoyé : la sauvegarde cloud ferme</string>
     <string name="most_visited">Les plus visités</string>
     <string name="most_visited_remove_title">Retirer des plus visités ?</string>
     <string name="most_visited_remove">Supprimer</string>

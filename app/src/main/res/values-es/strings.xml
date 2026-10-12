@@ -526,6 +526,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Tus archivos respaldados se eliminarán al terminar el periodo de gracia. Recarga o restáuralos en este teléfono.</string>
     <string name="cloud_reap_notif_title">Tus archivos respaldados se eliminarán pronto</string>
+    <string name="cloud_sunset_title">La copia de seguridad en la nube se cierra</string>
+    <string name="cloud_sunset_body">Las copias nuevas están desactivadas. Tus archivos respaldados se pueden restaurar en este teléfono hasta el %1$s. Después se eliminan.</string>
+    <string name="cloud_sunset_body_empty">Las copias nuevas están desactivadas y el servicio se apaga el %1$s. No hay nada tuyo guardado allí.</string>
+    <string name="cloud_sunset_header">Se cierra el %1$s · restaura los archivos que quieras conservar</string>
+    <string name="cloud_sunset_banner_subtitle">Restaura en este teléfono los archivos que quieras conservar antes del %1$s.</string>
+    <string name="cloud_sunset_notif_title">La copia de seguridad en la nube se cierra el %1$s</string>
+    <string name="cloud_sunset_notif_text">Restaura en este teléfono los archivos que quieras conservar. Después de esa fecha se eliminan.</string>
+    <string name="cloud_sunset_backup_off">La copia de seguridad en la nube se cierra — las copias nuevas están desactivadas.</string>
+    <string name="cloud_backup_transfer_closed">No subido: la copia de seguridad en la nube se cierra</string>
     <string name="most_visited">Más visitados</string>
     <string name="most_visited_remove_title">¿Quitar de Más visitados?</string>
     <string name="most_visited_remove">Quitar</string>

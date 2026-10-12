@@ -50,6 +50,7 @@ import com.google.android.material.color.MaterialColors;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.solarized.firedown.StoragePaths;
+import com.solarized.firedown.sync.CloudSunset;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.phone.CloudBackupStreamActivity;
 import com.solarized.firedown.phone.SettingsActivity;
@@ -389,6 +390,11 @@ public class CloudBackupListFragment extends Fragment
                 MenuItem restoreAll = menu.findItem(R.id.action_restore_all);
                 if (restoreAll != null) {
                     restoreAll.setVisible(!restorableEntries().isEmpty());
+                }
+                // SUNSET: nothing is sold.
+                MenuItem buy = menu.findItem(R.id.action_buy_credit);
+                if (buy != null && CloudSunset.ACTIVE) {
+                    buy.setVisible(false);
                 }
             }
 
@@ -899,7 +905,12 @@ public class CloudBackupListFragment extends Fragment
         StorageApiClient.Quota quota = mStatusInfo != null ? mStatusInfo.quota : null;
         String trust = getString(R.string.cloud_backup_header_encrypted);
         String line2;
-        if (quota != null && !quota.metered && quota.bytesLimit > 0) {
+        if (CloudSunset.ACTIVE) {
+            // SUNSET: the one status that matters, with its date — the trust
+            // phrase and the coverage figure would both be beside the point.
+            line2 = getString(R.string.cloud_sunset_header,
+                    CloudSunset.deleteDate(requireContext()));
+        } else if (quota != null && !quota.metered && quota.bytesLimit > 0) {
             line2 = getString(R.string.cloud_backup_header_beta,
                     Formatter.formatShortFileSize(requireContext(), quota.bytesLimit));
         } else {
@@ -1289,6 +1300,8 @@ public class CloudBackupListFragment extends Fragment
                 return getString(R.string.cloud_backup_state_too_many);
             case SLUG_QUOTA_EXHAUSTED:
                 return getString(R.string.cloud_backup_state_no_space);
+            case VaultBackupWorker.SLUG_CLOSED:
+                return getString(R.string.cloud_backup_transfer_closed);
             default:
                 return null;
         }
@@ -1351,6 +1364,8 @@ public class CloudBackupListFragment extends Fragment
                 return getString(R.string.cloud_backup_transfer_too_many_files);
             case SLUG_INSUFFICIENT_CREDIT:
                 return getString(R.string.cloud_backup_transfer_not_enough_credit);
+            case VaultBackupWorker.SLUG_CLOSED:
+                return getString(R.string.cloud_backup_transfer_closed);
             case SLUG_QUOTA_EXHAUSTED: {
                 long free = freeCapBytes();
                 return (fileBytes > 0 && free >= 0)

@@ -1031,6 +1031,18 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Your backed-up files will be removed when the grace period ends. Top up, or restore them to this phone.</string>
     <string name="cloud_reap_notif_title">Backed-up files about to be removed</string>
+    <!-- Cloud Backup SUNSET (CloudSunset.ACTIVE): the hosted service is closing. New backups and
+         purchases are off at once; restore keeps working until the date, then the server deletes
+         what is left. %1$s = the deletion date, formatted for the device locale. -->
+    <string name="cloud_sunset_title">Cloud Backup is closing</string>
+    <string name="cloud_sunset_body">New backups are off. Your backed-up files can be restored to this phone until %1$s. After that they are deleted.</string>
+    <string name="cloud_sunset_body_empty">New backups are off, and the service shuts down on %1$s. Nothing of yours is stored there.</string>
+    <string name="cloud_sunset_header">Closing on %1$s · restore the files you want to keep</string>
+    <string name="cloud_sunset_banner_subtitle">Restore the files you want to keep to this phone before %1$s.</string>
+    <string name="cloud_sunset_notif_title">Cloud Backup is closing on %1$s</string>
+    <string name="cloud_sunset_notif_text">Restore the files you want to keep to this phone. After that date they are deleted.</string>
+    <string name="cloud_sunset_backup_off">Cloud Backup is closing — new backups are off.</string>
+    <string name="cloud_backup_transfer_closed">Not uploaded: Cloud Backup is closing</string>
     <string name="home_cloud_backing_up">Backing up…</string>
     <string name="home_cloud_top_up">Top up</string>
     <string name="home_cloud_waiting">Waiting to back up</string>

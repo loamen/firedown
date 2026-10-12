@@ -426,6 +426,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Je geback-upte bestanden worden verwijderd als de respijtperiode afloopt. Waardeer op of herstel ze naar deze telefoon.</string>
     <string name="cloud_reap_notif_title">Geback-upte bestanden worden binnenkort verwijderd</string>
+    <string name="cloud_sunset_title">Cloudback-up stopt</string>
+    <string name="cloud_sunset_body">Nieuwe back-ups staan uit. Je geback-upte bestanden kun je tot %1$s op deze telefoon terugzetten. Daarna worden ze verwijderd.</string>
+    <string name="cloud_sunset_body_empty">Nieuwe back-ups staan uit en de dienst stopt op %1$s. Er is daar niets van jou opgeslagen.</string>
+    <string name="cloud_sunset_header">Stopt op %1$s · zet de bestanden terug die je wilt houden</string>
+    <string name="cloud_sunset_banner_subtitle">Zet de bestanden die je wilt houden vóór %1$s terug op deze telefoon.</string>
+    <string name="cloud_sunset_notif_title">Cloudback-up stopt op %1$s</string>
+    <string name="cloud_sunset_notif_text">Zet de bestanden die je wilt houden terug op deze telefoon. Na die datum worden ze verwijderd.</string>
+    <string name="cloud_sunset_backup_off">Cloudback-up stopt — nieuwe back-ups staan uit.</string>
+    <string name="cloud_backup_transfer_closed">Niet geüpload: cloudback-up stopt</string>
     <string name="most_visited">Meest bezocht</string>
     <string name="most_visited_remove_title">Verwijderen uit Meest bezocht?</string>
     <string name="most_visited_remove">Verwijderen</string>

@@ -526,6 +526,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Deine gesicherten Dateien werden am Ende der Karenzzeit entfernt. Lade auf oder stelle sie auf diesem Telefon wieder her.</string>
     <string name="cloud_reap_notif_title">Gesicherte Dateien werden bald entfernt</string>
+    <string name="cloud_sunset_title">Cloud-Backup wird eingestellt</string>
+    <string name="cloud_sunset_body">Neue Backups sind deaktiviert. Deine gesicherten Dateien können bis %1$s auf diesem Telefon wiederhergestellt werden. Danach werden sie gelöscht.</string>
+    <string name="cloud_sunset_body_empty">Neue Backups sind deaktiviert, und der Dienst wird am %1$s abgeschaltet. Dort ist nichts von dir gespeichert.</string>
+    <string name="cloud_sunset_header">Endet am %1$s · stelle die Dateien wieder her, die du behalten willst</string>
+    <string name="cloud_sunset_banner_subtitle">Stelle die Dateien, die du behalten willst, vor dem %1$s auf diesem Telefon wieder her.</string>
+    <string name="cloud_sunset_notif_title">Cloud-Backup wird am %1$s eingestellt</string>
+    <string name="cloud_sunset_notif_text">Stelle die Dateien, die du behalten willst, auf diesem Telefon wieder her. Nach diesem Datum werden sie gelöscht.</string>
+    <string name="cloud_sunset_backup_off">Cloud-Backup wird eingestellt — neue Backups sind deaktiviert.</string>
+    <string name="cloud_backup_transfer_closed">Nicht hochgeladen: Cloud-Backup wird eingestellt</string>
     <string name="most_visited">Meistbesucht</string>
     <string name="most_visited_remove_title">Aus „Meistbesucht“ entfernen?</string>
     <string name="most_visited_remove">Entfernen</string>

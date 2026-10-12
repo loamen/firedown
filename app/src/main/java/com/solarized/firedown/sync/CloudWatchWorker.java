@@ -72,6 +72,8 @@ public class CloudWatchWorker extends Worker {
     private static final int NOTIFICATION_GRACE_ID = 4102;
     /** Second (urgent) lapse notification at this many days left or fewer. */
     static final int REAP_WARNING_DAYS = 3;
+    /** The sunset's final-week notice, told once (see notifySunset). */
+    private static final int SUNSET_WARNING_DAYS = 7;
 
     private final Context mContext;
     private final OkHttpClient mClient;
@@ -114,6 +116,18 @@ public class CloudWatchWorker extends Worker {
     public Result doWork() {
         if (!mCloud.isSetUp()) {
             cancel(mContext);
+            return Result.success();
+        }
+        if (CloudSunset.ACTIVE) {
+            // SUNSET: the grace / reap machinery is beside the point — there
+            // is one message, the closing date, told twice at most. Once the
+            // date has passed there is nothing left to tell, and the watch
+            // cancels itself.
+            if (CloudSunset.isPast()) {
+                cancel(mContext);
+            } else {
+                notifySunset();
+            }
             return Result.success();
         }
         byte[] code = null;
@@ -178,6 +192,30 @@ public class CloudWatchWorker extends Worker {
         NotificationCompat.Builder b = baseNotification(title, text)
                 .setContentIntent(urgent ? restore : topUp)
                 .addAction(0, mContext.getString(R.string.home_cloud_top_up), topUp)
+                .addAction(0, mContext.getString(R.string.settings_sync_restore_action), restore);
+        post(NOTIFICATION_GRACE_ID, b);
+    }
+
+    /** The closing notice: stage 1 on the first run after the update, stage 2
+     *  inside the final week (same id, so 2 REPLACES 1; a stage is told once —
+     *  the marker is the highest stage posted). Silent for an account the
+     *  durable cache knows to be EMPTY: "restore your files" to someone with
+     *  none is noise, and an unknown cache (-1) is told, never a known zero. */
+    private void notifySunset() {
+        if (mCloud.lastKnownTotalBytes() == 0) {
+            return;
+        }
+        int stage = CloudSunset.daysLeft() <= SUNSET_WARNING_DAYS ? 2 : 1;
+        if (mPrefs.getInt(Preferences.CLOUD_SUNSET_NOTIFIED_STAGE, 0) >= stage) {
+            return;
+        }
+        mPrefs.edit().putInt(Preferences.CLOUD_SUNSET_NOTIFIED_STAGE, stage).apply();
+        String date = CloudSunset.deleteDate(mContext);
+        String title = mContext.getString(R.string.cloud_sunset_notif_title, date);
+        String text = mContext.getString(R.string.cloud_sunset_notif_text);
+        PendingIntent restore = cloudIntent(1, true);
+        NotificationCompat.Builder b = baseNotification(title, text)
+                .setContentIntent(restore)
                 .addAction(0, mContext.getString(R.string.settings_sync_restore_action), restore);
         post(NOTIFICATION_GRACE_ID, b);
     }

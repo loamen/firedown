@@ -525,6 +525,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">宽限期结束后，你的备份文件将被移除。请充值，或将它们恢复到此手机。</string>
     <string name="cloud_reap_notif_title">备份文件即将被移除</string>
+    <string name="cloud_sunset_title">云端备份即将关闭</string>
+    <string name="cloud_sunset_body">新的备份已停止。已备份的文件可在 %1$s 之前恢复到此手机，之后将被删除。</string>
+    <string name="cloud_sunset_body_empty">新的备份已停止，服务将于 %1$s 关闭。那里没有保存你的任何内容。</string>
+    <string name="cloud_sunset_header">%1$s 关闭 · 请恢复你想保留的文件</string>
+    <string name="cloud_sunset_banner_subtitle">请在 %1$s 之前将想保留的文件恢复到此手机。</string>
+    <string name="cloud_sunset_notif_title">云端备份将于 %1$s 关闭</string>
+    <string name="cloud_sunset_notif_text">请将想保留的文件恢复到此手机。该日期之后将被删除。</string>
+    <string name="cloud_sunset_backup_off">云端备份即将关闭 — 新的备份已停止。</string>
+    <string name="cloud_backup_transfer_closed">未上传：云端备份即将关闭</string>
     <string name="most_visited">常访问</string>
     <string name="most_visited_remove_title">从常访问中移除？</string>
     <string name="most_visited_remove">移除</string>

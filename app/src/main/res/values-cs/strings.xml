@@ -397,6 +397,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Vaše zálohované soubory budou po skončení ochranné lhůty odstraněny. Dobijte kredit nebo je obnovte do tohoto telefonu.</string>
     <string name="cloud_reap_notif_title">Zálohované soubory budou brzy odstraněny</string>
+    <string name="cloud_sunset_title">Cloudové zálohování končí</string>
+    <string name="cloud_sunset_body">Nové zálohy jsou vypnuté. Zálohované soubory lze do %1$s obnovit do tohoto telefonu. Poté budou smazány.</string>
+    <string name="cloud_sunset_body_empty">Nové zálohy jsou vypnuté a služba se %1$s vypíná. Nic vašeho tam uloženo není.</string>
+    <string name="cloud_sunset_header">Končí %1$s · obnovte soubory, které si chcete nechat</string>
+    <string name="cloud_sunset_banner_subtitle">Obnovte soubory, které si chcete nechat, do tohoto telefonu do %1$s.</string>
+    <string name="cloud_sunset_notif_title">Cloudové zálohování končí %1$s</string>
+    <string name="cloud_sunset_notif_text">Obnovte soubory, které si chcete nechat, do tohoto telefonu. Po tomto datu budou smazány.</string>
+    <string name="cloud_sunset_backup_off">Cloudové zálohování končí — nové zálohy jsou vypnuté.</string>
+    <string name="cloud_backup_transfer_closed">Nenahráno: cloudové zálohování končí</string>
     <string name="most_visited">Nejnavštěvovanější</string>
     <string name="most_visited_remove_title">Odebrat z nejnavštěvovanějších?</string>
     <string name="most_visited_remove">Odebrat</string>

@@ -348,6 +348,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Архивираните ви файлове ще бъдат премахнати в края на гратисния период. Заредете или ги възстановете на този телефон.</string>
     <string name="cloud_reap_notif_title">Архивираните файлове скоро ще бъдат премахнати</string>
+    <string name="cloud_sunset_title">Облачното архивиране се закрива</string>
+    <string name="cloud_sunset_body">Новите архиви са изключени. Архивираните ви файлове могат да бъдат възстановени на този телефон до %1$s. След това се изтриват.</string>
+    <string name="cloud_sunset_body_empty">Новите архиви са изключени, а услугата спира на %1$s. Там не се съхранява нищо ваше.</string>
+    <string name="cloud_sunset_header">Закрива се на %1$s · възстановете файловете, които искате да запазите</string>
+    <string name="cloud_sunset_banner_subtitle">Възстановете файловете, които искате да запазите, на този телефон преди %1$s.</string>
+    <string name="cloud_sunset_notif_title">Облачното архивиране се закрива на %1$s</string>
+    <string name="cloud_sunset_notif_text">Възстановете файловете, които искате да запазите, на този телефон. След тази дата те се изтриват.</string>
+    <string name="cloud_sunset_backup_off">Облачното архивиране се закрива — новите архиви са изключени.</string>
+    <string name="cloud_backup_transfer_closed">Не е качено: облачното архивиране се закрива</string>
     <string name="most_visited">Най-посещавани</string>
     <string name="most_visited_remove_title">Премахване от най-посещаваните?</string>
     <string name="most_visited_remove">Премахни</string>

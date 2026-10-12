@@ -45,6 +45,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.AppLock;
+import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.Keys;
@@ -348,6 +349,10 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             mBuy.setTitle(hasKey
                     ? R.string.buy_credit_title
                     : R.string.settings_sync_create_title);
+            // SUNSET: nothing is sold. The CTA survives only as "Create
+            // recovery code" for a keyless device — the code still keys
+            // bookmark sync, which outlives the storage service.
+            mBuy.setVisible(!CloudSunset.ACTIVE || !hasKey);
         }
         // The adopt-an-existing-account door, shown in BOTH states — the second
         // device in a two-device pair usually has a code of its OWN (it created
@@ -525,8 +530,10 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             mFiles.setVisible(show);
         }
         // Same gate: with no account there is nothing for a browser to open.
+        // SUNSET: nor while the service closes — a browser paired now would
+        // open a list that is about to be deleted.
         if (mPair != null) {
-            mPair.setVisible(show);
+            mPair.setVisible(show && !CloudSunset.ACTIVE);
         }
         mBackupsDeletable = show;
         applyDeleteDoor();

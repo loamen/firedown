@@ -525,6 +525,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">猶予期間が終わるとバックアップしたファイルは削除されます。チャージするか、この端末に復元してください。</string>
     <string name="cloud_reap_notif_title">バックアップしたファイルがまもなく削除されます</string>
+    <string name="cloud_sunset_title">クラウドバックアップは終了します</string>
+    <string name="cloud_sunset_body">新しいバックアップは停止しました。バックアップしたファイルは %1$s までこの端末に復元できます。その後は削除されます。</string>
+    <string name="cloud_sunset_body_empty">新しいバックアップは停止し、サービスは %1$s に終了します。あなたのデータは保存されていません。</string>
+    <string name="cloud_sunset_header">%1$s に終了 · 残したいファイルを復元してください</string>
+    <string name="cloud_sunset_banner_subtitle">残したいファイルは %1$s までにこの端末に復元してください。</string>
+    <string name="cloud_sunset_notif_title">クラウドバックアップは %1$s に終了します</string>
+    <string name="cloud_sunset_notif_text">残したいファイルをこの端末に復元してください。その日を過ぎると削除されます。</string>
+    <string name="cloud_sunset_backup_off">クラウドバックアップは終了します — 新しいバックアップは停止しました。</string>
+    <string name="cloud_backup_transfer_closed">アップロードされませんでした: クラウドバックアップは終了します</string>
     <string name="most_visited">よく見るサイト</string>
     <string name="most_visited_remove_title">「よく見るサイト」から削除しますか？</string>
     <string name="most_visited_remove">削除</string>

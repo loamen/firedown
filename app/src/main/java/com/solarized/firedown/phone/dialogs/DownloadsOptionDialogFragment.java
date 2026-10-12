@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.navigation.NavBackStackEntry;
 import androidx.recyclerview.widget.RecyclerView;
 import com.solarized.firedown.R;
+import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.data.Download;
 import com.solarized.firedown.data.OptionItem;
 import com.solarized.firedown.data.entity.DownloadEntity;
@@ -167,6 +168,12 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
         try {
             for (int i = 0; i < labels.length; i++) {
                 int iconResId = icons.getResourceId(i, 0);
+                // SUNSET: the "Back up to cloud" row (keyed by its glyph, the
+                // same key the click handler dispatches on) is not offered
+                // while the hosted service closes.
+                if (iconResId == R.drawable.ic_cloud_upload_24 && CloudSunset.ACTIVE) {
+                    continue;
+                }
                 // The "Media tools" group row gets a trailing chevron to
                 // signal it opens a sub-list rather than firing an action.
                 if (iconResId == R.drawable.ic_movie_24) {

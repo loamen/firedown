@@ -3775,6 +3775,52 @@ chip shown when the address bar gains focus) — both from one on-device episode
   history/suggestion path. A deliberate long-press paste still works — the cap
   only stops the app from *offering* the blob.
 
+## Cloud Backup — SUNSET (read this before the section below)
+
+**The hosted service is closing, and this app release is the first step of
+`docs/SERVER-SUNSET-PLAN.md`: every WRITE door is off, every READ door
+stays, until the server deletes on the date in `CloudSunset.DELETE_AT_MS`.**
+`sync/CloudSunset.java` is ONE compile-time switch (`ACTIVE`) plus the date,
+consulted at the moment of each action — never cached in a screen — because
+an older surface (a finished-download notification, a WorkManager job queued
+by the previous version, a deep link from a lapse notification) outlives the
+screen that offered it. What it gates: the download sheet's "Back up to
+cloud" row (`DownloadsOptionDialogFragment`, keyed by the glyph the click
+handler dispatches on), the multi-select backup action and the batch path
+(`BaseDownloadFragment.startCloudBackup` is the belt, with a snackbar), the
+finished-notification action and its receiver, `VaultBackupWorker` itself (a
+pre-update job fails with `SLUG_CLOSED`, named on the Backups row), buying
+credit (the Cloud screen CTA survives only as "Create recovery code" for a
+keyless device, the Backups overflow item is hidden, `BuyCreditFragment`
+leaves at once), pairing a browser, `CloudBackupManager.registerInBackground`
+(no storage account or starter grant is minted on a closing service), and
+the Storage screen's upsell AND its "Free up space" card — the latter
+deletes PHONE copies on the strength of a cloud copy that is about to be
+deleted, the one action that must not exist during a sunset. What changes
+voice: the Cloud hero (`CloudStatusPreference.bindSunset` — headline over
+the closing notice for a set-up account, one sentence for a device that
+never set it up), the Backups list header (the date), the Downloads banner
+(a third copy on the same `SyncBannerAdapter` — `setCopy(CharSequence,
+CharSequence)` exists for the formatted date — shown to set-up accounts,
+retired by its OWN key `CLOUD_SUNSET_BANNER_DISMISSED` so a promo dismissed
+months ago can't swallow it), the account watch (`CloudWatchWorker` posts
+the closing notice at most twice — on its first run, and inside the final
+week — silent for an account the durable cache knows to be EMPTY, and
+cancels itself once the date has passed), and the Storage review confirm
+(the "a copy survives in the cloud backup" reassurance is not made). What
+stays exactly as it was: the Backups list (restore, restore all, stream,
+delete), the recovery code (it still keys bookmark sync, which moves to the
+www host and outlives storage), bookmark sync, and `CreditSettleWorker` (a
+purchase paid before the update still settles for the on-chain late window).
+The strings are `cloud_sunset_*` + `cloud_backup_transfer_closed`, 16
+locales; the date is `DateUtils.formatDateTime` in the device locale, UTC.
+**Before the release ships, set `DELETE_AT_MS` to the real date, the same
+one the server operator reaps on** — the placeholder is far enough out that
+an unedited build cannot promise a date that has already passed. A later
+release deletes the code (the plan's Phase 4); this one must stay
+restorable for weeks, so nothing below is removed yet, and the section
+below describes the service as it was built.
+
 ## Cloud Backup — encrypted per-file backup to `storage.firedown.app`
 
 The optional **Cloud Backup** feature backs a finished download up to the

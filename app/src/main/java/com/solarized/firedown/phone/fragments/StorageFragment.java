@@ -31,6 +31,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 
 import com.solarized.firedown.IntentActions;
+import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.R;
 import com.solarized.firedown.StoragePaths;
 import com.solarized.firedown.data.di.Qualifiers;
@@ -344,7 +345,8 @@ public class StorageFragment extends BaseFocusFragment {
         if (mUpsellCard == null) {
             return;
         }
-        boolean show = !mCloudBackup.isSetUp() && mTotalBytes > 0;
+        // SUNSET: nothing to pitch — the service is closing.
+        boolean show = !CloudSunset.ACTIVE && !mCloudBackup.isSetUp() && mTotalBytes > 0;
         mUpsellCard.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
@@ -352,7 +354,10 @@ public class StorageFragment extends BaseFocusFragment {
 
     private void refreshOffload() {
         refreshUpsell();
-        if (!mCloudBackup.isSetUp()) {
+        // SUNSET: "Free up space" deletes PHONE copies on the strength of a
+        // cloud copy, and the cloud copy is about to be deleted — the one
+        // action this screen must never offer while the service closes.
+        if (CloudSunset.ACTIVE || !mCloudBackup.isSetUp()) {
             showOffload(new ArrayList<>());
             return;
         }

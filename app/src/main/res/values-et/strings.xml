@@ -325,6 +325,15 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Su varundatud failid eemaldatakse ajapikenduse lõppedes. Täienda krediiti või taasta need sellesse telefoni.</string>
     <string name="cloud_reap_notif_title">Varundatud failid eemaldatakse peagi</string>
+    <string name="cloud_sunset_title">Pilvevarundus lõpetatakse</string>
+    <string name="cloud_sunset_body">Uued varukoopiad on välja lülitatud. Varundatud faile saab sellesse telefoni taastada kuni %1$s. Pärast seda need kustutatakse.</string>
+    <string name="cloud_sunset_body_empty">Uued varukoopiad on välja lülitatud ja teenus suletakse %1$s. Sinu kohta pole seal midagi salvestatud.</string>
+    <string name="cloud_sunset_header">Suletakse %1$s · taasta failid, mida soovid alles hoida</string>
+    <string name="cloud_sunset_banner_subtitle">Taasta failid, mida soovid alles hoida, sellesse telefoni enne %1$s.</string>
+    <string name="cloud_sunset_notif_title">Pilvevarundus lõpetatakse %1$s</string>
+    <string name="cloud_sunset_notif_text">Taasta failid, mida soovid alles hoida, sellesse telefoni. Pärast seda kuupäeva need kustutatakse.</string>
+    <string name="cloud_sunset_backup_off">Pilvevarundus lõpetatakse — uued varukoopiad on välja lülitatud.</string>
+    <string name="cloud_backup_transfer_closed">Pole üles laaditud: pilvevarundus lõpetatakse</string>
     <string name="most_visited">Enim külastatud</string>
     <string name="most_visited_remove_title">Kas eemaldada enim külastatute hulgast?</string>
     <string name="most_visited_remove">Eemalda</string>

@@ -166,6 +166,14 @@ public class CloudBackupManager {
      * cloud intent. {@code onDone} is posted to main either way.
      */
     public void registerInBackground(Runnable onDone) {
+        if (CloudSunset.ACTIVE) {
+            // SUNSET: a code created now keys bookmark sync only — no storage
+            // account (and no starter credit) is minted on a closing service.
+            if (onDone != null) {
+                main.post(onDone);
+            }
+            return;
+        }
         netExecutor.execute(() -> {
             byte[] code = new SyncSecrets(context).load();
             if (code != null) {

@@ -17,6 +17,7 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.TaskStackBuilder;
 
 import com.solarized.firedown.App;
+import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.R;
 import com.solarized.firedown.data.Download;
@@ -269,7 +270,9 @@ public class RunnableManager extends Service implements DownloadEngine.Host {
 		// isFileSafe() early-return above. The receiver re-checks everything
 		// against current state — these gates are advisory, the notification
 		// can outlive them.
-		if (mCloudBackupManager.isSetUp()) {
+		// SUNSET: the hosted service is closing, so the action that would start
+		// an upload is never offered (CloudSunset) — the receiver re-checks too.
+		if (mCloudBackupManager.isSetUp() && !CloudSunset.ACTIVE) {
 			Intent backupIntent = new Intent(this, CloudBackupNotificationReceiver.class);
 			backupIntent.setAction(CloudBackupNotificationReceiver.ACTION_BACKUP);
 			backupIntent.putExtra(CloudBackupNotificationReceiver.EXTRA_DOWNLOAD_ID,
