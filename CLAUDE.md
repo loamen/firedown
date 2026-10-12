@@ -3501,8 +3501,9 @@ Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
 composition: the mark (the 56dp flame + wordmark; the privacy illustration +
 "Private Browsing" in incognito), the search pill right under it, centred
 with an optical lift (`home_mark_lift`, shrunk in `values-land`), and nothing
-else at rest except the ember behind the flame while a download runs and
-the cloud chip / deadline card below the field. The Google / DuckDuckGo
+else at rest except the ember behind the flame while a download runs — the
+cloud transfer chip and deadline card went too (see "The home carries NO
+cloud state" under Cloud Backup). The Google / DuckDuckGo
 start-page shape with Firedown's own mark as the subject — chosen (maintainer,
 2026-10-12, from the design-canvas frames H1–H5) over a stat line, and the
 brief it answers: a calm identity surface, not a dashboard — no top sites or
@@ -3516,9 +3517,21 @@ the `MaxHeightView` attr and 17 strings in every locale): on a 360dp phone at
 normal font scale in Spanish the two chips plus the dot needed 304dp of a
 296dp line and wrapped onto two rows (reported as "blocked and download
 stack on top of each other on some devices"), and no inset or glyph trim
-buys the long locales enough. `GeckoUblockHelper` keeps relaying the uBlock
-tallies (cumulative, per-category, top trackers) — bridge data, with no
-consumer on the home now; the per-PAGE count stays on the security sheet.
+buys the long locales enough. **The blocked-ads stats live in Settings →
+Privacy → "Trackers and ads blocked" now** (maintainer: "move the blocked
+ads stats to the settings"): a root row whose summary is the LIVE lifetime
+count (`SettingsFragment.bindBlockedStats`, "Protection active" at 0) over a
+`BlockedStatsFragment` sub-screen — the `BlockedStatsPreference` hero (blocked
+since install / estimated data saved at ~50 KB per request / blocked today,
+flat above the cards like the Cloud hero), a "Blocked by type" card of
+read-only `CountPreference` rows (title + a trailing count), a "Top trackers"
+card rebuilt from the pushed top-10 and hidden under three rows, and a
+footnote naming the estimate. All of it reads `GeckoUblockHelper`'s uBlock
+tallies live, exactly what the retired sheet read; the per-PAGE count stays
+on the security sheet, and Gecko's own ETP count stays on the Enhanced
+Tracking Protection screen, a separate measurement never shown beside this
+one. The deep link `SettingsActivity.EXTRA_OPEN_TRACKING` went with the
+sheet's "Manage protection" button, its only sender.
 
 - **The pill is the REAL `GeckoToolbar`, translated — never a second fake
   field.** `HomeToolbarDock` (`geckoview/`) docks the toolbar over a 48dp
@@ -3545,7 +3558,7 @@ consumer on the home now; the per-PAGE count stays on the security sheet.
   whole status strip down with it and paints, opaque, over the wordmark;
   with a margin the box is a plain 64dp bar whose pill lands 8dp inside it).
   The slot is exactly the pill's 48dp, 28dp under the wordmark (24dp under
-  the incognito title), with ≥16dp clearance below — the docked box extends
+  the incognito title), the last thing in the group — the docked box extends
   8dp past the slot both ways and its holder is an opaque surface. The
   content's `NestedScrollView` pads top AND bottom insets itself. The
   overlay's behavior is `AutoCompleteViewBehavior` installed in code (as in
@@ -3571,7 +3584,9 @@ consumer on the home now; the per-PAGE count stays on the security sheet.
   dedicated fakebox, a cross-fragment shared element (none is needed), any
   change to `GeckoToolbarBehavior` (browser only). The real pill is inset
   8dp (344dp on a 360dp phone) — the canvas frames drew 16dp; the toolbar's
-  own inset was kept so the move is purely vertical.
+  own inset was kept so the move is purely vertical. The slot is the LAST
+  thing in the mark group now; anything ever placed under it needs ≥16dp of
+  clearance (the docked box extends 8dp past the slot).
 - **Unverified on-device at write time** (no SDK in the sandbox; the dock
   class is stub-compiled only): the landscape lift, the IME-resize
   re-solve, and the z-order on a device that gives the toolbar a non-zero
@@ -4480,125 +4495,31 @@ opaque chunks + an opaque manifest blob.
   same text styling (`sans-serif-medium`, `colorOnSurface`); don't substitute a
   `TextAppearance` style / `colorOnSurfaceVariant`.
 
-- **The home cloud states are told apart by SHAPE and WORDS — never by a
-  semantic hue. The chip and the card are `surfaceContainerHigh`, and there
-  is NO resting state.**
-  `HomeFragment.applyBackupPill` renders THREE states on TWO surfaces — the
-  read-only grace DEADLINE (metered credit out) on the CARD, "Backing up…"
-  (RUNNING) and "Waiting to back up" (enqueued only) on the transfer CHIP
-  (`home_backup_pill`) — and hides both otherwise. The deadline deliberately
-  beats both transfer states: in grace every upload 402s at create, so a
-  doomed queued backup rendering "Backing up…" would hide the one actionable
-  fact. **At most ONE of chip / card is ever VISIBLE, and every branch sets
-  BOTH** (they are persistent views that flip, so a one-sided set leaves the
-  previous state on screen). Every state is EVIDENCE-based (a paused quota,
-  a live tagged WorkInfo) and that evidence exists only because the user
-  engaged with the feature — which is why "Backing up…" is deliberately
-  **not** `isSetUp()`-gated: the very FIRST backup runs before `markEnabled`
-  lands, and gating it would blank the chip for exactly the transfer that
-  most wants reporting.
-  - **The RESTING "N backed up" line and the "Show backup status on home"
-    switch were REMOVED together (home v5) — don't bring either back.** The
-    line had a long history: first a third subtitle counter (reverted —
-    three chips overran the 360dp line, and a NETWORK value cannot live on a
-    fixed one-line hero, every arrival being a reflow under the wordmark),
-    then a filled chip (demoted — "the most important item on the home
-    fragment" on two devices), then a 12sp quiet line in a fixed-height slot
-    that faded in so the flame would not shift, gated by
-    `SETTINGS_CLOUD_HOME_STATUS`. The switch was the tell: it existed to let
-    the user silence a surface we did not trust ourselves, and it had to gate
-    the grace card too (a control saying "show backup status" that still
-    painted one would lie) — so the ONE actionable alarm on home became
-    hideable. The two evidence-based states that remain need no opt-out: a
-    transient chip clears itself, and a deletion countdown must never be
-    hideable. Gone with them: `home_backup_slot` (the height reservation
-    existed only for the late resting value), `home_backup_rest`, the fade,
-    `mCloudTotalBytes` (the durable `CLOUD_LAST_TOTAL_BYTES` cache stays —
-    the Downloads activation banner reads it), the pref key and its string
-    in 17 locales. A set-up account's standing doors to Backups are the
-    Downloads overflow and the Cloud screen; home is bare at rest for
-    everyone, as it is for a fresh install.
-  - **The counters that used to lead this block are GONE (home v6)** — the
-    home is the mark over the search field now, see the "Home — the mark
-    over the field (home v6)" section. What remains under the field is the
-    glyph-led pair this rule
-    was written for: the filled transfer chip (live work) and the full-width
-    paused card (a deadline), both 24dp under the docked pill. Rank still
-    comes from fill and width, never colour: a fill here is earned by WORK.
-    A first-run hint line in the old counters' slot was sketched and
-    SKIPPED; if it is ever added it must never render above a paused card.
-  - **There is still no user-facing OFF switch for Cloud Backup itself, and
-    that is intended** (it's action-driven — see "Shared identity, no on/off
-    switch"). The surface is derived state, so it clears by having nothing to
-    report: "Delete backed-up files" leaves the flag set and zeroes usage; a
-    metered spent+empty account then auto-retires the flag on the next
-    `loadStatus`. `SyncManager.disable` deliberately refuses to wipe the
-    shared recovery code while `CLOUD_BACKUP_ENABLED` is set, so signing out
-    of bookmarks can't lock a user out of backed-up downloads. No state is a
-    dead end: paused clears by topping up or deleting the files, transfers by
-    cancelling in the Backups list.
-  - **The CHIP** (`home_backup_pill`) — a small centred filled chip, upload
-    glyph, no action label, tap → the Backups list. It carries ONLY the two
-    TRANSFER states ("Backing up…", "Waiting to back up") — fill is earned by
-    WORK, transient and self-clearing, never by a standing state; the resting
-    total is the quiet line above and the card carries the alarm. Its ground,
-    ink and glyph are static XML now (the old "applyBackupPill repaints the
-    ground" comment predated the attention state moving to the card). Note the
-    ethos: home is no longer bare-at-rest for a SET-UP account (it keeps a
-    permanent, quiet door to Backups), but a fresh install is exactly as bare
-    as before.
-  - **The deadline is a CARD** (`home_backup_card`) — full-width, two lines,
-    `cloud_off_24`, "TOP UP" → the Cloud status screen (the only state whose
-    tap goes anywhere other than the Backups list). It earns the extra weight
-    from its CONTENT, not a colour: title "Backup paused" plus a **countdown**
-    detail line (`home_cloud_grace_days`, a plural) computed from the quota's
-    `graceUntil`. "3 days left before your files are removed" is what makes
-    the state actionable where "Paused" only named it, and it needs no API
-    change — the server already sends `grace_until`. It falls back to the
-    title alone when that field is missing or unparseable (older server, clock
-    skew), and clamps to ≥1 day so a past deadline reads "1 day" rather than a
-    negative.
-  - **Margins:** the card carries `layout_marginStart/End="@dimen/address_bar_inset"`
-    so it lines up with the address bar above it, and its action button is
-    `wrap_content` beside a weighted text column — a longer translation
-    shrinks the text and wraps to the detail line's `maxLines="2"` instead of
-    squeezing the verb out. The pill stays `wrap_content` + centred.
-  - **Do NOT give either surface a semantic (amber/warning) container.** That
-    shipped, and it was measured out again: on the light home the amber ground
-    is **ΔE 30.7** from the page where every other elevated surface on that
-    screen sits at 2–12, so a state that is *informational* — nothing is lost
-    yet, the user has 30 days — wore the loudest treatment in the app. It also
-    contradicted itself: the argument for the amber was that ink alone can't
-    carry attention (the hardcoded `backup_warning` on the old peach pill was
-    **1.37:1** in light theme, genuinely invisible), but the answer to an
-    unreadable ink is a readable ink, not an escalated ground. Neutral
-    (`surfaceContainerHigh` + `onSurface`) reads at **ΔE 6.3 / 11.1** and lets
-    the shape+copy do the ranking. `backup_warning` itself is still correct
-    where it's an ink on a SURFACE (the Cloud status hero, the credit meter);
-    `backup_warning_container`/`_on_container` were deleted.
-  - **The PILL has NO action label; the CARD keeps "TOP UP".** The pill's read
-    "VIEW" on every state, so it conveyed only "tappable" — which the chip
-    shape and the ripple already convey. It also cost
-    ~50dp on a `wrap_content` pill that must fit "Waiting to back up" in every
-    locale. It had already been trimmed once: hardcoded `?attr/colorPrimary`
-    measured **1.68:1** light / **3.76:1** dark — the one word telling you the
-    surface was tappable was the least readable thing on it — and the fix note
-    was "bold + allCaps already say action". If the shape says it and the
-    weight says it, the word is the third copy. The card's survives because it
-    is a real verb for a real decision (spend money, against a deadline) and
-    the only state whose tap goes anywhere other than the Backups list, so the
-    asymmetry sharpens the pill/card split rather than blurring it. Its label
-    is set in XML with a resolved `textColor` (no `tools:` placeholder now that
-    only one surface carries one).
-  - **Restores never reach the pill** — `hasBackupTag` filters WorkInfos to
-    `VaultBackupWorker.TAG_NAME`, so a restore shows only as a live download row
-    in the Downloads list. There is also **no error state** (a failed backup is
-    a row in the Backups list + a snackbar) and **no reaped state** (after the
-    server reap the 0-files reconcile retires the flag, so `isSetUp()` goes
-    false and the pill simply hides). Those three absences are deliberate;
-    "your backups were deleted" is a genuine gap, not an oversight to patch
-    into this pill. (The reaped case is covered twice over now: the flag
-    retires AND the total goes 0, so the resting rung can't outlive the data.)
+- **The home carries NO cloud state (maintainer, 2026-10-12: "we don't need
+  all the plumbing for backups, downloaded bytes and blocked ads in home").**
+  The transfer CHIP ("Backing up…" / "Waiting to back up", a live tagged
+  WorkInfo) and the grace DEADLINE card ("Backup paused" + the countdown from
+  `grace_until`, with RESTORE / TOP UP) that sat under the mark through home
+  v5 are gone with their WorkManager observer, the `loadStatus` round trip
+  and the `home_cloud_paused` / `home_cloud_grace_days` strings; the surviving
+  `home_cloud_*` strings are the Backups list's and the notifications' and
+  keep their historical names. Where those states live now: the deadline is
+  told by `CloudWatchWorker`'s two notifications (grace entered, reap in
+  3 days; both carry Top up + Restore) and the Cloud screen's hero; a
+  transfer by its row in the Backups list. Rules that survive the surfaces,
+  because they were never about the home: evidence-based states only (a
+  paused quota, a live tagged WorkInfo), restores never count as transfers
+  (`VaultBackupWorker.TAG_NAME` filters them), no semantic amber container
+  on an informational state (measured ΔE 30.7 against the page, the loudest
+  thing in the app for "nothing is lost yet"; the hero and the credit meter
+  keep `backup_warning` as an INK on a surface), and no user-facing OFF
+  switch for Cloud Backup — it is action-driven, and a state clears by
+  having nothing to report (top up, delete the files, cancel the transfer).
+  History worth keeping: the resting "N backed up" line was demoted twice
+  ("the most important item on the home fragment" on two devices) and then
+  removed with the switch that hid it; the amber ground shipped and was
+  measured out; the pill's "VIEW" label was cut because shape and ripple
+  already said "tappable". Don't bring any of it back to the home.
 - **The Backups list is sorted NEWEST BACKUP FIRST, on `VaultEntry.backedUpAt`.**
   The manifest is append-ordered (`VaultEngine.addToManifest` does
   `entries.add`), so the raw list is oldest-first and a fresh backup landed at
@@ -4951,8 +4872,8 @@ opaque chunks + an opaque manifest blob.
   unfunded / grace / quota-unknown-with-key), swapped to the OUTLINED
   `preference_cloud_buy_button_plain` layout once affirmatively funded (or on
   the unmetered beta, where there is nothing to sell) — a years-of-runway
-  account shouldn't be stared down by a permanent filled sales button, the
-  same restraint that keeps the home pill a quiet chip; `applyBuyEmphasis`
+  account shouldn't be stared down by a permanent filled sales button (the
+  same restraint that once kept the home pill a quiet chip); `applyBuyEmphasis`
   binds cached-first then
   from the fresh load, like the hero), the
   **"I have a recovery code"** adopt door (shown in BOTH key states — see the
@@ -5010,7 +4931,7 @@ opaque chunks + an opaque manifest blob.
     the offline fallback). The steps reuse existing strings — no new
     translations. The morphing CTA always shows the NEXT step. The expiry
     lifecycle this completes: runout → 30 days of amber grace (hero alert +
-    home "Paused" pill, both already built) → the server reap deletes objects
+    CloudWatchWorker's notifications) → the server reap deletes objects
     AND manifest → the client's 0-files reconcile auto-retires the flag → this
     roadmap returns with step ② bold, pointing at top-up.
   - **Two scoped erasures behind ONE door, never one "delete all cloud
@@ -5085,8 +5006,8 @@ opaque chunks + an opaque manifest blob.
       acknowledging they saved it — the exact hole that gate closes — and it
       would take Copy and Save-to-file away while the QR is up. Swapping keeps
       the height at max(code, QR) rather than their sum (which IS the clipping)
-      and dismisses nothing. Both panels are set on every toggle tap, the same
-      one-sided-set rule as the home cloud slot; the checkbox stays visible in
+      and dismisses nothing. Both panels are set on every toggle tap (every
+      branch sets BOTH persistent views — the one-sided-set rule); the checkbox stays visible in
       the QR state because it is the create flow's only exit condition. The
       exposure argument is untouched — the QR starts hidden, so the payload is
       only on screen once asked for, one deliberate step past the device-auth

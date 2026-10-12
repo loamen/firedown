@@ -215,11 +215,8 @@
     <string name="crash_sheet_dismiss">ବାତିଲ୍</string>
     <string name="crash_sheet_copied">କ୍ରାଶ୍ ରିପୋର୍ଟ କ୍ଲିପ୍ବୋର୍ଡକୁ କପି ହୋଇଛି</string>
     <string name="crash_sheet_open_failed">ବ୍ରାଉଜର୍ ଖୋଲିପାରିଲା ନାହିଁ। ରିପୋର୍ଟ କ୍ଲିପ୍ବୋର୍ଡରେ ଅଛି। ଏହାକୁ ଏକ ନୂଆ GitHub ଇସ୍ୟୁରେ ପେଷ୍ଟ କରନ୍ତୁ।</string>
-
-
-
-
-
+    <string name="trackers_info_title">ଟ୍ରାକର ଓ ବିଜ୍ଞାପନ ବ୍ଲକ ହୋଇଛି</string>
+    <string name="trackers_info_idle">ସୁରକ୍ଷା ସକ୍ରିୟ</string>
     <string name="bookmark_export">ବୁକମାର୍କ ରପ୍ତାନି କରନ୍ତୁ</string>
     <string name="bookmark_export_done">%1$d ବୁକମାର୍କ Download/Firedown/backup କୁ ରପ୍ତାନି କରାଗଲା</string>
     <string name="bookmark_import">ବୁକମାର୍କ ଆମଦାନି କରନ୍ତୁ</string>

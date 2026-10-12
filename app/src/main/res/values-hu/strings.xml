@@ -273,11 +273,16 @@
     <string name="crash_sheet_dismiss">Elvetés</string>
     <string name="crash_sheet_copied">Összeomlási jelentés a vágólapra másolva</string>
     <string name="crash_sheet_open_failed">Nem sikerült megnyitni a böngészőt. A jelentés a vágólapon van. Illessze be egy új GitHub bejegyzésbe.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Nyomkövetők és hirdetések blokkolva</string>
+    <string name="trackers_info_idle">A védelem aktív</string>
+    <string name="trackers_info_breakdown_frames">Beágyazott keretek</string>
+    <string name="trackers_info_breakdown_other">Analitika és telemetria</string>
+    <string name="trackers_info_breakdown_pixels">Nyomkövető pixelek és beaconök</string>
+    <string name="trackers_info_breakdown_scripts">Hirdetések</string>
+    <string name="trackers_info_section_breakdown">Típus szerint blokkolva</string>
+    <string name="trackers_info_section_top_trackers">Leggyakoribb nyomkövetők</string>
+    <string name="trackers_info_stat_blocked">Blokkolva</string>
+    <string name="trackers_info_stat_saved">Megtakarított adat</string>
     <string name="tabs_incognito_empty">Nincsenek privát lapok</string>
     <string name="security_stat_blocked_scope">letiltva ezen az oldalon</string>
     <string name="capture_help_menu">Súgó</string>

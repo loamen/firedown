@@ -211,6 +211,8 @@
     <string name="crash_sheet_dismiss">Aizvērt</string>
     <string name="crash_sheet_copied">Avārijas ziņojums kopēts starpliktuvē</string>
     <string name="crash_sheet_open_failed">Pārlūku neizdevās atvērt. Ziņojums ir starpliktuvē. Ielīmējiet to jaunā GitHub problēmā.</string>
+    <string name="trackers_info_title">Izsekotāji un reklāmas bloķētas</string>
+    <string name="trackers_info_idle">Aizsardzība aktīva</string>
     <string name="bookmark_export">Eksportēt grāmatzīmes</string>
     <string name="bookmark_export_done">Eksportētas %1$d grāmatzīmes uz Download/Firedown/backup</string>
     <string name="bookmark_import">Importēt grāmatzīmes</string>

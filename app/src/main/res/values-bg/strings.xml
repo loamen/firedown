@@ -327,13 +327,20 @@
     <string name="crash_sheet_sent">Докладът е изпратен</string>
     <string name="crash_sheet_send_failed">Неуспешно изпращане. Проверете връзката или използвайте Копиране / Докладване.</string>
     <string name="crash_sheet_send_note">Изпраща се анонимно към сървъра на Firedown. Само докладът по-горе, без идентификатори.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Тракери и реклами блокирани</string>
+    <string name="trackers_info_idle">Защитата е активна</string>
+    <string name="trackers_info_breakdown_frames">Вградени рамки</string>
+    <string name="trackers_info_breakdown_other">Анализ и телеметрия</string>
+    <string name="trackers_info_footnote">Отчита се от вградения блокер на реклами. Спестените данни са приблизително 50 KB на блокирана заявка; най-честите тракери са за днес.</string>
+    <string name="trackers_info_breakdown_pixels">Проследяващи пиксели и маяци</string>
+    <string name="trackers_info_breakdown_scripts">Реклами</string>
+    <string name="trackers_info_section_breakdown">Блокирано по тип</string>
+    <string name="trackers_info_section_top_trackers">Топ проследяващи</string>
+    <string name="trackers_info_stat_blocked">Блокирани</string>
+    <string name="trackers_info_stat_saved">Спестени данни</string>
     <string name="media_tools">Медийни инструменти</string>
     <string name="tabs_more_options">Още опции</string>
+    <string name="trackers_info_summary">%1$s блокирани</string>
     <string name="cloud_grace_notif_title">Архивирането е на пауза</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Остава %d ден, преди архивираните ви файлове да бъдат премахнати. Заредете или ги възстановете на този телефон.</item>
@@ -341,7 +348,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Архивираните ви файлове ще бъдат премахнати в края на гратисния период. Заредете или ги възстановете на този телефон.</string>
     <string name="cloud_reap_notif_title">Архивираните файлове скоро ще бъдат премахнати</string>
-    <string name="home_cloud_backed_up">%1$s архивирани</string>
     <string name="most_visited">Най-посещавани</string>
     <string name="most_visited_remove_title">Премахване от най-посещаваните?</string>
     <string name="most_visited_remove">Премахни</string>
@@ -645,12 +651,7 @@
     <string name="settings_sync_scan_title">Сканиране на код за възстановяване</string>
     <string name="settings_sync_scan_bad">Този QR код не е код за възстановяване</string>
     <string name="home_cloud_backing_up">Архивиране…</string>
-    <string name="home_cloud_paused">Архивирането е на пауза</string>
     <string name="home_cloud_top_up">Добави</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Остават %d ден, преди файловете да бъдат премахнати</item>
-        <item quantity="other">Остават %d дни, преди файловете да бъдат премахнати</item>
-    </plurals>
     <string name="home_cloud_waiting">Изчаква архивиране</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

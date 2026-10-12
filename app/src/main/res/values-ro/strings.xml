@@ -261,11 +261,8 @@
     <string name="crash_sheet_dismiss">Închide</string>
     <string name="crash_sheet_copied">Raportul de eroare copiat în clipboard</string>
     <string name="crash_sheet_open_failed">Nu s-a putut deschide browserul. Raportul este în clipboard. Lipește-l într-un nou issue GitHub.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Urmăritoare și reclame blocate</string>
+    <string name="trackers_info_idle">Protecție activă</string>
     <string name="tabs_incognito_empty">Nicio filă privată</string>
     <string name="security_stat_blocked_scope">blocate pe această pagină</string>
     <string name="capture_help_menu">Ajutor</string>

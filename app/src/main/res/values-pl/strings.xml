@@ -377,11 +377,17 @@
     <string name="crash_sheet_sent">Raport wysłany</string>
     <string name="crash_sheet_send_failed">Nie udało się wysłać. Sprawdź połączenie lub użyj Kopiuj / Zgłoś.</string>
     <string name="crash_sheet_send_note">Wysyłany anonimowo na serwer Firedown. Tylko powyższy raport, bez identyfikatorów.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Trackery i reklamy zablokowane</string>
+    <string name="trackers_info_idle">Ochrona aktywna</string>
+    <string name="trackers_info_breakdown_frames">Osadzone ramki</string>
+    <string name="trackers_info_breakdown_other">Analityka i telemetria</string>
+    <string name="trackers_info_footnote">Liczone przez wbudowaną blokadę reklam. Zaoszczędzone dane to szacunek około 50 KB na zablokowane żądanie; najczęstsze elementy śledzące dotyczą dzisiaj.</string>
+    <string name="trackers_info_breakdown_pixels">Piksele śledzące i sygnalizatory</string>
+    <string name="trackers_info_breakdown_scripts">Reklamy</string>
+    <string name="trackers_info_section_breakdown">Zablokowane według typu</string>
+    <string name="trackers_info_section_top_trackers">Najczęstsze trackery</string>
+    <string name="trackers_info_stat_blocked">Zablokowane</string>
+    <string name="trackers_info_stat_saved">Zaoszczędzone dane</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d żądanie zablokowane na tej stronie</item>
         <item quantity="few">%d żądania zablokowane na tej stronie</item>
@@ -412,6 +418,7 @@
     <string name="capture_help_banner_title">Nie ma filmu na liście?</string>
     <string name="capture_help_banner">Niektóre osadzone multimedia trzeba najpierw odtworzyć. Dotknij, aby dowiedzieć się jak.</string>
     <string name="tabs_more_options">Więcej opcji</string>
+    <string name="trackers_info_summary">%1$s zablokowano</string>
     <string name="cloud_grace_notif_title">Kopia zapasowa wstrzymana</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Pozostał %d dzień do usunięcia Twoich zarchiwizowanych plików. Doładuj albo przywróć je na ten telefon.</item>
@@ -421,7 +428,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Twoje zarchiwizowane pliki zostaną usunięte po zakończeniu okresu karencji. Doładuj albo przywróć je na ten telefon.</string>
     <string name="cloud_reap_notif_title">Zarchiwizowane pliki zostaną wkrótce usunięte</string>
-    <string name="home_cloud_backed_up">%1$s w kopii</string>
     <string name="most_visited">Najczęściej odwiedzane</string>
     <string name="most_visited_remove_title">Usunąć z najczęściej odwiedzanych?</string>
     <string name="most_visited_remove">Usuń</string>
@@ -733,12 +739,7 @@
     <string name="settings_sync_scan_title">Skanuj kod odzyskiwania</string>
     <string name="settings_sync_scan_bad">Ten kod QR nie jest kodem odzyskiwania</string>
     <string name="home_cloud_backing_up">Tworzenie kopii zapasowej…</string>
-    <string name="home_cloud_paused">Kopia wstrzymana</string>
     <string name="home_cloud_top_up">Doładuj</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Pozostał %d dzień do usunięcia plików</item>
-        <item quantity="other">Pozostało %d dni do usunięcia plików</item>
-    </plurals>
     <string name="home_cloud_waiting">Oczekuje na kopię zapasową</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

@@ -288,11 +288,16 @@
     <string name="crash_sheet_dismiss">Afvis</string>
     <string name="crash_sheet_copied">Nedbrudsrapport kopieret til udklipsholderen</string>
     <string name="crash_sheet_open_failed">Kunne ikke åbne en browser. Nedbrudsrapporten er i din udklipsholder. Indsæt den i et nyt GitHub-issue.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Sporing og annoncer blokeret</string>
+    <string name="trackers_info_idle">Beskyttelse aktiv</string>
+    <string name="trackers_info_breakdown_frames">Indlejrede rammer</string>
+    <string name="trackers_info_breakdown_other">Analyse og telemetri</string>
+    <string name="trackers_info_breakdown_pixels">Sporingspixels og beacons</string>
+    <string name="trackers_info_breakdown_scripts">Reklamer</string>
+    <string name="trackers_info_section_breakdown">Blokeret efter type</string>
+    <string name="trackers_info_section_top_trackers">Mest blokerede sporere</string>
+    <string name="trackers_info_stat_blocked">Blokeret</string>
+    <string name="trackers_info_stat_saved">Sparet data</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d anmodning blokeret på denne side</item>
         <item quantity="other">%d anmodninger blokeret på denne side</item>

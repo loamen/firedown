@@ -76,8 +76,8 @@ public class GeckoUblockHelper {
      *  a per-host counter map (rebuilt at local-time midnight along
      *  with the category breakdown), evicts at 500 entries, gates on
      *  per-tab incognito state, and pushes the sorted top 10 over the
-     *  native port. (The trackers sheet that listed them went with the
-     *  home counters, home v6; the data is kept for the bridge.) */
+     *  native port. BlockedStatsFragment (Settings → Privacy → Trackers
+     *  and ads blocked) lists them under the per-type breakdown. */
     public static final class HostCount {
         public final String host;
         public final long count;

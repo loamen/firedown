@@ -261,11 +261,16 @@
     <string name="crash_sheet_dismiss">Закрыць</string>
     <string name="crash_sheet_copied">Справаздача аб збоі скапіявана ў буфер абмену</string>
     <string name="crash_sheet_open_failed">Не атрымалася адкрыць браўзер. Справаздача ў буферы абмену. Устаўце яе ў новы запыт GitHub.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Трэкеры і рэклама заблакіраваны</string>
+    <string name="trackers_info_idle">Абарона ўключана</string>
+    <string name="trackers_info_breakdown_frames">Убудаваныя фрэймы</string>
+    <string name="trackers_info_breakdown_other">Аналітыка і тэлеметрыя</string>
+    <string name="trackers_info_breakdown_pixels">Адсочваючыя пікселі і маякі</string>
+    <string name="trackers_info_breakdown_scripts">Рэклама</string>
+    <string name="trackers_info_section_breakdown">Заблакіравана па тыпе</string>
+    <string name="trackers_info_section_top_trackers">Найбольш частыя трэкеры</string>
+    <string name="trackers_info_stat_blocked">Заблакіравана</string>
+    <string name="trackers_info_stat_saved">Зэканомлена</string>
     <string name="bookmark_export">Экспартаваць закладкі</string>
     <string name="bookmark_export_done">Экспартавана закладак: %1$d у Download/Firedown/backup</string>
     <string name="bookmark_import">Імпартаваць закладкі</string>

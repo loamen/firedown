@@ -205,11 +205,8 @@
     <string name="crash_sheet_dismiss">બરતરફ</string>
     <string name="crash_sheet_copied">ક્રેશ રિપોર્ટ ક્લિપબોર્ડ પર કૉપિ થયો</string>
     <string name="crash_sheet_open_failed">બ્રાઉઝર ખોલી શકાયું નહીં. રિપોર્ટ ક્લિપબોર્ડ પર છે. તેને નવા GitHub ઈશ્યૂમાં પેસ્ટ કરો.</string>
-
-
-
-
-
+    <string name="trackers_info_title">ટ્રેકર્સ અને જાહેરાતો અવરોધિત</string>
+    <string name="trackers_info_idle">સુરક્ષા સક્રિય</string>
     <string name="browser_menu_back">પાછા જાવ</string>
     <string name="browser_menu_desktop_site">ડેસ્કટોપ સાઇટ</string>
     <string name="browser_menu_find_in_page">પૃષ્ઠમાં શોધો</string>

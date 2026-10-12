@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The trailing count of a CountPreference row (the preference's widget slot).
+  Tabular numerics so the column lines up down a list of rows; the summary
+  ink, so the title stays the loud part of the row.
+-->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/preference_count"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:fontFeatureSettings="tnum"
+    android:gravity="end"
+    android:textAppearance="?attr/textAppearanceBodyMedium"
+    android:textColor="?attr/colorOnSurfaceVariant"
+    tools:text="1,234" />

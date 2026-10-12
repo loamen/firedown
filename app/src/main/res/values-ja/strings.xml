@@ -481,11 +481,17 @@
     <string name="crash_sheet_sent">レポートを送信しました</string>
     <string name="crash_sheet_send_failed">送信できませんでした。接続を確認するか、コピー / 報告をご利用ください。</string>
     <string name="crash_sheet_send_note">Firedown サーバーへ匿名で送信されます。上記のレポートのみで、識別子は含まれません。</string>
-
-
-
-
-
+    <string name="trackers_info_title">トラッカーと広告をブロック</string>
+    <string name="trackers_info_idle">保護機能は有効です</string>
+    <string name="trackers_info_breakdown_frames">埋め込みフレーム</string>
+    <string name="trackers_info_breakdown_other">分析とテレメトリ</string>
+    <string name="trackers_info_footnote">内蔵の広告ブロッカーによる集計です。節約したデータはブロックしたリクエスト1件あたり約50 KBの推定値で、上位トラッカーは今日の集計です。</string>
+    <string name="trackers_info_breakdown_pixels">トラッキングピクセルとビーコン</string>
+    <string name="trackers_info_breakdown_scripts">広告</string>
+    <string name="trackers_info_section_breakdown">種類別ブロック</string>
+    <string name="trackers_info_section_top_trackers">主なトラッカー</string>
+    <string name="trackers_info_stat_blocked">ブロック</string>
+    <string name="trackers_info_stat_saved">節約データ</string>
     <plurals name="blocked_ads_summary">
         <item quantity="other">このページで %d 件のリクエストをブロック</item>
     </plurals>
@@ -512,13 +518,13 @@
     <string name="capture_help_banner_title">動画が見つかりませんか？</string>
     <string name="capture_help_banner">一部の埋め込みメディアは先に再生する必要があります。タップして詳細をご覧ください。</string>
     <string name="tabs_more_options">その他のオプション</string>
+    <string name="trackers_info_summary">%1$s ブロック</string>
     <string name="cloud_grace_notif_title">バックアップ停止中</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="other">バックアップしたファイルが削除されるまで残り %d 日です。チャージするか、この端末に復元してください。</item>
     </plurals>
     <string name="cloud_grace_notif_text_nodate">猶予期間が終わるとバックアップしたファイルは削除されます。チャージするか、この端末に復元してください。</string>
     <string name="cloud_reap_notif_title">バックアップしたファイルがまもなく削除されます</string>
-    <string name="home_cloud_backed_up">%1$s バックアップ済み</string>
     <string name="most_visited">よく見るサイト</string>
     <string name="most_visited_remove_title">「よく見るサイト」から削除しますか？</string>
     <string name="most_visited_remove">削除</string>
@@ -818,12 +824,7 @@
     <string name="settings_sync_scan_title">リカバリーコードをスキャン</string>
     <string name="settings_sync_scan_bad">その QR コードはリカバリーコードではありません</string>
     <string name="home_cloud_backing_up">バックアップ中…</string>
-    <string name="home_cloud_paused">バックアップ一時停止</string>
     <string name="home_cloud_top_up">チャージ</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">ファイル削除まであと%d日</item>
-        <item quantity="other">ファイル削除まであと%d日</item>
-    </plurals>
     <string name="home_cloud_waiting">バックアップ待機中</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

@@ -283,11 +283,9 @@
     <string name="crash_sheet_sent">रिपोर्ट भेज दी गई</string>
     <string name="crash_sheet_send_failed">भेजा नहीं जा सका। कनेक्शन जाँचें या कॉपी / रिपोर्ट का उपयोग करें।</string>
     <string name="crash_sheet_send_note">Firedown सर्वर को गुमनाम रूप से भेजी जाती है। केवल ऊपर दी गई रिपोर्ट, कोई पहचानकर्ता नहीं।</string>
-
-
-
-
-
+    <string name="trackers_info_title">ट्रैकर और विज्ञापन ब्लॉक किए गए</string>
+    <string name="trackers_info_footnote">बिल्ट-इन विज्ञापन अवरोधक द्वारा गिना गया। बचाया गया डेटा प्रति अवरुद्ध अनुरोध लगभग 50 KB का अनुमान है; शीर्ष ट्रैकर आज के हैं।</string>
+    <string name="trackers_info_idle">सुरक्षा सक्रिय</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">इस पृष्ठ पर %d अनुरोध अवरुद्ध</item>
         <item quantity="other">इस पृष्ठ पर %d अनुरोध अवरुद्ध</item>
@@ -354,6 +352,7 @@
     <string name="capture_help_banner_title">वीडियो सूची में नहीं है?</string>
     <string name="capture_help_banner">कुछ एम्बेड किए गए मीडिया को पहले चलाना ज़रूरी है. जानने के लिए टैप करें.</string>
     <string name="tabs_more_options">अधिक विकल्प</string>
+    <string name="trackers_info_summary">%1$s ब्लॉक किए गए</string>
     <string name="cloud_grace_notif_title">बैकअप रुका हुआ है</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">आपकी बैकअप की गई फ़ाइलें हटने में %d दिन बचा है। टॉप-अप करें या उन्हें इस फ़ोन पर रीस्टोर करें।</item>
@@ -361,7 +360,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">ग्रेस अवधि समाप्त होने पर आपकी बैकअप की गई फ़ाइलें हटा दी जाएँगी। टॉप-अप करें या उन्हें इस फ़ोन पर रीस्टोर करें।</string>
     <string name="cloud_reap_notif_title">बैकअप की गई फ़ाइलें जल्द हटा दी जाएँगी</string>
-    <string name="home_cloud_backed_up">%1$s बैकअप</string>
     <string name="most_visited">सबसे ज़्यादा देखे गए</string>
     <string name="most_visited_remove_title">सबसे ज़्यादा देखे गए से हटाएँ?</string>
     <string name="most_visited_remove">हटाएँ</string>
@@ -666,12 +664,7 @@
     <string name="settings_sync_scan_title">रिकवरी कोड स्कैन करें</string>
     <string name="settings_sync_scan_bad">वह QR कोड रिकवरी कोड नहीं है</string>
     <string name="home_cloud_backing_up">बैकअप लिया जा रहा है…</string>
-    <string name="home_cloud_paused">बैकअप रोका गया</string>
     <string name="home_cloud_top_up">टॉप अप करें</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">आपकी फ़ाइलें हटने में %d दिन बाकी</item>
-        <item quantity="other">आपकी फ़ाइलें हटने में %d दिन बाकी</item>
-    </plurals>
     <string name="home_cloud_waiting">बैकअप की प्रतीक्षा में</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

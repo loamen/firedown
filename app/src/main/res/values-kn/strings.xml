@@ -236,11 +236,8 @@
     <string name="crash_sheet_dismiss">ತಿರಸ್ಕರಿಸಿ</string>
     <string name="crash_sheet_copied">ಕ್ರ್ಯಾಶ್ ವರದಿಯನ್ನು ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ಗೆ ನಕಲಿಸಲಾಗಿದೆ</string>
     <string name="crash_sheet_open_failed">ಬ್ರೌಸರ್ ತೆರೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ವರದಿಯು ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿದೆ. ಅದನ್ನು ಹೊಸ GitHub ಇಷ್ಯೂನಲ್ಲಿ ಅಂಟಿಸಿ.</string>
-
-
-
-
-
+    <string name="trackers_info_title">ಟ್ರ್ಯಾಕರ್‌ಗಳು ಮತ್ತು ಜಾಹೀರಾತುಗಳನ್ನು ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ</string>
+    <string name="trackers_info_idle">ರಕ್ಷಣೆ ಸಕ್ರಿಯವಾಗಿದೆ</string>
     <string name="bookmark_export">ಬುಕ್‌ಮಾರ್ಕ್‌ಗಳನ್ನು ರಫ್ತು ಮಾಡಿ</string>
     <string name="bookmark_export_done">%1$d ಬುಕ್‌ಮಾರ್ಕ್‌ಗಳನ್ನು Download/Firedown/backup ಗೆ ರಫ್ತು ಮಾಡಲಾಗಿದೆ</string>
     <string name="bookmark_import">ಬುಕ್‌ಮಾರ್ಕ್‌ಗಳನ್ನು ಆಮದು ಮಾಡಿ</string>

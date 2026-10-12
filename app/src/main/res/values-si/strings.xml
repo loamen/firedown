@@ -255,11 +255,16 @@
     <string name="crash_sheet_dismiss">ඉවත් කරන්න</string>
     <string name="crash_sheet_copied">බිඳවැටීමේ වාර්තාව ක්ලිප්බෝඩයට පිටපත් කරන ලදී</string>
     <string name="crash_sheet_open_failed">බ්‍රවුසරය විවෘත කළ නොහැකි විය. වාර්තාව ක්ලිප්බෝඩයේ ඇත. එය නව GitHub issue එකකට අලවන්න.</string>
-
-
-
-
-
+    <string name="trackers_info_title">ට්‍රැකර් සහ දැන්වීම් අවහිර කළා</string>
+    <string name="trackers_info_idle">ආරක්ෂාව සක්‍රියයි</string>
+    <string name="trackers_info_breakdown_frames">කාවැද්දූ රාමු</string>
+    <string name="trackers_info_breakdown_other">විශ්ලේෂණ සහ ටෙලිමෙට්‍රි</string>
+    <string name="trackers_info_breakdown_pixels">ලුහුබැඳීමේ පික්සල් සහ බීකන්</string>
+    <string name="trackers_info_breakdown_scripts">වෙළඳ දැන්වීම්</string>
+    <string name="trackers_info_section_breakdown">වර්ගය අනුව අවහිර කළ</string>
+    <string name="trackers_info_section_top_trackers">ප්‍රධාන ලුහුබැඳීම්කරුවන්</string>
+    <string name="trackers_info_stat_blocked">අවහිර කළ</string>
+    <string name="trackers_info_stat_saved">සුරැකි දත්ත</string>
     <string name="bookmark_export">පිටුසන් අපනයනය කරන්න</string>
     <string name="bookmark_export_done">පිටුසන් %1$d ක් Download/Firedown/backup වෙත අපනයනය කරන ලදී</string>
     <string name="bookmark_import">පිටුසන් ආයාත කරන්න</string>

@@ -262,6 +262,16 @@
     <string name="crash_sheet_dismiss">Жабу</string>
     <string name="crash_sheet_copied">Іркіліс есебі алмасу буферіне көшірілді</string>
     <string name="crash_sheet_open_failed">Браузерді ашу мүмкін болмады. Есеп алмасу буферінде. Оны жаңа GitHub мәселесіне қойыңыз.</string>
+    <string name="trackers_info_title">Бақылаушылар мен жарнамалар бұғатталды</string>
+    <string name="trackers_info_idle">Қорғаныс қосулы</string>
+    <string name="trackers_info_breakdown_frames">Енгізілген фреймдер</string>
+    <string name="trackers_info_breakdown_other">Аналитика және телеметрия</string>
+    <string name="trackers_info_breakdown_pixels">Бақылау пиксельдері мен маяктар</string>
+    <string name="trackers_info_breakdown_scripts">Жарнамалар</string>
+    <string name="trackers_info_section_breakdown">Түрі бойынша бұғатталған</string>
+    <string name="trackers_info_section_top_trackers">Үздік трекерлер</string>
+    <string name="trackers_info_stat_blocked">Бұғатталған</string>
+    <string name="trackers_info_stat_saved">Сақталған деректер</string>
     <string name="bookmark_export">Бетбелгілерді экспорттау</string>
     <string name="bookmark_export_done">%1$d бетбелгі Download/Firedown/backup ішіне экспортталды</string>
     <string name="bookmark_import">Бетбелгілерді импорттау</string>

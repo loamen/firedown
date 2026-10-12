@@ -312,13 +312,12 @@
     <string name="crash_sheet_sent">Raport saadetud</string>
     <string name="crash_sheet_send_failed">Saatmine ebaõnnestus. Kontrolli ühendust või kasuta Kopeeri / Teata.</string>
     <string name="crash_sheet_send_note">Saadetakse anonüümselt Firedowni serverisse. Ainult ülal olev raport, ilma identifikaatoriteta.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Jälitajad ja reklaamid blokeeritud</string>
+    <string name="trackers_info_footnote">Loeb sisseehitatud reklaamiblokeerija. Säästetud andmed on hinnang umbes 50 KB blokeeritud päringu kohta; peamised jälgijad on tänased.</string>
+    <string name="trackers_info_idle">Kaitse aktiivne</string>
     <string name="media_tools">Meediatööriistad</string>
     <string name="tabs_more_options">Rohkem valikuid</string>
+    <string name="trackers_info_summary">%1$s blokeeritud</string>
     <string name="cloud_grace_notif_title">Varundus peatatud</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Su varundatud failide eemaldamiseni on jäänud %d päev. Täienda krediiti või taasta need sellesse telefoni.</item>
@@ -326,7 +325,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Su varundatud failid eemaldatakse ajapikenduse lõppedes. Täienda krediiti või taasta need sellesse telefoni.</string>
     <string name="cloud_reap_notif_title">Varundatud failid eemaldatakse peagi</string>
-    <string name="home_cloud_backed_up">%1$s varundatud</string>
     <string name="most_visited">Enim külastatud</string>
     <string name="most_visited_remove_title">Kas eemaldada enim külastatute hulgast?</string>
     <string name="most_visited_remove">Eemalda</string>
@@ -630,12 +628,7 @@
     <string name="settings_sync_scan_title">Skanni taastekood</string>
     <string name="settings_sync_scan_bad">See QR-kood ei ole taastekood</string>
     <string name="home_cloud_backing_up">Varundamine…</string>
-    <string name="home_cloud_paused">Varundus peatatud</string>
     <string name="home_cloud_top_up">Lisa krediiti</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Jäänud %d päev, enne kui failid eemaldatakse</item>
-        <item quantity="other">Jäänud %d päeva, enne kui failid eemaldatakse</item>
-    </plurals>
     <string name="home_cloud_waiting">Ootab varundamist</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

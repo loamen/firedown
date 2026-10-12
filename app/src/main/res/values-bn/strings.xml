@@ -244,11 +244,8 @@
     <string name="crash_sheet_dismiss">বাতিল</string>
     <string name="crash_sheet_copied">ক্র্যাশ রিপোর্ট ক্লিপবোর্ডে কপি করা হয়েছে</string>
     <string name="crash_sheet_open_failed">ব্রাউজার খোলা যায়নি। রিপোর্ট ক্লিপবোর্ডে আছে। এটি একটি নতুন GitHub ইস্যুতে পেস্ট করুন।</string>
-
-
-
-
-
+    <string name="trackers_info_title">ট্র্যাকার এবং বিজ্ঞাপন ব্লক করা হয়েছে</string>
+    <string name="trackers_info_idle">সুরক্ষা সক্রিয়</string>
     <string name="bookmark_export">বুকমার্ক রপ্তানি করুন</string>
     <string name="bookmark_export_done">%1$d টি বুকমার্ক Download/Firedown/backup-এ রপ্তানি করা হয়েছে</string>
     <string name="bookmark_import">বুকমার্ক আমদানি করুন</string>

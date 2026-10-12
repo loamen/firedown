@@ -480,11 +480,17 @@
     <string name="crash_sheet_sent">Bericht gesendet</string>
     <string name="crash_sheet_send_failed">Senden fehlgeschlagen. Verbindung prüfen oder Kopieren / Melden verwenden.</string>
     <string name="crash_sheet_send_note">Wird anonym an den Firedown-Server gesendet. Nur der Bericht oben, keine Kennungen.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Tracker und Werbung blockiert</string>
+    <string name="trackers_info_idle">Schutz aktiv</string>
+    <string name="trackers_info_breakdown_frames">Eingebettete Frames</string>
+    <string name="trackers_info_breakdown_other">Analytik &amp; Telemetrie</string>
+    <string name="trackers_info_footnote">Gezählt vom eingebauten Werbeblocker. Gesparte Daten sind eine Schätzung von etwa 50 KB pro blockierter Anfrage; die häufigsten Tracker gelten für heute.</string>
+    <string name="trackers_info_breakdown_pixels">Tracking-Pixel und Beacons</string>
+    <string name="trackers_info_breakdown_scripts">Werbung</string>
+    <string name="trackers_info_section_breakdown">Blockiert nach Typ</string>
+    <string name="trackers_info_section_top_trackers">Häufigste Tracker</string>
+    <string name="trackers_info_stat_blocked">Blockiert</string>
+    <string name="trackers_info_stat_saved">Daten gespart</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d Anfrage auf dieser Seite blockiert</item>
         <item quantity="other">%d Anfragen auf dieser Seite blockiert</item>
@@ -512,6 +518,7 @@
     <string name="capture_help_banner_title">Video nicht aufgeführt?</string>
     <string name="capture_help_banner">Manche eingebetteten Medien müssen erst abgespielt werden. Tippen, um mehr zu erfahren.</string>
     <string name="tabs_more_options">Weitere Optionen</string>
+    <string name="trackers_info_summary">%1$s blockiert</string>
     <string name="cloud_grace_notif_title">Sicherung pausiert</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Noch %d Tag, bis deine gesicherten Dateien entfernt werden. Lade auf oder stelle sie auf diesem Telefon wieder her.</item>
@@ -519,7 +526,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Deine gesicherten Dateien werden am Ende der Karenzzeit entfernt. Lade auf oder stelle sie auf diesem Telefon wieder her.</string>
     <string name="cloud_reap_notif_title">Gesicherte Dateien werden bald entfernt</string>
-    <string name="home_cloud_backed_up">%1$s gesichert</string>
     <string name="most_visited">Meistbesucht</string>
     <string name="most_visited_remove_title">Aus „Meistbesucht“ entfernen?</string>
     <string name="most_visited_remove">Entfernen</string>
@@ -823,12 +829,7 @@
     <string name="settings_sync_scan_title">Wiederherstellungscode scannen</string>
     <string name="settings_sync_scan_bad">Dieser QR-Code ist kein Wiederherstellungscode</string>
     <string name="home_cloud_backing_up">Wird gesichert…</string>
-    <string name="home_cloud_paused">Sicherung pausiert</string>
     <string name="home_cloud_top_up">Aufladen</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Noch %d Tag, bevor deine Dateien entfernt werden</item>
-        <item quantity="other">Noch %d Tage, bevor deine Dateien entfernt werden</item>
-    </plurals>
     <string name="home_cloud_waiting">Wartet auf Sicherung</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

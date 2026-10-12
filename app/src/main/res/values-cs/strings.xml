@@ -348,11 +348,17 @@
     <string name="crash_sheet_sent">Hlášení odesláno</string>
     <string name="crash_sheet_send_failed">Odeslání se nezdařilo. Zkontrolujte připojení nebo použijte Kopírovat / Nahlásit.</string>
     <string name="crash_sheet_send_note">Odesílá se anonymně na server Firedown. Pouze hlášení výše, žádné identifikátory.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Sledovače a reklamy zablokovány</string>
+    <string name="trackers_info_idle">Ochrana aktivní</string>
+    <string name="trackers_info_breakdown_frames">Vložené rámce</string>
+    <string name="trackers_info_breakdown_other">Analytika a telemetrie</string>
+    <string name="trackers_info_footnote">Počítá vestavěný blokátor reklam. Ušetřená data jsou odhad asi 50 KB na blokovaný požadavek; nejčastější sledovací prvky jsou za dnešek.</string>
+    <string name="trackers_info_breakdown_pixels">Sledovací pixely a majáčky</string>
+    <string name="trackers_info_breakdown_scripts">Reklamy</string>
+    <string name="trackers_info_section_breakdown">Blokováno podle typu</string>
+    <string name="trackers_info_section_top_trackers">Hlavní sledovače</string>
+    <string name="trackers_info_stat_blocked">Blokováno</string>
+    <string name="trackers_info_stat_saved">Uložená data</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d požadavek blokován na této stránce</item>
         <item quantity="few">%d požadavky blokovány na této stránce</item>
@@ -382,6 +388,7 @@
     <string name="capture_help_banner_title">Video není v seznamu?</string>
     <string name="capture_help_banner">Některá vložená média je nutné nejdřív přehrát. Klepnutím zjistíte jak.</string>
     <string name="tabs_more_options">Další možnosti</string>
+    <string name="trackers_info_summary">%1$s blokováno</string>
     <string name="cloud_grace_notif_title">Záloha pozastavena</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Zbývá %d den, než budou vaše zálohované soubory odstraněny. Dobijte kredit nebo je obnovte do tohoto telefonu.</item>
@@ -390,7 +397,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Vaše zálohované soubory budou po skončení ochranné lhůty odstraněny. Dobijte kredit nebo je obnovte do tohoto telefonu.</string>
     <string name="cloud_reap_notif_title">Zálohované soubory budou brzy odstraněny</string>
-    <string name="home_cloud_backed_up">%1$s zálohováno</string>
     <string name="most_visited">Nejnavštěvovanější</string>
     <string name="most_visited_remove_title">Odebrat z nejnavštěvovanějších?</string>
     <string name="most_visited_remove">Odebrat</string>
@@ -700,12 +706,7 @@
     <string name="settings_sync_scan_title">Skenovat kód pro obnovení</string>
     <string name="settings_sync_scan_bad">Tento QR kód není kód pro obnovení</string>
     <string name="home_cloud_backing_up">Zálohování…</string>
-    <string name="home_cloud_paused">Zálohování pozastaveno</string>
     <string name="home_cloud_top_up">Dobít</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Zbývá %d den, než budou soubory odstraněny</item>
-        <item quantity="other">Zbývá %d dní, než budou soubory odstraněny</item>
-    </plurals>
     <string name="home_cloud_waiting">Čeká na zálohování</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

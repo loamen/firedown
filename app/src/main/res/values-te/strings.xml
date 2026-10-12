@@ -251,11 +251,8 @@
     <string name="crash_sheet_dismiss">తీసివేయండి</string>
     <string name="crash_sheet_copied">క్రాష్ నివేదిక క్లిప్‌బోర్డ్‌కు కాపీ చేయబడింది</string>
     <string name="crash_sheet_open_failed">బ్రౌజర్‌ను తెరవలేకపోయింది. నివేదిక క్లిప్‌బోర్డ్‌లో ఉంది. దానిని కొత్త GitHub ఇష్యూలో పేస్ట్ చేయండి.</string>
-
-
-
-
-
+    <string name="trackers_info_title">ట్రాకర్లు మరియు ప్రకటనలు బ్లాక్ చేయబడ్డాయి</string>
+    <string name="trackers_info_idle">రక్షణ క్రియాశీలంగా ఉంది</string>
     <string name="bookmark_export">బుక్‌మార్క్‌లను ఎగుమతి చేయి</string>
     <string name="bookmark_export_done">%1$d బుక్‌మార్క్‌లు Download/Firedown/backup కు ఎగుమతి చేయబడ్డాయి</string>
     <string name="bookmark_import">బుక్‌మార్క్‌లను దిగుమతి చేయి</string>

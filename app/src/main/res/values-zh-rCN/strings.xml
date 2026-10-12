@@ -481,11 +481,17 @@
     <string name="crash_sheet_sent">报告已发送</string>
     <string name="crash_sheet_send_failed">发送失败。请检查网络连接，或使用复制 / 报告。</string>
     <string name="crash_sheet_send_note">匿名发送至 Firedown 服务器。仅包含上方的报告，不含任何标识信息。</string>
-
-
-
-
-
+    <string name="trackers_info_title">已拦截跟踪器和广告</string>
+    <string name="trackers_info_idle">保护已开启</string>
+    <string name="trackers_info_breakdown_frames">嵌入式框架</string>
+    <string name="trackers_info_breakdown_other">分析与遥测</string>
+    <string name="trackers_info_footnote">由内置广告拦截器统计。节省的数据按每个被拦截请求约 50 KB 估算；热门跟踪器为今日数据。</string>
+    <string name="trackers_info_breakdown_pixels">跟踪像素和信标</string>
+    <string name="trackers_info_breakdown_scripts">广告</string>
+    <string name="trackers_info_section_breakdown">按类型拦截</string>
+    <string name="trackers_info_section_top_trackers">主要跟踪器</string>
+    <string name="trackers_info_stat_blocked">已拦截</string>
+    <string name="trackers_info_stat_saved">节省数据</string>
     <plurals name="blocked_ads_summary">
         <item quantity="other">本页面已拦截 %d 个请求</item>
     </plurals>
@@ -512,13 +518,13 @@
     <string name="capture_help_banner_title">找不到视频？</string>
     <string name="capture_help_banner">部分嵌入的媒体需先播放才能识别。点按了解详情。</string>
     <string name="tabs_more_options">更多选项</string>
+    <string name="trackers_info_summary">已拦截 %1$s</string>
     <string name="cloud_grace_notif_title">备份已暂停</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="other">距离备份文件被移除还剩 %d 天。请充值，或将它们恢复到此手机。</item>
     </plurals>
     <string name="cloud_grace_notif_text_nodate">宽限期结束后，你的备份文件将被移除。请充值，或将它们恢复到此手机。</string>
     <string name="cloud_reap_notif_title">备份文件即将被移除</string>
-    <string name="home_cloud_backed_up">已备份 %1$s</string>
     <string name="most_visited">常访问</string>
     <string name="most_visited_remove_title">从常访问中移除？</string>
     <string name="most_visited_remove">移除</string>
@@ -818,12 +824,7 @@
     <string name="settings_sync_scan_title">扫描恢复码</string>
     <string name="settings_sync_scan_bad">该二维码不是恢复码</string>
     <string name="home_cloud_backing_up">正在备份…</string>
-    <string name="home_cloud_paused">备份已暂停</string>
     <string name="home_cloud_top_up">充值</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">距离文件被移除还有 %d 天</item>
-        <item quantity="other">距离文件被移除还有 %d 天</item>
-    </plurals>
     <string name="home_cloud_waiting">等待备份</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

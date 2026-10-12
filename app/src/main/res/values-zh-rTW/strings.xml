@@ -276,11 +276,16 @@
     <string name="crash_sheet_dismiss">關閉</string>
     <string name="crash_sheet_copied">當機報告已複製到剪貼簿</string>
     <string name="crash_sheet_open_failed">無法開啟瀏覽器。當機報告已在剪貼簿中。請貼到新的 GitHub issue 中。</string>
-
-
-
-
-
+    <string name="trackers_info_title">已封鎖追蹤器與廣告</string>
+    <string name="trackers_info_idle">防護已啟用</string>
+    <string name="trackers_info_breakdown_frames">嵌入框架</string>
+    <string name="trackers_info_breakdown_other">分析與遙測</string>
+    <string name="trackers_info_breakdown_pixels">追蹤像素與信標</string>
+    <string name="trackers_info_breakdown_scripts">廣告</string>
+    <string name="trackers_info_section_breakdown">依類型封鎖</string>
+    <string name="trackers_info_section_top_trackers">主要追蹤器</string>
+    <string name="trackers_info_stat_blocked">已封鎖</string>
+    <string name="trackers_info_stat_saved">節省資料</string>
     <string name="tabs_incognito_empty">沒有隱私分頁</string>
     <string name="security_stat_blocked_scope">已在此頁面攔截</string>
     <string name="capture_help_menu">說明</string>

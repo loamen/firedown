@@ -290,11 +290,8 @@
     <string name="crash_sheet_dismiss">تجاهل</string>
     <string name="crash_sheet_copied">تم نسخ تقرير التعطل إلى الحافظة</string>
     <string name="crash_sheet_open_failed">تعذر فتح المتصفح. التقرير في الحافظة. الصقه في مشكلة جديدة على GitHub.</string>
-
-
-
-
-
+    <string name="trackers_info_title">تم حظر المتعقبات والإعلانات</string>
+    <string name="trackers_info_idle">الحماية مفعّلة</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">تم حظر %d طلب على هذه الصفحة</item>
         <item quantity="other">تم حظر %d طلب على هذه الصفحة</item>

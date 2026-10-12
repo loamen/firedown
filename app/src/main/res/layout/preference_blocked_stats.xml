@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The blocked-stats hero (custom Preference layout, bound by
+  BlockedStatsPreference), flat on the page above the grouped rows like the
+  Cloud hero: three equal stat cards — blocked since install / estimated data
+  saved / blocked today — or, while the count is 0 (fresh install, nothing
+  browsed yet), the one "Protection active" line instead of three zeros that
+  would read as "protection is broken". The cards share a colorSurfaceContainer
+  fill (no outline, no elevation); the value is title-large in colorPrimary so
+  the three read as one unit, the label label-small in onSurfaceVariant so it
+  sits back. 8dp Spaces between the cards rather than margins so the gutter
+  does not accumulate at the edges.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="4dp">
+
+    <TextView
+        android:id="@+id/bs_idle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:text="@string/trackers_info_idle"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textColor="?attr/colorOnSurface"
+        android:visibility="gone"
+        tools:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/bs_stats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TrackersInfoStatCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <LinearLayout style="@style/TrackersInfoStatBody">
+
+                <TextView
+                    android:id="@+id/bs_count"
+                    style="@style/TrackersInfoStatValue"
+                    tools:text="12,345" />
+
+                <TextView
+                    style="@style/TrackersInfoStatLabel"
+                    android:text="@string/trackers_info_stat_blocked" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="match_parent" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TrackersInfoStatCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <LinearLayout style="@style/TrackersInfoStatBody">
+
+                <TextView
+                    android:id="@+id/bs_saved"
+                    style="@style/TrackersInfoStatValue"
+                    tools:text="580 MB" />
+
+                <TextView
+                    style="@style/TrackersInfoStatLabel"
+                    android:text="@string/trackers_info_stat_saved" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="match_parent" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TrackersInfoStatCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+
+            <LinearLayout style="@style/TrackersInfoStatBody">
+
+                <TextView
+                    android:id="@+id/bs_today"
+                    style="@style/TrackersInfoStatValue"
+                    tools:text="37" />
+
+                <TextView
+                    style="@style/TrackersInfoStatLabel"
+                    android:text="@string/interval_today" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</LinearLayout>

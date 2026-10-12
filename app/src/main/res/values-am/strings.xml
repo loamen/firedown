@@ -264,6 +264,16 @@
     <string name="crash_sheet_dismiss">ዝጋ</string>
     <string name="crash_sheet_copied">የብልሽት ሪፖርት ወደ ቅንጥብ ሰሌዳ ተቀድቷል</string>
     <string name="crash_sheet_open_failed">አሳሹን መክፈት አልተቻለም። ሪፖርቱ በቅንጥብ ሰሌዳ ላይ ነው። በአዲስ GitHub issue ውስጥ ይለጥፉት።</string>
+    <string name="trackers_info_title">ተከታታዮችና ማስታወቂያዎች ተዘግተዋል</string>
+    <string name="trackers_info_idle">ጥበቃ ስራ ላይ ነው</string>
+    <string name="trackers_info_breakdown_frames">የተካተቱ ክፈፎች</string>
+    <string name="trackers_info_breakdown_other">ትንታኔ እና ቴሌሜትሪ</string>
+    <string name="trackers_info_breakdown_pixels">የመከታተያ ፒክሰሎች እና ቤከኖች</string>
+    <string name="trackers_info_breakdown_scripts">ማስታወቂያዎች</string>
+    <string name="trackers_info_section_breakdown">በዓይነት የተከለከለ</string>
+    <string name="trackers_info_section_top_trackers">ምርጥ መከታተያዎች</string>
+    <string name="trackers_info_stat_blocked">የተከለከለ</string>
+    <string name="trackers_info_stat_saved">የተቀመጠ ዳታ</string>
     <string name="bookmark_export">ዕልባቶችን ላክ</string>
     <string name="bookmark_export_done">%1$d ዕልባቶች ወደ Download/Firedown/backup ተልከዋል</string>
     <string name="bookmark_import">ዕልባቶችን አስገባ</string>

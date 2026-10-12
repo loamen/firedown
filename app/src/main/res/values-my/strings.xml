@@ -244,6 +244,8 @@
     <string name="crash_sheet_dismiss">ပိတ်</string>
     <string name="crash_sheet_copied">ပျက်စီးမှု အစီရင်ခံစာ ကလစ်ဘုတ်သို့ ကူးယူပြီး</string>
     <string name="crash_sheet_open_failed">ဘရောက်ဆာ ဖွင့်၍မရပါ။ အစီရင်ခံစာ ကလစ်ဘုတ်တွင်ရှိသည်။ GitHub issue အသစ်တွင် ကူးထည့်ပါ။</string>
+    <string name="trackers_info_title">ခြေရာခံများနှင့် ကြော်ငြာများ ပိတ်ပင်ထား</string>
+    <string name="trackers_info_idle">ကာကွယ်မှု ဖွင့်ထား</string>
     <string name="bookmark_export">ဘွတ်မှတ်များ ထုတ်ယူရန်</string>
     <string name="bookmark_export_done">ဘွတ်မှတ် %1$d ခုကို Download/Firedown/backup သို့ ထုတ်ယူပြီးပါပြီ</string>
     <string name="bookmark_import">ဘွတ်မှတ်များ ထည့်သွင်းရန်</string>

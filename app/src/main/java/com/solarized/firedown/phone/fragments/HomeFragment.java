@@ -15,7 +15,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -29,7 +28,6 @@ import androidx.lifecycle.LifecycleEventObserver;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.card.MaterialCardView;
 
 import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.Keys;
@@ -49,12 +47,7 @@ import com.solarized.firedown.manager.DownloadRequest;
 
 import com.solarized.firedown.phone.DownloadsActivity;
 import com.solarized.firedown.phone.SettingsActivity;
-import com.solarized.firedown.sync.CloudBackupManager;
-import com.solarized.firedown.sync.VaultBackupWorker;
-import com.solarized.firedown.sync.StorageApiClient;
 
-import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
 
 import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.autocomplete.AutoCompleteEditText;
@@ -67,11 +60,7 @@ import com.solarized.firedown.ui.diffs.SearchDiffCallback;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.utils.NavigationUtils;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 
-import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
@@ -106,38 +95,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private View mBrandMark;
     private HomeToolbarDock mToolbarDock;
 
-    // Cloud Backup chip/card (home v5): ALL cloud state on home lives HERE —
-    // never as a third subtitle counter (that was built and reverted; see the
-    // layout comment). Two EVIDENCE-based states only, see applyBackupPill:
-    // the "Paused" CARD (metered credit ran out, setUp-gated) and the
-    // "Backing up…" / "Waiting to back up" CHIP (a live backup WorkInfo).
-    // Nothing is shown at rest. The resting "N backed up" line and the
-    // "Show backup status on home" switch that gated it were REMOVED together
-    // (home v5): the line was a standing claim the maintainer had already
-    // demoted once, the switch existed only to let the user silence it, and
-    // the two states that remain need no opt-out — a transient chip clears
-    // itself and a deletion countdown must never be hideable.
-    /** The transfer chip — "Backing up…" / "Waiting to back up" ONLY; GONE
-     *  otherwise. Its ground, ink and upload glyph are static XML. */
-    private MaterialCardView mBackupPill;
-    private TextView mBackupPillText;
-    /** The deadline card — a different SILHOUETTE from the chip, never shown
-     *  at the same time. See applyBackupPill. */
-    private MaterialCardView mBackupCard;
-    private TextView mBackupCardTitle;
-    private TextView mBackupCardDetail;
-    /** An identified backup worker is actually TRANSFERRING right now. */
-    private boolean mCloudRunning;
-    /** …or merely enqueued (constraints unmet / retry backoff) — rendered as
-     *  "Waiting to back up", never "Backing up…". */
-    private boolean mCloudQueued;
-    /** Where a chip/card tap goes, decided when the state was RENDERED
-     *  (transfer → Backups list, Paused → Cloud screen). */
-    private boolean mPillToFiles;
-    /** Drops a stale loadStatus result when a newer refresh started (two rapid
-     *  resumes complete in NETWORK order, not call order). */
-    private int mCloudStatusGen;
-    private StorageApiClient.Quota mCloudQuota;
+    // No cloud state on the home (maintainer, 2026-10-12: "we don't need all
+    // the plumbing for backups, downloaded bytes and blocked ads in home").
+    // The transfer chip and the grace deadline card that lived under the
+    // mark (home v5) are gone with their WorkManager observer and quota load;
+    // the deadline is told by CloudWatchWorker's notifications and the Cloud
+    // screen's hero, transfers by the Backups list rows.
     // The brand flame doubles as the live "a download is running" indicator:
     // a soft ember glow that breathes behind the logo while the active+queued
     // count (the same signal as the bottom-bar badge) is > 0, and is GONE
@@ -146,8 +109,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     // badge); the home only gives the calm ambient heartbeat.
     private View mBrandGlow;
     private Animator mBrandGlowAnimator;
-    @Inject
-    CloudBackupManager mCloudBackup;
 
 
     @Override
@@ -184,9 +145,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         if (mGeckoStateViewModel != null) {
             mGeckoStateViewModel.ensureHomeTabIfEmpty();
         }
-        // Cloud Backup status can change while away (a backup finishes, credit is
-        // added, or it's set up for the first time) — recompute the home line.
-        refreshCloudStatus();
     }
 
     /**
@@ -227,85 +185,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         // glow behind the flame.
         mBrandMark = v.findViewById(R.id.home_brand_mark);
         mBrandGlow = v.findViewById(R.id.home_brand_glow);
-
-        // Cloud Backup chip/card — see applyBackupPill for the state machine.
-        // Tap routes by the state CURRENTLY SHOWN (mPillToFiles is set at
-        // render, so a tap can't race a state flip between render and click):
-        // transfer states → the Backups list, Paused → the Cloud status screen.
-        mBackupPill = v.findViewById(R.id.home_backup_pill);
-        mBackupPillText = v.findViewById(R.id.home_backup_pill_text);
-        mBackupCard = v.findViewById(R.id.home_backup_card);
-        mBackupCardTitle = v.findViewById(R.id.home_backup_card_title);
-        mBackupCardDetail = v.findViewById(R.id.home_backup_card_detail);
-        View.OnClickListener openCloud = view -> {
-            Intent intent = new Intent(mActivity, SettingsActivity.class);
-            intent.putExtra(mPillToFiles
-                            ? SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP_FILES
-                            : SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP,
-                    true);
-            startActivity(intent);
-        };
-        if (mBackupPill != null) {
-            mBackupPill.setOnClickListener(openCloud);
-        }
-        if (mBackupCard != null) {
-            // The card only ever renders the paused state, so unlike the pill it
-            // needs no mPillToFiles routing — it always opens the Cloud status
-            // screen, where the top-up lives.
-            mBackupCard.setOnClickListener(view -> {
-                Intent intent = new Intent(mActivity, SettingsActivity.class);
-                intent.putExtra(SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP, true);
-                startActivity(intent);
-            });
-            // RESTORE — the card's second verb, Signal's "Download your backup
-            // data" on a lapsed plan: opens the Backups list with its "Restore
-            // all to this phone" confirmation armed, so a user who freed phone
-            // copies (Storage → Free up space) can pull everything back before
-            // the grace period ends and the reap deletes the only copy. Its
-            // own tap target; the card itself stays TOP UP.
-            View restore = mBackupCard.findViewById(R.id.home_backup_card_restore);
-            if (restore != null) {
-                restore.setOnClickListener(view -> {
-                    Intent intent = new Intent(mActivity, SettingsActivity.class);
-                    intent.putExtra(SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP_FILES, true);
-                    intent.putExtra(SettingsActivity.EXTRA_RESTORE_ALL, true);
-                    startActivity(intent);
-                });
-            }
-        }
-        WorkManager.getInstance(mActivity.getApplicationContext())
-                .getWorkInfosByTagLiveData(CloudBackupManager.WORK_TAG)
-                .observe(getViewLifecycleOwner(), infos -> {
-                    // RUNNING and ENQUEUED tracked SEPARATELY: an enqueued
-                    // worker may be hours from transferring (retry backoff, or
-                    // waiting for network offline), and rendering it as
-                    // "Backing up…" was the audit's honesty gap — it gets its
-                    // own "Waiting to back up" copy instead.
-                    boolean running = false;
-                    boolean queued = false;
-                    if (infos != null) {
-                        for (WorkInfo wi : infos) {
-                            // Only IDENTIFIED backup workers count: restores and
-                            // legacy pre-tag WorkSpecs render no row anywhere, so
-                            // they must not raise a transfer pill pointing at an
-                            // empty list (the on-device ghost state).
-                            if (!hasBackupTag(wi)) {
-                                continue;
-                            }
-                            WorkInfo.State st = wi.getState();
-                            if (st == WorkInfo.State.RUNNING) {
-                                running = true;
-                                break; // strongest state — nothing can upgrade it
-                            }
-                            if (st == WorkInfo.State.ENQUEUED) {
-                                queued = true;
-                            }
-                        }
-                    }
-                    mCloudRunning = running;
-                    mCloudQueued = queued;
-                    applyBackupPill();
-                });
 
         mBottomNavigationBar.setListener(this);
 
@@ -638,177 +517,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mGeckoToolbar = null;
         mNewTabView = null;
         mBottomNavigationBar = null;
-        mBackupPill = null;
-        mBackupPillText = null;
-        mBackupCard = null;
-        mBackupCardTitle = null;
-        mBackupCardDetail = null;
-    }
-
-    /**
-     * Loads the quota when set up (the pill's "Paused" input), then re-renders
-     * the pill. Called on resume; the transfer-active state comes from the
-     * WorkManager observer wired in onViewCreated.
-     */
-    private void refreshCloudStatus() {
-        if (mBackupPill == null) {
-            return;
-        }
-        if (!mCloudBackup.isSetUp()) {
-            // Not set up (fresh install, never used, or erased): drop the quota
-            // so a later render can't resurrect a stale paused card, and hide
-            // the surfaces now rather than waiting on a network round-trip that
-            // will never be made.
-            mCloudQuota = null;
-            applyBackupPill();
-            return;
-        }
-        // CACHED-FIRST, the status hero's rule: render from the last successful
-        // pull so the card is already right on entry, then let the async result
-        // update it in place.
-        CloudBackupManager.Status cached = mCloudBackup.lastStatus();
-        if (cached != null) {
-            mCloudQuota = cached.quota;
-        }
-        applyBackupPill();
-        // One combined load with the guarded reconciliation: retiring flips
-        // isSetUp() false (card hides); a heal makes the paused check reachable.
-        // Gen-guarded so two rapid resumes can't apply results in the wrong
-        // order (network order != call order on the manager's pooled executor).
-        final int gen = ++mCloudStatusGen;
-        mCloudBackup.loadStatus(status -> {
-            if (isAdded() && mBackupPill != null && gen == mCloudStatusGen) {
-                mCloudQuota = status.quota;
-                applyBackupPill();
-            }
-        });
-    }
-
-    /** Whether a WorkInfo carries the backup identity tags stamped at enqueue
-     *  (restores and legacy pre-tag WorkSpecs don't). */
-    private static boolean hasBackupTag(WorkInfo wi) {
-        for (String tag : wi.getTags()) {
-            if (tag.startsWith(VaultBackupWorker.TAG_NAME)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** Renders the home cloud surface from the latest transfer/quota state.
-     *  Three rungs, highest first:
-     *
-     *  <ol>
-     *    <li><b>Paused</b> — metered credit ran out. The CARD, tap → the status
-     *        screen. It BEATS both transfer states because in grace every upload
-     *        402s at create, so a doomed queued backup rendering "Backing up…"
-     *        would hide the one actionable fact (top up).</li>
-     *    <li><b>Backing up…</b> — an identified backup worker is RUNNING.</li>
-     *    <li><b>Waiting to back up</b> — enqueued only (constraints unmet /
-     *        retry backoff; hours may pass with nothing transferring, so it
-     *        never claims to be backing up).</li>
-     *  </ol>
-     *
-     *  <p>Nothing at rest. Every state is EVIDENCE-based — a paused quota, a
-     *  live WorkInfo — and that evidence only exists because the user engaged
-     *  with the feature, so the states are self-gating (this is why "Backing
-     *  up…" is deliberately NOT setUp-gated: the very FIRST backup runs before
-     *  markEnabled lands, and suppressing it would blank the chip for exactly
-     *  the transfer that most wants reporting). The old RESTING "N backed up"
-     *  rung had no such evidence — a standing claim off a network total — and
-     *  was removed (home v5) together with the settings switch that let the
-     *  user hide it; the Backups doors are the Downloads overflow and the Cloud
-     *  screen.
-     *
-     *  <p><b>Visibility contract.</b> At most ONE of chip / card is ever
-     *  VISIBLE, and every branch sets BOTH (they are persistent views that
-     *  flip, so a one-sided set leaves the previous state on screen). Both are
-     *  GONE when nothing is happening — the calm home is the default, and a
-     *  fresh install is exactly as bare as before. */
-    private void applyBackupPill() {
-        if (mBackupPill == null || mBackupPillText == null) {
-            return;
-        }
-        String text = null;
-        boolean attention = false;
-        boolean toFiles = false;
-        boolean setUp = mCloudBackup.isSetUp();
-        if (setUp && mCloudQuota != null && mCloudQuota.metered && mCloudQuota.readOnly) {
-            text = getString(R.string.home_cloud_paused);
-            attention = true;
-        } else if (mCloudRunning) {
-            text = getString(R.string.home_cloud_backing_up);
-            toFiles = true;
-        } else if (mCloudQueued) {
-            text = getString(R.string.home_cloud_waiting);
-            toFiles = true;
-        }
-        if (text == null) {
-            mBackupPill.setVisibility(View.GONE);
-            if (mBackupCard != null) {
-                mBackupCard.setVisibility(View.GONE);
-            }
-            return;
-        }
-        mPillToFiles = toFiles;
-        // The states are told apart by SHAPE, not colour. A live/promised
-        // transfer is a small filled chip (fill is earned by WORK — transient,
-        // self-clearing); the DEADLINE is a wide two-line card with a verb,
-        // because it reports 30 days ending in deleted files rather than
-        // something that resolves itself. Neither carries a semantic hue — see
-        // the note in values/colors.xml for why the amber container that
-        // briefly lived here was removed.
-        if (attention) {
-            mBackupPill.setVisibility(View.GONE);
-            showBackupCard(text);
-            return;
-        }
-        if (mBackupCard != null) {
-            mBackupCard.setVisibility(View.GONE);
-        }
-        mBackupPillText.setText(text);
-        mBackupPill.setVisibility(View.VISIBLE);
-    }
-
-    /** Renders the deadline card. The detail line is the COUNTDOWN — "3 days
-     *  left before your files are removed" is what makes the state actionable,
-     *  where "Paused" only named it — computed from the quota's graceUntil,
-     *  which the server already sends, so this needs no API change.
-     *
-     *  <p>Falls back to the title alone when graceUntil is missing or
-     *  unparseable (an older server, a clock skew): the card still says the
-     *  backup is paused, it just can't say for how long. Never shows a negative
-     *  or zero count — past the deadline the reap is already due, so it reads
-     *  "today" rather than a stale number. */
-    private void showBackupCard(String title) {
-        if (mBackupCard == null || mBackupCardTitle == null) {
-            return;
-        }
-        mBackupCardTitle.setText(title);
-        if (mBackupCardDetail != null) {
-            String detail = graceCountdown();
-            mBackupCardDetail.setText(detail);
-            mBackupCardDetail.setVisibility(detail == null ? View.GONE : View.VISIBLE);
-        }
-        mBackupCard.setVisibility(View.VISIBLE);
-    }
-
-    /** Whole days from now until the read-only grace ends, as the localized
-     *  plural, or null when the deadline isn't known. */
-    @Nullable
-    private String graceCountdown() {
-        if (mCloudQuota == null || mCloudQuota.graceUntil == null) {
-            return null;
-        }
-        try {
-            long days = ChronoUnit.DAYS.between(Instant.now(),
-                    OffsetDateTime.parse(mCloudQuota.graceUntil).toInstant());
-            int shown = (int) Math.max(1, days);
-            return getResources().getQuantityString(
-                    R.plurals.home_cloud_grace_days, shown, shown);
-        } catch (RuntimeException e) {
-            return null;
-        }
     }
 
     @Override

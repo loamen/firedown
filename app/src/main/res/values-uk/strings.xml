@@ -333,11 +333,17 @@
     <string name="crash_sheet_sent">Звіт надіслано</string>
     <string name="crash_sheet_send_failed">Не вдалося надіслати. Перевірте з\'єднання або скористайтеся Копіювати / Повідомити.</string>
     <string name="crash_sheet_send_note">Надсилається анонімно на сервер Firedown. Лише звіт вище, без ідентифікаторів.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Трекери та реклама заблоковані</string>
+    <string name="trackers_info_idle">Захист увімкнено</string>
+    <string name="trackers_info_breakdown_frames">Вбудовані фрейми</string>
+    <string name="trackers_info_breakdown_other">Аналітика та телеметрія</string>
+    <string name="trackers_info_footnote">Підраховано вбудованим блокувальником реклами. Заощаджені дані — оцінка близько 50 КБ на заблокований запит; головні трекери — за сьогодні.</string>
+    <string name="trackers_info_breakdown_pixels">Стеження за пікселями та маяки</string>
+    <string name="trackers_info_breakdown_scripts">Реклама</string>
+    <string name="trackers_info_section_breakdown">Заблоковано за типом</string>
+    <string name="trackers_info_section_top_trackers">Найчастіші стежники</string>
+    <string name="trackers_info_stat_blocked">Заблоковано</string>
+    <string name="trackers_info_stat_saved">Заощаджено</string>
     <string name="tabs_incognito_empty">Немає приватних вкладок</string>
     <string name="security_stat_blocked_scope">заблоковано на цій сторінці</string>
     <string name="capture_help_menu">Довідка</string>
@@ -345,6 +351,7 @@
     <string name="capture_help_banner">Деякі вбудовані медіа потрібно спочатку відтворити. Торкніться, щоб дізнатися як.</string>
     <string name="media_tools">Медіаінструменти</string>
     <string name="tabs_more_options">Більше параметрів</string>
+    <string name="trackers_info_summary">%1$s заблоковано</string>
     <string name="cloud_grace_notif_title">Резервне копіювання призупинено</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Залишився %d день до видалення ваших резервних копій. Поповніть рахунок або відновіть їх на цей телефон.</item>
@@ -354,7 +361,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Ваші резервні копії буде видалено після закінчення пільгового періоду. Поповніть рахунок або відновіть їх на цей телефон.</string>
     <string name="cloud_reap_notif_title">Резервні копії скоро буде видалено</string>
-    <string name="home_cloud_backed_up">%1$s у копії</string>
     <string name="most_visited">Найвідвідуваніші</string>
     <string name="most_visited_remove_title">Вилучити з найвідвідуваніших?</string>
     <string name="most_visited_remove">Вилучити</string>
@@ -666,12 +672,7 @@
     <string name="settings_sync_scan_title">Сканувати код відновлення</string>
     <string name="settings_sync_scan_bad">Цей QR-код не є кодом відновлення</string>
     <string name="home_cloud_backing_up">Резервне копіювання…</string>
-    <string name="home_cloud_paused">Копіювання призупинено</string>
     <string name="home_cloud_top_up">Поповнити</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Залишився %d день до видалення файлів</item>
-        <item quantity="other">Залишилося %d днів до видалення файлів</item>
-    </plurals>
     <string name="home_cloud_waiting">Очікує на резервне копіювання</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

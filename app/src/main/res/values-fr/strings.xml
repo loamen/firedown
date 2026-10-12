@@ -480,11 +480,17 @@
     <string name="crash_sheet_sent">Rapport envoyé</string>
     <string name="crash_sheet_send_failed">Échec de l\'envoi. Vérifiez la connexion ou utilisez Copier / Signaler.</string>
     <string name="crash_sheet_send_note">Envoyé anonymement au serveur Firedown. Uniquement le rapport ci-dessus, aucun identifiant.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Traqueurs et pubs bloqués</string>
+    <string name="trackers_info_idle">Protection active</string>
+    <string name="trackers_info_breakdown_frames">Cadres intégrés</string>
+    <string name="trackers_info_breakdown_other">Analytique et télémétrie</string>
+    <string name="trackers_info_footnote">Compté par le bloqueur de publicités intégré. Les données économisées sont une estimation d\'environ 50 Ko par requête bloquée ; les principaux traqueurs sont ceux d\'aujourd\'hui.</string>
+    <string name="trackers_info_breakdown_pixels">Pixels et balises de pistage</string>
+    <string name="trackers_info_breakdown_scripts">Publicités</string>
+    <string name="trackers_info_section_breakdown">Bloqué par type</string>
+    <string name="trackers_info_section_top_trackers">Traqueurs les plus fréquents</string>
+    <string name="trackers_info_stat_blocked">Bloqués</string>
+    <string name="trackers_info_stat_saved">Données économisées</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d requête bloquée sur cette page</item>
         <item quantity="other">%d requêtes bloquées sur cette page</item>
@@ -512,6 +518,7 @@
     <string name="capture_help_banner_title">Vidéo introuvable ?</string>
     <string name="capture_help_banner">Certains médias intégrés doivent d\'abord être lus. Touchez pour en savoir plus.</string>
     <string name="tabs_more_options">Plus d\'options</string>
+    <string name="trackers_info_summary">%1$s bloqués</string>
     <string name="cloud_grace_notif_title">Sauvegarde en pause</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">%d jour avant la suppression de vos fichiers sauvegardés. Rechargez, ou restaurez-les sur ce téléphone.</item>
@@ -519,7 +526,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Vos fichiers sauvegardés seront supprimés à la fin du délai de grâce. Rechargez, ou restaurez-les sur ce téléphone.</string>
     <string name="cloud_reap_notif_title">Fichiers sauvegardés bientôt supprimés</string>
-    <string name="home_cloud_backed_up">%1$s sauvegardés</string>
     <string name="most_visited">Les plus visités</string>
     <string name="most_visited_remove_title">Retirer des plus visités ?</string>
     <string name="most_visited_remove">Supprimer</string>
@@ -824,12 +830,7 @@
     <string name="settings_sync_scan_title">Scanner un code de récupération</string>
     <string name="settings_sync_scan_bad">Ce code QR n\'est pas un code de récupération</string>
     <string name="home_cloud_backing_up">Sauvegarde…</string>
-    <string name="home_cloud_paused">Sauvegarde en pause</string>
     <string name="home_cloud_top_up">Recharger</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Encore %d jour avant la suppression de vos fichiers</item>
-        <item quantity="other">Encore %d jours avant la suppression de vos fichiers</item>
-    </plurals>
     <string name="home_cloud_waiting">En attente de sauvegarde</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

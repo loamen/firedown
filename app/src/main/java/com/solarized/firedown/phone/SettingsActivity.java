@@ -43,12 +43,6 @@ public class SettingsActivity extends BaseActivity {
      *  grace card's RESTORE action). */
     public static final String EXTRA_RESTORE_ALL = "com.solarized.firedown.extra.RESTORE_ALL";
 
-    /** Intent boolean extra: open straight to the Enhanced Tracking Protection
-     *  screen — the Home trackers sheet's "Manage protection" button lands
-     *  here, where the tracking-protection count and the Standard/Strict/Custom
-     *  controls live. */
-    public static final String EXTRA_OPEN_TRACKING = "com.solarized.firedown.extra.OPEN_TRACKING";
-
     /** Activity-scoped, so {@link #restoreToolbarUp} can re-install the
      *  canonical Up listener after a fragment borrowed the toolbar. */
     private Toolbar mToolbar;
@@ -136,18 +130,6 @@ public class SettingsActivity extends BaseActivity {
             navController.navigate(R.id.settings_cloud_backup_files, args, opts);
         }
 
-        // Deep-link straight to the Enhanced Tracking Protection screen (the
-        // Home trackers sheet's "Manage protection" button). Replace the
-        // settings list on the back stack so Back finishes this activity and
-        // returns to the CALLER (the sheet's host — Home / Browser), same
-        // contract as the deep-links above.
-        if (getIntent().getBooleanExtra(EXTRA_OPEN_TRACKING, false)) {
-            NavOptions opts = new NavOptions.Builder()
-                    .setPopUpTo(R.id.settings, true)
-                    .build();
-            navController.navigate(R.id.settings_tracking, null, opts);
-        }
-
         navController.addOnDestinationChangedListener((navController1, navDestination, bundle) -> {
             int id = navDestination.getId();
             if(id == R.id.settings)
@@ -168,6 +150,8 @@ public class SettingsActivity extends BaseActivity {
                 mToolbar.setTitle(R.string.settings_doh_title);
             else if(id == R.id.settings_tracking)
                 mToolbar.setTitle(R.string.settings_enhanced_tracking_protection);
+            else if(id == R.id.settings_blocked_stats)
+                mToolbar.setTitle(R.string.trackers_info_title);
             else if(id == R.id.settings_query_params)
                 mToolbar.setTitle(R.string.settings_query_param_block_list);
             else if(id == R.id.settings_search)

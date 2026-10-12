@@ -480,11 +480,17 @@
     <string name="crash_sheet_sent">Informe enviado</string>
     <string name="crash_sheet_send_failed">No se pudo enviar. Comprueba la conexión o usa Copiar / Informar.</string>
     <string name="crash_sheet_send_note">Se envía de forma anónima al servidor de Firedown. Solo el informe de arriba, sin identificadores.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Rastreadores y anuncios bloqueados</string>
+    <string name="trackers_info_idle">Protección activa</string>
+    <string name="trackers_info_breakdown_frames">Marcos incrustados</string>
+    <string name="trackers_info_breakdown_other">Analítica y telemetría</string>
+    <string name="trackers_info_footnote">Contado por el bloqueador de anuncios integrado. Los datos ahorrados son una estimación de unos 50 KB por solicitud bloqueada; los rastreadores principales son los de hoy.</string>
+    <string name="trackers_info_breakdown_pixels">Píxeles y balizas de rastreo</string>
+    <string name="trackers_info_breakdown_scripts">Anuncios</string>
+    <string name="trackers_info_section_breakdown">Bloqueado por tipo</string>
+    <string name="trackers_info_section_top_trackers">Principales rastreadores</string>
+    <string name="trackers_info_stat_blocked">Bloqueado</string>
+    <string name="trackers_info_stat_saved">Datos ahorrados</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d solicitud bloqueada en esta página</item>
         <item quantity="other">%d solicitudes bloqueadas en esta página</item>
@@ -512,6 +518,7 @@
     <string name="capture_help_banner_title">¿No aparece el vídeo?</string>
     <string name="capture_help_banner">Algunos medios incrustados deben reproducirse primero. Toca para saber cómo.</string>
     <string name="tabs_more_options">Más opciones</string>
+    <string name="trackers_info_summary">%1$s bloqueados</string>
     <string name="cloud_grace_notif_title">Copia de seguridad en pausa</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Queda %d día antes de que se eliminen tus archivos respaldados. Recarga o restáuralos en este teléfono.</item>
@@ -519,7 +526,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Tus archivos respaldados se eliminarán al terminar el periodo de gracia. Recarga o restáuralos en este teléfono.</string>
     <string name="cloud_reap_notif_title">Tus archivos respaldados se eliminarán pronto</string>
-    <string name="home_cloud_backed_up">%1$s en la nube</string>
     <string name="most_visited">Más visitados</string>
     <string name="most_visited_remove_title">¿Quitar de Más visitados?</string>
     <string name="most_visited_remove">Quitar</string>
@@ -823,12 +829,7 @@
     <string name="settings_sync_scan_title">Escanear código de recuperación</string>
     <string name="settings_sync_scan_bad">Ese código QR no es un código de recuperación</string>
     <string name="home_cloud_backing_up">Creando copia de seguridad…</string>
-    <string name="home_cloud_paused">Copia en pausa</string>
     <string name="home_cloud_top_up">Recargar</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Queda %d día antes de que se eliminen tus archivos</item>
-        <item quantity="other">Quedan %d días antes de que se eliminen tus archivos</item>
-    </plurals>
     <string name="home_cloud_waiting">Esperando para respaldar</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

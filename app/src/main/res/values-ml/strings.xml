@@ -252,11 +252,8 @@
     <string name="crash_sheet_dismiss">നിരസിക്കുക</string>
     <string name="crash_sheet_copied">ക്രാഷ് റിപ്പോർട്ട് ക്ലിപ്പ്ബോർഡിലേക്ക് പകർത്തി</string>
     <string name="crash_sheet_open_failed">ബ്രൗസർ തുറക്കാനായില്ല. റിപ്പോർട്ട് ക്ലിപ്പ്ബോർഡിലുണ്ട്. അത് ഒരു പുതിയ GitHub ഇഷ്യൂവിൽ ഒട്ടിക്കുക.</string>
-
-
-
-
-
+    <string name="trackers_info_title">ട്രാക്കറുകളും പരസ്യങ്ങളും തടഞ്ഞു</string>
+    <string name="trackers_info_idle">സംരക്ഷണം സജീവം</string>
     <string name="bookmark_export">ബുക്ക്‌മാർക്കുകൾ എക്‌സ്‌പോർട്ട് ചെയ്യുക</string>
     <string name="bookmark_export_done">%1$d ബുക്ക്‌മാർക്കുകൾ Download/Firedown/backup ലേക്ക് എക്‌സ്‌പോർട്ട് ചെയ്തു</string>
     <string name="bookmark_import">ബുക്ക്‌മാർക്കുകൾ ഇമ്പോർട്ട് ചെയ്യുക</string>

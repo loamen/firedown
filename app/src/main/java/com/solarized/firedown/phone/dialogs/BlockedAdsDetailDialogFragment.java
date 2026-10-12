@@ -77,8 +77,8 @@ public class BlockedAdsDetailDialogFragment extends BaseBottomSheetDialogFragmen
         // BlockedTrackerDetailAdapter (host on the left, ×N count on the
         // right). We feed it HostRow items only — no category Headers —
         // since uBlock blocks carry no category. (The lifetime "Top
-        // trackers" leaderboard that once had its own count-left row went
-        // with the home counters, home v6; this is the per-page list.)
+        // trackers" leaderboard lives on Settings → Privacy → Trackers and
+        // ads blocked as CountPreference rows; this is the per-page list.)
         mAdapter = new BlockedTrackerDetailAdapter();
         mRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         mRecyclerView.setAdapter(mAdapter);

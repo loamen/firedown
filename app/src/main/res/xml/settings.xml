@@ -164,6 +164,17 @@
             android:title="@string/settings_enhanced_tracking_protection"
             app:icon="@drawable/footprint_24" />
 
+        <!-- What the built-in ad blocker has done — the lifetime count as the
+             summary (bound live by SettingsFragment; "Protection active" at
+             0), the breakdown and top trackers behind the door
+             (BlockedStatsFragment). Moved here from the home, which carries
+             no figures any more (home v6). -->
+        <Preference
+            android:key="com.solarized.firedown.preferences.privacy.blocked.stats"
+            android:summary="@string/trackers_info_idle"
+            android:title="@string/trackers_info_title"
+            app:icon="@drawable/ads_click_24" />
+
 
         <SwitchPreferenceCompat
             android:defaultValue="true"

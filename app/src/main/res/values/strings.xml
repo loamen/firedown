@@ -1016,19 +1016,14 @@
          Folder' becomes 'Carpeta segura' in es, 'Sicherer Ordner' in
          de, etc. -->
     <string name="home_vault_button">Safe Folder</string>
-    <!-- The home backup pill's four states. RESTING first — the lifetime total
-         a set-up account sees when nothing is happening ("6.6 GB backed up",
-         %1$s is a formatted size) — then the transient ones: a running
-         transfer, an enqueued-but-not-started one, and the attention state
-         when credit ran out. All kept SHORT; the screen each opens does the
-         explaining. -->
-    <!-- Display-only toggle on the Cloud screen: whether the home screen may
-         show the backup pill/card. NOT a disable switch — the summary says so
-         explicitly, because "turn this off" is easy to read as "turn cloud
-         backup off". -->
-    <!-- No "pill" (an internal component name; the surface is mostly the quiet
-         line + card now) and no trailing period (the screen's other summaries
-         carry none). Every translation already said "backup status". -->
+    <!-- Settings → Privacy → "Trackers and ads blocked": the row's live summary
+         (%1$s is the locale-formatted lifetime count; trackers_info_idle at 0).
+         Historical note: this was the home's counter line until home v6. -->
+    <string name="trackers_info_summary">%1$s blocked</string>
+    <!-- Cloud Backup transfer / credit copy shared by the Backups list rows and
+         the credit notifications. The home_cloud_* names are historical: they
+         were the home's backup pill until the home dropped every cloud surface
+         (home v6). Kept SHORT; the screen each opens does the explaining. -->
     <string name="cloud_grace_notif_title">Backup paused</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">%d day left before your backed-up files are removed. Top up, or restore them to this phone.</item>
@@ -1036,15 +1031,45 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Your backed-up files will be removed when the grace period ends. Top up, or restore them to this phone.</string>
     <string name="cloud_reap_notif_title">Backed-up files about to be removed</string>
-    <string name="home_cloud_backed_up">%1$s backed up</string>
     <string name="home_cloud_backing_up">Backing up…</string>
-    <string name="home_cloud_paused">Backup paused</string>
     <string name="home_cloud_top_up">Top up</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">%d day left before your files are removed</item>
-        <item quantity="other">%d days left before your files are removed</item>
-    </plurals>
     <string name="home_cloud_waiting">Waiting to back up</string>
+    <!-- Settings → Privacy → "Trackers and ads blocked": the row title and the
+         stats screen's toolbar title (BlockedStatsFragment). -->
+    <string name="trackers_info_title">Trackers and ads blocked</string>
+    <!-- The stats screen's hero: three stat cards — the cumulative count,
+         the estimated bytes saved (count × ~50 KB per blocked request, Brave's
+         published methodology; the footnote says it is an estimate), blocked
+         today. Short single-noun labels — the number above carries the story,
+         the label just titles it. -->
+    <string name="trackers_info_stat_blocked">Blocked</string>
+    <string name="trackers_info_stat_saved">Data saved</string>
+    <!-- Section headers — small uppercase labels that group the
+         stat cards and the per-type breakdown into two distinct
+         sections of the sheet. -->
+    <string name="trackers_info_section_breakdown">Blocked by type</string>
+    <!-- Top-trackers section: list of the third-party hosts that have
+         been blocked most often today. Recording is on by default and
+         gated per-tab on incognito (incognito blocks never enter the
+         map). The list rebuilds at local-time midnight, same window as
+         the per-type breakdown above it. -->
+    <string name="trackers_info_section_top_trackers">Top trackers</string>
+    <!-- Per-category breakdown rows under the hero number. Counts are
+         pushed from firedown.js' itype-bucketed map. Label text is a
+         short noun phrase that describes the resource class; the count
+         appears in a second TextView to its right. The 'scripts' bucket
+         counts SCRIPT and INLINE_SCRIPT itype blocks — in practice these
+         are almost entirely ad-tech, tracker libraries and analytics
+         payloads, so it's labelled 'Ads' for the user-facing mental
+         model. The string key keeps the 'scripts' suffix because the
+         data wire format and Java enum still call it scripts. -->
+    <string name="trackers_info_breakdown_scripts">Ads</string>
+    <string name="trackers_info_breakdown_pixels">Tracking pixels and beacons</string>
+    <string name="trackers_info_breakdown_frames">Embedded frames</string>
+    <string name="trackers_info_breakdown_other">Analytics &amp; telemetry</string>
+    <!-- Footnote under the stats screen's groups: where the numbers come from
+         and what is an estimate. Flat on the page (FootnotePreference). -->
+    <string name="trackers_info_footnote">Counted by the built-in ad blocker. Data saved is an estimate of about 50 KB per blocked request; top trackers are today\'s.</string>
     <!-- Gecko Enhanced Tracking Protection count (persisted ETP database,
          unlocked by the GeckoView 153 bump). Shown as ONE quiet line at the
          top of the ETP settings screen — what the protection has done, above
@@ -1052,6 +1077,11 @@
          filter-list stats, deliberately not shown beside them. -->
     <string name="tracking_status_blocked">%1$s trackers blocked</string>
     <string name="tracking_status_since">Recording since %1$s</string>
+    <!-- The stats row's summary and the screen's hero while the count is 0
+         — uBlock hasn't pushed its cumulative count yet, or the count is
+         genuinely zero (fresh install, no browsing). Avoids a cosmetic
+         "0 blocked" that would read as "protection is broken". -->
+    <string name="trackers_info_idle">Protection active</string>
     <string name="tabs_more_options">More options</string>
 
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

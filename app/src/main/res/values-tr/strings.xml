@@ -379,11 +379,17 @@
     <string name="crash_sheet_sent">Rapor gönderildi</string>
     <string name="crash_sheet_send_failed">Gönderilemedi. Bağlantıyı kontrol edin veya Kopyala / Bildir kullanın.</string>
     <string name="crash_sheet_send_note">Firedown sunucusuna anonim olarak gönderilir. Yalnızca yukarıdaki rapor, kimlik bilgisi yok.</string>
-
-
-
-
-
+    <string name="trackers_info_title">İzleyiciler ve reklamlar engellendi</string>
+    <string name="trackers_info_idle">Koruma etkin</string>
+    <string name="trackers_info_breakdown_frames">Gömülü çerçeveler</string>
+    <string name="trackers_info_breakdown_other">Analitik ve telemetri</string>
+    <string name="trackers_info_footnote">Yerleşik reklam engelleyici tarafından sayılır. Kaydedilen veri, engellenen istek başına yaklaşık 50 KB\'lik bir tahmindir; en sık izleyiciler bugüne aittir.</string>
+    <string name="trackers_info_breakdown_pixels">Takip pikselleri ve işaretçiler</string>
+    <string name="trackers_info_breakdown_scripts">Reklamlar</string>
+    <string name="trackers_info_section_breakdown">Türe göre engellenen</string>
+    <string name="trackers_info_section_top_trackers">En sık takipçiler</string>
+    <string name="trackers_info_stat_blocked">Engellendi</string>
+    <string name="trackers_info_stat_saved">Tasarruf edilen veri</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">Bu sayfada %d istek engellendi</item>
         <item quantity="other">Bu sayfada %d istek engellendi</item>
@@ -412,6 +418,7 @@
     <string name="capture_help_banner_title">Video listede yok mu?</string>
     <string name="capture_help_banner">Bazı gömülü medyaların önce oynatılması gerekir. Nasıl olduğunu öğrenmek için dokunun.</string>
     <string name="tabs_more_options">Diğer seçenekler</string>
+    <string name="trackers_info_summary">%1$s engellendi</string>
     <string name="cloud_grace_notif_title">Yedekleme duraklatıldı</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Yedeklenen dosyalarınız kaldırılmadan önce %d gün kaldı. Kredi yükleyin veya bunları bu telefona geri yükleyin.</item>
@@ -419,7 +426,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Ek süre bitince yedeklenen dosyalarınız kaldırılacak. Kredi yükleyin veya bunları bu telefona geri yükleyin.</string>
     <string name="cloud_reap_notif_title">Yedeklenen dosyalar yakında kaldırılacak</string>
-    <string name="home_cloud_backed_up">%1$s yedeklendi</string>
     <string name="most_visited">En çok ziyaret edilenler</string>
     <string name="most_visited_remove_title">En çok ziyaret edilenlerden kaldırılsın mı?</string>
     <string name="most_visited_remove">Kaldır</string>
@@ -723,12 +729,7 @@
     <string name="settings_sync_scan_title">Kurtarma kodunu tara</string>
     <string name="settings_sync_scan_bad">Bu QR kodu bir kurtarma kodu değil</string>
     <string name="home_cloud_backing_up">Yedekleniyor…</string>
-    <string name="home_cloud_paused">Yedekleme duraklatıldı</string>
     <string name="home_cloud_top_up">Yükle</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Dosyalarınız silinmeden önce %d gün kaldı</item>
-        <item quantity="other">Dosyalarınız silinmeden önce %d gün kaldı</item>
-    </plurals>
     <string name="home_cloud_waiting">Yedekleme bekleniyor</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

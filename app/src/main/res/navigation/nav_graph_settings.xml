@@ -29,6 +29,13 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
         <action
+            android:id="@+id/action_settings_to_blocked_stats"
+            app:destination="@id/settings_blocked_stats"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
             android:id="@+id/action_settings_to_doh"
             app:destination="@id/settings_doh"
             app:enterAnim="@anim/slide_in_right"
@@ -152,6 +159,9 @@
     <fragment
         android:id="@+id/settings_query_params"
         android:name="com.solarized.firedown.settings.QueryParamsFragment" />
+    <fragment
+        android:id="@+id/settings_blocked_stats"
+        android:name="com.solarized.firedown.settings.BlockedStatsFragment" />
     <fragment
         android:id="@+id/settings_license"
         android:name="com.solarized.firedown.settings.LicenseFragment" />

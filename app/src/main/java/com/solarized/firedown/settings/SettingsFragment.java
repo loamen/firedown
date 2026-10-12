@@ -17,6 +17,7 @@ import android.view.autofill.AutofillManager;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -39,10 +40,13 @@ import com.solarized.firedown.data.DownloadDatabase;
 import com.solarized.firedown.data.di.Qualifiers;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
+import com.solarized.firedown.geckoview.GeckoUblockHelper;
 import com.solarized.firedown.utils.NavigationUtils;
 
 import org.mozilla.geckoview.ContentBlocking;
 
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -67,9 +71,14 @@ public class SettingsFragment extends BasePreferenceFragment
     private Preference themePreference;
     private Preference tabsPreference;
     private Preference autoFillPreference;
+    /** Privacy → "Trackers and ads blocked": the door to BlockedStatsFragment,
+     *  whose summary is the live lifetime count (see bindBlockedStats). */
+    private Preference blockedStatsPreference;
 
     private GeckoStateViewModel mGeckoStateViewModel;
 
+    @Inject
+    GeckoUblockHelper mGeckoUblockHelper;
     @Inject
     DownloadDatabase mDownloadDatabase;
     @Inject
@@ -103,6 +112,7 @@ public class SettingsFragment extends BasePreferenceFragment
         quitPreference = preferenceScreen.findPreference(Preferences.SETTINGS_QUIT);
         tabsPreference = preferenceScreen.findPreference(Preferences.SETTINGS_TABS);
         autoFillPreference = preferenceScreen.findPreference(Preferences.SETTINGS_AUTOFILL);
+        blockedStatsPreference = preferenceScreen.findPreference(Preferences.SETTINGS_BLOCKED_STATS_SCREEN);
 
         if (downloadsPreference != null) {
             downloadsPreference.setSummary(StoragePaths.getDownloadPath(mActivity));
@@ -117,6 +127,38 @@ public class SettingsFragment extends BasePreferenceFragment
         updateTabsSummary();
     }
 
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        bindBlockedStats();
+    }
+
+    /**
+     * The "Trackers and ads blocked" row's summary is the LIVE lifetime count
+     * from the built-in ad blocker (GeckoUblockHelper relays what firedown.js
+     * pushes; it seeds from its own install-local cache on a cold start, so
+     * the row is right before uBlock has booted). "Protection active" at 0 —
+     * a fresh install, nothing browsed yet — never "0 blocked". Observed on
+     * the VIEW lifecycle, so a recreated screen re-binds.
+     */
+    private void bindBlockedStats() {
+        if (blockedStatsPreference == null) {
+            return;
+        }
+        mGeckoUblockHelper.getCumulativeBlockedLive().observe(getViewLifecycleOwner(), blocked -> {
+            if (blockedStatsPreference == null) {
+                return;
+            }
+            long n = blocked == null ? 0L : blocked;
+            if (n > 0L) {
+                blockedStatsPreference.setSummary(getString(R.string.trackers_info_summary,
+                        NumberFormat.getInstance(Locale.getDefault()).format(n)));
+            } else {
+                blockedStatsPreference.setSummary(R.string.trackers_info_idle);
+            }
+        });
+    }
 
     private void setListenersRecursively(PreferenceGroup group) {
         int count = group.getPreferenceCount();
@@ -472,6 +514,8 @@ public class SettingsFragment extends BasePreferenceFragment
                     NavigationUtils.navigateSafe(mNavController, R.id.action_settings_to_doh);
             case Preferences.SETTINGS_ANTI_TRACKING ->
                     NavigationUtils.navigateSafe(mNavController, R.id.action_settings_to_tracking);
+            case Preferences.SETTINGS_BLOCKED_STATS_SCREEN ->
+                    NavigationUtils.navigateSafe(mNavController, R.id.action_settings_to_blocked_stats);
             case Preferences.SETTINGS_APP_LOCK_MAIN ->
                     NavigationUtils.navigateSafe(mNavController, R.id.action_settings_to_lock);
             case Preferences.SETTINGS_SEARCH_ENGINE ->

@@ -231,11 +231,8 @@
     <string name="crash_sheet_dismiss">Avvisa</string>
     <string name="crash_sheet_copied">Kraschrapport kopierad till urklipp</string>
     <string name="crash_sheet_open_failed">Det gick inte att öppna webbläsaren. Kraschrapporten finns i ditt urklipp. Klistra in den i ett nytt GitHub-ärende.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Spårare och annonser blockerade</string>
+    <string name="trackers_info_idle">Skydd aktivt</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d begäran blockerad på denna sida</item>
         <item quantity="other">%d begäranden blockerade på denna sida</item>
@@ -301,6 +298,14 @@
     <string name="snackbar_tab_closed">Flik stängd</string>
     <string name="switch_to_tab_description">Växla till flik</string>
     <string name="bookmark_name">Namn</string>
+    <string name="trackers_info_breakdown_frames">Inbäddade ramar</string>
+    <string name="trackers_info_breakdown_other">Analys och telemetri</string>
+    <string name="trackers_info_breakdown_pixels">Spårningspixlar och fyrar</string>
+    <string name="trackers_info_breakdown_scripts">Annonser</string>
+    <string name="trackers_info_section_breakdown">Blockerat efter typ</string>
+    <string name="trackers_info_section_top_trackers">Vanligaste spårarna</string>
+    <string name="trackers_info_stat_blocked">Blockerade</string>
+    <string name="trackers_info_stat_saved">Sparad data</string>
     <string name="compress">Komprimera</string>
     <string name="download_saving_compress">Komprimerar, vänta…</string>
     <string name="task_compress_finished">Arkiv skapat</string>

@@ -239,11 +239,8 @@
     <string name="crash_sheet_dismiss">நிராகரி</string>
     <string name="crash_sheet_copied">செயலிழப்பு அறிக்கை கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது</string>
     <string name="crash_sheet_open_failed">உலாவியைத் திறக்க முடியவில்லை. அறிக்கை கிளிப்போர்டில் உள்ளது. அதை புதிய GitHub பிரச்சினையில் ஒட்டவும்.</string>
-
-
-
-
-
+    <string name="trackers_info_title">கண்காணிப்பாளர்கள் மற்றும் விளம்பரங்கள் தடுக்கப்பட்டன</string>
+    <string name="trackers_info_idle">பாதுகாப்பு செயலில்</string>
     <string name="bookmark_export">புக்மார்க்குகளை ஏற்றுமதி செய்</string>
     <string name="bookmark_export_done">%1$d புக்மார்க்குகள் Download/Firedown/backup இல் ஏற்றுமதி செய்யப்பட்டன</string>
     <string name="bookmark_import">புக்மார்க்குகளை இறக்குமதி செய்</string>

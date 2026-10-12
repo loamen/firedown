@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings → Privacy → Trackers and ads blocked (BlockedStatsFragment): the
+     built-in ad blocker's tallies. The hero sits flat above the grouped rows
+     (the Cloud hero's shape); "Blocked by type" and "Top trackers" are
+     read-only CountPreference rows in their own cards, the top-trackers group
+     filled in code and hidden until it has a few rows; the footnote names the
+     estimate. Nothing on this screen is a control. -->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.solarized.firedown.settings.BlockedStatsPreference
+        android:key="com.solarized.firedown.preferences.privacy.blocked.stats.hero"
+        android:selectable="false" />
+
+    <PreferenceCategory
+        android:key="com.solarized.firedown.preferences.privacy.blocked.stats.types"
+        android:title="@string/trackers_info_section_breakdown"
+        app:iconSpaceReserved="false">
+
+        <com.solarized.firedown.settings.ui.CountPreference
+            android:key="com.solarized.firedown.preferences.privacy.blocked.stats.type.scripts"
+            android:title="@string/trackers_info_breakdown_scripts" />
+
+        <com.solarized.firedown.settings.ui.CountPreference
+            android:key="com.solarized.firedown.preferences.privacy.blocked.stats.type.other"
+            android:title="@string/trackers_info_breakdown_other" />
+
+        <com.solarized.firedown.settings.ui.CountPreference
+            android:key="com.solarized.firedown.preferences.privacy.blocked.stats.type.pixels"
+            android:title="@string/trackers_info_breakdown_pixels" />
+
+        <com.solarized.firedown.settings.ui.CountPreference
+            android:key="com.solarized.firedown.preferences.privacy.blocked.stats.type.frames"
+            android:title="@string/trackers_info_breakdown_frames" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="com.solarized.firedown.preferences.privacy.blocked.stats.top"
+        android:title="@string/trackers_info_section_top_trackers"
+        app:iconSpaceReserved="false" />
+
+    <com.solarized.firedown.settings.ui.FootnotePreference
+        android:key="com.solarized.firedown.preferences.privacy.blocked.stats.note"
+        android:summary="@string/trackers_info_footnote"
+        app:iconSpaceReserved="false" />
+
+</PreferenceScreen>

@@ -307,11 +307,8 @@
     <string name="crash_sheet_sent">Relatório enviado</string>
     <string name="crash_sheet_send_failed">Não foi possível enviar. Verifique a ligação ou use Copiar / Reportar.</string>
     <string name="crash_sheet_send_note">Enviado anonimamente para o servidor do Firedown. Apenas o relatório acima, sem identificadores.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Rastreadores e anúncios bloqueados</string>
+    <string name="trackers_info_idle">Proteção ativa</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d solicitação bloqueada nesta página</item>
         <item quantity="other">%d solicitações bloqueadas nesta página</item>
@@ -392,6 +389,15 @@
     <string name="spoof_timezone_summary">Ao ativar, a proteção contra fingerprinting fica melhor</string>
     <string name="switch_to_tab_description">Mudar para a aba</string>
     <string name="bookmark_name">Nome</string>
+    <string name="trackers_info_breakdown_frames">Quadros incorporados</string>
+    <string name="trackers_info_breakdown_other">Análise e telemetria</string>
+    <string name="trackers_info_footnote">Contado pelo bloqueador de anúncios integrado. Os dados poupados são uma estimativa de cerca de 50 KB por pedido bloqueado; os principais rastreadores são os de hoje.</string>
+    <string name="trackers_info_breakdown_pixels">Pixels e beacons de rastreamento</string>
+    <string name="trackers_info_breakdown_scripts">Anúncios</string>
+    <string name="trackers_info_section_breakdown">Bloqueado por tipo</string>
+    <string name="trackers_info_section_top_trackers">Principais rastreadores</string>
+    <string name="trackers_info_stat_blocked">Bloqueados</string>
+    <string name="trackers_info_stat_saved">Dados economizados</string>
     <string name="compress">Comprimir</string>
     <string name="media_tools">Ferramentas multimédia</string>
     <string name="download_saving_compress">A comprimir, aguarde…</string>
@@ -412,6 +418,7 @@
     <string name="capture_help_banner_title">Vídeo não listado?</string>
     <string name="capture_help_banner">Algumas mídias incorporadas precisam ser reproduzidas primeiro. Toque para saber como.</string>
     <string name="tabs_more_options">Mais opções</string>
+    <string name="trackers_info_summary">%1$s bloqueados</string>
     <string name="cloud_grace_notif_title">Cópia de segurança em pausa</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Falta %d dia para os seus ficheiros guardados serem removidos. Carregue crédito ou restaure-os para este telemóvel.</item>
@@ -419,7 +426,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Os seus ficheiros guardados serão removidos no fim do período de tolerância. Carregue crédito ou restaure-os para este telemóvel.</string>
     <string name="cloud_reap_notif_title">Ficheiros guardados prestes a ser removidos</string>
-    <string name="home_cloud_backed_up">%1$s na nuvem</string>
     <string name="most_visited">Mais visitados</string>
     <string name="most_visited_remove_title">Remover de Mais visitados?</string>
     <string name="most_visited_remove">Remover</string>
@@ -723,12 +729,7 @@
     <string name="settings_sync_scan_title">Ler código de recuperação</string>
     <string name="settings_sync_scan_bad">Esse código QR não é um código de recuperação</string>
     <string name="home_cloud_backing_up">A fazer cópia de segurança…</string>
-    <string name="home_cloud_paused">Cópia em pausa</string>
     <string name="home_cloud_top_up">Carregar</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Falta %d dia antes de os ficheiros serem removidos</item>
-        <item quantity="other">Faltam %d dias antes de os ficheiros serem removidos</item>
-    </plurals>
     <string name="home_cloud_waiting">Aguardando backup</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

@@ -379,11 +379,17 @@
     <string name="crash_sheet_sent">Rapport verzonden</string>
     <string name="crash_sheet_send_failed">Verzenden mislukt. Controleer de verbinding of gebruik Kopiëren / Rapporteren.</string>
     <string name="crash_sheet_send_note">Wordt anoniem naar de Firedown-server gestuurd. Alleen het rapport hierboven, geen identifiers.</string>
-
-
-
-
-
+    <string name="trackers_info_title">Trackers en advertenties geblokkeerd</string>
+    <string name="trackers_info_idle">Bescherming actief</string>
+    <string name="trackers_info_breakdown_frames">Ingesloten frames</string>
+    <string name="trackers_info_breakdown_other">Analytics &amp; telemetrie</string>
+    <string name="trackers_info_footnote">Geteld door de ingebouwde advertentieblokkering. Bespaarde data is een schatting van ongeveer 50 KB per geblokkeerd verzoek; de top-trackers zijn die van vandaag.</string>
+    <string name="trackers_info_breakdown_pixels">Trackingpixels en bakens</string>
+    <string name="trackers_info_breakdown_scripts">Advertenties</string>
+    <string name="trackers_info_section_breakdown">Geblokkeerd per type</string>
+    <string name="trackers_info_section_top_trackers">Voornaamste trackers</string>
+    <string name="trackers_info_stat_blocked">Geblokkeerd</string>
+    <string name="trackers_info_stat_saved">Bespaarde data</string>
     <plurals name="blocked_ads_summary">
         <item quantity="one">%d verzoek geblokkeerd op deze pagina</item>
         <item quantity="other">%d verzoeken geblokkeerd op deze pagina</item>
@@ -412,6 +418,7 @@
     <string name="capture_help_banner_title">Video niet in de lijst?</string>
     <string name="capture_help_banner">Sommige ingesloten media moeten eerst worden afgespeeld. Tik voor meer info.</string>
     <string name="tabs_more_options">Meer opties</string>
+    <string name="trackers_info_summary">%1$s geblokkeerd</string>
     <string name="cloud_grace_notif_title">Back-up gepauzeerd</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Nog %d dag voordat je geback-upte bestanden worden verwijderd. Waardeer op of herstel ze naar deze telefoon.</item>
@@ -419,7 +426,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Je geback-upte bestanden worden verwijderd als de respijtperiode afloopt. Waardeer op of herstel ze naar deze telefoon.</string>
     <string name="cloud_reap_notif_title">Geback-upte bestanden worden binnenkort verwijderd</string>
-    <string name="home_cloud_backed_up">%1$s geback-upt</string>
     <string name="most_visited">Meest bezocht</string>
     <string name="most_visited_remove_title">Verwijderen uit Meest bezocht?</string>
     <string name="most_visited_remove">Verwijderen</string>
@@ -723,12 +729,7 @@
     <string name="settings_sync_scan_title">Herstelcode scannen</string>
     <string name="settings_sync_scan_bad">Die QR-code is geen herstelcode</string>
     <string name="home_cloud_backing_up">Back-up maken…</string>
-    <string name="home_cloud_paused">Back-up gepauzeerd</string>
     <string name="home_cloud_top_up">Bijvullen</string>
-    <plurals name="home_cloud_grace_days">
-        <item quantity="one">Nog %d dag voordat je bestanden worden verwijderd</item>
-        <item quantity="other">Nog %d dagen voordat je bestanden worden verwijderd</item>
-    </plurals>
     <string name="home_cloud_waiting">Wacht op back-up</string>
     <!-- Nostr (NIP-07) signer -->
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

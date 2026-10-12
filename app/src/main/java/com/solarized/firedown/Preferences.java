@@ -395,6 +395,10 @@ public class Preferences {
     public static final String SETTINGS_P2P_SCREEN = "com.solarized.firedown.preferences.p2p.screen";
     /** Root-settings DOOR to the Security sub-screen (SecurityFragment). */
     public static final String SETTINGS_SECURITY_SCREEN = "com.solarized.firedown.preferences.security.screen";
+    /** Root-settings DOOR (Privacy) to the blocked-stats sub-screen
+     *  (BlockedStatsFragment) — the built-in ad blocker's lifetime tallies;
+     *  its summary is the live count. */
+    public static final String SETTINGS_BLOCKED_STATS_SCREEN = "com.solarized.firedown.preferences.privacy.blocked.stats";
     public static final String SETTINGS_P2P_STUN = "com.solarized.firedown.preferences.p2p.stun.server";
 
     public static final String DEFAULT_P2P_STUN = "stun:stun.cloudflare.com:3478";
