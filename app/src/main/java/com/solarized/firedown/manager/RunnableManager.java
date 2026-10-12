@@ -260,12 +260,13 @@ public class RunnableManager extends Service implements DownloadEngine.Host {
 		// receiver cancels this notification once the backup worker (whose own
 		// foreground notification takes over as feedback) is enqueued.
 		int notificationId = NotificationID.getID();
-		// "Back up to cloud" action — the one surface that fires at the moment
-		// the user just saved a file they care about. Gated on Cloud Backup
-		// being SET UP: a notification action cannot run the first-time setup
-		// flow (mint a code + the mandatory "I've saved it" dialog), so a
-		// not-set-up user keeps the plain notification and the Downloads-list
-		// activation banner remains their pitch. The vault gate is the
+		// "Back up" action — the one surface that fires at the moment the
+		// user just saved a file they care about. Gated on the backup being
+		// SET UP (code + folder): a notification action cannot run the
+		// first-time setup flow (mint a code + the mandatory "I've saved it"
+		// dialog, then the folder picker), so a not-set-up user keeps the
+		// plain notification and the Downloads-list banner remains their
+		// pitch. The vault gate is the
 		// isFileSafe() early-return above. The receiver re-checks everything
 		// against current state — these gates are advisory, the notification
 		// can outlive them.
@@ -282,7 +283,7 @@ public class RunnableManager extends Service implements DownloadEngine.Host {
 			PendingIntent backupPending = PendingIntent.getBroadcast(
 					this, runnableTask.getFileId(), backupIntent,
 					PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-			mBuilder.addAction(R.drawable.cloud_outline_24,
+			mBuilder.addAction(R.drawable.ic_folder_upload_24,
 					getString(R.string.cloud_backup_action), backupPending);
 		}
 		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

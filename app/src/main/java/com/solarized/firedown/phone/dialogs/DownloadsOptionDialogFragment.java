@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.navigation.NavBackStackEntry;
 import androidx.recyclerview.widget.RecyclerView;
 import com.solarized.firedown.R;
+import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.data.Download;
 import com.solarized.firedown.data.OptionItem;
 import com.solarized.firedown.data.entity.DownloadEntity;
@@ -28,7 +29,20 @@ import com.solarized.firedown.Keys;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import dagger.hilt.android.AndroidEntryPoint;
+
+@AndroidEntryPoint
 public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment implements View.OnClickListener, OptionsAdapter.OnItemClickListener {
+
+    /** Names the backup row after the folder's provider ("Back up to Google
+     *  Drive") — the one row whose label depends on state. Injected here
+     *  rather than read from the base: a class declaring {@code @Inject}
+     *  fields must itself be {@code @AndroidEntryPoint} (the
+     *  DownloadFragment.onRestoreTreePicked NPE). */
+    @Inject
+    CloudBackupManager mCloudBackup;
 
 
     private DownloadEntity mDownloadEntity;
@@ -171,6 +185,8 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
                 // signal it opens a sub-list rather than firing an action.
                 if (iconResId == R.drawable.ic_movie_24) {
                     items.add(new OptionItem(labels[i], iconResId, 0, R.drawable.ic_chevron_right_24));
+                } else if (iconResId == R.drawable.ic_folder_upload_24) {
+                    items.add(new OptionItem(backupLabel(labels[i]), iconResId));
                 } else {
                     items.add(new OptionItem(labels[i], iconResId));
                 }
@@ -179,6 +195,28 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
             icons.recycle();
         }
         return items;
+    }
+
+    /**
+     * The backup row's label follows the backup's state: "Back up to Google
+     * Drive" once a folder is chosen (the provider is the fact the user is
+     * deciding on — a row reading "Back up" says nothing about where), "Set
+     * up backup" while the code or the folder is still missing (the tap then
+     * runs the setup, so the verb must say so), and the array's plain label
+     * when the provider has no name the system can give us.
+     */
+    private String backupLabel(String arrayLabel) {
+        if (mCloudBackup == null) {
+            return arrayLabel;
+        }
+        if (!mCloudBackup.isSetUp()) {
+            return getString(R.string.folder_backup_setup_action);
+        }
+        String provider = mCloudBackup.providerLabel();
+        if (provider == null || provider.isEmpty()) {
+            return arrayLabel;
+        }
+        return getString(R.string.cloud_backup_action_to, provider);
     }
 
     /**

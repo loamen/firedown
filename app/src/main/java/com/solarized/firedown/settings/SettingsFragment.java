@@ -527,8 +527,9 @@ public class SettingsFragment extends BasePreferenceFragment
             case Preferences.SETTINGS_SHARE_APP ->
                     NavigationUtils.navigateSafe(mNavController, R.id.action_settings_to_share_app);
             case Preferences.SETTINGS_DONATE -> {
-                // In-app Value for Value was retired (the cloud-credit purchase
-                // flow is the app's one money surface); this row hands off to
+                // In-app Value for Value was retired, and the paid backup credit
+                // that was then the app's one money surface went with the hosted
+                // service — the app sells nothing now. This row hands off to
                 // the website donate page via the same OPEN_URI result
                 // handshake as SETTINGS_SUPPORT below.
                 Intent supportIntent = new Intent(IntentActions.OPEN_URI);

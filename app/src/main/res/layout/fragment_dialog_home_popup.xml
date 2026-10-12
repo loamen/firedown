@@ -132,7 +132,7 @@
         style="@style/Firedown.Widget.SheetGroup"
         android:layout_marginHorizontal="16dp">
 
-        <!-- Sync — bookmarks + encrypted download backup (one account). -->
+        <!-- Backup — the encrypted download backup folder + bookmark sync (one code). -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/popup_sync"
             style="@style/Firedown.Widget.SheetRowCard"
@@ -141,7 +141,7 @@
             <TextView
                 style="@style/Firedown.Widget.SheetRowText"
                 android:text="@string/settings_account_title"
-                app:drawableStartCompat="@drawable/cloud_outline_24" />
+                app:drawableStartCompat="@drawable/ic_folder_upload_24" />
 
         </com.google.android.material.card.MaterialCardView>
 

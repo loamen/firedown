@@ -21,12 +21,12 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * The app's ONE QR encoder. Four surfaces render a QR — the P2P share offer/
- * reply codes ({@code P2pShareBaseFragment}), the Lightning invoice on the
- * buy-credit screen ({@code BuyCreditFragment}), the recovery code on the
- * Cloud screen ({@code SyncSettingsFragment}) and the download link on the
- * share screen ({@code ShareAppFragment}) — and the first two carried
- * byte-identical private copies of this method before it was extracted. Keep it
+ * The app's ONE QR encoder. Three surfaces render a QR — the P2P share offer/
+ * reply codes ({@code P2pShareBaseFragment}), the recovery code on the
+ * Backup screen ({@code SyncSettingsFragment}) and the download link on the
+ * share screen ({@code ShareAppFragment}) — and two surfaces (the P2P share and
+ * the retired buy-credit screen's Lightning invoice) carried byte-identical
+ * private copies of this method before it was extracted. Keep it
  * shared: the same "a private copy in one adapter is exactly how they drifted
  * apart" rule that put {@code compactDuration} in {@link DateUtils}.
  *

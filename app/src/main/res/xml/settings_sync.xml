@@ -1,28 +1,30 @@
 <!--
-  The MERGED Cloud screen (toolbar title "Cloud") — the pay-per-use downloads
-  backup IS the screen; bookmarks and account plumbing are secondary. This
-  replaced the old two-level IA (a thin hub routing to a separate Cloud Backup
-  sub-screen): reaching the plan/status took home popup → Cloud → Manage
-  downloads backup → … (4 taps to the files list), and the hub's rows buried
-  the one thing a paying user cares about. Layout, in priority order:
+  The MERGED Backup screen (toolbar title "Backup") — the encrypted downloads
+  backup into a folder of the user's choosing IS the screen; bookmarks and key
+  plumbing are secondary. The folder is whatever the system picker offers —
+  Google Drive, Dropbox, Nextcloud, an SD card, the phone itself — and no
+  Firedown server is involved (the hosted service this replaced is gone).
+  Layout, in priority order:
 
     ── (flat, on the page) ──
-       CloudStatusPreference   the live plan/usage/runway hero (or the
-                               not-set-up roadmap)
-       Add storage credit      the morphing CTA directly under the hero
-                               (custom layout preference_cloud_buy_button.xml)
+       CloudStatusPreference   the live folder/usage hero (or the not-set-up
+                               roadmap)
+       the morphing CTA        directly under the hero (custom layout
+                               preference_cloud_buy_button.xml): "Create
+                               recovery code" → "Choose backup folder" →
+                               "Change folder" (outlined once healthy) /
+                               "Choose the folder again" (filled when lost)
     ── three UNLABELLED card groups (title-less PreferenceCategory) ──
        KEY group   Recovery code (shown once a key exists; the reveal dialog
                    carries Copy AND Save-to-file) · I have a recovery code
-                   (adopt / replace an account's key)
-       USE group   Backups (set-up gated) · Pair a browser (set-up gated) ·
-                   Sync bookmarks (INLINE switch, secondary by design; "Sync
-                   now" dropped — sync is automatic, the summary shows
-                   last-synced)
-       last        How sync & encryption work · Delete cloud data (the ONE
+                   (adopt / replace the key)
+       USE group   Backups (set-up gated) · Sync bookmarks (INLINE switch,
+                   secondary by design; "Sync now" dropped — sync is
+                   automatic, the summary shows last-synced)
+       last        How sync & encryption work · Delete backup data (the ONE
                    erasure door, LAST by danger)
     The KEY and USE groups swap by LIFE STAGE (SyncSettingsFragment
-    .updateState): KEY above USE until the account is set up — the second way
+    .updateState): KEY above USE until the backup is set up — the second way
     in sits right under the create-CTA while there is nothing else to reach —
     then USE above KEY, the daily-use rows first. Swapping GROUPS, not rows,
     keeps each group whole in both stages.
@@ -35,24 +37,22 @@
   grouping, so the old "a header owns every row until the next one" trap
   cannot come back.
 
-  KEY-FIRST GATE (unchanged in spirit): a recovery code is the account gateway.
-  Until one exists the CTA reads "Create recovery code" (not buy), the Manage
-  rows are hidden, and the Bookmarks switch is DISABLED. This is what stops a
-  keyless purchase — the buy flow used to mint a code silently mid-checkout,
-  which left a ghost account with an unsaved key when the user backed out of
-  Stripe (see BuyCreditViewModel). Creating a key forces the "I've saved it"
-  step before it counts.
+  KEY-FIRST GATE: a recovery code is the gateway. Until one exists the CTA
+  reads "Create recovery code" (not choose-a-folder), the Backups row is
+  hidden, and the Bookmarks switch is DISABLED — a folder can only be chosen
+  once there is a key to encrypt into it with. Creating a key forces the
+  "I've saved it" step before it counts.
 
   The bookmarks-list overflow + sync banner deep-links (EXTRA_OPEN_BOOKMARKS_SYNC)
-  land HERE now. Cloud Backup stays action-driven (a download's options sheet
-  backs it up on demand). The debug smoke-test row (debug builds only) is
-  appended programmatically by SyncSettingsFragment.
+  land HERE. Backing up stays action-driven (a download's options sheet backs
+  it up on demand). The debug account-id row (debug builds only) is appended
+  programmatically by SyncSettingsFragment.
 -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- The status HERO (big balance / covered-until / grace / backing-up),
-         bound by SyncSettingsFragment. Custom layout — no title/icon. -->
+    <!-- The status HERO (folder + usage / lost / the roadmap), bound by
+         SyncSettingsFragment. Custom layout — no title/icon. -->
     <com.solarized.firedown.settings.CloudStatusPreference
         android:key="com.solarized.firedown.preferences.cloud.backup.status"
         android:selectable="false"
@@ -60,24 +60,24 @@
 
     <!-- The one PROMINENT action — a MORPHING CTA whose label is the
          Preference title (the layout binds it into the button): pre-key it
-         reads "Create recovery code" (onboarding step ①), post-key "Add
-         storage credit" (step ②/top-up). SyncSettingsFragment swaps title +
-         click routing in updateState. EMPHASIS is state-dependent
-         (CloudBuyButtonPreference): FILLED while the next step is genuinely
-         "pay" (pre-key / unfunded / grace), demoted to an OUTLINED row when
-         comfortably funded — a permanent sales button on an account that
-         needs nothing cuts against the calm-by-default ethos (the same
-         restraint that keeps the home pill a quiet chip); the hero alert + amber grace re-escalate the
-         top-up moment when it actually matters. -->
+         reads "Create recovery code" (onboarding step ①), then "Choose backup
+         folder" (step ②), then "Change folder" / "Choose the folder again".
+         SyncSettingsFragment swaps title + click routing in updateState.
+         EMPHASIS is state-dependent (CloudBuyButtonPreference): FILLED while
+         something is genuinely needed (no key, no folder, a lost folder),
+         demoted to an OUTLINED row once the backup is healthy — a permanent
+         filled button on a backup that needs nothing cuts against the
+         calm-by-default ethos. The key keeps its historical name
+         (…cloud.backup.buy); nothing is bought here any more. -->
     <com.solarized.firedown.settings.CloudBuyButtonPreference
         android:key="com.solarized.firedown.preferences.cloud.backup.buy"
-        android:title="@string/buy_credit_title"
+        android:title="@string/settings_sync_create_title"
         android:layout="@layout/preference_cloud_buy_button"
         android:persistent="false" />
 
     <!-- KEY group (title-less: a card group, no label). XML position (above
          the USE group) is the ONBOARDING order; updateState() swaps the two
-         groups once the account is set up. -->
+         groups once the backup is set up. -->
     <PreferenceCategory
         android:key="com.solarized.firedown.preferences.cloud.group.key"
         android:persistent="false">
@@ -96,14 +96,14 @@
             app:singleLineTitle="false"
             app:icon="@drawable/ic_key_24" />
 
-        <!-- The adopt-an-existing-account door (the CTA above covers Create;
+        <!-- The adopt-an-existing-key door (the CTA above covers Create;
              post-key this row is a REPLACE — see SyncSettingsFragment). It shares
              a card group with the Recovery code row: the two are the key's two
-             doors (see yours / use another one). Shield-with-
-             keyhole glyph (encrypted_24), not the key: the key glyph belongs to
-             the Recovery code reveal row, and two different rows wearing the same
-             object read as duplicates. (It wore ic_login_24 first — an arrow into
-             a ring, which read as "sign in" on a screen that has no accounts.) -->
+             doors (see yours / use another one). Shield-with-keyhole glyph
+             (encrypted_24), not the key: the key glyph belongs to the Recovery
+             code reveal row, and two different rows wearing the same object read
+             as duplicates. (It wore ic_login_24 first — an arrow into a ring,
+             which read as "sign in" on a screen that has no accounts.) -->
         <Preference
             android:key="com.solarized.firedown.preferences.sync.link.code"
             android:title="@string/settings_sync_link_title"
@@ -114,13 +114,13 @@
     </PreferenceCategory>
 
     <!-- USE group (title-less): the daily-use rows. Above the KEY group once
-         the account is set up (updateState). -->
+         the backup is set up (updateState). -->
     <PreferenceCategory
         android:key="com.solarized.firedown.preferences.cloud.group.use"
         android:persistent="false">
 
-        <!-- Visible once Cloud Backup is set up (has data / a funded account).
-             No "Manage backup" label: over this row it restated the row (the same
+        <!-- Visible once the backup is set up (a key AND a folder). No "Manage
+             backup" label: over this row it restated the row (the same
              taxonomy-noise argument that dissolved the Cookies category), and the
              row already sits in backup context under the hero + CTA. -->
         <Preference
@@ -128,19 +128,7 @@
             android:title="@string/cloud_backup_files_title"
             android:summary="@string/settings_cloud_backup_files_summary"
             app:singleLineTitle="false"
-            app:icon="@drawable/cloud_done_24" />
-
-        <!-- Opens the shared scanner for a browser pairing QR, so the web client at
-             firedown.app/backup can be unlocked WITHOUT typing the 52-character
-             recovery code into a web page. Set-up gated: there is nothing to pair
-             a browser with until this device has an account. It sits under Backups
-             because it is about reaching those same files from a computer. -->
-        <Preference
-            android:key="com.solarized.firedown.preferences.cloud.backup.pair"
-            android:title="@string/settings_pair_browser_title"
-            android:summary="@string/settings_pair_browser_summary"
-            app:singleLineTitle="false"
-            app:icon="@drawable/ic_qr_scan_24" />
+            app:icon="@drawable/ic_folder_upload_24" />
 
         <!-- Bookmarks are deliberately SECONDARY on this screen: ONE inline switch
              (sync is automatic once on — change-triggered + on-toggle — so the old
@@ -148,10 +136,10 @@
              the last-synced summary carries the same signal). The switch never
              self-persists: SyncManager owns SYNC_ENABLED, the fragment re-syncs
              checked state from isEnabled(). NO "Bookmarks" label — it was the LAST
-             header on the screen (kept as a "paid-vs-free separator"), but a
-             labelled header visually owns every row until the NEXT one, so with
-             the other headers dissolved it umbrella'd the recovery-code/FAQ/delete
-             rows as "Bookmarks" children ("why is Delete backed-up files under
+             header on the screen (kept as a separator), but a labelled header
+             visually owns every row until the NEXT one, so with the other headers
+             dissolved it umbrella'd the recovery-code/FAQ/delete rows as
+             "Bookmarks" children ("why is Delete backed-up files under
              Bookmarks?"). The card group's edge now ends where its rows end. -->
         <SwitchPreferenceCompat
             android:key="com.solarized.firedown.preferences.sync.enabled"
@@ -162,12 +150,12 @@
 
     </PreferenceCategory>
 
-    <!-- Last group (title-less): what the cloud is, and how to leave it. -->
+    <!-- Last group (title-less): what the backup is, and how to leave it. -->
     <PreferenceCategory
         android:key="com.solarized.firedown.preferences.cloud.group.about"
         android:persistent="false">
 
-        <!-- A LINK to the website's /security page ("How Cloud Backup works") (opened in a Firedown tab via
+        <!-- A LINK to the website's /security page (opened in a Firedown tab via
              the OPEN_URI result handshake, like the Donate row). It replaced an
              offline nine-question FAQ sub-screen: seven of the nine were
              reassurance copy the website owns, and the two load-bearing facts
@@ -183,18 +171,16 @@
             app:icon="@drawable/encryption_24" />
 
         <!-- The destructive actions sit LAST — placement by danger, not taxonomy —
-             behind ONE door → the "Delete cloud data" SUB-SCREEN
+             behind ONE door → the "Delete backup data" SUB-SCREEN
              (settings_cloud_delete.xml / CloudDeleteFragment), two rows of the
-             SCOPED erasures (never one "delete all cloud data", which would couple
-             wiping free bookmarks to destroying paid backups): bookmarks-from-
-             server while sync is on, backed-up-files under the Manage rows'
-             set-up gate. A screen, not a chooser dialog (which shipped for a
-             commit): its rows carry each deletion's consequence as the summary,
-             so the choice is informed before the confirm. The two used to be two
-             full rows here, the loudest items on the screen by glyph and copy,
-             for the one thing nobody should reach casually. Deleting files does
-             NOT touch the credit balance (the server keeps the quota row). Hidden
-             when neither applies. -->
+             SCOPED erasures (never one "delete everything", which would couple
+             wiping free bookmarks to destroying the backed-up files):
+             bookmarks-from-server while sync is on, backed-up-files under the
+             Backups row's set-up gate. A screen, not a chooser dialog (which
+             shipped for a commit): its rows carry each deletion's consequence as
+             the summary, so the choice is informed before the confirm. Deleting
+             the files does NOT forget the folder or the key. Hidden when neither
+             applies. -->
         <Preference
             android:key="com.solarized.firedown.preferences.cloud.delete"
             android:title="@string/settings_cloud_delete_title"

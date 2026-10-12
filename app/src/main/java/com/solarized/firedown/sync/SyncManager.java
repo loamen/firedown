@@ -107,8 +107,8 @@ public class SyncManager {
 
     /**
      * Enables sync reusing the EXISTING shared recovery code. The account is
-     * shared with Cloud Backup (one code derives the same account on every
-     * service), so a device that already holds a key — Cloud Backup set up
+     * shared with Backup (one code derives the bookmark account AND the backup
+     * folder's key), so a device that already holds a key — Backup set up
      * first, or a key created on the hub — must never be walked through the
      * create/restore setup again. Registration + first push happen in the
      * worker, same as the new-code path. Callers guard on {@link #hasCode()}.
@@ -124,9 +124,9 @@ public class SyncManager {
      * screen; registration + first push happen in the worker.
      *
      * <p>MONEY-LOSS BACKSTOP: this never mints over an existing shared code.
-     * The code is the ONLY key to the shared account — for a user with a paid
-     * Cloud Backup plan, overwriting it silently bricks the balance and every
-     * encrypted backup (unless they saved the old code; this exact hole shipped
+     * The code is the ONLY key to the shared account — for a user with a
+     * folder backup, overwriting it silently bricks every encrypted backup in
+     * that folder (unless they saved the old code; this exact hole shipped
      * as the bookmarks toggle offering "start new" to an already-paid user).
      * Callers should route through {@link #enableWithExistingCode} when
      * {@link #hasCode()}; if one slips through, the existing code is reused and
@@ -158,10 +158,11 @@ public class SyncManager {
 
     /**
      * Creates the shared account key on this device WITHOUT enabling any feature.
-     * The key is the gateway: it must exist before bookmarks sync or cloud backup
-     * can be turned on (the Cloud hub disables those rows until it does). Unlike
-     * {@link #enableWithNewCode} this does NOT turn on bookmark sync, and unlike
-     * {@link CloudBackupManager#createNewCode} it does NOT mark cloud backup in use
+     * The key is the gateway: it must exist before bookmarks sync or the folder
+     * backup can be turned on (the Backup screen disables those rows until it
+     * does). Unlike {@link #enableWithNewCode} this does NOT turn on bookmark
+     * sync, and unlike {@link CloudBackupManager#createNewCode} it does NOT mark
+     * the backup in use
      * — creating a key commits the user to nothing but holding the key. The grouped
      * code is delivered to {@code onCode} (caller shows the "save this — it's the
      * only key" dialog with the mandatory saved-gate). No-op-safe if a key already
@@ -216,9 +217,9 @@ public class SyncManager {
     /**
      * Links this device to an existing account from its recovery code — the
      * account-level restore for a fresh install / new device. Stores the code
-     * (which re-derives the shared account, so downloads backup + storage credit
-     * come back) and marks Cloud Backup in use so its screen reflects the restored
-     * data. Deliberately does NOT enable bookmark sync (that stays a separate
+     * (which re-derives the shared account — the storage key that decrypts the
+     * backup folder's files and the account directory that names them) and marks
+     * Backup in use so its screen reflects the restored data. Deliberately does NOT enable bookmark sync (that stays a separate
      * opt-in — unlike {@link #restoreWithCode}, the bookmark-sync path): the code
      * is simply now available for it too. {@code onResult} reports success/failure
      * on the main thread.
@@ -231,16 +232,16 @@ public class SyncManager {
      * {@code SYNC_LAST_VERSION} is the bookmark document's OCC version and would
      * make the next push fight the adopted account's document (or, worse, look
      * like a legitimate ancestor of it); the last-synced/last-error pair would
-     * report the old account's sync as this one's; {@code CLOUD_PLAN_*} is the
-     * local purchase shape behind the roadmap's offline step-② check-off; and
-     * {@code CLOUD_LAST_TOTAL_BYTES} is the durable total the home resting line
-     * paints before any network pull lands, so leaving it would show the OTHER
-     * device's figure as this account's — confidently and offline. All of it is
-     * re-derived from server truth on the next load. Nothing on the SERVER is
-     * touched: the previous account's files and credit survive under their own
-     * code, which is the only key to them (hence the warning the caller shows
-     * before this runs). {@code ensureRegistered}'s marker needs no clearing —
-     * it is keyed by {@code accountBase32()}, so a new account simply misses it.
+     * report the old account's sync as this one's; and the durable backup
+     * totals ({@code CLOUD_LAST_TOTAL_BYTES} / {@code CLOUD_LAST_FILE_COUNT})
+     * paint the Backup hero before any folder read lands, so leaving them would
+     * show the OTHER account's figures as this one's — confidently and with the
+     * folder unreachable. All of it is re-derived on the next load: the
+     * bookmark document from the server, the backup facts from the folder's
+     * account directory (a different account id = a different directory, so
+     * the previous account's files survive untouched under their own code,
+     * which is the only key to them — hence the warning the caller shows
+     * before this runs).
      */
     public void linkWithCode(String enteredCode, Consumer<Boolean> onResult) {
         diskExecutor.execute(() -> {
@@ -255,9 +256,8 @@ public class SyncManager {
                         .remove(Preferences.SYNC_LAST_VERSION)
                         .remove(Preferences.SYNC_LAST_SYNCED_AT)
                         .remove(Preferences.SYNC_LAST_ERROR)
-                        .remove(Preferences.CLOUD_PLAN_SIZE_GB)
-                        .remove(Preferences.CLOUD_PLAN_DURATION_MONTHS)
                         .remove(Preferences.CLOUD_LAST_TOTAL_BYTES)
+                        .remove(Preferences.CLOUD_LAST_FILE_COUNT)
                         .apply();
                 ok = true;
             } catch (Exception e) {
@@ -307,10 +307,10 @@ public class SyncManager {
         repo.setSyncEnabled(false);
         repo.setSyncChangeTrigger(null);
         scheduler.cancel();
-        // The recovery code is SHARED with Cloud Backup (one account across
-        // services). Only wipe it when no other feature still needs it —
+        // The recovery code is SHARED with the folder backup (one code keys
+        // both). Only wipe it when no other feature still needs it —
         // otherwise signing out of bookmark sync would silently lock the user
-        // out of their cloud-backed downloads. Cloud Backup wipes it symmetrically
+        // out of their backed-up downloads. The backup wipes it symmetrically
         // (gated on SYNC_ENABLED) in CloudBackupManager.deleteAllData.
         if (!prefs.getBoolean(Preferences.CLOUD_BACKUP_ENABLED, false)) {
             new SyncSecrets(context).clear();

@@ -277,7 +277,8 @@ the bridge — the `ensureBuiltIn` registration, the `connectNative("ublock")`
 port transport, real webRequest blocking against the bundled lists, and the
 per-page/cookie toggles' Java→JS→Java round trips — is covered by the
 instrumented **`UblockBridgeLiveTest`**
-(`app/src/androidTest/.../geckoview/`, the CloudBackupLiveTest pattern):
+(`app/src/androidTest/.../geckoview/`; `CaptureLiveTest` follows the same
+pattern):
 `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.solarized.firedown.geckoview.UblockBridgeLiveTest`
 with a device attached (t5 needs network). The node smoke owns JS semantics;
 the live test owns transport — a toggle bug fails the former, a
@@ -2844,7 +2845,7 @@ all three fixed that and was still too crowded; (3) the row. Two bar icons
   wash, no subtitle, no height change. The count never hides the row.
 - **Stacking policy for the top of the list: at most TWO cards, furniture
   first.** Position 0 is the Safe Folder row (permanent, state-carrying),
-  position 1 the Cloud Backup announce banner (dismissible, two-stage). The
+  position 1 the Backup announce banner (dismissible, one stage). The
   permanent row leads so it never shifts when the promo comes or goes; the
   promo is the only card with an X. Anything new that wants the top of this
   list must EITHER fold its state into one of these two (the way the
@@ -3432,8 +3433,9 @@ locales as the JIT toggle.
 
 **BROWSER-RECIPIENT RECEIVE — the sanctioned way to reach someone without
 Firedown installed (NOT a server-side share link).** This is the designed-but-
-unbuilt alternative to public Cloud Backup share links (see "PUBLIC SHARE LINKS
-— DECIDED AGAINST" in the Cloud Backup section for why that road is closed). The
+unbuilt alternative to a hosted share link for a backed-up file (the hosted
+Cloud Backup refused to build one — see the history note at the top of the
+Backup section — and the folder backup has no server to hang one on). The
 idea: the RECEIVER is a web page. The sender's phone keeps serving bytes over the
 existing WebRTC DataChannel; the recipient opens the same
 `https://firedown.app/s#FDO1.<id>` link in ANY browser and a static page on
@@ -3505,7 +3507,7 @@ wordmark + the blocked line; the 128dp privacy illustration + "Private
 Browsing" in incognito), and the bottom navigation bar — nothing else at
 rest except the ember behind the flame while a download runs. The cloud
 transfer chip and deadline card went earlier (see "The home carries NO
-cloud state" under Cloud Backup). The brief it answers: a calm identity
+cloud state" under Backup). The brief it answers: a calm identity
 surface, not a dashboard — no top sites or recents (Chrome's and Brave's
 shape), no download status (the Downloads screen's job). **ONE figure: the
 ad blocker's lifetime count as a bare line under the wordmark** (frame H2,
@@ -3523,7 +3525,7 @@ blocked-ads stats live in Settings → Privacy → "Trackers and ads blocked"**
 whose summary is the LIVE lifetime count (`SettingsFragment.bindBlockedStats`,
 "Protection active" at 0) over a `BlockedStatsFragment` sub-screen — the
 `BlockedStatsPreference` hero (blocked since install / estimated data saved
-at ~50 KB per request / blocked today, flat above the cards like the Cloud
+at ~50 KB per request / blocked today, flat above the cards like the Backup
 hero), a "Blocked by type" card of read-only `CountPreference` rows (title
 + a trailing count), a "Top trackers" card rebuilt from the pushed top-10
 and hidden under three rows, and a footnote naming the estimate. All of it
@@ -3775,1741 +3777,551 @@ chip shown when the address bar gains focus) — both from one on-device episode
   history/suggestion path. A deliberate long-press paste still works — the cap
   only stops the app from *offering* the blob.
 
-## Cloud Backup — encrypted per-file backup to `storage.firedown.app`
+## Backup — encrypted per-file backup into a FOLDER the user picks (SAF)
 
-The optional **Cloud Backup** feature backs a finished download up to the
-encrypted-storage service (`storage.firedown.app`, the `firedown-api`
-`storage-api` binary). It is a SEPARATE feature from the local **Safe Folder**
-(`file_safe`, which never leaves the device): user-facing copy always says
-"Cloud Backup", internal classes keep the `Vault*` names
-(`VaultEngine`/`VaultBackupWorker`/`VaultRestoreWorker`/`VaultThumbnail`/
-`VaultManifest`/`VaultEntry`, facade `CloudBackupManager`). **The server NEVER
-sees plaintext** — same cardinal rule as the bookmark sync: bytes are
-client-encrypted (`VaultCrypto`, per-file AES-256-GCM DEK wrapped under the
-storage master key) and uploaded phone↔R2 via presigned URLs; the server stores
-opaque chunks + an opaque manifest blob.
+The optional **Backup** feature backs a finished download up, encrypted, into
+a folder the user chose once through the system picker
+(`ACTION_OPEN_DOCUMENT_TREE`): Google Drive, Dropbox, Nextcloud, an SD card,
+the phone itself — anything with a `DocumentsProvider`. **There is no
+Firedown server in the path**: the folder IS the truth, the provider's own
+app does whatever syncing it does, and Firedown never learns whether a byte
+left the phone. It is a SEPARATE feature from the local **Safe Folder**
+(`file_safe`, which never leaves the device): user-facing copy says "Backup",
+internal classes keep the `Cloud*`/`Vault*` names of the hosted service this
+replaced (`CloudBackupManager`, `VaultEngine`/`VaultBackupWorker`/
+`VaultRestoreWorker`/`VaultThumbnail`/`VaultEntry`, `CloudBackupListFragment`,
+`CloudBuyButtonPreference`, the `cloud_*`/`settings_cloud_*`/`home_cloud_*`
+string keys, the `…cloud.backup.*` pref keys) — the shapes survived the
+server. The one cardinal rule is unchanged: **whoever holds the bytes never
+sees plaintext** — every file is encrypted on the device (`VaultCrypto`,
+per-file AES-256-GCM DEK wrapped under the storage master key) before it is
+written, and the folder holds opaque ciphertext under opaque names.
 
-- **Shared identity, no on/off switch.** Cloud Backup reuses the bookmark-sync
-  **recovery code** (`SyncSecrets` → `SyncIdentity`) — one code derives the same
-  account on every service, with a distinct storage content key (HKDF
-  `firedown/storage/v1`). It is **action-driven**: a finished download's options
-  sheet ("Back up to cloud") sets it up on demand (minting + showing the code
-  first if none exists). `Preferences.CLOUD_BACKUP_ENABLED` only tracks "has
-  data, keep the shared code" so signing out of one feature can't strand the
-  other (symmetric wipes in `SyncManager.disable`/`CloudBackupManager
-  .deleteAllData`).
+**History (2026-10): the hosted service is GONE, deleted in one release.**
+Until 1.2.01 this was "Cloud Backup" against `storage.firedown.app` (the
+`firedown-api` `storage-api` binary + R2), paid by anonymous blind-signed
+credits from `mint.firedown.app` (Lightning + on-chain Bitcoin), with a
+browser client at `firedown.app/backup/` unlocked by QR pairing. All of it —
+`StorageApiClient`, `CloudWatchWorker` (the lapse notifications), the
+payments stack (`MintClient`/`BlindSignature`/`CreditPurchase`/
+`CreditSettlement`/`CreditSettleWorker`/`PendingPurchase`/`BuyCredit*`), the
+pairing stack (`PairSeal`/`PairClient`/`PairApprovalViewModel`), their
+layouts, tests and ~160 strings — was deleted on the same branch that
+shipped the folder backup, with no read-only phase and no date (the
+maintainer's call: "the delete date is irrelevant"). `docs/SERVER-SUNSET-
+PLAN.md` is the checklist for what follows on the server side (`api.
+firedown.app` moves to the www host under its NAME; the cloud VPS is
+destroyed; old APKs get `410 Gone`). The git history carries the old
+design and its rationale (the public-share-link refusal, the pricing
+model, the pairing SAS) — there is nothing to re-derive here because there
+is no server to attach any of it to: **don't build a share endpoint, a
+credit, a quota, a pairing or a sync server for this feature**. A
+"browser-recipient" of a backup is the P2P share's job (see that section).
+What carried over UNCHANGED, and is why `VaultCryptoTest` and the shared
+vector still matter: the on-disk chunk format (FDVC2, 8 MiB plaintext per
+chunk, 34 bytes overhead, (objectId, index) as GCM AAD), the sidecar's
+`BookmarkBlob` framing, the storage key derivation (HKDF
+`firedown/storage/v1` off the shared recovery code), and every Backups-list
+and Storage-screen invariant below.
 
-- **Starter credit — register at CODE CREATION, label the trial honestly.** In
-  metered mode the server grants a one-time free starter credit AT REGISTRATION
-  (`FIREDOWN_STORAGE_STARTER_GRANT_GBM`, see firedown-api), so
-  `CloudBackupManager.registerInBackground` registers right after the recovery
-  code is created or adopted on the Cloud screen — not waiting for the first
-  backup's `ensureRegistered` — and the hero's next quota load shows the granted
-  runway (the roadmap's step ② check-off on server balance was already built).
-  Best-effort: offline falls back to first-backup registration; both the client
-  marker and the server grant are once-only, nothing double-applies. It is
-  deliberately NOT folded into `loadStatus` — that also runs for bookmarks-ONLY
-  codes, which must not get storage accounts minted. `Quota.starterGrantedAt`
-  (from quota's `starter_granted_at`) drives the honest label: a balance the
-  user never paid for renders roadmap step ② as `cloud_starter_credit_step`
-  ("Free starter credit included", 16 locales) instead of "✓ Add storage
-  credit" — a local `CLOUD_PLAN_*` purchase shape wins over the trial label.
-- **Register ONCE per install, not per backup (Cloudflare rate limit).** The CF
-  edge rate-limits ONLY the `/v1/account/register` + `/v1/register/challenge`
-  endpoints (per-IP, anti-Sybil — see `firedown-api`). `VaultEngine.backupFile`
-  used to call `api.register` on EVERY upload (2 requests to those exact endpoints
-  each), so backing up several files burst them → **429**. Registration is now
-  gated by `CloudBackupManager.ensureRegistered` — a per-account prefs marker under
-  a **static lock** (so concurrent first-time backups serialize to ONE register,
-  not N) — called by `VaultBackupWorker` before upload and by `deleteAllData`
-  (which `clearRegistered`s after erasing). `backupFile` no longer registers; the
-  manifest/object calls are signed and resolve against the already-created account.
-  Don't re-add a per-op `api.register`. Defense in depth: `StorageApiClient` wraps
-  a **derived** OkHttp client (`newBuilder().addInterceptor` — never the global
-  client) with a small retry interceptor that backs off on 429/503 honouring
-  `Retry-After` (OkHttp has NO built-in 429 handling — `retryOnConnectionFailure`
-  is network-errors only). Keep the CF rule as-is; the fix is the client not
-  over-calling register, not weakening the anti-Sybil limit.
-- **The encrypted manifest is the file index** (`VaultManifest`, OCC-versioned,
-  16 MiB server cap). One `VaultEntry` per backed-up file: objectId, wrapped DEK,
-  name/mime/size/downloadedAt/chunkCount, **plus a tiny base64 JPEG `thumb`**.
-  The manifest is gzip+GCM-encrypted (`BookmarkBlob`) before upload, so **the
-  thumbnails DO travel to `storage.firedown.app` but only inside the E2E-encrypted
-  blob — the server can't read them.** Kept small by design (`VaultThumbnail`:
-  ≤512px longest side, JPEG q85) so a manifest of many files stays under the cap
-  (~47 KB each → ~330 files fit). This is why a preview can show
-  **offline, even after the local copy is deleted** (the whole point of backing
-  up). `bookmarks-cipher.json`-style encryption details are client-only; the
-  server implements none of it.
-  - **Preview SIZE is TWO constants, and conflating them is what made the
-    thumbnails look bad.** `VaultThumbnail.MAX_DIM` (**512**px longest side,
-    JPEG **q85**) is the STORED one — it rides in the manifest, so it is bounded
-    by the 16 MiB cap *and* by the manifest being pulled AND pushed on every
-    OCC mutation over a metered store, which is the real cost. Sizing history,
-    each step calibrated against the DISPLAY: **160/q60** was chosen purely
-    against that budget and read "very poor" on-device (a list row is 78×64dp =
-    **234×192 px** on a 3x phone → ~1.5x upscale; a grid tile ~172×110dp =
-    **516×330 px** → ~3.2x, with q60 artifacts on top); **256/q80** covered the
-    list row outright but still upscaled ~2x on the grid tile — the one surface
-    left soft, and exactly where a cloud-only entry (or a second device) has no
-    local file to rescue it; **384/q80** brought the grid to ~1.34x and STILL
-    read as "lousy compression" on-device — the complaint was ARTIFACTS, not
-    blur: q80 blocks visibly in the dark gradients video frames are made of,
-    and the frame came out of `getScaledFrameAtTime`'s coarse built-in scaler
-    straight at target size. The current tuning attacks the ENCODE: **512**
-    (the grid tile's own pixels), **q85**, and the MMR frame decoded at 2x
-    then bilinear-downscaled (`createScaledBitmap` filter=true — the same 2:1
-    headroom `decodeImage` keeps via `sampleSize`). At 512/q85 an entry is
-    ~47 KB base64 (~330 files fit the cap; a 100-file account moves ~3.5 MB
-    per manifest pull AND push). That is the ceiling worth respecting: the
-    next lever is q90 (+~30%, ~250 files); beyond that the manifest needs a
-    different shape (thumbs as their own objects), not a bigger inline blob.
-    Area scales with the SQUARE of this constant and every byte is paid per
-    pull and per push, so redo that arithmetic before raising it again.
-    `VaultThumbnail.DISPLAY_DIM` (**512**px) is the other one: a display-only
-    bitmap decoded from the LOCAL file by `resolveLocalThumb`, which never enters
-    the manifest, so the stored budget does not apply. It now equals MAX_DIM
-    but stays a separate constant — the two are bounded by different things
-    (display pixels vs manifest bytes) and a future budget squeeze lowers
-    MAX_DIM alone. The
-    cloud-object decode path in `resolveLocalThumb` deliberately stays at
-    `MAX_DIM` — unlike the local paths it downloads and decrypts cloud bytes.
-    **Existing entries are NOT re-encoded**, so this improves new backups (and
-    any file re-backed-up, where `backupFile` rewrites the thumb without
-    re-uploading); an old 160/256/384px entry stays soft until then — a
-    "still looks bad" report must first check the entry is NEW.
-  - **`VaultThumbnail` MUST keep its native-FFmpeg fallback — MMR alone silently
-    produced NO stored preview.** `decodeVideoFrame` tries
-    `MediaMetadataRetriever` and, when that cannot open the clip at all, falls
-    through to `decodeVideoFrameNative` (`FFmpegThumbnailer`, path or the SAF
-    descriptor, `setTargetSizeHint`, `streamPos = frameUs > 0 ? frameUs : -1`
-    where **-1 means "no mandate"** so native picks its duration-aware offset —
-    passing 0 would pin the black head frame). Without it, a codec the device's
-    MMR lacks (AV1 is the documented one) made `generate` return null, the
-    manifest stored no thumb, and **the failure was invisible on the device that
-    did the backup**: its Backups row falls back to the local-file backfill
-    (`thumbBitmapFor`: `entry.thumb == null` → `mResolvedThumbs`), which goes
-    through the FFmpeg-capable Glide chain. A SECOND device on the same recovery
-    code has no local file and, for video, no cloud-decode path (that one is
-    image-gated), so it showed the mime glyph. That is the diagnostic signature
-    to remember: **a thumbnail that appears on the uploading device and not on
-    any other device sharing the code means the STORED thumb is null, not that
-    the other device is broken.** The Downloads list never had this because it
-    always had the fallback. `VaultBackupWorker` now logs the generated thumb's
-    size (or an explicit NULL + what it implies) under `BuildConfig.DEBUG` —
-    that path used to fail completely silently, which is what made the report
-    hard to attribute.
-  - **`maxDim` is threaded into every decoder, not just `scaleDown`.**
-    `decodeImage`/`decodeVideoFrame`/`decodeVideoFrameNative`/`sampleSize` all
-    take it, because `getScaledFrameAtTime`, the native size hint and
-    `inSampleSize` each cap the decode independently — when they hardcoded
-    `MAX_DIM`, the `DISPLAY_DIM` path was silently capped at the stored size and
-    the whole point of the split was lost for the `generateBitmap` fallback (the
-    primary local path, `GlideHelper.downloadThumbSync`, honoured it, which is
-    what hid the mistake). `decodeAudioArt` keeps `MAX_DIM` for its sample hint
-    only; `scaleDown` then applies the caller's bound.
-    Consequences that came with it, in `CloudBackupFileAdapter`: `mResolvedThumbs`
-    became a byte-bounded `LruCache` (8 MiB) because 512px bitmaps are ~670 KB
-    each and it was an UNBOUNDED `HashMap`; `THUMB_CACHE_BYTES` went 2 → 4 MiB
-    because a 256px stored thumb decodes to ~2.6x the bytes a 160px one did; and
-    `trimThumbCache` now `trimToSize`s the resolved cache to a quarter instead of
-    keeping all of it — holding 8 MiB of re-derivable bitmaps while the OS asks
-    for memory is not defensible, but evicting all of them would leave permanent
-    mime glyphs until the next manifest load (the reason it was kept whole).
-    Both budgets are now DERIVED from `Runtime.maxMemory()` (`cacheBudget`,
-    1/16 and 1/32 with clamps) rather than fixed constants — they land on the
-    same 8/4 MiB for this app's ~128 MB heap, so it is a scaling fix, not a
-    retune. That was the one fair part of "why not just use Glide's cache":
-    Glide sizes its memory cache and bitmap pool from the device
-    (`MemorySizeCalculator`, left at the default here), so two FIXED budgets sat
-    beside a device-aware one and reserved the same megabytes on a 2 GB phone as
-    on a 12 GB one.
-  - **The list's thumbnails go through GLIDE — there are no hand-rolled bitmap
-    caches on this screen any more.** It used to keep TWO `LruCache`s of
-    bitmaps, and the argument for them did not survive review: (1) the
-    manifest-preview cache existed only to amortise a base64+JPEG decode the
-    bind was doing **on the main thread** in `onBindViewHolder` — Glide never
-    would have decoded there; (2) the backfill cache held a MANDATORY COPY
-    (`GlideHelper.downloadThumbSync` must copy, the pooled original returns to
-    the bitmap pool) of an image Glide was **already caching under the Downloads
-    list's key**, so one image occupied two budgets; and (3) the privacy line
-    the caches were said to protect was already crossed — that same helper puts
-    these previews in Glide's disk cache for any file still in Downloads.
-    What replaced them:
-    - `glide/VaultThumbModel` + `VaultThumbModelLoader` (registered in
-      `GlideModule`) load the STORED manifest preview, keyed `ObjectKey(objectId)`
-      — server-random and immutable, so it can neither collide nor go stale.
-      **Always load it with `DiskCacheStrategy.NONE`**: a cloud-only entry's
-      preview has no plaintext counterpart on the device, and writing one would
-      create it. The fetch is a base64 decode of bytes already in memory, so a
-      disk cache buys nothing anyway.
-    - `CloudBackupManager.resolveLocalThumb` returns a **model**, not a Bitmap —
-      a `DownloadEntity` (local copy) or a `VaultObjectModel` (cloud-only image).
-      The adapter routes a `DownloadEntity` through `GlideHelper.load` so
-      signature + options + override match the Downloads list byte-for-byte and
-      the row is served from the entry that list already populated.
-    - The mime glyph is `placeholder` AND `error`, with `dontAnimate()`. That is
-      what preserves the no-flicker property: a cold bind shows exactly the state
-      a thumbnail-less entry shows anyway (never a blank, never the previous
-      row's image), and a memory-cache hit resolves inside `into()` with no
-      placeholder frame. `into()` on the same ImageView cancels the previous
-      request, so a recycled holder can't be painted by the old row's load — the
-      null branch calls `Glide.clear` for the same reason. **A local-file
-      model loads the entry's STORED preview as the request's `thumbnail()`**
-      (`bindThumb(…, stored)` — `VaultThumbModel.of(entry)`, the same
-      `preloadDownload` request the Downloads list keys on): the local frame
-      takes a real decode (MMR/FFmpeg, hundreds of ms per file), and dropping
-      to the glyph for that window was the on-device "grid opens with mime
-      glyphs, then the real thumbnails pop in" flicker. Glide paints the
-      preview (memory hit, or a base64 decode of bytes already in memory) and
-      swaps in the frame when it lands; if the frame fails the preview stays
-      (a resource is set, so the error drawable is not applied). **The first
-      fix reused `thumb.getDrawable()` as the placeholder of the new load and
-      was wrong**: that is a Glide-MANAGED drawable whose bitmap returns to
-      the pool the moment the new request clears the old one — a placeholder
-      that can be recycled or repainted under the user. Never hand Glide one
-      of its own resources back as a placeholder; hand it a model.
-    - **The backfill is ONE batch** — `resolveLocalThumbs` (one heavy-executor
-      task, one main-thread callback) → `setThumbModels` (one
-      `notifyItemRangeChanged` over the affected span). The per-entry version
-      fired one DB lookup task and one `notifyItemChanged` per row, so a grid
-      of N tiles re-painted N times over a second or two, each through the
-      glyph. Don't go back to per-row resolution "for earlier first paint" —
-      the first paint is the stored preview, which needs no resolution at all.
-    - The item sheet gets `ARG_LOCAL_PATH` for entries with no stored preview,
-      because the list no longer holds a bitmap to hand it (and a Bundle was
-      never the right carrier for one).
-    Gone with them: `mDecodedThumbs`, `mResolvedThumbs`, `cacheBudget`,
-    `trimThumbCache` and the fragment's `TrimMemoryListener` — Glide's own
-    device-sized cache and bitmap pool now own every cached bitmap on this
-    screen, and there is no second budget to keep in step.
+- **Shared identity, no on/off switch.** Backup reuses the bookmark-sync
+  **recovery code** (`SyncSecrets` → `SyncIdentity`): one code derives the
+  storage key that encrypts every object AND the account id
+  (`accountBase32`) that names the folder's sub-directory. It is
+  **action-driven**: a finished download's options sheet ("Back up to
+  <provider>") sets it up on demand. `Preferences.CLOUD_BACKUP_ENABLED` only
+  tracks "a folder was chosen, keep the shared code" so signing out of one
+  feature can't strand the other. **`isSetUp()` = a folder is chosen AND a
+  code exists** — a code present only because bookmark sync is on does NOT
+  count, and a folder with no code is not addressable (the key gate below).
+  `SyncManager.linkWithCode` (adopting another device's code) drops every
+  cached per-account value — `SYNC_LAST_VERSION`, the last-synced/error
+  pair, `CLOUD_LAST_TOTAL_BYTES` / `CLOUD_LAST_FILE_COUNT` — and the caller
+  calls `CloudBackupManager.forgetCachedStatus()` BEFORE `updateState`, so
+  no surface paints the previous account's figures: a different code is a
+  different directory in the same folder, and the previous account's files
+  survive there untouched under their own code, which is the only key to
+  them (hence the replace-confirm the adopt dialog shows post-key).
 
-- **Thumbnails reuse the Downloads list's EXACT frame.** `VaultThumbnail.generate`
-  takes a `frameUs` and grabs that video frame with `OPTION_NEXT_SYNC` (first
-  keyframe at/after the offset — skips the black `t=0` keyframe that
-  `CLOSEST_SYNC` snaps back to). The frame is `GlideHelper.thumbnailFrameUs(entity)`
-  — the SAME user-chosen/black-skipping position (µs) the list renders — fed
-  through `VaultBackupWorker.KEY_FRAME_US` on the backup path and read straight
-  from the entity on the display backfill. So the stored preview matches the list
-  thumbnail precisely; don't revert to a guessed fixed offset (that's the
-  fallback when no entity frame is available). Image → decoded bitmap, audio →
-  embedded cover art, else null → the row shows the `MimeTypeThumbnail` fallback.
+### `FolderStore` — the folder, its layout, and the one failure it names
 
+`sync/FolderStore.java` is the ONLY thing that touches the picked tree
+(`FOLDER_BACKUP_TREE_URI`, a persisted read+write grant taken in `adopt`
+and released in `forget`/on re-pick; the old folder's files are never
+touched). Layout, visible to the user in their Drive/file manager (so named,
+not hidden):
+
+```
+<picked folder>/Firedown Backup/<account base32>/objects/
+    <objectId>.fdvc    the ciphertext: FDVC2 chunks, back to back
+    <objectId>.entry   the encrypted sidecar: ONE VaultEntry (name, size, mime,
+                       wrapped DEK, thumbnail, origin, downloadedAt, backedUpAt)
+```
+
+- **The sidecar is the commit marker, written LAST.** An object without one
+  is a backup that never finished and is swept once older than
+  `ORPHAN_MIN_AGE_MS` (24 h); a sidecar without its object is SKIPPED and
+  never deleted (a provider that has not synced the big file yet, or a
+  conflict copy — see below). Everything the server used to hold encrypted
+  (the manifest) is now these sidecars, under the same `BookmarkBlob`
+  framing and the same storage key, one per object, capped at
+  `MAX_ENTRY_BYTES` (512 KB — a sidecar is a few KB; refuse a stray multi-MB
+  file rather than read it into memory). **"The manifest" in the Backups
+  list code means this listing** (`VaultEngine.loadManifest()` = every
+  sidecar, decrypted) — the name stayed, the mechanism is a directory walk.
+- **Why sidecars, not ONE index file.** A sync-lagged folder has no
+  optimistic concurrency: two phones writing one index would overwrite each
+  other's entries through the provider's own conflict handling, silently.
+  One small file per object has no shared state to lose — the listing is the
+  index, rebuilt on every load, and a provider's conflict copy of a sidecar
+  (`name (1).entry`, `name.entry (1)`) is at worst a duplicate row, which is
+  why names are matched by PREFIX when listing (`objectIdOf`). Don't
+  reintroduce an index file "for speed" — it reintroduces the lost-update
+  class the hosted OCC existed to prevent, with no server to arbitrate.
+- **`DocumentsContract`, not `DocumentFile`**: one query per directory
+  listing instead of a stat per file (the same contract the download-mirror
+  restore speaks). Objects are created under a mime no provider maps to an
+  extension (`OBJECT_MIME` = `application/vnd.firedown.vault`): the
+  external-storage provider appends the mime's extension to a name whose own
+  extension does not map back, and `application/octet-stream` turned
+  `<id>.fdvc` into `<id>.fdvc.bin`.
+- **`UnreachableException` is the one named failure** (grant revoked — the
+  provider app signed out/updated/uninstalled, the SD card left; the tree
+  gone; the provider not answering), distinct from a plain `IOException` (a
+  failed write on a reachable folder). Every consumer treats it as "the
+  FOLDER, not the network": `VaultBackupWorker` fails terminally with
+  `SLUG_FOLDER` and posts the folder-lost notification ONCE (tap → the Backup
+  screen), the Backups list's transfer row names it
+  (`folder_backup_transfer_lost`), and the Backup screen's hero shows the
+  lost state with the CTA reading "Choose the folder again".
+  `isReachable()` = the persisted grant is still held with read+write AND
+  the tree's root document answers a query — one resolver round trip, OFF
+  the main thread only (Drive answers a cold listing from the network).
+- **`providerLabel()`** names WHERE the folder lives for "Back up to Google
+  Drive" / "Firedown Backup on Google Drive": the provider app's label, or
+  for the system providers the device's own words (this phone / SD card /
+  Downloads); falls back to the authority, never to an empty string.
+- `newObjectId()` mints the 32-char lowercase hex id (16 random bytes) the
+  AAD binds chunks to — client-minted now, same shape the server issued.
+
+### `VaultEngine` + the workers — same pipeline, a folder underneath
+
+- **The chunk format is the hosted one, byte for byte** — `CHUNK_SIZE` 8 MiB,
+  `CHUNK_OVERHEAD` 34, FDVC2's position-binding AAD (`objectId` hex-decoded ||
+  `chunkIndex` uint32-BE), `VaultCryptoTest` pinning the exact blob — so a
+  folder written by this build is readable by any later one, and
+  `VaultObjectReader` maps a plaintext offset to a byte range of the object
+  file with no index (chunk `i` starts at `i × (CHUNK_SIZE + CHUNK_OVERHEAD)`),
+  which is what the stream player relies on. **Never change the two
+  constants** — every existing backup folder is addressed by them.
+- **Dedup by name+size, and a repair is not a new backup.** `backupStream`
+  first looks for an entry with the same name and size; if found, no object
+  is written — a missing preview or origin is BACKFILLED into the existing
+  sidecar (cheap, no re-encrypt) carrying the ORIGINAL `backedUpAt`, so a
+  re-backup of an old file does not jump to the top of the list. The
+  `enqueueUniqueWork(KEEP)` key is name+size too (`VaultBackupWorker.enqueue`,
+  the ONE place the request shape lives — the options sheet, multi-select
+  and the notification receiver all call it), so two taps on the same
+  content collapse to one worker.
+- **A failed backup cleans its own object** (`deleteObject` on the way out
+  of `backupStream`), so a retry writes a fresh id and the orphan sweep is
+  only the backstop for a process death mid-write.
+- **`cancel()` is cooperative** — WorkManager does not interrupt a Worker's
+  thread, so without the per-chunk `checkCancelled` a cancelled backup kept
+  writing a multi-GB object to the end.
+- **`VaultBackupWorker`** runs foreground (`dataSync`, the app's declared
+  type) with **no network constraint**: the folder is written through its
+  provider (a local copy for Drive/Dropbox/Nextcloud, which upload on their
+  own; an SD card needs nothing), so a backup works offline. It loads the
+  shared identity, drives the engine, publishes per-chunk progress
+  (`KEY_PROGRESS_DONE`/`_TOTAL`, throttled to whole percents, skipped when
+  `isStopped()`, and the last `setProgressAsync` future DRAINED before every
+  `Result` — WorkManager throws "must complete before a ListenableWorker
+  signals completion" otherwise), and names exactly two terminal causes:
+  `SLUG_FOLDER` (above) and `SLUG_NOT_SET_UP` (a job queued before the
+  folder was forgotten). The request carries `TAG_NAME`/`TAG_MIME`/`TAG_SIZE`
+  so the Backups list can render a transfer row for an ENQUEUED worker
+  (WorkInfo exposes tags, not input data, and progress is empty until the
+  worker starts — without the tags the list looked EMPTY right after "Back
+  up", at the exact moment the snackbar's View lands the user there).
+  `MAX_RUN_ATTEMPTS` still bounds a backup that keeps failing for other
+  reasons so it fails cleanly instead of re-encrypting forever.
+- **`VaultRestoreWorker`** restores into `Download/Firedown` (unique
+  destination), inserts a FINISHED `DownloadEntity` through the same
+  repository every download uses, and **skips a file already in Downloads**
+  (`findByNameSize`, honoured only when the local file still exists →
+  `KEY_ALREADY_PRESENT`, "Already in your downloads"). A restored row whose
+  sidecar carries no origin (backed up before it was stored) gets
+  `backup://folder` as its origin, the P2P `p2p://<device>` convention —
+  name the transport, never leave the domain blank. Tagged
+  `TAG_OBJECT + objectId` so the list can tell WHICH entry a running restore
+  belongs to. **Its IOException branch must keep its `isStopped()` guard**: a
+  cancelled worker never runs its retry, so `Result.retry()` there would
+  strand the Downloads row at PROGRESS forever — it resolves to ERROR.
+
+### `CloudBackupManager` — the facade; status is two LOCAL facts
+
+- **There is no server, so there is no status to fetch.** `Status` is
+  `(setUp, reachable, fileCount, totalBytes, providerLabel)`: `loadStatus`
+  reads the folder off the manager's own BOUNDED 3-thread pool
+  (`folderExecutor`, idle threads time out — NOT the DiskIO/HeavyIO serial
+  lanes: a provider can block on its own network, a list load must not queue
+  behind a delete, and a big multi-select must not spawn a thread per
+  delete), caches the last SUCCESSFUL answer in memory (`lastStatus()`, bound
+  cached-first by every screen so nothing flashes empty on entry) and mirrors
+  the totals to prefs (`CLOUD_LAST_TOTAL_BYTES` / `_FILE_COUNT`) so the
+  folder-LOST state can say what was there ("Last seen …"). A reachable
+  folder whose listing nevertheless failed (a provider hiccup) reports
+  unreachable-with-last-known rather than invent a number.
+- **`cachedBackedUpKeys()` / `loadBackedUpKeys`** are the content-key set
+  (name+size, `contentKey`) behind the Downloads cloud mark, the review
+  list's mark and the Storage screen's offload card — cached-first from the
+  last successful listing, kept in step with the manager's own deletes,
+  answering a FAILED listing with the EMPTY set (never "backed up" on no
+  evidence), never persisted to disk (another phone on the same folder can
+  change it; stale marks across process death would have no read to correct
+  them until the folder answers).
+- **`deleteAllData` = "delete the files", not "leave"**: erases this
+  account's sub-directory (objects, sidecars, the directory) off the folder
+  pool and KEEPS the folder grant and the recovery code — the next backup
+  writes into the same folder again. Every in-flight/queued transfer is
+  cancelled FIRST (`cancelAllWorkByTag(WORK_TAG)` — backups AND restores
+  carry it), or a queued backup would re-create the directory seconds after
+  the user erased it; the cached status is dropped and the totals stored as
+  KNOWN-empty (0), not unknown.
+- **`cancelLegacyWatch()` runs once at boot** (`App.onCreate`): the hosted
+  service's periodic account watch (`CloudWatchWorker`, unique work
+  `cloud-watch`) is a periodic WorkManager request that survives an update
+  until something cancels it, and the class it names no longer exists.
+- `isAlreadyDownloaded` / `resolveCloudOnly` (the name is historical —
+  "folder-only": an entry whose file is NOT on this phone, probed with
+  `RestoredFileAccess.openableUri`, never `File.exists()`, which is false for
+  a readable foreign-owned restored file; a lookup that THROWS leaves the id
+  OUT of the set, so an unknown degrades to the plain wording, never to a
+  false "only copy" claim), `resolveLocalThumbs` (ONE batch per load) and
+  `recoveryCodeForDisplay` are unchanged in contract.
+
+### Thumbnails — the stored preview, the local file, and Glide
+
+- **The sidecar carries a tiny base64 JPEG `thumb`** (`VaultThumbnail`,
+  `MAX_DIM` 512 px longest side, JPEG q85, the MMR frame decoded at 2x then
+  bilinear-downscaled) so the Backups list shows a preview **offline and
+  after the local copy is deleted** — the whole point of backing up. The
+  size is a budget even without the server's 16 MiB manifest cap: every
+  sidecar is one file READ per listing (a cold Drive listing fetches each),
+  so a bigger preview is paid on every load of the list. History, each step
+  calibrated against the DISPLAY: 160/q60 read "very poor", 256/q80 still
+  upscaled ~2x on the grid tile, 384/q80 still showed q80's blocking in the
+  dark gradients video frames are made of — the fix attacked the ENCODE
+  (512 = the grid tile's own pixels, q85, the 2:1 decode headroom), not the
+  dimension alone. `DISPLAY_DIM` (512) is the SEPARATE constant for a
+  display-only bitmap decoded from the LOCAL file; `maxDim` is threaded
+  into EVERY decoder (`decodeImage`/`decodeVideoFrame`/
+  `decodeVideoFrameNative`/`sampleSize`) because each caps the decode
+  independently. **Existing sidecars are not re-encoded** — a "still looks
+  bad" report must first check the entry is NEW.
+- **`VaultThumbnail` MUST keep its native-FFmpeg fallback.** MMR alone
+  silently stored NO preview for a codec the device lacks (AV1): the
+  backing-up phone never noticed (its row falls back to the local file),
+  and a SECOND phone on the same folder showed the mime glyph. That is the
+  diagnostic signature: **a thumbnail that appears on the phone that backed
+  up and not on another phone sharing the folder means the STORED thumb is
+  null.** `streamPos = frameUs > 0 ? frameUs : -1` (-1 = no mandate; 0 would
+  pin the black head frame).
+- **The stored preview is the Downloads list's EXACT frame**
+  (`GlideHelper.thumbnailFrameUs(entity)` → `KEY_FRAME_US`,
+  `OPTION_NEXT_SYNC`), never a guessed fixed offset.
 - **Display prefers the LOCAL file; the stored preview is the fallback**
-  (`CloudBackupListFragment.backfillThumbnails` → `CloudBackupManager
-  .resolveLocalThumb` → `CloudBackupFileAdapter.thumbModelFor`). For EVERY
-  entry the fragment resolves whether the file is still on the device
-  (`DownloadDao.findByNameSize`, heavy executor) and, when it is, the row
-  renders the local file through the SAME Glide path as the Downloads list
-  (`GlideHelper.load(DownloadEntity)`, 512×320 MMR frame / full image
-  decode) — so the two lists show the identical frame at identical quality.
-  The stored manifest JPEG is used only when there is no local copy (a
-  cloud-only entry, or a second device on the same code). History: the
-  stored preview used to WIN over a present local file, and the local resolve
-  ran only for thumb-less legacy entries — so on-device the Downloads list
-  looked fine and the Backups list "horrible" for the very same files, and
-  every entry backed up under an older, smaller encode stayed that way forever
-  (nothing re-encodes a stored preview). For an entry WITH a stored preview
-  only a local `DownloadEntity` may replace it — the resolver's cloud-object
-  answer (download + decrypt) is never spent to beat a preview that already
-  exists. Display-only — the manifest is NOT re-written (no re-upload, no OCC
-  churn); the stored preview upgrades only when the file is backed up again.
-- **No duplicate backups — two layers.** (1) The enqueue is
-  **`enqueueUniqueWork(KEEP)` keyed by file NAME+SIZE (content), NOT the path**
-  (`BaseDownloadFragment`): the same video downloaded twice lands at two different
-  paths with the same name+size, so a PATH key let both back up concurrently —
-  on-device that meant **4 workers all uploading the same 665 MB file**, spamming
-  "setProgressAsync must complete before Result" and making cancel useless. The
-  content key matches the engine's own dedup key, so KEEP collapses every backup
-  of the same content to ONE worker. (2) Because the start-time `findExisting`
-  name+size check still runs against a *pulled snapshot*, the COMMIT is also
-  **dedup-checked under the OCC mutate** (`VaultEngine.commitDeduped`): after
-  upload it re-pulls the latest manifest and, if another object with the same
-  name+size already committed, keeps THAT entry and drops its own just-uploaded
-  object as an orphan (`deleteObject`, best-effort) — so the manifest can never
-  gain a duplicate even if two uploads still race. Don't rely on KEEP or the
-  start-time check alone; the commit-time dedup is the guarantee. **Belt-and-braces:**
-  `VaultBackupWorker.publishProgress` skips when `isStopped()` (a cancelled
-  worker's WorkSpec is being torn down — a late `setProgressAsync` logs the error
-  above) and throttles to whole-percent steps; `observeTransfers` also collapses
-  transfer rows by name so a transient multi-worker state shows ONE row.
-  `VaultEngine.backupFile` also **backfills a missing `thumb` into the existing
-  entry** (cheap manifest re-write, no re-upload) when re-backing up a file that
-  predates previews.
+  (`backfillThumbnails` → `resolveLocalThumb` → `thumbModelFor`): a present
+  local copy renders through the SAME `GlideHelper.load(DownloadEntity)` path
+  as the Downloads list, so both lists show the identical frame. Display-
+  only — the sidecar is not rewritten.
+- **Everything goes through GLIDE; there are no hand-rolled bitmap caches
+  on this screen.** `glide/VaultThumbModel` + `VaultThumbModelLoader` load
+  the stored preview keyed `ObjectKey(objectId)` (random, immutable);
+  **always `DiskCacheStrategy.NONE`** — a folder-only entry's preview has no
+  plaintext counterpart on the device and writing one would create it.
+  `resolveLocalThumb` returns a MODEL (a `DownloadEntity`, or a
+  `VaultObjectModel` for a folder-only IMAGE, decrypted on read through
+  `VaultObjectModelLoader`), never a Bitmap. The mime glyph is `placeholder`
+  AND `error` with `dontAnimate()` (no flicker, no previous row's image); a
+  local-file load uses the STORED preview as its `thumbnail()` request so
+  the grid never drops to the glyph while the MMR decode runs. **Never hand
+  Glide one of its own drawables back as a placeholder** (`thumb.
+  getDrawable()` is pool-managed and recycles under the user); hand it a
+  model. The backfill is ONE batch (`resolveLocalThumbs` → `setThumbModels`,
+  one `notifyItemRangeChanged`).
 
-- **Orphaned committed object on a commit-conflict — freed, not leaked.** The
-  upload order is `createObject` → chunk PUTs → `completeObject` → `commitDeduped`
-  (the manifest OCC push). If the push is **cleanly rejected on every OCC retry**
-  (`mutateManifest` throws `VaultEngine.ManifestConflictException`), the entry
-  DEFINITELY never committed — but `completeObject` already did, so the object is a
-  **committed, manifest-unreferenced orphan**: it counts against the account cap /
-  is billed, is invisible to the UI (not in the manifest), and NO reaper reclaims
-  it (`ReapPending` keys on `state='pending'`; the server can't read the E2E
-  manifest to know it's unreferenced). WorkManager's retry then re-uploads a *new*
-  object → one orphan leaked per attempt. So `backupFile` catches
-  `ManifestConflictException` specifically and best-effort `deleteObject`s the
-  just-completed object before rethrowing (the retry re-uploads cleanly).
-  **Crucially it does NOT catch a generic `IOException`** (a socket drop mid-push):
-  that's AMBIGUOUS — the push may have committed with the response lost — and
-  blind-deleting then would leave a **ghost** manifest entry pointing at a deleted
-  object. `ManifestConflictException` is the typed "definitely not committed"
-  signal (still an `IOException`, so the worker's retry branch is unchanged); the
-  ambiguous-lost-push orphan is a rare documented residual (no client-safe cure;
-  a future "list my objects" reconcile could close it). Don't widen the catch to
-  bare `IOException`.
+### The Backups list (`CloudBackupListFragment` + `CloudBackupListViewModel`)
 
-- **Large-file uploads REFRESH expired presigned URLs mid-flight (the real fix,
-  not just a bound).** `create` hands out all chunk PUT URLs under the server's
-  short `UploadPresignTTL`; a large file on a slow link outlives it and the later
-  chunks 403. `StorageApiClient.putChunk` raises `PresignExpiredException` on a 403
-  (distinct from `TransientException`), and `VaultEngine.backupFile` catches it,
-  calls `api.refreshUploadUrls(objectId)` (→ `POST /objects/{id}/upload-urls`,
-  which re-mints fresh URLs for the still-PENDING object; the server refuses once
-  committed), swaps in the fresh URLs, and **retries the SAME chunk** — so a long
-  upload resumes instead of re-running from chunk 0. Bounded by `MAX_URL_REFRESHES`
-  (200; a refresh covers a whole TTL of chunks, so a real upload needs a handful —
-  this is headroom, not a per-chunk cost). A non-403 (`TransientException`) still
-  propagates → WorkManager retry, as before. **A PERSISTENT 403 fails fast as
-  "presign REJECTED", not expired** (`MAX_SAME_CHUNK_EXPIRIES`, 2 consecutive
-  per chunk, reset on success): a URL that 403s seconds after being freshly
-  minted cannot have expired — R2 is rejecting the SIGNATURE (VPS clock skew,
-  rolled R2 credentials, bucket/endpoint change), which no refresh fixes. The
-  old loop burned all 200 refreshes (~400 round-trips) on one chunk and then
-  reported the misleading "presign expired" (how a vault smoke-test failure
-  first surfaced); the fail-fast throws an `IOException` naming the real cause
-  + pointing at `storage-api --r2-check`. One consecutive re-expiry is still
-  allowed for the link-so-slow-one-chunk-outlives-the-TTL edge. `putChunk`'s
-  403 also carries R2's own error `<Code>` from the response body
-  (`SignatureDoesNotMatch` vs an expiry) — a stale pre-write-once APK against
-  the header-signing server 403'd every PUT and the bare "presign expired"
-  message misread it for a round; the code names the real cause on sight.
-- **`putChunk` sends `If-None-Match: *` ONLY when the presign signed it, and
-  treats 412 as success (write-once chunks).** The server can SIGN
-  `If-None-Match: *` into the chunk PUT presign (its
-  `FIREDOWN_STORAGE_WRITE_ONCE_CHUNKS` flag) so R2 rejects a second write to a
-  chunk key with 412 and a modified client can't drop the header to overwrite a
-  committed chunk. The client mirrors the presign: it sends the header **iff the
-  URL's `X-Amz-SignedHeaders` contains `if-none-match`** (`presignSignsIfNoneMatch`
-  — the name only appears there when signed). **Sending it UNCONDITIONALLY was a
-  bug** (on-device: `403 AccessDenied` on every chunk PUT): when the server did
-  NOT sign the header (write-once OFF), an unsigned conditional `If-None-Match`
-  is not a benign no-op — R2 rejects it `AccessDenied`. Mirroring the presign
-  decouples the client from the server flag (either setting uploads cleanly).
-  When signed, the header is sent verbatim (dropping it → 403). A **412** means
-  the chunk is already uploaded — a retry after a lost 200, or a refresh URL for
-  a chunk we already wrote — so it's treated as success, not an error. This is the client half
-  of retiring the server's `ReconcileCommitted` sweep; the server flag stays off
-  until R2's honoring of a presigned conditional PUT is verified live.
-- **`createObject` DECLARES `chunk_size`, and it must equal what `putChunk`
-  actually sends.** The server signs that length into each presigned chunk PUT's
-  `Content-Length`, which is the only thing bounding how many bytes those URLs can
-  write (an unbound presign accepts anything up to R2's ~5 GiB single-PUT
-  maximum regardless of the declared `byte_size`). The value is
-  `CHUNK_SIZE + CHUNK_OVERHEAD` — the ciphertext length of a FULL chunk — and the
-  server derives the last chunk as `byte_size - (chunk_count-1)*chunk_size`, which
-  is exactly what `encryptChunk` produces for the remainder. **If you ever change
-  `CHUNK_SIZE` or `CHUNK_OVERHEAD`, this declaration changes with it or every PUT
-  403s on a signature mismatch** (the same failure shape as the `If-None-Match`
-  episode — `putChunk`'s 403 body carries R2's error `<Code>`, so
-  `SignatureDoesNotMatch` names it on sight).
-- **Buying credit has TWO rails, both Bitcoin — Lightning and on-chain — and
-  cards (Stripe) are GONE, server-side too (`firedown-api` removed the rail:
-  the KYC processor was the one party that legally knew the buyer, and card
-  settlement was the only kind REVERSIBLE after an irrevocable blind-signed
-  credit was issued). Don't bring the card rail back casually; the app's
-  hosted-Checkout WebView, its warm-up page, the `/pay/` redirect
-  interception and the `checkout_url` plumbing were all deleted with it.**
-  The wire: `GET /v1/mint/keys` carries `methods` (the rails this mint is
-  configured with — `MintClient.Catalog`; a pre-field mint reads as
-  `["lightning"]`) and the picker offers EXACTLY those (`bindRails` hides a
-  row the mint doesn't list and defaults to Lightning when listed). **The
-  method picker is two selectable ROWS** — icon · name · one-line subtitle
-  ("Pays instantly from any Lightning wallet" / "On-chain transfer. Confirms
-  in about 10–60 minutes, plus a small network fee.") — the Proton/Mullvad/
-  Bitrefill shape, stroke-selected exactly like the plan tiles
-  (`strokeSelected`, shared) so the screen has ONE selection language and
-  the CTA is its only coral fill. It replaced a segmented toggle whose
-  description sat under it as an orphaned "Instant" line that read as a
-  status. The CTA names the action and the rail once a tile is picked —
-  `buy_credit_pay_cta` "Pay $10 with Lightning" (`updateContinueLabel`);
-  the bare "Continue" shows only while disabled. `POST /v1/mint/quote` takes
-  `method: "lightning" | "onchain"`;
-  an on-chain quote answers with a BIP21 `pay_request` (`bitcoin:<addr>?amount=`)
-  PLUS the bare `address`, `amount_sats` and `min_confirmations`
-  (`MintClient.Quote`), and `/v1/mint/issue`'s 425 `not-paid-yet` carries
-  `pending: true` + an extended `expires_at` once the mint's watch-only node
-  has SEEN the payment (mempool / short of the confirmation target) —
-  surfaced as `IssueOutcome.pending` → `CreditPurchase.Session.paymentPending`
-  (sticky) + `pendingExpiresAt` → the pay screen's "Payment detected. Waiting
-  for it to confirm…". The rest of the pipeline (blind → issue → unblind →
-  redeem, `PendingPurchase`) is rail-agnostic; what differs, and why:
-  - **The plan picker is ONE axis — size tiles for the LONGEST duration the
-    mint sells (1 year), no "Keep my backups for" toggle.** It shipped as
-    the Proton/Bitrefill two-axis grid (duration segments with a "−N%"
-    badge × size tiles, each tile with a per-month sub-price) and was cut
-    to the Signal/Mullvad single list (maintainer call, the big-player
-    comparison): a second axis to reason about before a size can be picked
-    was most of the screen's length. `BuyCreditViewModel` keeps only the
-    options whose `durationMonths` is the catalog's maximum — filtered on
-    the CLIENT, not merely by retiring the 3-month keysets on the mint, so
-    the screen is one-axis whatever `/keys` still lists (the web has no
-    buy flow; a resumed purchase quotes by keyset id and is unaffected).
-    The mint operator should still retire the shorter keysets so nothing
-    sells them: `UPDATE mint_keysets SET active = false WHERE
-    duration_months < 12;` on the mint DB (retired keysets stay listed for
-    in-flight credits to verify). Every tile states its coverage ("for 1
-    year") since no other control on the screen does. Gone with the
-    toggle: `item_buy_duration_button`, the `buy_segment_*` colour set,
-    `durationLabelWithBadge`, `buy_credit_plan_duration_label`.
-  - **The no-bitcoin door is a quiet HELP LINK under the picker
-    (`buy_no_bitcoin_link`, "Don't have bitcoin?", visible iff the Lightning
-    rail is) opening `BuyBitcoinSheetDialogFragment` — and it is COPY plus
-    two store links, not an integration.** The sheet: a centred title (NO
-    illustration — see below), ONE sentence ("Buy about <amount> in one of these
-    wallets, then come back here and pay" — `buy_bitcoin_sheet_lead`,
-    bound in the fragment; a no-amount twin before a tile is picked), two
-    wallets as PLAIN 56dp list rows with a hairline between them and an
-    outlined Install button (`market://details?id=` → web listing fallback
-    → snackbar) — Wallet of Satoshi ("No setup · Android", in-app MoonPay
-    buy) and Strike ("Debit card · 36+ countries") — and a one-line caveat
-    ("Sold by the wallet, not Firedown."). The Install buttons are the
-    sheet's only coral. Four shapes were rejected on-device before this
-    one: the kid illustration (`ill_kid`) on top — it is the buy screen's
-    "couldn't set up" face, a crying child, and read as "something went
-    wrong" on a sheet where nothing has; no other art in the set says
-    wallet or money (`ill_presents` already means Receive a file), so a
-    help sheet carries no picture, like every option sheet except the
-    permission-asking notifications priming; a four-line intro paragraph over
-    two-line notes and a two-line caveat ("too much text, too plain"); a
-    three-glyph install → buy → pay strip in peach discs over a "Wallets
-    that sell bitcoin by card" label ("not quite"); and, in sketches, tonal
-    wallet CARDS under the illustration (one heavy object too many —
-    picture + cards read as a landing page, not a help sheet). The fee, the
-    Open-in-wallet / scan-the-QR detail and the seconds-to-credit
-    reassurance are deliberately absent — the pay screen the user returns
-    to shows all three itself. Sketch layout changes to this sheet BEFORE
-    committing them (maintainer request).
-    Phoenix was named at first and is WRONG (no on-ramp at all) — verify a
-    wallet's buy feature before naming it. History, two rejected shapes:
-    the guidance first shipped as a hint LINE at the bottom of the Lightning
-    stage, which the maintainer could not find (a user with no bitcoin needs
-    a door at the picker, not a footnote after the invoice); then as a THIRD
-    RAIL ROW ("Card, via a Bitcoin wallet") that mapped to Lightning at the
-    mint and merely led the pay stage with a three-step paragraph — rejected
-    as "dumb": it quoted the very same Lightning invoice, so it was a payment
-    option in shape and help text in substance, and a fake rail teaches the
-    picker to lie. Help is a link + sheet; the picker lists only what the
-    mint can be paid with. No on-ramp partner, no API key, no merchant KYC
-    on our side; the wallet's on-ramp identifies the BUYER (as Stripe did)
-    and settlement reaches the mint as Bitcoin, irreversible, so the
-    blind-credit model holds. An embedded MoonPay/Banxa widget would need
-    partner registration + business KYC — the wall the card rail's removal
-    was about — so don't "upgrade" the sheet into one. The real card rail,
-    if conversion ever demands it, is voucher codes sold by a Merchant of
-    Record (Paddle / Lemon Squeezy: buyer KYC, VAT and disputes are theirs;
-    codes revocable until redeemed), never a direct Stripe re-integration
-    (see `3f52b53` / firedown-api `ef1dc9f` for why it died: buyer KYC,
-    reversibility against an irrevocable credit, and the webhook/reconcile
-    complexity). No fiat rail exists without SOMEONE identifying the
-    operator (every euro lands in a named bank account); the question is
-    only who and how much.
-  - **Errors switch on the SLUG, never the HTTP status** (`PurchaseError`,
-    pure and unit-tested; `MintClient.classify` builds the exception the same
-    way). The shipped bug: every 503 read "Too many requests just now" —
-    including `rail-unavailable`, which rides a 503 while the on-chain node is
-    in initial block download, so the user saw a rate-limit message while
-    the server's user-facing `detail` ("On-chain payments are temporarily
-    unavailable while the Bitcoin node syncs. Pay with Lightning, or try
-    again later.") sat unread. Now: `rate-limited` / `server-busy` (or a bare
-    429/5xx with no slug — an edge page) → the busy copy; `rail-unavailable`
-    → the server's `detail` verbatim (`FatalException.detail`), plus a
-    filled "Pay with Lightning instead" button (`UiState.offerLightning`,
-    `switchToLightning` re-quotes the SAME tile) when the refused rail was
-    on-chain and `methods` lists Lightning; `quote-expired` → "start again";
-    any other slug → the generic copy naming it. Don't put a status code
-    back into that switch.
-  - **EVERY record is SUBMITTED from the moment its pay UI is shown — on-chain
-    AND Lightning — and Back on either pay screen is a confirmed cancel.**
-    History (the payments audit, 2026-09): only the on-chain record was
-    marked, and a Lightning one only when the CONNECTED wallet paid it
-    (`markPaymentSubmitted`). So a BOLT11 scanned by any other wallet, or
-    copied to another device, and then left (`onCleared` cleared the
-    sig-less unsubmitted record) or backed out of (Lightning Back went
-    straight to the picker, and a new purchase overwrote the single blob)
-    lost the blinding secret while the mint held a paid, unissued quote —
-    real money, gone, with the mint's "credit sold" ping as the only trace.
-    Now `startPurchase` marks both rails submitted and arms
-    `CreditSettleWorker` for both, the Lightning screen's Back opens
-    `confirmCancelLightning` (`buy_credit_ln_cancel_*`, 16 locales — the
-    same shape as the on-chain dialog), and `startPurchase` RESUMES a live
-    submitted record instead of overwriting it. The "every re-entry goes to
-    the pay screen" behaviour this reintroduces for an abandoned Lightning
-    invoice is accepted: it lasts until the quote's 1h TTL (410 clears it) or
-    the explicit cancel, and the alternative was losing paid credits.
-  - **An on-chain `quote-expired` (410) is NOT a dead record — the client
-    keeps it for `OnchainPollPolicy.LATE_PAYMENT_WINDOW_MS` (30 days).** The
-    mint polls its node BEFORE the expiry test on every issue call, keeps an
-    expired on-chain row for 30 days and FOREVER once the address holds
-    receipts (its gc asks the wallet first), and now gives on-chain quotes a
-    24h unpaid TTL — so a late broadcast to the address still settles, but
-    only if a client is still asking. Both settlers (`completePurchase` and
-    `CreditSettleWorker`) therefore keep an on-chain record on 410 until
-    `beyondLateWindow`, the wizard shows `buy_credit_error_btc_expired_kept`
-    ("keep waiting / or cancel") instead of "start a new purchase", and only
-    Lightning's 410 clears immediately (an expired invoice really cannot be
-    paid). Server half in firedown-api's CLAUDE.md, "Payments audit".
-  - **The on-chain record used to be the only SUBMITTED-at-display one**
-    (`startPurchase` saves it `withSubmitted()`), not when a payment is seen.
-    An address the user has seen can be paid from ANY wallet with no signal
-    back to the app (an external wallet scanning the QR is the common path),
-    so "unpaid because we saw nothing" is never a safe assumption, and the
-    leave-the-wizard cleanup (`onCleared`) must not drop it. Consequently the
-    ONLY door that forgets an on-chain payment is the explicit
-    `cancelPendingPurchase()` behind a confirmation whose copy states the
-    consequence (the mint never learns a return address — there is NO refund
-    on this rail; bitcoin already sent can't be matched to a credit after the
-    record is gone). Back on the on-chain stage opens that same dialog
-    (`mPayBack` branches on `mPayPhase`); Lightning's Back still goes straight
-    to the picker. `isDeadQuote` is now the single `quote-expired` slug —
-    the refunded slug went with the card rail. The cancel queues the record
-    clear on the flow's single-thread executor (so every save of the
-    cancelled flow lands BEFORE the clear — ordering is the correctness) and
-    ALSO `cancel(true)`s the running flow's `Future` (`flowFuture`) to wake
-    its poll sleep: an on-chain poll sleeps up to 30 s between asks, and the
-    clear used to wait out that whole sleep with the picker already on
-    screen — a process death in the window resurrected the cancelled quote
-    (record on disk, marked submitted) with its settle worker already gone.
-    OkHttp socket reads ignore the interrupt, so an ask in flight completes
-    and a credit the mint DID issue is still booked; the interrupt only
-    shortens the wait.
-  - **Settlement is minutes to hours, so the poll is slow and the screen may
-    be left.** `OnchainPollPolicy` (pure, unit-tested) owns the cadence and
-    the deadline: 3 s until the mint has SEEN the payment, 30 s after (a
-    confirmation is a block; the mint throttles its own rail call per quote,
-    so faster buys nothing), bounded by the LATEST `expires_at` the mint has
-    reported — a quote starts with an hour, every pending sighting pushes it
-    out 48 h and the 425 carries the new value, which is persisted onto the
-    record (`PendingPurchase.withExpiresAt`) so a resume waits until THAT
-    deadline, never the original hour a slow confirmation legitimately
-    outlives. Past the deadline the loop asks the mint once more and lets the
-    server's answer decide (410 clears; an extension keeps going) — the
-    local clock is a stopping rule, not the truth about the quote. The wait
-    ending KEEPS the record and says `buy_credit_error_btc_still_waiting`
-    when the payment was seen (the generic "no charge was made" would be
-    false there), else the expired copy. Off-screen the
-    **`CreditSettleWorker`** finishes the purchase: a periodic (15-min floor,
-    network-constrained) Hilt worker armed whenever a record is marked
-    submitted (an on-chain address shown, a wallet-paid invoice), which asks
-    the mint ONCE per run, and on a paid answer persists the sig, redeems,
-    books and posts a "Storage credit added" notification (tap → the Cloud
-    screen); it cancels itself the first time it finds no record. It posts
-    two more, both LOCAL (the mint knows no device, by design — a server
-    push would be the linkage the blind credit exists to prevent): "Bitcoin
-    payment detected" the FIRST time a run sees `pending:true`
-    (`PendingPurchase.detectedNotified`, once per record, never per
-    15-minute run), and "Payment request expired" when an ON-CHAIN record is
-    finally dropped at the end of the late window (Lightning drops stay
-    silent — an abandoned invoice expiring is not news). One notification
-    id, so a later stage replaces the earlier one. The worker also persists
-    an extended `expires_at` the mint reports, as the wizard does, so the
-    late-window clock runs from the latest deadline. The wizard's
-    `resumePendingIfAny` still runs on entry, so the two can reach one credit
-    together — which is why the post-redeem BOOKKEEPING (plan merge, enabled
-    flag, top-up snapshot, clear) lives in ONE place, `CreditSettlement.
-    commitRedeemed`, under a process-wide lock that re-reads the record and
-    books only if it is still there: the redeem is idempotent server-side
-    (`credit-spent` = applied), the plan merge is NOT (it accumulates), so a
-    second booking would double-count the credit on the hero. **The worker
-    never decides a payment is good** — only the mint's blind signature does
-    (see the confirmations note below); a pending 425 is "not yet" to it.
-  - **Confirmations are the MINT's gate, never the app's.** `Settled` on the
-    server is `getreceivedbyaddress(addr, MIN_CONF) >= amount_sats` with
-    `FIREDOWN_ONCHAIN_MIN_CONF` refused below 1 (an unconfirmed tx is
-    RBF-replaceable and an issued credit is irrevocable). `pending:true` is
-    the 0-conf sighting: it changes the app's status line and pushes the
-    quote's expiry out (48 h per sighting), and issues NOTHING. The client
-    never tells the mint it paid, so there is nothing to forge from this
-    side: a claim without coins is just a 425 forever; an underpayment stays
-    425 until the address SUMS to the amount; a tx that never confirms
-    (dropped from the mempool, fee too low) leaves the quote to expire →
-    410 `quote-expired` → the record is cleared with `buy_credit_error_expired`.
-    The residual is a chain reorg deeper than `MIN_CONF` after issuance,
-    which is the operator's knob, not the client's.
-  - **The QR encodes the BIP21 URI VERBATIM** (byte mode), unlike the BOLT11
-    which is uppercased for alphanumeric mode: a bech32 address is
-    case-insensitive but BIP21's `amount=` key is not, and an uppercased key
-    silently drops the pre-filled amount in strict wallets. The BTC amount is
-    ALSO stated in words (`buy_credit_btc_send`, `formatBtc` — integer
-    arithmetic, trailing zeros trimmed, the mint's own rendering) because a
-    user copying the bare address types the amount by hand. Underpayment is
-    completed by a second send to the same address (the mint SUMS receipts);
-    overpayment settles (the excess is a tip).
-  - **A resumed record from a rail this build can't pay** (a card quote from
-    before the removal) and never issued is cleared on entry; one that DID
-    pay carries a sig and takes the redeem-only path — the server still
-    issues a paid `stripe` quote.
-  - The public-ledger caveat (`buy_credit_btc_privacy`) is deliberate copy
-    the mint spec asks every client to carry: the mint can't link the
-    payment to the account, but the chain links the address to the payer's
-    other coins; Lightning has no such caveat. The rail segment's glyph is
-    `ic_bitcoin_24` (Material `currency_bitcoin`), pairing with the bolt.
-  - **Three client-side defenses, each with a test that forges against it.**
-    (1) **Keyset-id integrity** (`CreditPurchase.findById`): a keyset id is
-    `SHA-256(n)[:8]` by construction, so a `/keys` entry whose modulus does
-    not hash to its advertised id is ignored ("unknown keyset") — at start
-    (never blind against a substituted key) AND on resume (never "verify" a
-    resumed credit against a key storage has never heard of). (2)
-    **Pay-request consistency** (`PaymentRequests.check`, pure BOLT11-amount
-    + BIP21 decoders): a Lightning invoice must encode exactly `amount_sats`
-    (an amount-less one is refused too), and a BIP21 URI must name the bare
-    `address` and `amount_sats` beside it — one swapped field is a forgery or
-    a server bug either way; both swapped consistently is beyond a client and
-    is what the blind signature's key protects. Refused as
-    `pay-request-mismatch` BEFORE anything is shown to pay; a mint without
-    `amount_sats` (0) is not checked. (3) **The retry interceptor reads the
-    slug** (`MintClient.retryable`): only `rate-limited`/`server-busy`/no-slug
-    429s and 503s are retried; a 503 `rail-unavailable` is a verdict and used
-    to burn ~4 s of backoff before the user saw it. The interceptor is also
-    OUTERMOST now (`interceptors().add(0, …)`) — a retry must re-run the inner
-    request preparation, and a test's scripted transport must sit inside it.
-    Note what the client CANNOT do: it never decides a payment is good (the
-    mint's blind signature is the only source of credit), and a forged
-    signature — random, or from a rogue key — fails local verification
-    (`invalid-credit`) with the blinding state untouched, so a later honest
-    reply still resumes on the same message.
-  - **JVM tests pin the contract** (`app/src/test/.../sync/`): `MintClientTest`
-    drives the REAL client over a scripted OkHttp interceptor (`FakeMint`) —
-    `methods` parsing + the Lightning-only default, the on-chain quote
-    fields, the pending 425, and a 503 `rail-unavailable` that must come out
-    as a `FatalException` WITH detail and NOT be retried by the 429/503
-    interceptor; `PurchaseErrorTest` pins the slug switch;
-    `OnchainPollPolicyTest` the cadence flip and the deadline that only ever
-    moves later; `CreditPurchaseResumeTest` starts a purchase, persists the
-    record, "dies", restores from the JSON alone and proves the resumed run
-    re-sends the ORIGINAL blinded message (a fresh blinding would be a
-    different credit → 409) and that the credit it unblinds verifies over the
-    first run's secret, against a real RSA key. `PaymentForgeryTest` (a
-    forged / rogue-key signature refused with the session unissued and the
-    same message re-sent; a keyset whose id is not its modulus refused at
-    start and on resume; a wrong-amount invoice and a swapped BIP21 address
-    refused before shown; `already-issued` is a kept-record error, never a
-    dead quote). `PaymentNetworkTest` (a socket drop mid-issue is a plain
-    IOException, never fatal, and the retry re-sends the SAME message; a
-    reply lost AFTER the mint signed is recovered through its replay path
-    with the mint signing once; a drop on the quote leaves nothing half
-    started; a flapping `server-busy` is absorbed while a persistent 429
-    gives up after exactly 1 + MAX_RETRIES requests).
-    `CreditSettlementConcurrencyTest` (32 threads racing
-    `commitRedeemed` on one record over a deliberately slow in-memory
-    `Books`: exactly one books). `PaymentRequestsTest` (the decoders).
-    `FakeMint` is the scripted transport (an interceptor answering instead of
-    proceeding, throwing a scripted `IOException` for a cut-off);
-    `MintFixture` a real RSA key + the JSON shapes. 49 tests, ~20 s (the
-    persistent-429 case waits out real backoff). Run them with
-    `./gradlew testDebugUnitTest`.
-- **Nostr Wallet Connect (NIP-47, "pay from a connected wallet") was BUILT
-  and REMOVED (maintainer call: "makes no sense").** It let a user connect
-  Alby Hub/Coinos/… once and settle the invoice in place, and carried a
-  hand-rolled BIP-340 + NIP-04 stack (`nwc/`), a connect dialog with the P2P
-  scanner, and — briefly — an auto top-up half in `CloudWatchWorker` that
-  re-bought the last plan through it. All of it is gone: the package, its
-  vector test, the wallet controls on the Lightning stage, the Cloud-screen
-  switch, the `CLOUD_AUTO_TOPUP*` prefs, the `action_buy_to_scan` nav
-  action. The mint's own NIP-47 client (firedown-api
-  `internal/mint/payment/nwc`, its Lightning BACK-END alternative to
-  phoenixd) is server-side and unrelated — leave it. The rails are a
-  QR/invoice the user pays by hand, and the picker's third row is the fiat
-  door (below). Don't reintroduce a spending-key integration.
-- **A paid credit is NEVER discarded on a non-terminal error.**
-  `PendingPurchase` is the only copy of the blinding secret + signature, so
-  `BuyCreditViewModel` clears it ONLY on outcomes that prove no credit is owed:
-  `credit-spent` at redeem (already applied), and `quote-expired`/`quote-refunded`
-  at issue (`isDeadQuote` — no money taken, or it went back). Everything else
-  keeps the record for `resumePendingIfAny`. This matters because
-  `StorageApiClient` maps EVERY 4xx except 429 to `FatalException`, and some of
-  those are transient — `unknown-keyset` in particular just means storage's
-  mint-key cache hasn't caught up with a newly minted keyset (now a 503
-  server-side, but old servers exist) — so the old blanket `clear()` silently
-  destroyed money the user had already paid, unrecoverably. Don't widen the clear
-  back to "any fatal".
-- **Backup worker still has a retry ceiling** (`VaultBackupWorker.MAX_RUN_ATTEMPTS`,
-  10, gated on `getRunAttemptCount()`) as the backstop for a backup that keeps
-  failing for OTHER reasons (persistent network loss, a wedged manifest, or a chunk
-  that 403s even with a fresh URL past `MAX_URL_REFRESHES`) — so it fails cleanly
-  instead of re-uploading forever (battery + bandwidth churn + a fresh pending
-  object per attempt). With URL-refresh above, the large-file case no longer relies
-  on this ceiling. The remaining ceiling-worthy cases are genuine failures. (A
-  future full per-chunk lazy-presign — mint each URL just before its PUT, tiny TTL
-  — would also shrink the server-side overwrite window to near-zero.)
+- **State lives in the ViewModel** — entries, load/error flags, the
+  in-flight-delete guard and the selection, published as ONE `State`
+  snapshot; `onViewCreated` loads only on a fresh VM (a re-list on rotation
+  would put a Drive round trip back in the rotation path). The adapter is a
+  pure renderer (`submit`/`setSelection`/`setActionMode`/`setCloudOnly`).
+  **The generation guard stayed** (`mLoadGen`): the manager is CALLBACK-
+  based, two concurrent listings complete in provider order and a stale one
+  would overwrite a newer list. Search and grid stay on the fragment.
+- **Optimistic remove + `PendingRemovals`** (`sync/PendingRemovals`, pinned
+  by `PendingRemovalsTest`): the row leaves at once, the folder delete runs
+  on the pool, only FAILURE re-inserts the row and clears its guard; a
+  load() that lands before the sidecar is gone would otherwise RESURRECT
+  the row, so `load()` filters the guarded ids and reconciles with
+  `retainAll(listedIds)` — an id the fresh listing no longer holds is
+  confirmed gone. Never clear the guard eagerly on SUCCESS (the reverse
+  ordering reopens the ghost). Batch delete is ONE `deleteEntries` call on
+  the pool, restores rows ADDITIVELY on failure, never via a `load()` (which
+  fails too when the folder is unreachable) and never by snapshot-clobber.
+- **Sorted NEWEST BACKUP FIRST on `backedUpAt`** (`sortNewestFirst` at the
+  one `loadEntries` choke point), reverse-then-stable so legacy entries
+  carrying 0 keep their order; `backedUpAt` is NOT `downloadedAt` (a restore
+  must land in the date section the original sat in). The field is written
+  only when non-zero.
+- **Per-item transfer rows** (`TYPE_TRANSFER`, always determinate with the
+  percent shown — hiding the percent at 0 shifted the bar's margin frame to
+  frame): built from `WorkInfo.getProgress()` + the `bname:` tags, ONLY for
+  uploads of NEW files (a re-backup keeps its committed row), collapsed by
+  name, cancel = `cancelWorkById`. `setTransfers` rebinds only the transfer
+  rows on a tick. On SUCCEEDED the list reloads ONCE per finished worker
+  (`mReloadedTransferIds`) so a finished upload's committed row appears at
+  once rather than when the whole batch goes idle. **ONE `TransferVH` serves
+  both layouts on DIFFERENT GROUNDS** — the GRID tile takes `FallbackInks`
+  for every caption line (it sits on the placeholder ground in every state),
+  the LIST keeps its layout inks; a `?attr` ink resolved at bind time
+  measured 1.47:1 in light theme and 8.06:1 in dark (the flips-with-theme
+  defect class). The `grid` flag is load-bearing.
+- **`LCEERecyclerView`**: `showLoading()` on the initial fetch only (the
+  first fetch holds the spinner until the listing lands, so the transfer row
+  and the files appear TOGETHER — a transfer row alone for a beat was the
+  reported two-transitions-where-one-belongs), `hideAll()` with rows or an
+  active transfer, `showEmpty()` otherwise; the error empty-state when the
+  last listing FAILED (`mLoadFailed`), never "no backups yet" for an
+  unreachable folder. Change animations are off in its ctor, so progress
+  ticks don't blink.
+- **Pull-to-refresh** (`cb_swipe`, with `setOnChildScrollUpCallback` pointed
+  at the inner RecyclerView — the direct child is the LCEE container;
+  `stopRefreshing()` on BOTH outcomes): another phone on the same folder
+  adds entries this phone only sees on a re-list.
+- **Batch restore + select-all** (`menu_cloud_backup_action.xml`): restore is
+  the point of a backup and used to be one-file-at-a-time; NOT dialog-
+  confirmed (constructive, reversible, count + size in the toolbar);
+  `enqueueRestore` split from `startRestore` so N restores don't fire N
+  snackbars. **"Restore all to this phone"** (`action_restore_all`, visible
+  only when something is folder-only and not already restoring) IS
+  confirmed — gigabytes the user did not pick — and states count, total and
+  free space (`StatFs` on the download path), DISABLING the positive button
+  with the shortfall when it does not fit (N restores dying on a full disk
+  would be N unexplained ERROR rows). It is the way back before changing
+  or giving up a folder; the hosted service's grace-card deep link into it
+  went with that service.
+- **The folder-only fact lives at the REMOVE decision, NOT on the row**: the
+  item sheet's `cb_sheet_only_copy` line (`ARG_CLOUD_ONLY`) and the batch
+  confirm's count of last copies (`cloud_backup_delete_last_copies`, only
+  when the selection holds one). A per-row marker shipped and died: on an
+  established install nearly every backed-up file has since left Downloads,
+  so it rendered on ~90% of rows and carried no information — and the
+  opposite marker is wrong by the same argument. **A state worth warning
+  about is not automatically worth labelling everywhere**; put it where it
+  changes a decision, once.
+- **Removing an entry whose restore is IN FLIGHT warns first, then
+  `cancelRestores` BEFORE the sidecar + object delete** — a restore left
+  running would read an object about to disappear and fail mid-file,
+  surfacing as a bare ERROR row on a different screen. The WorkInfo
+  observer rebuilds `mRestoringObjectIds` from the `robj:` tags on every
+  emission. Single remove, otherwise unconfirmed and optimistic, confirms
+  for this one case.
+- **Selected size in the toolbar** ("N selected · 1.2 GB"), composed from the
+  existing string. Multi-select is the Downloads strategy — the screen's own
+  toolbar + a `MenuProvider`, never `startSupportActionMode`; the tick in the
+  ⋮ slot, the `SelectionStyling` wash.
+- **The header is TEXT ONLY, two lines**: the inventory ("14 files · 2.1 GB",
+  prefixed "Backing up… · " during a transfer) and STATUS · trust —
+  "Firedown Backup on Google Drive · encrypted end-to-end", or "Can't reach
+  your backup folder · …", status first so a wrap moves the boilerplate
+  tail (`maxLines=2`, degrades by growing). No control in the header
+  (`fragment_cloud_backup_files.xml` carries the width-fight history), no
+  colour on the status text (`backup_warning` is 2.09:1 on the light
+  surface — the words carry the state). The toolbar OVERFLOW holds "Restore
+  all" and **"Backup"** (→ the Backup screen) — the ONLY route from this
+  list to the folder, the code and the erasure door: for a set-up folder
+  the Downloads overflow lands here, not on the Backup screen.
+- **UI parity with Downloads**: the row mirrors `fragment_download_item.xml`
+  (card root, 8dp inset, `list_download_image`, three lines — name /
+  `MIME · size` / relative date), the empty state mirrors
+  `recycler_empty_layout` with `ill_cloud` (the folder's provider IS a
+  cloud for most users; the art stayed), `EqualSpacingItemDecoration`
+  (list_spacing), grid caption type on the M3 scale.
+- **The per-item sheet** (`CloudBackupItemSheetDialogFragment`): rich
+  header (preview + name + `MIME · size · date`, `ARG_LOCAL_PATH` for an
+  entry with no stored preview), **Open** for a folder-only entry →
+  `CloudBackupStreamActivity` (plays/shows WITHOUT restoring: `VaultDataSource`
+  into ExoPlayer, each 8 MiB chunk read from the object file and decrypted
+  on demand, a seek costing one chunk; the recovery code loaded and the DEK
+  unwrapped off-main; `EXTRA_HIDE_SHARE` on the player — nothing on disk to
+  share), Restore, and Remove styled `Firedown.Widget.SheetRowText.Final`
+  (colorPrimary, never colorError). **Consume its result with
+  `getSavedStateHandle().set(RESULT, null)`, never `remove(RESULT)`** —
+  remove() detaches the cached LiveData and the SECOND remove/restore of a
+  session silently never arrives.
 
-- **Restore skips a file already in Downloads.** `VaultRestoreWorker` probes
-  `findByNameSize` (honoured only when the local file still **exists** on disk)
-  and returns a no-op success with `KEY_ALREADY_PRESENT` instead of writing a
-  uniquely-named duplicate; the list shows "Already in your downloads". Otherwise
-  it restores into `Download/Firedown` (unique destination) and inserts a FINISHED
-  `DownloadEntity` via the same repository every download uses.
+### The Backup screen (`SyncSettingsFragment` / `settings_sync.xml`, title "Backup")
 
-- **`SavedStateHandle.remove(key)` DETACHES the cached LiveData — consume with
-  `set(key, null)` instead.** The per-item sheet (`CloudBackupItemSheetDialogFragment`)
-  returns Restore/Remove through the `NavBackStackEntry` saved-state handle. The
-  list fragment's observer **must not** consume the result with `remove(RESULT)`:
-  that detaches the `MutableLiveData` the handle caches for that key, so the
-  observer stops receiving EVERY subsequent result (symptom: the 2nd remove/restore
-  silently does nothing). Consume with `getSavedStateHandle().set(RESULT, null)`
-  and guard the null tick — the same LiveData stays attached.
+ONE screen hosts the downloads backup AND the bookmarks switch (the
+two-level IA and the focused bookmarks screen were retired as tap tax).
+Order = priority: the **status hero** (`CloudStatusPreference`, flat), the
+**morphing CTA** (`CloudBuyButtonPreference` — historical name, nothing is
+bought; the MaterialButton carries `@android:id/title` so the Preference
+TITLE is its label), then three UNLABELLED card groups: KEY (Recovery code
+reveal + "I have a recovery code"), USE (Backups + the Bookmarks switch),
+last (the "How sync & encryption work" link → `firedown.app/security` + the
+"Delete backup data" door). The KEY and USE groups SWAP by life stage
+(`SETTINGS_CLOUD_GROUP_KEY`/`_USE`): KEY above USE until set up (the adopt
+door is the second way in, right under the create-CTA), USE above KEY once
+set up — groups, not rows, so each card stays whole. NO category labels
+(the last header umbrella'd the code/help/delete rows as "Bookmarks"
+children — the card edges do the grouping).
 
-- **Optimistic remove** (`CloudBackupListFragment.removeOptimistic`): the row
-  disappears immediately; the slow server delete runs in the background and only
-  the failure path re-inserts the row (error snackbar). Closes the ~10s "nothing
-  happens then a snackbar" gap.
-  - **A delete-in-flight is tracked in `mPendingRemovals` so a racing `load()`
-    can't RESURRECT the row.** The optimistic remove drops the row from the UI
-    before the server delete's OCC push commits, so a `load()` that lands in that
-    window (a transfer-finished reload, or re-entering the screen) pulls a manifest
-    that STILL contains the entry and would re-add it — a ghost row for a file
-    that's actually being deleted. `removeOptimistic`/`deleteSelected` add the
-    objectId(s) to `mPendingRemovals`; `load()` filters them out of its result.
-    `mLoadGen` only orders load-vs-load; this orders load-vs-delete. Main-thread
-    only (all `CloudBackupManager` callbacks `main.post`), so the `Set` needs no
-    synchronization.
-  - **Clear the guard on delete-FAILURE, but let `load()` reconcile a delete-
-    SUCCESS — never clear it eagerly in the success callback.** Eagerly clearing on
-    success reopens the same ghost by the REVERSE ordering: a `load()` whose pull
-    PRE-dated the delete can run *after* the success callback cleared the guard and
-    re-add the (stale-pull) row. So the success path leaves the id in the set, and
-    `load()` reconciles it with `mPendingRemovals.retainAll(pulledIds)` — an id the
-    fresh pull no longer lists is confirmed gone and dropped; a still-listed id (a
-    stale pull, or a failed delete that never committed) stays guarded. Object ids
-    are server-random per create, so a cleared id can never wrongly match a future
-    entry, and a lingering guarded id (no load since the delete) is a harmless
-    no-op filter. Only delete-FAILURE clears the id directly (+ restores the row).
-  - **Batch delete restores rows ADDITIVELY on failure, never via `load()` or a
-    snapshot-clobber.** The batch path used to `load()` to "resync" — but OFFLINE
-    (the common failure) that `load()` also fails and leaves the rows wrongly
-    pruned; a snapshot-restore (`mEntries.clear(); addAll(snapshot)`) instead
-    CLOBBERS a concurrent `load()`/finished-transfer that changed the list
-    meanwhile. `deleteSelected` re-adds only the targets actually missing
-    (`findEntry == null`) and clears their guards. Keep the two delete paths
-    symmetric — never rely on a network `load()` to undo an optimistic removal, and
-    never clobber the live list.
+- **The hero has THREE states** (`CloudStatusPreference`): set up + folder
+  reachable (folder glyph, "Firedown Backup" over "On <provider>", the
+  backed-up size headline, a file-count caption; the ⋮-menu hint while
+  nothing is backed up yet; "Transfer in progress…" while a worker runs);
+  set up + folder LOST (the folder-off glyph, "Can't reach your backup
+  folder", the LAST SEEN totals, the body line saying what to do — the card
+  states the fact, the CTA acts); not set up → the dashed ROADMAP ① Create
+  recovery code → ② Choose backup folder → ③ Back up a finished download
+  from its ⋮ (done = "✓" + muted ink, the current step bold). There is no
+  quota, meter or chip: the folder is the user's own storage, so the only
+  facts the card can state are what is in it and whether it answers.
+  `mReachable` defaults TRUE so a cold bind never flashes the lost state;
+  the hero binds `lastStatus()` first, then the fresh read.
+- **The CTA's label AND emphasis are state-dependent** (`applyCta`): no key
+  → "Create recovery code" (FILLED; with the mandatory "I've saved it"
+  dialog), key but no folder → "Choose backup folder" (FILLED), folder lost
+  → "Choose the folder again" (FILLED), healthy → "Change folder" (OUTLINED
+  `preference_cloud_buy_button_plain` — a backup that needs nothing is not
+  stared down by a permanent filled button). `setEmphasized` swaps the
+  layout resource and `notifyChanged()`s; no-op when unchanged. **ONE
+  `OpenDocumentTree` launcher serves first choice, change and re-choose**:
+  `onFolderPicked` → `adoptFolder` (takes the persistable grant; a previous
+  folder's grant is released, its files untouched), drops the screen's own
+  last answer, re-reads — a folder that already holds this account's backups
+  (a reinstall pointed back at its Drive folder) lists them straight away —
+  and snackbars "Backing up to <provider>". **Changing the folder moves
+  nothing**: the old folder keeps its files under the same code; "Restore
+  all" first is the way to bring them along.
+- **The KEY-FIRST GATE**: until a recovery code exists the CTA reads "Create
+  recovery code" (not choose-a-folder), the Backups row is hidden and the
+  Bookmarks switch is disabled — a folder can only be chosen once there is
+  a key to encrypt into it with. A code, once created, forces the "I've
+  saved it" checkbox before Done (non-cancelable in create mode).
+- **Adopting a code works in BOTH key states** — post-key the row's summary
+  flips to the replace wording and `showLinkDialog` CONFIRMS first
+  (`settings_sync_link_replace_*`): the current code is the ONLY key to
+  whatever sits under it in the folder. Re-gating it on `!hasKey` re-breaks
+  the two-phones-two-codes case.
+- **The code travels by QR as well as by typing, and the SCANNER IS THE P2P
+  ONE** (`P2pScanFragment`, registered as a `<dialog>` in
+  `nav_graph_settings` too; `ARG_PREFIX` empty, `ARG_TITLE_RES` added; the
+  CALLER validates with `SyncManager.looksLikeRecoveryCode` — shape only).
+  The reveal dialog SWAPS its code panel for the QR panel in the SAME dialog
+  (adding it below clipped "Save to file" off the bottom; a second dialog
+  read as a dialog on a dialog and would have dismissed the create-mode
+  gate); a scan lands back on the INPUT dialog prefilled, never links
+  straight through (a QR is a bearer secret pointed at a camera); a payload
+  that fails the shape check is reported and DROPPED. The result is consumed
+  with `set(key, null)`, registered in `onViewCreated`. The encoder is
+  `utils/QrCodes`, the app's ONE encoder (P2P share's private copy was
+  migrated into it; a third copy is the `compactDuration` drift mistake).
+- **The reveal dialog carries Copy AND Save-to-file on NON-DISMISSING
+  buttons** (export is something you do while LOOKING at the code), behind
+  one device-auth prompt; the old separate export row doubled both.
+- **"Delete backup data" is ONE door → a SUB-SCREEN with two SCOPED rows**
+  (`CloudDeleteFragment`, `settings_cloud_delete.xml`): "Delete bookmarks
+  from server" (while sync is on) and "Delete backed-up files" (while set
+  up — erases this account's directory in the folder, keeps the code and the
+  folder grant). Each row's SUMMARY states its consequence before the
+  confirm (a chooser dialog shipped for one commit and could only name the
+  two); a row hides when it does not apply, the door hides when neither
+  does. Never one "delete everything" that couples free bookmarks to the
+  backed-up files.
+- Deep links: `EXTRA_OPEN_SYNC`, `EXTRA_OPEN_CLOUD_BACKUP` and
+  `EXTRA_OPEN_BOOKMARKS_SYNC` all land here (three extras because callers
+  express different intents) with `popUpTo settings inclusive`, so Back
+  returns to the CALLER; `EXTRA_OPEN_CLOUD_BACKUP_FILES` (the Downloads
+  overflow for a set-up folder) lands on the Backups list the same way. The
+  Downloads overflow routes two-way (`isSetUp` → the list, else → this
+  screen). The home carries NO backup state (see "The home carries NO
+  cloud state" below).
 
-- **The Backups list header is TEXT ONLY — the top-up door is a toolbar
-  OVERFLOW item, and it is the only thing that puts a ⋮ on that screen.**
-  Header = inventory line ("14 files · 2.1 GB", prefixed "Backing up… · "
-  during a transfer) + a status/trust line ("≈ 1 year of coverage · encrypted
-  end-to-end" / "Read-only · …" / the beta's "of 11 GB included · …", status
-  first so a wrap moves the boilerplate tail rather than the fact). "Add
-  storage credit" lives in `menu_cloud_backup.xml` with `showAsAction="never"`,
-  beside a second overflow entry, **"Cloud"** → the merged Cloud screen. That
-  second entry is the ONLY route from this list to Cloud: for a set-up account
-  the Downloads overflow lands on this list rather than on Cloud, so the
-  recovery code, the two erasure rows and the FAQ were otherwise reachable only
-  from the Home or Browser popup — from the very screen that most invites them,
-  since it is where you are looking at the files you might erase. It is a
-  separate entry rather than a repointing of "Add storage credit": an item that
-  names an action has to perform it, and the coverage figure the Cloud hero
-  would add is already on this screen's own header line. The nav action is a
-  plain push (no `popUpTo`) so Back returns to the list, not to the caller.
-  - **Why the door left the header.** It used to be a trailing coral text
-    button in the header row, and on a 360dp phone "Add storage credit ›" ate
-    ~170dp of ~340dp — the trust line truncated to "…encrypted e…"
-    (on-device). **No width split fixes that**: a long translatable BUTTON and
-    a long translatable SUBTITLE are two full-width demands that grow
-    TOGETHER, so the worst case is always simultaneous (German
-    "Speicherguthaben hinzufügen" beside "Ende-zu-Ende-verschlüsselt"), and
-    line 1's transfer prefix makes it no safer a neighbour. Stacking the
-    button on its own row was tried first and works, but costs ~48dp; moving
-    the ACTION to the toolbar is better — it puts it with the screen's other
-    actions (search, grid), and leaves only TEXT in the header, which can
-    **wrap** where a button label cannot (`maxLines="2"` on line 2 degrades by
-    growing, never by hiding a fact).
-  - **STATUS stays in the header; only the ACTION moved.** The old chip was
-    two things at once — a coverage/"Read-only" readout AND the buy door. A
-    menu item is invisible until opened, and status you have to go looking for
-    is not status (the read-only grace state especially). So `headerStatus()`
-    keeps the phrase on line 2 and the overflow owns the door. Don't "finish
-    the job" by moving the status in too.
-  - **The status text carries NO colour.** The chip tinted its grace label
-    with `backup_warning`, which is **2.09:1 on the light surface** — the
-    state most needing to be read was the least readable, the same defect
-    class as the old home pill's 1.37:1. The word "Read-only" carries the
-    state on its own (WCAG 1.4.1 requires that regardless), so the fix was to
-    drop the tint, not to hunt for a legible amber. **Watch item:**
-    `backup_warning`'s other uses (the Cloud status hero, the credit meter)
-    are inks on light surfaces too and have the same measurement — they were
-    left alone here, but they are not safe.
-- **UI parity with Downloads.** The backed-up-files row
-  (`item_cloud_backup_file.xml` + `CloudBackupFileAdapter`) faithfully mirrors
-  `fragment_download_item.xml`: `MaterialCardView` root (transparent until
-  pressed, no stroke/elevation), 8dp-inset `ConstraintLayout`, the same
-  `list_download_image` thumbnail (`mask_image_rounded` + `centerCrop` +
-  `setClipToOutline(true)`) and **three** text lines — name / `MIME · size` /
-  relative date (mime chip = `MimePrimaryLabel` via `FileUriHelper.getLongMimeText`,
-  carrying its own trailing `· `). Three lines on purpose: two lines next to the
-  64dp thumbnail leave dead space above/below the centred text — the third (date)
-  line fills the row like the Downloads status line does. The **empty state
-  mirrors `recycler_empty_layout` exactly** — same centered ConstraintLayout
-  (illustration bottom at the vertical centre — `ill_cloud`, the restored
-  P2P-send header art; this screen IS the cloud — message below) and
-  same text styling (`sans-serif-medium`, `colorOnSurface`); don't substitute a
-  `TextAppearance` style / `colorOnSurfaceVariant`.
+### Where backing up is OFFERED, and what is excluded
 
-- **The home carries NO cloud state (maintainer, 2026-10-12: "we don't need
-  all the plumbing for backups, downloaded bytes and blocked ads in home").**
-  The transfer CHIP ("Backing up…" / "Waiting to back up", a live tagged
-  WorkInfo) and the grace DEADLINE card ("Backup paused" + the countdown from
-  `grace_until`, with RESTORE / TOP UP) that sat under the mark through home
-  v5 are gone with their WorkManager observer, the `loadStatus` round trip
-  and the `home_cloud_paused` / `home_cloud_grace_days` strings; the surviving
-  `home_cloud_*` strings are the Backups list's and the notifications' and
-  keep their historical names. Where those states live now: the deadline is
-  told by `CloudWatchWorker`'s two notifications (grace entered, reap in
-  3 days; both carry Top up + Restore) and the Cloud screen's hero; a
-  transfer by its row in the Backups list. Rules that survive the surfaces,
-  because they were never about the home: evidence-based states only (a
-  paused quota, a live tagged WorkInfo), restores never count as transfers
+- **The download sheet's "Back up to <provider>" row** (`cloud_backup_action_to`
+  once a folder is chosen, the bare "Back up" before — `DownloadsOptionDialog
+  Fragment`), the multi-select backup action (`BaseDownloadFragment`, whose
+  snackbar names the Safe Folder exclusion when a selection reduced to
+  nothing BECAUSE of safe entries — `cloud_backup_safe_excluded`), and the
+  **download-finished notification's "Back up" action** (`RunnableManager`
+  → `CloudBackupNotificationReceiver`, explicit intent, request code = the
+  row id; carries only the ROW ID and RE-CHECKS every gate at tap time —
+  FINISHED, not vault, still set up — because a notification outlives the
+  state it was built against; feedback is the worker's own foreground
+  notification replacing the finished one). The action is gated on
+  `isSetUp()` — a notification cannot run the first-time setup. All three
+  call `VaultBackupWorker.enqueue`. **"Backing up…" snackbar with a View
+  action, NO success snackbar** — the list is the confirmation; only a
+  FAILED transfer surfaces an error snackbar, naming the folder when that
+  was the cause.
+- **The Downloads banner is ONE stage** (`SyncBannerAdapter`, parameterized
+  by copy + glyph, never forked; prepended through the same `ConcatAdapter`
+  as the Safe Folder row, below it): shown while NOT set up, the list has
+  rows and `CLOUD_BACKUP_BANNER_DISMISSED` is unset; retired permanently by
+  dismissal or by setup. The hosted service had a second "your free credit
+  is waiting" activation stage keyed on a server balance; a folder has no
+  balance and nothing to activate. Visibility is driven from the AGGREGATES
+  LiveData, not the paging load-state listener (a `notifyItemInserted` on a
+  sibling adapter during layout throws); `onResume` re-evaluates it.
+- **The Safe Folder exclusion is a STATED promise.** Vault entries are
+  excluded (the same "vault never leaves the device" contract as the mirror
+  and P2P send) — deliberately NOT lifted: vault content is guarded by the
+  device lock, the folder is keyed by the recovery code, so backing up a
+  vault file would silently move it into a different trust domain. If
+  per-file vault backup is ever built it needs device-auth gating on safe
+  entries in the Backups list, restore back INTO the vault, and explicit
+  consent copy — all three together.
+- **The home carries NO cloud state** (maintainer, 2026-10-12): the transfer
+  chip and the grace card that sat under the mark through home v5 are gone,
+  and with the hosted service so are the states they showed. A transfer
+  lives in the Backups list's row; a lost folder is told by the worker's
+  one notification and the Backup screen's hero. Rules that survive:
+  evidence-based states only, restores never count as transfers
   (`VaultBackupWorker.TAG_NAME` filters them), no semantic amber container
-  on an informational state (measured ΔE 30.7 against the page, the loudest
-  thing in the app for "nothing is lost yet"; the hero and the credit meter
-  keep `backup_warning` as an INK on a surface), and no user-facing OFF
-  switch for Cloud Backup — it is action-driven, and a state clears by
-  having nothing to report (top up, delete the files, cancel the transfer).
-  History worth keeping: the resting "N backed up" line was demoted twice
-  ("the most important item on the home fragment" on two devices) and then
-  removed with the switch that hid it; the amber ground shipped and was
-  measured out; the pill's "VIEW" label was cut because shape and ripple
-  already said "tappable". Don't bring any of it back to the home.
-- **The Backups list is sorted NEWEST BACKUP FIRST, on `VaultEntry.backedUpAt`.**
-  The manifest is append-ordered (`VaultEngine.addToManifest` does
-  `entries.add`), so the raw list is oldest-first and a fresh backup landed at
-  the BOTTOM — the opposite of what you expect after pressing "Back up to
-  cloud". `CloudBackupManager.sortNewestFirst` runs at the one `loadEntries`
-  choke point (not in the fragment, so every consumer gets the same order).
-  - **`backedUpAt` is NOT `downloadedAt` and the two must stay separate.**
-    `downloadedAt` is the local download's own date and deliberately so: a
-    restored file has to land in the same Downloads date section the original
-    sat in (stamping backup time there once made restores jump to "Last 7
-    days"). Sorting the Backups list on it would push a clip downloaded last
-    year to the bottom of the very list that just gained it.
-  - **The sort is reverse-then-stable, because legacy entries carry 0.**
-    Reverse the manifest (append order = backup order, so reversed IS
-    newest-first for legacy rows), then stable-sort by `backedUpAt` descending;
-    Java's stable sort keeps the reversed order among the equal 0s. Correct by
-    construction, not luck: a timestamp can only exist on an entry committed
-    after this shipped, so every 0-valued entry genuinely is older.
-  - The field is written to the manifest JSON **only when non-zero**, so a
-    manifest of purely legacy entries serializes byte-identically and the OCC
-    version doesn't churn. The thumb/origin **repair** path
-    (`VaultEngine.findExisting`) carries the ORIGINAL `backedUpAt` through —
-    re-backing-up an old file must not send it to the top, and `addToManifest`
-    moving it to the end of the array is harmless now that order isn't the
-    sort key. The three transient `new VaultEntry(...)` 9-arg call sites
-    (`VaultRestoreWorker`, `VaultObjectModelLoader`,
-    `CloudBackupStreamActivity`) build read-only entries that never enter the
-    manifest, so 0 is right there.
-- **Per-item upload progress (like the Downloads list) + cancel.** An upload in
-  progress isn't in the manifest yet, so it renders as its own row at the TOP of
-  the list (`CloudBackupFileAdapter` TYPE_TRANSFER, `item_cloud_backup_transfer.xml`)
-  with a **determinate** `LinearProgressIndicator` + percent + a cancel button —
-  the same shape as an in-flight Downloads row (incl. the indicator=primary /
-  track=primary@0x33 colours). The row is **always determinate with the percent
-  shown** (0% before the first byte report) — NOT indeterminate-until-first-chunk:
-  hiding the percent when `done==0` shifted the bar's left margin frame-to-frame.
-  Determinate because the bytes are
-  reported end-to-end: `VaultEngine.backupFile(..., ProgressListener)` fires
-  per-chunk → `VaultBackupWorker` republishes them via `setProgressAsync`
-  (`KEY_NAME`/`KEY_MIME`/`KEY_PROGRESS_DONE`/`_TOTAL`) →
-  `CloudBackupListFragment.observeTransfers` reads `WorkInfo.getProgress()` and
-  builds a `Transfer` row. **The worker MUST drain the last `setProgressAsync`
-  future before returning a `Result`** (`awaitLastProgress()` — keep the future,
-  `.get()` it before every return) or WorkManager throws "Calls to
-  setProgressAsync() must complete before a ListenableWorker signals completion"
-  (the final per-chunk update races the return). **Don't revert to an indeterminate banner** — the bar
-  was indeterminate only because nothing reported bytes. Only uploads of NEW files
-  get a row: a transfer whose name is already a committed entry (`isCommitted` — a
-  re-backup or a restore) keeps its existing row, no duplicate progress row.
-  Cancel = `WorkManager.cancelWorkById` (the partial server object is orphaned but
-  harmless — `completeObject`/the manifest write never ran). `setTransfers`
-  rebinds ONLY the transfer rows on a progress tick (count unchanged →
-  `notifyItemRangeChanged(0, n)`), so committed rows below don't re-decode their
-  thumbnails every byte update. On the active→idle transition the fragment
-  `load()`s the manifest so the finished file appears as a committed row.
-  - **ONE `TransferVH` serves BOTH layouts, and they sit on DIFFERENT GROUNDS —
-    never resolve the state line's ink from a theme attr at bind time.** The
-    list row's state text is on the theme surface; the GRID tile's is over the
-    per-theme mime-fallback ground (a transfer row always shows the glyph —
-    the file is still uploading). `bind()` used to stomp both with
-    `colorOnSurfaceVariant`, which measured **1.47:1** on the then-dark ground
-    in LIGHT theme and 8.06:1 in dark — so "Backing up…" was legible at night
-    and invisible by day (reported on-device; the tell is a defect that flips
-    with the theme on a surface whose ground does NOT). The failure branch
-    had the identical bug via `colorError` (**1.95:1** light / 6.16:1 dark).
-    Both inks are resolved ONCE in the holder ctor, split by the `grid` flag:
-    the LIST keeps `state.getCurrentTextColor()` (whatever its layout
-    declared) and the real `colorError`; the GRID takes `FallbackInks` for
-    EVERY caption line — title, mime label, state, percent, the error ink
-    (`FallbackInks.status`), the cancel glyph — and drops the scrim and
-    shadows, because it sits on the placeholder ground in every state (see
-    the mime-fallback note under UI conventions for the measured figures).
-    The `grid` flag is load-bearing, not cosmetic. General rule for any
-    holder shared by a list row and a grid tile: a `?attr` ink is only
-    correct on the surface-grounded one — see the twin
-    `Theme.FireDown.More.Button` note under UI conventions.
-- **`LCEERecyclerView` + a non-serial network executor.** The screen uses the
-  app-standard `LCEERecyclerView` (`fragment_cloud_backup_files.xml` is just that
-  view) for the loading spinner / content / empty-illustration states — same as
-  Downloads/Bookmarks/History — which ALSO `disableChangeAnimations()` in its
-  ctor, so per-item progress `notifyItemRangeChanged` ticks DON'T blink (don't
-  hand-roll a recycler + TextView empty state again; the no-blink came free with
-  LCEE). `render()` maps to `showLoading()` (initial fetch only — a refresh with
-  rows present keeps the list, no spinner flash) / `hideAll()` (rows or an active
-  transfer) / `showEmpty()`. Crucially, `CloudBackupManager`'s network ops
-  (manifest pull/push, object delete) run on a **dedicated cached `netExecutor`,
-  NOT `@Qualifiers.DiskIO`/`HeavyIO`** (both single-thread serial lanes): on a
-  serial lane a list load queued behind two big-file deletes waited for both
-  deletes' round-trips (the "dead slow Loading…" after deleting), and it also
-  wrongly blocked the app's DB-write lane. The pool lets loads and deletes run
-  concurrently (OCC handles any manifest-mutation conflict). It is **BOUNDED at 3
-  threads** (`allowCoreThreadTimeOut`, 0 idle) — an unbounded cached pool let a big
-  multi-select spawn a thread per delete and hammer the manifest with concurrent
-  OCC mutations. **Concurrency invariants for this screen (each fixed a real bug):**
-  - **`load()` is generation-guarded** (`mLoadGen`): two concurrent loads (a
-    post-delete resync + a transfer-finished reload) complete in *network* order,
-    not call order, so a stale earlier pull would otherwise overwrite a newer list
-    (deleted entries reappear). The callback drops a result whose `gen != mLoadGen`.
-  - **Batch delete = ONE manifest mutation** (`VaultEngine.deleteEntries` /
-    `CloudBackupManager.deleteEntries`): a multi-select delete must NOT fire N
-    concurrent `mutateManifest` calls — they contend on the manifest version and
-    some exhaust the retries. `MAX_CONFLICT_RETRIES` is 8 (writers now run
-    concurrently: a net-pool delete can race a worker-thread backup commit).
-  - **Delete is unreference-FIRST**: remove from the manifest, THEN free the object
-    (best-effort). The reverse risks a GHOST entry pointing at a deleted object;
-    a failed object delete just leaks quota (server GC).
-- **The Backups list is a NETWORK-backed list, and its affordances follow from
-  that — four were added together after an audit against the Downloads list.**
-  - **Pull-to-refresh** (`cb_swipe`). Downloads needs none (local DB + Room
-    invalidation); this screen pulls a manifest, so a backup made on another
-    device only appeared after leaving and re-entering. The
-    `SwipeRefreshLayout` MUST carry an `setOnChildScrollUpCallback` pointed at
-    the inner RecyclerView — its direct child is the LCEE container, not the
-    scrollable view, so the default callback would fire a refresh mid-list.
-    `stopRefreshing()` runs on BOTH load outcomes; a failed refresh that leaves
-    the spinner turning reads as a hang.
-  - **Batch restore + select-all** (`menu_cloud_backup_action.xml`, this
-    screen's own selection menu rather than the shared `menu_action.xml`).
-    Restoring is the whole point of cloud backup and was reachable only ONE
-    FILE AT A TIME through the item sheet, while the destructive batch action
-    already existed — an inverted asymmetry. Batch restore is deliberately
-    NOT dialog-confirmed (constructive and reversible; the count + size are in
-    the toolbar at the moment of the tap), unlike batch delete. `enqueueRestore`
-    is split from `startRestore` so N restores don't fire N snackbars and N
-    per-work observers. Select-all TOGGLES, and clearing drops to zero
-    selected → `refreshSelection()` exits selection, the same as unticking the
-    last row.
-  - **The cloud-only fact lives at the REMOVE decision, NOT on the row — and
-    the per-row marker is not to be reinstated in either direction.** It is
-    still resolved in ONE batch per manifest load
-    (`CloudBackupManager.resolveCloudOnly`) — never per bound row, which would
-    re-query on every scroll and selection tick — but the fragment now KEEPS
-    the set (`mCloudOnly`) instead of handing it to the adapter, and spends it
-    in the two places a removal is decided: the item sheet's `cb_sheet_only_copy`
-    line under its Remove row (`ARG_CLOUD_ONLY`), and the batch-delete
-    confirmation, which appends a COUNT of last copies
-    (`cloud_backup_delete_last_copies`) and only when the selection actually
-    contains one.
-    **History, and why the row marker died:** it shipped as a
-    "· Not on this device" tail on the date line, argued for as the
-    decision-relevant AND *rarer* state. The rarity claim was simply false —
-    on an established install almost every backed-up file has since been
-    cleared from Downloads, so it rendered on nearly every row (8 of 9 on the
-    reporter's screen), and a marker present on ~90% of rows carries no
-    information. That is the identical argument that keeps the OPPOSITE ("also
-    on this device") badge off this list, so the row had no correct marker in
-    either direction; which one is rarer is a property of the install, and a
-    rule keyed to one install's data shape is wrong by construction (the same
-    objection that killed the grid's lone-tile layouts). It also read as an
-    asymmetry: silence for one state, words for the other. The lesson worth
-    keeping: **a state worth warning about is not automatically worth
-    labelling everywhere** — put it where it changes a decision, once. If a
-    row here ever earns a glyph, the earned one is failed/stale backup state,
-    which this surface still has no indicator for.
-    Unchanged from the original: readability is probed with
-    `RestoredFileAccess.openableUri`, NOT `File.exists()` — exists() is false
-    for a readable foreign-owned restored file and would call a present file
-    missing — and a lookup that THROWS leaves the id OUT of the set, so an
-    unknown degrades to the plain wording and never to a false "only copy"
-    claim. Single remove still has no confirmation dialog (it is optimistic by
-    design), which is why the sheet carries the line rather than a new prompt.
-  - **Removing an entry whose restore is IN FLIGHT warns first, then cancels
-    that restore deterministically.** Restores deliberately don't render on this
-    screen (they show as a live download row in the Downloads list), so a file
-    being restored looked completely idle here — selectable and removable with
-    no hint. Removing it was silent AND nondeterministic: `VaultRestoreWorker`
-    carries its inputs (`objectId`/`wrappedDek`/`chunkCount`) and never re-reads
-    the manifest, so it only discovered the removal when its next chunk GET 404'd
-    — and whether it survived depended on how much had already downloaded. The
-    failure then surfaced as a bare ERROR row in a DIFFERENT screen with no
-    stated cause. Now: `enqueueRestore` tags the work
-    `VaultRestoreWorker.TAG_OBJECT + objectId` (WorkInfo exposes tags, not input
-    data — the same trick as the backup worker's `bname:`), the existing
-    WorkInfo observer rebuilds `mRestoringObjectIds` on every emission (full set
-    per tag, so a finished restore is simply absent — no removal bookkeeping),
-    and BOTH remove paths consult it. The batch confirmation counts restores
-    SEPARATELY from last copies — the two are independent (a file can be either,
-    both or neither), so one merged sentence would misreport a mixed selection —
-    and single remove, which is otherwise deliberately unconfirmed and
-    optimistic, gains a confirmation for this one case only. `cancelRestores`
-    runs BEFORE the manifest mutation + object free, which is what makes the
-    outcome the same every time instead of a race. **`VaultRestoreWorker`'s
-    IOException branch must keep its `isStopped()` guard**: a cancelled worker
-    never runs its retry, so returning `Result.retry()` there would strand the
-    Downloads row at PROGRESS forever — it resolves to ERROR instead.
-  - **Selected size in the toolbar** ("N selected · 1.2 GB") — the number the
-    user is actually deciding on. Composed from the existing string, no new
-    translation.
-- **The Backups screen has a ViewModel (`CloudBackupListViewModel`) — state
-  does NOT live on the fragment.** It previously did: the manifest, the
-  load/error flags, the in-flight-delete guard and the selection were all
-  fragment fields, so every rotation destroyed them and RE-PULLED the manifest
-  over the network. The VM owns entries + load state + status + cloud-only +
-  selection, published as ONE `State` snapshot so the fragment can never render
-  a torn combination (loading=false with the previous list still in place).
-  `onViewCreated` only loads when the VM is fresh — re-pulling there would put
-  the network straight back in the rotation path.
-  - **The generation guard did NOT go away**, it moved. It is tempting to say a
-    single observed stream subsumes it; that is true of a Flow, but
-    `CloudBackupManager` is CALLBACK-based, so two concurrent pulls still
-    complete in network order and a stale one would still overwrite a newer
-    list. Same for `PendingRemovals` — both now live in the VM, which is their
-    right home.
-  - **Search and grid deliberately stayed on the fragment**: the search field is
-    part of the borrowed activity toolbar and is torn down with the view anyway,
-    and the grid choice is persisted in prefs. Neither is state a rotation loses.
-  - **The adapter is now a pure renderer** — it is HANDED `submit()` /
-    `setSelection()` / `setActionMode()` / `setCloudOnly()` and owns no
-    selection state. That is what let `setActionMode`'s blanket
-    `notifyDataSetChanged` become a bounded `notifyItemRangeChanged` over the
-    committed rows (transfer rows show a cancel button in either mode, so they
-    never needed rebinding to toggle a tick). `exitSelection` must call
-    `mViewModel.clearSelection()` — the adapter no longer does it.
-  - **Two `notifyDataSetChanged` remain and are correct**: `enableGrid` changes
-    every row's VIEW TYPE (the RecycledViewPool keys holders by type, so nothing
-    is reusable), and `setTransfers` on a COUNT change reshuffles every position
-    below. Don't "fix" those.
-- **List gutter + multi-select parity.** The recycler uses the same
-  `EqualSpacingItemDecoration(list_spacing)` as the Downloads/Bookmarks/History
-  lists (the rows already carry the matching 8dp card margins, so the thumbnail
-  lands 16dp from the edge like Downloads — don't drop the decoration or the
-  margins won't match). Multi-select uses the **same strategy as Downloads — the
-  screen's existing toolbar, NOT a contextual `ActionMode`** (the app deliberately
-  doesn't use `startSupportActionMode`). `CloudBackupListFragment` grabs the
-  SettingsActivity toolbar (`R.id.toolbar`), and while selecting: a `MenuProvider`
-  contributes the delete action (`menu_action`), the title shows "N selected"
-  (`action_mode_selected`), and the toolbar Up button + an `OnBackPressedCallback`
-  exit selection (restoring the activity's pop/finish Up behaviour on exit). The
-  per-row tick lives in the **action-button slot** like the Downloads row: the row
-  has a ⋮ `cb_action` button (opens the sheet) and the adapter swaps it for the
-  check IN THE SAME SLOT (button INVISIBLE → no reflow) + the `SelectionStyling`
-  primaryContainer wash on the card. Delete shows a confirmation dialog then
-  optimistically removes the selected entries (`deleteEntry` per id, `load()`
-  resync on any failure). In-progress transfer rows aren't selectable; selection
-  is torn down in `onDestroyView`.
-- **Per-item sheet has a rich header.** `CloudBackupItemSheetDialogFragment` shows
-  the file's preview thumbnail + name + `MIME · size · date` (the list-row facts,
-  passed as sheet args) over the Restore / Remove rows; "Remove from cloud" is
-  styled with `Firedown.Widget.SheetRowText.Final` (the app's option-sheet
-  destructive treatment — colorPrimary text + tint, NOT colorError). Don't revert
-  it to a bare title + two rows, and don't use colorError (the popup/option sheets
-  mark destructive rows with `.Final`/colorPrimary, not red).
-- **Discovery is ONE dismissible banner in the Downloads list — not a
-  bottom-sheet promo, and not a second adapter — and it is TWO-STAGE: the same
-  instance morphs from DISCOVERY to ACTIVATION copy.** Cloud Backup is
-  action-driven (the download sheet's ⋮), so a user who never opens that sheet
-  never learns it exists. `DownloadFragment` prepends a `SyncBannerAdapter`
-  through the SAME `ConcatAdapter` as the incognito header, below it (live
-  in-flight state outranks a one-time promo). Tap → the merged Cloud screen
-  (`EXTRA_OPEN_CLOUD_BACKUP`); X → retires the stage that is showing.
-  - **Stage 1 — DISCOVERY** (not set up + rows): the original pitch. Retired by
-    dismissal (`CLOUD_BACKUP_BANNER_DISMISSED`) or by setup, as before.
-  - **Stage 2 — ACTIVATION** (set up + KNOWN-zero files backed up + rows):
-    "Your free backup credit is waiting — back up your first file from any
-    download's ⋮ menu" (`cloud_banner_activate_*`, 16 locales). Added from
-    live data: 25 of 31 storage-registered accounts had minted a code (and a
-    starter grant) but never backed up one file — an ACTIVATION gap, not an
-    awareness gap, so the fix reuses the existing affordance with
-    state-dependent copy (`SyncBannerAdapter.setCopy`, the morphing-CTA rule)
-    instead of any new surface. Gated on KNOWN-empty only
-    (`cloudKnownEmpty()`: the in-memory `lastStatus` snapshot, else the
-    durable `CLOUD_LAST_TOTAL_BYTES` cache; unknown → show nothing — never
-    claim "credit is waiting" without evidence). Retires on its OWN key
-    (`CLOUD_ACTIVATE_BANNER_DISMISSED` — the stages retire independently: a
-    pre-setup dismissal must not consume a nudge the user never saw) via
-    dismissal or the first evidence of a backed-up file, after which the
-    banner is gone forever. Do NOT add a third stage — set-up-and-storing
-    users need no banner, and the grace/paused states already have the home
-    card.
-  - **`SyncBannerAdapter` is PARAMETERIZED (copy + glyph), never forked.** Two
-    banners that differ only in three resource ids do not get two
-    near-identical adapters + layouts — that is the duplication mistake this
-    file keeps recording (`compactDuration`, the three private QR encoders).
-    The class keeps its historical `Sync*` name for the same reason Cloud
-    Backup keeps its internal `Vault*` names: the user-facing STRING says
-    "Cloud Backup", not the type. The no-copy constructor is the bookmarks
-    default, so `WebBookmarkFragment` is untouched.
-  - **Visibility is driven from the AGGREGATES LiveData, not the paging
-    load-state listener** — even though the latter is where the row count is
-    already computed. That listener can fire while the RecyclerView is
-    computing layout, and a `notifyItemInserted` on a SIBLING adapter of a
-    `ConcatAdapter` throws there; `applyAggregates` is a plain observer and is
-    safe. The rows gate itself is deliberate: promoting a backup feature on an
-    empty Downloads list is noise, and the empty state already carries its own
-    CTA (the SAF restore button). It is read BEFORE `applyAggregates`'s
-    `mPendingPresentation` stash — that deferral keeps section-header COUNTS in
-    step with the generation they label, and the banner labels nothing.
-  - `getLeadingHeaderCount()` must count it (the grid `SpanSizeLookup` calls
-    that per position, so a self-hiding header is fine), and `onResume`
-    re-evaluates it because nothing else observes the set-up flag.
-  - **A bottom-sheet "Cloud backups…" promo after install was considered and
-    rejected**: a modal on a fresh install interrupts before the user has a
-    single download to back up, and this list already hosts an announce-banner
-    pattern that costs nothing until there is something to promote.
-- **The download-finished notification carries a "Back up to cloud" action —
-  the moment-of-save door.** `RunnableManager.startNotificationFinish` adds the
-  action (existing `cloud_backup_action` string, no new translations) via a
-  PendingIntent to `CloudBackupNotificationReceiver` (explicit intent, not
-  exported; request code = the download's row id so simultaneous finishes don't
-  collapse to one PendingIntent). Gated on `CloudBackupManager.isSetUp()` — a
-  notification action cannot run the first-time setup flow (mint a code + the
-  mandatory "I've saved it" dialog), so a not-set-up user keeps the plain
-  notification and the Downloads-list activation banner stays their pitch; this
-  targets exactly the measured activation gap (set-up accounts that never
-  backed up a file). The intent carries only the ROW ID: the receiver re-loads
-  the entity (`findByIdSync`, DiskIO executor, `goAsync`) and RE-CHECKS every
-  gate (FINISHED, not vault, still set up) — the notification can outlive any
-  state it was built against, so the build-time gates are advisory only.
-  Feedback needs no extra UI: the receiver cancels the finished notification
-  and `VaultBackupWorker`'s own foreground notification takes over. **The
-  request shape + unique-work key live in ONE place now** —
-  `VaultBackupWorker.enqueue(context, entity)` (input data, identity tags,
-  constraints, the name+size REPLACE unique key and its rationale) — shared by
-  the options-sheet/multi-select path (`BaseDownloadFragment.enqueueOneBackup`,
-  which only adds its lifecycle-bound failure observer) and the receiver.
-  Don't fork the enqueue back into a caller (the `compactDuration` drift rule),
-  and don't "upgrade" the action into a per-row list button — that was
-  evaluated and rejected (single shared action slot, state-dependent geometry,
-  one-tap credit spend on a scroll surface).
-- **"Backing up…" snackbar has a View action, no success snackbar.** Tapping
-  "Back up to cloud" (`BaseDownloadFragment`) shows a "Backing up…" snackbar whose
-  **View** action deep-links to the backed-up-files list (where the live per-item
-  progress shows); there is deliberately NO terminal success snackbar (the list is
-  the confirmation) — only a `FAILED` transfer surfaces an error snackbar
-  (`CANCELLED` stays silent).
-
-- **Deep-links + back-nav.** The upload/restore notification AND the home
-  status line open the merged Cloud screen
-  (`SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP`) with `popUpTo settings inclusive`,
-  so Back returns to the CALLER (home), never into the settings tree. The
-  **Downloads toolbar overflow** opens the backed-up-files list
-  (`EXTRA_OPEN_CLOUD_BACKUP_FILES`) and replaces the settings list on the back
-  stack (`popUpTo settings inclusive`), so Back returns to **Downloads** (the
-  caller), not into the settings tree. A "Cloud" row in the home + browser popups
-  opens the same merged screen (`EXTRA_OPEN_SYNC`).
-
-- **Cloud IA — ONE backup-first Cloud screen; everything Cloud lives on it.**
-  The Settings → Cloud screen (`SyncSettingsFragment` / `settings_sync.xml`,
-  toolbar title "Cloud") is the MERGED home of the paid downloads backup AND the
-  bookmarks toggle — both the old thin-hub-plus-`CloudBackupSettingsFragment`
-  two-level IA and the focused `BookmarksSyncFragment` were retired (maintainer
-  calls: reaching the plan/files took 4 taps from home; a whole sub-screen for
-  one switch was a tap tax). Order on the screen = priority: the
-  `CloudStatusPreference` **status hero**, the **MORPHING CTA** directly
-  under it (`CloudBuyButtonPreference` — the MaterialButton carries
-  `@android:id/title` so the Preference TITLE drives its label: "Create recovery
-  code" pre-key, "Add storage credit" after; the button is
-  non-clickable/`duplicateParentState`, the row owns the click; **emphasis is
-  state-dependent** — FILLED while the next step is genuinely "pay" (pre-key /
-  unfunded / grace / quota-unknown-with-key), swapped to the OUTLINED
-  `preference_cloud_buy_button_plain` layout once affirmatively funded (or on
-  the unmetered beta, where there is nothing to sell) — a years-of-runway
-  account shouldn't be stared down by a permanent filled sales button (the
-  same restraint that once kept the home pill a quiet chip); `applyBuyEmphasis`
-  binds cached-first then
-  from the fresh load, like the hero), the
-  **"I have a recovery code"** adopt door (shown in BOTH key states — see the
-  adopt/replace note below), the **Backups** row (shown once set up). Below
-  the hero + CTA the rows sit in THREE UNLABELLED CARD GROUPS (title-less
-  `PreferenceCategory`s, rendered by the settings cards — see "Settings
-  cards" under Settings IA): KEY = Recovery code + the adopt door, USE =
-  Backups + Pair + the Bookmarks switch, and last = the FAQ link + the
-  erasure door. The KEY and USE groups SWAP by life stage
-  (`SETTINGS_CLOUD_GROUP_KEY` / `_USE`): KEY above USE is the ONBOARDING
-  order (the adopt door is the second way in, right under the create-CTA
-  while there is nothing else to reach); once the account is set up
-  `updateState` puts USE above KEY, daily-use rows first, and the erase path
-  restores the onboarding order. It swaps GROUPS, not rows (the rotation
-  used to `setOrder` Backups + Pair above the door within one flat list), so
-  each card group stays whole in both stages. NO category LABELS on this
-  screen — "Manage backup" / "Recovery code" / "About" over one row each
-  restated the row, the same taxonomy-noise call as the dissolved Cookies
-  category, and the LAST header (Bookmarks, kept briefly as a paid-vs-free
-  separator) had to go too: a labelled header visually owns every row until
-  the NEXT header, so with no header after it, it umbrella'd the
-  code/FAQ/delete rows as "Bookmarks" children — the shipped "why is Delete
-  backed-up files under Bookmarks?" bug. The card edges now carry the
-  grouping, and a group ends where its rows end, so that trap cannot
-  return),
-  ONE secondary inline **Bookmarks SwitchPreferenceCompat** (key `SYNC_ENABLED`, never self-persists — the change
-  listener returns false and `SyncManager` owns the pref; there is NO "Sync now"
-  row anymore — sync is change-triggered + runs on toggle-on, the last-synced
-  summary carries the signal), **ONE recovery-code row** (device-auth gated;
-  the reveal dialog carries Copy AND Save-to-file — export lives inside the one
-  authed reveal, on NON-DISMISSING buttons so the create-mode "I've saved it"
-  gate survives the SAF round-trip; the old separate export row doubled both
-  the rows and the auth prompts for one object), the **"How sync &
-  encryption work" LINK row** (→ `firedown.app/security`, the website's
-  existing "How Cloud Backup works" page — translated there into 14 locales
-  and it already answers every retired FAQ item, lost code and Safe Folder
-  included — in a Firedown tab
-  via the OPEN_URI result handshake; it REPLACED an offline nine-question
-  FAQ sub-screen — `SyncHelpFragment`/`FaqPreference`/`settings_sync_help.xml`
-  are gone — because seven of the nine were reassurance copy the website
-  owns and keeps current in one place, and the two load-bearing facts, "the
-  code is the only key, there is no reset" and "Safe Folder never leaves the
-  device", are already stated in-app at their points of action: the reveal
-  dialog and the multi-select backup snackbar. Known gap on that page: it
-  explains Cloud Backup's encryption in prose and only links the bookmark
-  blob's source; `/privacy` §03 carries the bookmark-sync wording), and LAST **one
-  erasure DOOR** ("Delete cloud data", `SETTINGS_CLOUD_DELETE`) opening the
-  two-row "Delete cloud data" sub-screen (`CloudDeleteFragment`).
-  - **The not-set-up hero is the onboarding ROADMAP**: ① Create your recovery
-    code → ② Add storage credit → ③ back up from the download sheet ⋮, bound by
-    `CloudStatusPreference.bindOnboardingSteps` (done = "✓" + muted ink, the
-    next pending step keeps bold full-contrast ink; step ② checks off on the
-    SERVER's metered balance when the quota is loaded — stale local plan prefs
-    must not keep it checked for an expired/reaped account — with the prefs as
-    the offline fallback). The steps reuse existing strings — no new
-    translations. The morphing CTA always shows the NEXT step. The expiry
-    lifecycle this completes: runout → 30 days of amber grace (hero alert +
-    CloudWatchWorker's notifications) → the server reap deletes objects
-    AND manifest → the client's 0-files reconcile auto-retires the flag → this
-    roadmap returns with step ② bold, pointing at top-up.
-  - **Two scoped erasures behind ONE door, never one "delete all cloud
-    data"**: "Delete bookmarks from server" (offered while sync is on) and
-    "Delete backed-up files" (offered once set up) are the two rows of
-    `CloudDeleteFragment` (`settings_cloud_delete.xml`, nav
-    `settings_cloud_delete`, `action_sync_to_delete`), each opening its own
-    confirm dialog; a row hides when its deletion does not apply (re-read on
-    resume and after each deletion), and the door on the Cloud screen hides
-    when neither does. It is a SUB-SCREEN, not a chooser dialog (maintainer
-    call — a `setItems` chooser shipped for one commit): a screen carries
-    each deletion's consequence as the row's SUMMARY (the confirm message
-    strings, reused), so the choice is informed before the confirm, where a
-    menu could only name the two. The two used to be two full ROWS on the
-    root — by glyph and copy the loudest items on a ten-row flat screen, for
-    the one thing nobody should reach casually (on-device review); the door
-    keeps the scoping and costs one row. A combined ACTION would still
-    mislead (the old title never touched bookmarks) and would couple wiping
-    free bookmarks to destroying paid backups — the screen is a menu, not a
-    merge. **"Delete backed-up files" keeps the balance**: the server's
-    `DeleteAccountData` deletes objects + manifest but KEEPS the quota row, and
-    the client deliberately does NOT wipe the plan prefs / recovery code / the
-    enabled flag on success (the old full-wipe cleanup stranded the surviving
-    balance — the code is its only key; `loadStatus`'s reconcile owns the flag
-    from server truth). `deleteAllData` also CANCELS every in-flight/queued
-    transfer first (`cancelAllWorkByTag(WORK_TAG)` — backups AND restores carry
-    it): without that, a running upload failed its complete against the wiped
-    rows (spurious error + orphaned chunks) and a QUEUED backup ran after the
-    wipe and quietly re-created a manifest.
-  - The KEY-FIRST GATE survives: pre-key the CTA reads "Create recovery code"
-    (with the mandatory "I've saved it" dialog), Manage rows are hidden, the
-    Bookmarks switch is disabled (stops the keyless-purchase ghost account).
-  - **Adopting a code works in BOTH key states — "I have a recovery code" is
-    NOT pre-key-only, and re-gating it on `!hasKey` re-breaks the two-device
-    case.** Two devices that each minted their own code have two separate
-    accounts; putting them on one means one device adopts the other's code. The
-    row used to hide the moment a key existed, and the second device usually
-    HAS one by then (it created a code, or backed a file up, before the user
-    decided to share the first device's account) — so the only route to one
-    shared account was clearing app data. The key-first gate is untouched by
-    this: that gate exists to stop a KEYLESS purchase, and adopting a code
-    produces a key rather than bypassing one. Post-key the row's summary flips
-    to the replace wording and `showLinkDialog` **confirms first**
-    (`settings_sync_link_replace_*`, 16 locales) — the one place this screen
-    asks twice, because the current code is the ONLY key to whatever sits under
-    it: nothing is deleted server-side, it simply becomes unreachable from this
-    device, so the copy points at the Recovery code row to save it first.
-  - **The code travels by QR as well as by typing, and the SCANNER IS THE P2P
-    ONE — do not fork it.** Device A's reveal dialog carries the same code as a
-    QR (`dialog_sync_show_code.xml` `sync_code_qr*`), device B's adopt dialog
-    gets a **Scan** neutral button → `P2pScanFragment`, which is registered as a
-    `<dialog>` in `nav_graph_settings` too (same class; the two activities host
-    different graphs). Reuse was nearly free because that screen's contract
-    already generalised: `ARG_PREFIX` defaults to `""` (accept any decoded text),
-    which is exactly right here since a recovery code has no prefix and is
-    verifiable only by *trying* the decode — so the CALLER validates, via
-    `SyncManager.looksLikeRecoveryCode` (Crockford + length, no IO, main-thread
-    safe; SHAPE only, never authenticity). The one thing missing was a title, so
-    `ARG_TITLE_RES` was added (0 = keep the old `ARG_REPLY` behaviour, so every
-    P2P caller is untouched). Three properties are load-bearing:
-    - **The QR panel SWAPS with the code panel in the SAME dialog — never added
-      below it, never a second dialog.** Two failed shapes, both shipped:
-      ADDING it below made the dialog taller than the window, and its button
-      panel is stacked VERTICALLY (Material stacks when the labels don't fit a
-      row, and there are three — Copy / Save to file / Done), so the overflow
-      clipped "Save to file" off the bottom and made it unreachable (reported
-      on-device); shrinking the image only defers that to a large font scale. A
-      SEPARATE dialog fixed the height but read as a dialog stacked on a dialog,
-      and **dismissing the reveal to avoid that is not available**: in create
-      mode it is non-cancelable with Done gated on the "I've saved it" checkbox,
-      so dismissing would let the user leave a freshly minted key without ever
-      acknowledging they saved it — the exact hole that gate closes — and it
-      would take Copy and Save-to-file away while the QR is up. Swapping keeps
-      the height at max(code, QR) rather than their sum (which IS the clipping)
-      and dismisses nothing. Both panels are set on every toggle tap (every
-      branch sets BOTH persistent views — the one-sided-set rule); the checkbox stays visible in
-      the QR state because it is the create flow's only exit condition. The
-      exposure argument is untouched — the QR starts hidden, so the payload is
-      only on screen once asked for, one deliberate step past the device-auth
-      gate. `bindCodeQr` encodes ONCE and hides the toggle when zxing declines
-      the payload, so the swap can never land on an empty frame.
-    - **A scan lands back on the INPUT dialog, prefilled — it never links
-      straight through.** A QR is a bearer secret pointed at a camera; an
-      accidental or wrong-device frame must not be able to swap the account with
-      no confirmation, and the review step costs nothing because the dialog
-      already exists. A payload that fails `looksLikeRecoveryCode` is reported
-      and DROPPED rather than prefilled (it isn't a typo to correct, and
-      prefilling would invite pressing Restore on it).
-    - **The result is consumed with `set(key, null)`, never `remove(key)`** —
-      remove() detaches the handle's cached LiveData and the SECOND scan of a
-      session would silently never arrive (the Cloud Backup item-sheet trap, same
-      mechanism). `observeScanResult` registers in `onViewCreated`, not lazily
-      when the scanner opens, so a result still lands after a config change or
-      process death while the scanner was up.
-    The QR encoder is `utils/QrCodes` — **the app's ONE encoder**. P2P share and
-    the buy-credit Lightning invoice carried byte-identical private copies before
-    this; a third would have been the `compactDuration` drift mistake, so both
-    were migrated. It is monochrome black-on-WHITE in both themes deliberately (a
-    dark-theme inversion is what makes some readers fail), and returns null for a
-    payload zxing declines so callers hide the view instead of showing an empty
-    frame that reads as a broken scan target.
-  - **A key swap must DROP every cached per-account value, or the new account
-    renders the old one's numbers.** The stored code IS the account, so
-    `linkWithCode` removes `SYNC_LAST_VERSION` (the bookmark doc's OCC version
-    — stale, it would fight the adopted account's document), `SYNC_LAST_SYNCED_AT`
-    / `SYNC_LAST_ERROR`, `CLOUD_PLAN_SIZE_GB` / `CLOUD_PLAN_DURATION_MONTHS`
-    (the local purchase shape behind the roadmap's offline step-② check-off) and
-    `CLOUD_LAST_TOTAL_BYTES`; the caller drops the in-memory snapshot via
-    `CloudBackupManager.forgetCachedStatus()` BEFORE `updateState`, so no
-    surface repaints the previous balance in between. That durable total is the
-    dangerous one — the Downloads activation banner reads it pre-network (and
-    the since-removed home resting line painted it), so leaving it would
-    attribute the OTHER device's figure to this account, confidently and for
-    the whole session offline. `ensureRegistered` needs
-    NO clearing — its marker is keyed by `accountBase32()`, so a new account
-    simply misses it and registers. Nothing on the server is touched.
-  - Deep links: `EXTRA_OPEN_SYNC`, `EXTRA_OPEN_CLOUD_BACKUP` AND
-    `EXTRA_OPEN_BOOKMARKS_SYNC` (bookmarks-list overflow + sync banner) all land
-    on the merged Cloud screen — kept as three extras because callers express
-    different intents; the Downloads toolbar routes two-way (`isSetUp` → the
-    files list, else → the Cloud screen). Bookmarks sync is free, downloads
-    backup is pay-per-use, but pricing is kept **implicit** in the copy (no
-    badge).
-  - **The status hero binds the CACHED snapshot first.**
-    `CloudBackupManager.lastStatus()` keeps the last *successful* `Status` for the
-    singleton's lifetime; the screen paints it synchronously on entry and the
-    async `loadStatus` result then UPDATES the hero in place — no empty-state
-    flash / layout jump per screen entry (on-device complaint). `loadStatus` also
-    serves the cache instead of unknowns on an offline/transient failure (the
-    flag reconcile only ever runs on a successful load, so the cache can't mask
-    it), and `deleteAllData` clears it. Don't bind the hero straight to a fresh
-    network load again.
-  - **The metered hero speaks ONE model — prepaid credit measured in TIME —
-    and GB-months NEVER appears in user-facing text.** After several rounds of
-    "the GB-months / two-bars screen is confusing," the diagnosis was that the
-    hero spoke THREE models at once: a plan chip ("Up to 450 GB · 1 year" — a
-    shape INVENTED by normalizing the balance to 12 months; there is no plan,
-    purchases accumulate into one balance), a "% of your plan" bar against
-    that invented cap, and the timeline. All plan fiction was DELETED
-    (`effectivePlanSizeGb`/`roundToNiceGb`/`coverageMonths`, the chip's plan/
-    balance text, the metered %-of-plan bar, the covered-until clamp): the
-    metered hero is now headline ("854 MB backed up") + the compact **credit
-    METER** (`bindMeter` + `cb_meter`) — a thin gauge of credit REMAINING
-    labelled with the runway time from the SERVER's `projected_runout_at`
-    (past-guarded for stale servers). It borrows the familiar Dropbox/Drive
-    thin-bar SHAPE but is a **fuel gauge, NOT a used-of-cap bar** — metered
-    mode has no cap, so a "% of your plan" fill would be a lie (the exact
-    confusion the plan fiction created). The fill is credit LEFT with NO
-    denominator shown, and **the BAR renders only while DRAINING (runway under
-    `RUNWAY_FULL_MONTHS`) — at/over a year it is HIDDEN and the "Covered
-    until" label alone carries the fact.** It used to saturate FULL instead,
-    which made the common state of every well-funded account a permanently
-    full, edge-to-edge brand bar: the loudest element on a resting screen
-    (out-shouting the deliberately-outlined CTA), carrying zero information
-    beyond its own label, and semantically backwards to the Drive/Dropbox
-    mental model where a full bar under a storage number means "you're out of
-    space" (reported on-device against a 9-years-funded account). Under a year
-    the bar appears honestly partial — its appearance IS the signal, arriving
-    together with the buy CTA flipping back to FILLED (the low-runway emphasis
-    rule); the amber grace state KEEPS its sliver bar, alarm being exactly
-    when a gauge means something. Bar visibility is set in EVERY bindMeter
-    branch (the holder recycles — the one-sided-set trap). **The old
-    saturation is also why a top-up on a funded account was invisible** (meter already full, CTA already outlined — reported
-    on-device as "the only visible thing is the subtitle going 14 → 94"), and
-    two additions close that without touching the gauge's fuel-gauge honesty:
-    - **The label leads with the CALENDAR DATE** —
-      "Covered until ≈ June 2034 · 8 years" (`runwayLabel`:
-      `cloud_status_covered_until` + a DIM `colorOnSurfaceVariant` span on the
-      duration tail; month-year only via `getBestDateTimePattern("yMMMM")`, day
-      precision on a ≈ multi-year projection would be false precision). A date
-      is the honest "my plan runs to X", and a top-up moves it theatrically.
-      Falls back to the old duration-only string when the date won't re-parse.
-      The duration itself **rounds to YEARS from 24 months up**
-      (`formatDuration` — to-nearest under the explicit ≈; 13–23 months keep
-      the month unit, under a year is always months — precision belongs where
-      the gauge moves). The Backups-list header (`coverageLabel`) keeps the
-      duration-only form.
-    - **A one-shot "+N added" receipt chip** (`cb_credit_delta`, PEACH
-      `colorSecondaryContainer` — the triad's support hue, never coral beside
-      the CTA): `BuyCreditViewModel` snapshots the PRE-purchase runway at
-      redeem (`CLOUD_TOPUP_BEFORE_MONTHS`, written ONLY when the before is
-      known — an empty cache must not let the chip claim the whole runway was
-      "added", which also silences it on a first purchase from unfunded, where
-      the hero appearing IS the event); `SyncSettingsFragment.applyCreditDelta`
-      compares it against a FRESH `loadStatus` quota only (the cached bind
-      predates the purchase and would wrongly retire it), shows the delta, and
-      marks `CLOUD_TOPUP_SHOWN`; the NEXT screen entry retires both keys, so
-      the chip lives for exactly one full visit incl. every re-bind. A
-      measured zero delta drops the snapshot (stale/absorbed) rather than
-      leaving it to fire on an unrelated future increase. There is
-      deliberately NO success snackbar on return — the buy wizard's SUCCESS
-      stage is the receipt at purchase time; the chip is the receipt in situ.
-    **All runway arithmetic lives in ONE place** —
-    `CloudBackupManager.runwayMonths` (past-guard for stale servers included,
-    -1 = unknown, floor 1) — shared by the hero, the Backups header and the
-    delta snapshot; don't re-derive months from `projected_runout_at` anywhere
-    else. This **replaced the `CloudTimelineView` Today→date
-    runway** (removed) at the maintainer's request for a simpler, more
-    recognizable meter — same runout math + strings, no new translations. The
-    "no metered % bar" rule stands: it's a runway gauge, never a percentage
-    against an invented cap. No projection (nothing backed up /
-    effectively-never runout — the server omits dates past its 30-year horizon)
-    → the `cloud_status_credit_active` label alone (no bar), so a funded
-    account always shows its credit — in words. The separate usage BAR (`cb_bar`) binds
-    only in the unmetered beta, whose byte cap is a real denominator; the CHIP
-    binds only for grace ("Read-only", amber) and the beta label. The raw ledger unit
-    survives user-facing only inside the buy wizard (denomination fine print +
-    its explainer — the one place the unit is introduced); the Backups-list
-    header and the buy-success screen now say "≈ 1 year of coverage"
-    (`CloudStatusPreference.coverageLabel`) / "Added to your backup credit"
-    instead of a GB-months number. `setPlan`'s stored `CLOUD_PLAN_*` shape
-    now backs ONLY the roadmap's offline step-② check-off and the
-    starter-vs-purchase label. Don't reintroduce a plan chip, a metered %
-    bar, or a GB-months string on any status surface.
-  - **The Safe Folder exclusion is a STATED promise, not a silent gap.** Vault
-    entries are excluded from Cloud Backup (the same "vault never leaves the
-    device" contract as the mirror and P2P send) — deliberately NOT lifted:
-    vault content is guarded by the device lock/biometric, while cloud data is
-    keyed by the recovery code, so backing up a vault file would silently move
-    it into a different trust domain (name/thumb on the un-gated Backups
-    list, restorable by code alone, no biometric). The exclusion is surfaced
-    in the multi-select backup action's snackbar
-    (`cloud_backup_safe_excluded`) when a selection reduced to nothing
-    BECAUSE of safe entries, and on the website's `/security` page (the in-app
-    FAQ that carried it as q7/a7 was retired — see the Cloud IA note). If per-file vault backup is ever built it needs
-    device-auth gating on safe entries in the Backups list, restore back INTO
-    the vault, and explicit consent copy — all three together.
-
-- **PUBLIC SHARE LINKS FOR A BACKED-UP FILE — DECIDED AGAINST. Do not build a
-  server-side share endpoint.** The proposal: mint a unique URL for a backed-up
-  object that anyone holding it can fetch. It is *technically* clean and that is
-  exactly why it keeps coming up — every object already has its OWN DEK wrapped
-  under the account master key, so sharing one file exposes only that file (had
-  objects been encrypted directly under the master key, a share link would have
-  been an account-wide key leak), and the key can ride in the URL **fragment**
-  (`firedown.app/f/<shareId>#<dek>`), which never reaches a server, so "the
-  server never sees plaintext" survives intact. Server-side it is one table
-  (shareId → objectId, expiry) plus one unauthenticated endpoint returning
-  short-TTL presigned chunk GETs — `handleGetObject` already presigns exactly
-  that. The objection is NOT engineering; it is what the feature turns Firedown
-  into, and it is decisive on four counts:
-  - **The economic brake does not exist.** R2 charges **zero egress**; a served
-    GB costs only Class B ops (~$0.000046/GB at the 8 MiB chunking). On S3,
-    egress at ~$0.09/GB polices this by itself (a 5 GB file pulled 1000× ≈
-    $450); on R2 the same abuse is free. Worse, the **starter grant** removes
-    the storage brake too: recovery codes are client-minted, so accounts are
-    free to farm (bounded only by PoW / per-IP / `MaxAccounts`), and the
-    pipeline becomes farm → free grant → upload → public URL, never touching
-    the mint. Check `FIREDOWN_STORAGE_STARTER_GRANT_GBM` before arguing this
-    away — it defaults to 0/disabled in the provisioner, so it bites only where
-    the operator enabled it.
-  - **Moderation is impossible BY CONSTRUCTION, not by policy.** Per-file random
-    DEKs mean PhotoDNA/NCMEC hash matching, malware scanning and duplicate
-    detection can never run on shared content. Every E2E file host that survives
-    (Mega) does so by hashing what it can plus a large abuse team; neither is
-    available here. "We are structurally incapable of scanning what we publicly
-    distribute" is the worst posture possible in front of Cloudflare Trust &
-    Safety or a DSA notice-and-action obligation.
-  - **The blast radius is the PAYING USERS.** Every backup — the abuser's shared
-    file and every customer's archive — sits in one R2 bucket under one
-    Cloudflare account, and Cloudflare terminates accounts over CSAM. The
-    failure mode is not annoying email; it is every paying user's backup
-    vanishing because a stranger shared a pirated film.
-  - **US DMCA safe harbor needs a registered designated agent** — real name and
-    physical address in a public Copyright Office directory. For a pseudonymous
-    maintainer that is: doxx yourself, or run a public host with no safe harbor.
-  Today there is nothing to take down, because nothing is publicly reachable and
-  nothing is identifiable. That property is worth more than the feature.
-  - **The app-to-app variant is redundant with P2P send** (maintainer's call).
-    Its ONLY unique property is serving a file the sender has since DELETED
-    locally — P2P can only send what is still on the device. Narrow; it does not
-    earn a feature. The genuinely new capability is "recipient needs nothing
-    installed, asynchronously", and that is precisely the *hosting* slice.
-  - **The fragment-key privacy claim is thinner than it sounds.** The full URL
-    including the DEK rests in WhatsApp/Telegram/Google message stores for most
-    real sends. Note the asymmetry that makes this worse than the existing P2P
-    link: an `FDS1.`/`FDO1.` fragment is a capability that dies with a 5–15 min
-    mailbox TTL, whereas a share DEK is permanent. Don't oversell "the key never
-    touches a server" — it touches everyone else's.
-  - **If it is ever built anyway**, these are the guardrails, and the first two
-    are the load-bearing ones: **gate shares on a PAID balance** (starter-grant
-    accounts cannot mint links — restores the friction R2 removed and makes
-    farming cost money), and **single-use claims burned on first completed
-    fetch, NOT a download cap**. A cap of ~25 is not a transfer mechanism, it is
-    a small distribution channel, and re-minting multiplies it back to unlimited;
-    single-use kills redistribution by construction, the same taste as write-once
-    chunks over a reconcile sweep. Then: expiry in HOURS (24–72 h, hard ceiling),
-    revocation surfaced beside the file in the Backups list, per-IP limiting on
-    the unauthenticated endpoint, per-share egress counters wired into the
-    existing `--audit` + ntfy pipeline, and a `FIREDOWN_STORAGE_SHARES_ENABLED`
-    kill switch (the realistic endgame is switching it off under pressure). And
-    the takedown process gets decided BEFORE the endpoint ships, not after the
-    first complaint — if nobody is willing to register an agent and answer abuse
-    mail within 24 h, the feature is not shippable regardless of code quality.
-  - **The alternative that captures most of the value with none of the exposure
-    is a BROWSER-RECIPIENT P2P receive** — see the end of the P2P share section.
-
-- **FGS type.** Both workers run as `dataSync` foreground workers; the app's
+  on an informational state, no user-facing OFF switch — a state clears by
+  having nothing to report. Don't bring any of it back to the home.
+- **FGS type.** Both workers run as `dataSync` foreground workers; the
   manifest merges `foregroundServiceType="dataSync"` onto WorkManager's
-  `SystemForegroundService` (without it, `setForegroundAsync` crashes with
+  `SystemForegroundService` (without it `setForegroundAsync` crashes with
   "foregroundServiceType 0x… is not a subset of 0x0").
 
-- **There is now a SECOND client on the same manifest — the web client**
-  (`firedown-website` `backup/`, served at `firedown.app/backup/`). It unlocks
-  with the same recovery code and does list/restore/upload/remove against the
-  same `storage.firedown.app` account, so **the vault wire format is no longer
-  private to this app**. Anything here that changes the shared shape has to be
-  mirrored there or the two silently diverge: the six-line canonical, the HKDF
-  info strings in `SyncIdentity` (esp. `firedown/storage/v1`), the
-  `FDSB1`/`FDVC1`/`FDVC2`/`FDVK1` framings in `BookmarkBlob`/`VaultCrypto`
-  (incl. FDVC2's position-binding chunk AAD — a shared vector in
-  `VaultCryptoTest` + `fd-crypto-selftest.mjs` pins it in both clients), the
-  `VaultManifest` JSON field names, and `VaultEngine.CHUNK_SIZE` +
-  `CHUNK_OVERHEAD` (the declared object size is derived from both). The web
-  side pins all of it with the shared `firedown-api/tests/api-vectors/`
-  fixtures — the same ones this app's `CryptoTest` uses — so run BOTH sides'
-  tests when touching any of the above. Two things it deliberately does NOT do,
-  so they stay app-only: **buying credit** (the blinding secret is the only
-  proof of a paid credit and must not sit in browser storage across a payment
-  redirect) and **minting a recovery code**. It also writes entries with a null
-  `thumb`, so a file backed up from the web shows the mime glyph in the
-  Backups list until the display-time backfill or a re-backup fills it in —
-  that is expected, not a bug.
+### Verifying a Backup change
 
-- **QR browser pairing — the web client is unlocked by a SCAN, and what
-  travels is KEYS, not a token** (`sync/crypto/PairSeal.java`,
-  `sync/PairClient.java`, the "Pair a browser" row on the Cloud screen). The
-  browser needs the storage content key to decrypt anything, so no session
-  token could ever log it in; the phone seals **exactly three values** —
-  `account_id`, `auth_seed`, `storage_key` (`SyncIdentity.pairingKeys`) — to an
-  ephemeral P-256 key the browser generated, and posts the ciphertext to the
-  server's pairing mailbox. **The RECOVERY CODE NEVER TRAVELS**, and neither
-  does the bookmark `fileKey()`, so a paired browser gets the storage account
-  and only that; it cannot re-derive the code, which makes pairing **safer**
-  than typing the code into a web page, not merely more convenient. Say it that
-  way round in copy.
-  - **Wire format is shared with the web client** (`backup/fd-pair.js`):
-    `'FDPR1' | version(1) | phoneEphPub(65) | iv(12) | AES-256-GCM(ct||tag)`,
-    key = HKDF-SHA256(ikm = ECDH, salt = empty, info = `firedown/pair/v1` ||
-    pairId || browserPub || phonePub). The info binds the blob to THIS pairing
-    and BOTH keys, so a captured blob can't be replayed into an attacker's
-    session. Pinned by `PairSealTest`, whose vector is copied verbatim from
-    `firedown-website/tools/pair-seal.json` (generated by `fd-pair-test.mjs`,
-    which seals with node/OpenSSL — an implementation sharing code with
-    neither client). **Regenerating that fixture means re-copying the hex
-    here**; a one-byte divergence fails every pairing with no diagnostic. That
-    fixture is **deterministic** — its browser keypair, phone ephemeral key and
-    IV are constants on the web side — so it only moves when the FORMAT moves,
-    and `fd-pair-test.mjs` fails once when it does, naming the four constants
-    to re-copy. It was NOT always: those inputs were random per run, so the
-    file changed after every `npm test` and silently drifted from this copy
-    (the JSON said `697334` while this test asserted `103966`) — neither side
-    noticed, because this test reads its own hardcoded hex, which is exactly
-    why the pin has to be reproducible to mean anything.
-  - **The verification code is a SAS over the COMPLETED handshake — it covers
-    the PHONE's ephemeral key (`firedown/pair/verify/v2`), and moving it back
-    to (pairId, browserPub) alone reopens a real hole.** Both of those live in
-    the QR, so a code over them proves only "this is the session I started".
-    Nothing guarded the BROWSER's direction, and delivery to the mailbox is
-    authenticated by nothing but knowledge of the pairing id — so the SERVER, or
-    anyone who photographed the QR, could seal THEIR OWN account's keys to the
-    page and win the delivery race, silently signing the victim in to the
-    attacker's account.
-  - **v3 — the phone ANNOUNCES its ephemeral public key BEFORE the user
-    approves (`PairClient.announce`), and that is what makes "Allow" an
-    informed decision.** The code covers both public keys, so while the phone
-    published nothing until it sealed, the browser had NOTHING to show until
-    the keys had already left. The approval sheet therefore displayed six
-    digits and told the user their computer would ask them to confirm — a
-    comparison that could not be performed at the only moment it would have
-    changed the answer. Reported from the field as "I click Allow and only then
-    does the code appear"; the user was right that it read as broken.
-    The blindness was never inherent: `confirmPairing` mints the keypair at
-    LOOKUP time and only `deliverPairing` seals, so only the PUBLIC half was
-    missing. It now posts that key to `/v1/pair/{id}/announce` before showing
-    the sheet, the browser long-polls `/v1/pair/{id}/peer`, and both screens
-    show the same digits at once — ordinary numeric comparison, confirmed on
-    the device that actually releases the secret.
-    Consequences, each easy to undo by "tidying":
-    - **The browser KEEPS its "They match / They don't match" gate — removing it
-      was a HIGH audit finding, do not remove it again.** The removal argued
-      that first-announce-wins plus the page's key-binding check make the blob
-      "provably from the phone the user checked", so the phone's Allow suffices.
-      The false step is *the phone the user checked*: the ANNOUNCER need not be
-      the user's phone. Anyone who knows the pairing id (the server mints it;
-      anyone seeing the QR reads it) announces their own key first and delivers
-      THEIR OWN account's keys — every check passes and the browser silently
-      signs in to the attacker's account, so every file uploaded next is
-      encrypted under the attacker's key. The phone's Allow guards the OTHER
-      direction only (a hostile page tricking this phone into sealing OUR keys);
-      in the receive direction the sealing phone is the attacker's and no honest
-      human is in that loop.
-    - **A 409 from announce must ABORT** (`PairClient.ConflictException` →
-      `pair_error_conflict`), never retry: it means someone else claimed this
-      pairing id with a different key, so the digits on the browser are theirs.
-      Re-announcing the SAME key is a server-side success, so an app retry can
-      never produce this by itself.
-    - **`FDP2.` → `FDP3.`** A v2 app never announces, so a v3 page paired with
-      one waits for a peer that never arrives — a HANG, the worst failure to
-      ship. The bump turns that into a parse refusal. Ship order: **API, then
-      the APK, then the page** (the API routes are additive, so they are safe
-      to deploy first).
-    - **`pair_success_code` became `pair_success_done`** (a NEW key): the
-      comparison happens before Allow now, so the success snackbar carries no
-      code and no longer hangs around INDEFINITELY. The old string took a
-      format argument and the new one takes none — the arg-shape rule below.
-    - **`PairSealTest` now reads `PairSeal.PREFIX`, never a literal.** It
-      asserted an `FDP1.` payload PARSED and had been failing since the FDP2
-      bump, unnoticed because the Android suite had not been run. It also now
-      asserts v1 and v2 payloads are REFUSED, which is the rollout property
-      itself. The class is Android-free, so it runs under a plain JVM with just
-      bcprov + junit on the classpath — do that rather than assuming.
-  - **THREE checks stand between a scan and handing over keys, and each covers
-    what the others cannot.** (1) `PairClient` resolves ONLY against
-    `Preferences.STORAGE_DEFAULT_BACKEND` — the QR carries an id and a key,
-    **never an endpoint**, so a hostile QR can't point the phone at its own
-    mailbox; this is what makes the server's origin attestation mean anything.
-    (2) The server-recorded pubkey is compared against the SCANNED one, so a
-    server that swapped it to read the blob is caught out-of-band. (3) The
-    approval sheet shows a **six-digit verification code** the user must match
-    against their browser. **(3) is not decoration** — the server cannot tell a
-    real browser from a program sending the same `Origin`, so an attacker CAN
-    mint a session that truthfully reports `firedown.app` and message its QR to
-    a victim; the victim has no screen showing that session's code, so the
-    comparison they're asked to make cannot succeed. Never reduce the copy to
-    "check the site name".
-  - **The approval sheet is a CUSTOM VIEW (`dialog_pair_confirm.xml`), not a
-    `setMessage` string, and the ranking is the reason.** It used to
-    concatenate site + code + warning with `"\n\n"` into one message, which set
-    the six digits the user is asked to COMPARE — the only action the dialog
-    exists to prompt — at body size mid-sentence, at the same weight as the
-    boilerplate. A concatenated message cannot express that; a layout can. The
-    code is the hero (30sp monospace, letter-spaced, grouped 3+3, in the
-    dialog's only bounded surface), the site row carries **no verification
-    badge** (a trust mark would assert exactly what the code exists to doubt —
-    see the three-checks note above), and a new scope line states what is
-    granted and that the recovery code does not travel. Exactly ONE coral
-    element, the Allow button. Two colour rules that are easy to undo: the
-    warning ink is **`?attr/colorError`** (5.72:1 light / 6.45:1 dark), never
-    `@color/backup_warning` (2.09:1 on a light surface — the same
-    invisible-in-daylight defect as the old home pill); and the code well is
-    `colorSurfaceContainerHighest`, **not** `bg_sync_code`, whose
-    secondaryContainer peach would put a second saturated element beside the
-    coral button.
-  - **A string whose FORMAT-ARG SHAPE changes needs a NEW key** — the same
-    discipline as the pref-key inversion rule, for the same reason. Splitting
-    the message turned `pair_confirm_site` ("Site: %1$s") and
-    `pair_confirm_code` (…"%1$s") into static labels beside their own views, so
-    they became `pair_confirm_site_label` / `pair_confirm_code_label` and the
-    old keys were deleted in all 16 locales. Reusing the names would have left
-    every translation's `%1$s` **rendering literally**: `getString(int)` does
-    no formatting, so nothing would have failed at build time.
-  - **The approval sheet is a `DialogFragment` whose pending pairing lives in a
-    `ViewModel` — and the ephemeral key is why it CANNOT be an argument
-    Bundle.** It was a plain `MaterialAlertDialogBuilder` dialog, so a rotation
-    leaked the window and dropped the pairing. Converting it fixes the leak;
-    surviving the rotation needs the resolved-but-unapproved pairing to
-    survive too, and half of it is `PairSeal.Ephemeral` — an ECDH PRIVATE key.
-    Saved-state Bundles are handed to the system process, so that key goes in
-    `PairApprovalViewModel` (scoped to `SyncSettingsFragment`, which is why the
-    dialog is shown on the CHILD fragment manager and reaches it with
-    `requireParentFragment()`), and the dialog carries no arguments at all.
-    Three details that are easy to undo:
-    - **The one-shot `AtomicBoolean` lives on the ViewModel's `Pending`, not on
-      the dialog.** The dialog is a fresh object after a rotation, so a
-      per-dialog flag resets and lets a second seal-and-deliver run — and two
-      deliveries both seal fine locally while the server is
-      first-delivery-wins, so the second 409s and the user sees "paired" then
-      "expired" (the bug the guard was added for).
-    - **`showPairApproval` returns early on `isStateSaved()`.** `show()`
-      commits, which throws once the manager has saved its state, and the
-      lookup that leads there is a network round-trip that can land after the
-      screen backgrounded. A dropped pairing is safe (it expires); a crash is
-      not. `isAdded()` alone does NOT cover this.
-    - **A null `pending` dismisses instead of rendering.** After process death
-      the ViewModel is gone, so the ephemeral key the code attests to is gone —
-      there is nothing honest to show.
-  - **`PairSeal` is deliberately Android-free** (`java.util.Base64`, not
-    `android.util.Base64`) so a plain JVM test exercises it — with
-    `unitTests.returnDefaultValues` the Android one returns **null** instead of
-    failing, which would silently hollow out the test.
-  - `parse()` validates the point is ON P-256 (`decodePoint` + `isValid`)
-    before anything multiplies by it — an invalid-curve point is the classic
-    ECDH key-recovery attack.
-  - **ONE scanner, two rows, told apart by the PAYLOAD** — `P2pScanFragment`
-    again (fourth caller; don't fork it), and `observeScanResult` branches on
-    `PairSeal.parse(...) != null` rather than a mode flag, which would have to
-    survive the saved-state round trip and process death. Result still consumed
-    with `set(key, null)`, never `remove` (the detach trap).
-  - **The `firedown://pair/` deep link is DECIDED AGAINST, and the QR no longer
-    carries the scheme.** The supported path is Cloud → "Pair a browser" →
-    scan, which is what the web page's own instructions say. Registering a
-    manifest intent-filter for `host="pair"` was considered and rejected:
-    **the deliberate navigation is doing security work.** Today a pairing QR
-    someone MAILS you cannot open the approval sheet at all — you would have to
-    go find the scanner. With the filter, a QR in an email opens it cold, from
-    a user who sought nothing, and the six-digit comparison becomes the only
-    remaining gate (one the victim cannot perform, having no browser showing
-    that code, but can certainly skip). The convenience bought is small — the
-    user necessarily has the app installed, since they have a backup — and
-    unreliable, because OEM system-camera QR handling varies. **The
-    `firedown://p2p` precedent does NOT transfer**: a hostile P2P QR yields an
-    unwanted file offer, previewed by name/size/mime before Accept; a hostile
-    pairing QR yields read/write on the entire cloud backup.
-    Consequences already applied: `backup/fd-pair.js` encodes the **bare
-    `FDP1.<id>.<pubkey>`** payload, because the wrapper only advertised a path
-    that dead-ends (a system-camera scan found no handler and read as a broken
-    app) — a bare payload scans as opaque text, which is the truth, and drops
-    the QR from version 8 to 7. `PairSeal.parse` still strips the old prefix
-    when present, so both forms parse to the same `Ref` and the same
-    verification code; reviving the deep link is a one-line change on the web
-    side plus the filter. **If it is ever revived**, two conditions: demote
-    **Allow** to a text button so the risky choice is not pre-selected for
-    someone who did not go looking for this screen, and give the deep-link
-    arrival its own copy line.
-
-Back-end contract + server internals live in the `firedown-api` repo
-(`docs/cloud-storage-spec.md`, `internal/storage/*`); don't add server/deploy
-files to this Android repo.
+- `./gradlew testDebugUnitTest`: `VaultCryptoTest` (the FDVC2 format pin —
+  the exact blob sealed with node:crypto; every existing folder holds this
+  layout), `CryptoTest` (the canonical/Crockford/HKDF vectors shared with
+  `firedown-api/tests/api-vectors/`), `PendingRemovalsTest`.
+- On-device, the whole loop, because no JVM test can drive a
+  `DocumentsProvider`: pick a Drive folder → back up → kill the app →
+  Backups list shows the entry with its preview → delete the local copy →
+  Open streams it → Restore brings it back (and "Already in your downloads"
+  on a second restore) → revoke the grant (sign out of Drive, or pull the
+  SD card) → the hero shows the lost state, a backup attempt posts the
+  folder-lost notification once → re-pick → everything lists again. Then
+  the same folder from a second phone adopting the same code. The hosted
+  service's `CloudBackupLiveTest` went with the server; a folder live test
+  would need a provider on the test device and was not written.
+- Any change to the sidecar's fields: `VaultEntry` JSON is read by every
+  later build, so a new field is optional on read and written only when
+  set (the `backedUpAt`/`origin` precedent) — never a bump that strands
+  existing folders.
 
 ## Browser chrome, pull-to-refresh & session recovery (Fenix-parity invariants)
 
@@ -6950,8 +5762,8 @@ Invariants in `RunnableManager.stopForForegroundLimit()`, each load-bearing:
   service.
 
 `TaskManager` declares the same type but never calls `startForeground`, so it
-is not subject to this; WorkManager's `SystemForegroundService` (the Cloud
-Backup workers) handles its own timeout since 2.10.
+is not subject to this; WorkManager's `SystemForegroundService` (the Backup
+workers) handles its own timeout since 2.10.
 
 ### Capture-layer headers & cookies (how a re-download authenticates)
 
@@ -7911,7 +6723,7 @@ maintainer call after sketches on the design canvas:
   quick card's bottom; the browser popup's identity row centred inside
   a 72dp `minHeight` with 12dp of top padding (favicon 26dp under the
   pill, the security sheet's at 10dp) — both gone, 12dp under it kept;
-  the Cloud Backup item sheet's header had 14dp of top padding, the
+  the Backups item sheet's header had 14dp of top padding, the
   search-engine / Sort / Download-info sheets 4dp each — all zero now.
   The Captured sheet is the one exception by design: its toolbar
   overlaps the band (a FrameLayout, `content_frame` 10dp from the top),
@@ -7987,7 +6799,7 @@ maintainer call after sketches on the design canvas:
   (`SheetQuickRowDivider`) — a single-row strip of equal columns on a
   shared ground has no other cue where one target ends, whereas the
   Browser popup's two stacked rows read as a grid and carry none), the
-  Cloud Backup item sheet (Open is revealed late → `refreshActionCorners`),
+  Backups item sheet (Open is revealed late → `refreshActionCorners`),
   the Translate sheet's switch rows (the card toggles the switch), the
   Sort-by and search-engine radio sheets (label + TRAILING non-clickable
   radio; the card is the touch, the fragment/adapter checks the radio —
@@ -8133,8 +6945,8 @@ here:
   which is fed by nested-scroll events reaching the CoordinatorLayout. A
   preference screen's RecyclerView is a nested-scrolling child and gets the
   lift for free; a plain `ScrollView` is not, so the toolbar stayed flat while
-  the Add-storage-credit and Share-Firedown pages slid under it (reported
-  on-device — both were `ScrollView`). `CloudBackupListFragment` is the one
+  the Share-Firedown page (and the since-removed Add-storage-credit page)
+  slid under it (reported on-device — both were `ScrollView`). `CloudBackupListFragment` is the one
   screen that bridges the lift MANUALLY, because its own inner
   CoordinatorLayout swallows the events; a plain page needs no such code,
   just the right root.
@@ -8207,7 +7019,7 @@ here:
   own white set, so the flip is a no-op by value there. **Never resolve a
   theme attr for a grid caption at bind time** — the tile's ground does not
   follow the theme surface, so a surface ink is wrong on it in one theme or
-  the other (the CloudBackup TransferVH lesson). The photo inks are captured
+  the other (the Backups `TransferVH` lesson). The photo inks are captured
   from the layout in the holder ctor (`getCurrentTextColor()`), never
   hardcoded twice.
   **ONE flag drives dim AND ink, in all three grid adapters.** A REAL
@@ -8235,7 +7047,7 @@ here:
   the photo state and `GlideHelper.load(entity, options, image,
   FallbackCallback)` flips it from the Glide outcome — synchronously on the
   short-circuit-to-glyph paths, from the listener otherwise — guarded on
-  `holder.boundUid` (the callback can land after a recycle). Cloud Backup
+  `holder.boundUid` (the callback can land after a recycle). Backups
   (`FileGridVH.applyGridDim(hasPreview)`, plus a `bindThumb` fallback
   reporter for a model that fails to load; the transfer tile ALWAYS shows
   the glyph, so `TransferVH` takes the placeholder inks once in its grid
@@ -8330,15 +7142,14 @@ here:
   is exactly how they drifted apart the first time this shipped.
 - **A selected FILTER CHIP and a selected SEGMENT of a segmented toggle need
   DIFFERENT tones — same visual role, opposite constraint.** (The buy
-  screen's segments are GONE — the duration toggle was cut with the second
-  plan axis, see the Cloud Backup section — and `buy_segment_*` with them;
-  the rule and its measurements are kept because the next segmented
-  control beside a CTA meets the same constraint.) The chip
+  screen is GONE with the hosted Cloud Backup service, and `buy_segment_*`
+  with it; the rule and its measurements are kept because the next
+  segmented control beside a CTA meets the same constraint.) The chip
   (`@color/chip_checked_*`, the brand coral) sits on a list rail with no
   primary action to be subordinate to, so it can afford the full brand. The
   buy-credit duration / pay-rail segments (`buy_segment_bg`/`buy_segment_text`
-  → `?attr/colorSecondaryContainer`, the PEACH arm of the triad) sit directly
-  above the Continue CTA, so they cannot. **Do not merge them under one
+  → `?attr/colorSecondaryContainer`, the PEACH arm of the triad) sat directly
+  above the Continue CTA, so they could not. **Do not merge them under one
   "selected control" resource** — that was tried for exactly one commit and is
   how the buy screen ended up as three identical coral blocks: at **ΔE 8.2**
   (light) / **5.9** (dark) from the CTA, the checked segment and the button
@@ -8372,9 +7183,9 @@ here:
     which the component pair was deleted and the segments went back to the
     token. Prefer that order in future: if a token is the right ROLE but the
     wrong VALUE, fix the value.
-  - **The "−N%" savings badge sets no colour of its own**
-    (`BuyCreditFragment.durationLabelWithBadge`) and inherits
-    `buy_segment_text`, so it follows the check state for free. It used to
+  - **The "−N%" savings badge set no colour of its own** (the retired buy
+    screen's `durationLabelWithBadge`) and inherited `buy_segment_text`, so
+    it followed the check state for free — the lesson outlives the screen. It used to
     carry a `ForegroundColorSpan` pinned to `colorPrimary`, resolved ONCE at
     build time — which made it invisible the moment its own segment was
     checked (**1.07:1** light, **1.22:1** dark; only 1.75/1.56 even on the old
@@ -8435,19 +7246,20 @@ here:
   - **primary = coral — ACTS.** The thing you press: FAB, filled buttons,
     Continue, progress, the checked filter chip. Never a passive container.
   - **secondary CONTAINER = peach — SUPPORTS.** Tonal ground behind content:
-    the recovery-code box, the buy-credit segments, banners. Never fills a
+    the recovery-code box, banners. Never fills a
     button. (The home backup pill used to take it and no longer does — see
     the cloud-states rule: those two surfaces are plain
     `surfaceContainerHigh`.) **`colorSecondary` itself stays CORAL** —
     `Theme.FireDown` sets no `colorControlActivated` and no
     `android:colorAccent`, so Material3 resolves the tint of every bare
-    platform widget through it (the four unstyled `<ProgressBar>`s on the
-    buy-credit and cloud-stream screens; any checkbox/switch/seekbar/cursor
-    added later). Giving it the peach turned those spinners **dark brown** on
-    the Add-storage-credit screen. The peach is a *container* role; a token
+    platform widget through it (the unstyled `<ProgressBar>`s — the Backups
+    stream screen's today; any checkbox/switch/seekbar/cursor added later).
+    Giving it the peach turned those spinners **dark brown** on the
+    since-removed Add-storage-credit screen. The peach is a *container* role;
+    a token
     that tints controls is an *accent*, and the accent is the acting hue.
   - **tertiary = magenta — IDENTIFIES.** "A different kind of thing": vault /
-    private, cloud + sync state. Never competes with the CTA.
+    private, backup + sync state. Never competes with the CTA.
 
   **`md_theme_secondaryContainer` was once rotated onto the brand hue (h 56 →
   h 29) and that was a mistake** — justified at the time as removing "a hue
@@ -8536,9 +7348,10 @@ here:
   track: pure white tops out at **2.88:1**. So the fix is not a paler track, it
   is a darker indicator — `@color/progress_indicator`, `#DB4444` in light and
   the brand `#ff716c` in dark (which already clears it). Used by the Downloads
-  in-flight row, the Cloud transfer row, the Cloud credit meter and the grid
-  `ProgressOverlayView` ring; the track stays `colorPrimary@20%` (or
-  `colorSurfaceVariant` on the meter). Don't "fix" a low-contrast bar by
+  in-flight row, the Backups transfer row and the grid `ProgressOverlayView`
+  ring; the track stays `colorPrimary@20%` (the hosted service's credit
+  meter, since removed, ran it on `colorSurfaceVariant` — the second track
+  shape the value is still measured against below). Don't "fix" a low-contrast bar by
   lightening its track — that direction is capped below the bar.
   **The light value is a measured CEILING, and the light/dark gap it leaves is
   not a bug to keep chasing.** It was `#C24941` and was reported on-device as
@@ -8548,8 +7361,9 @@ here:
   indicator in light theme is impossible at any track lightness (the 2.88:1
   white ceiling above). `#DB4444` is as far as it goes on LIGHTNESS — the
   binding constraint is that this ONE resource meets TWO track shapes:
-  `colorPrimary@20%` (#FCDEDE) at 3.38:1 and the meter's
-  `colorSurfaceVariant` (#E1E2E9) at 3.30:1. `#E04A45` (3.18/3.11) is about
+  `colorPrimary@20%` (#FCDEDE) at 3.38:1 and `colorSurfaceVariant`
+  (#E1E2E9) at 3.30:1 (the retired meter's track, kept as the bound so a
+  future gauge on that surface needs no re-measure). `#E04A45` (3.18/3.11) is about
   the limit and was rejected as too thin a margin. **The lever that IS free
   is CHROMA, and it is what fixed the "brownish" report**: `#CC524A` (the
   value before this one, C\* 56 against the brand's C\* 61) darkened the
@@ -8583,10 +7397,8 @@ here:
   floor of the scale and has to survive a user's font-scale setting, so if a
   tile reads as crowded the fix is **fewer facts** (as dropping size under an
   active chip did), never smaller type. **The peer grid tiles are kept in
-  lockstep** — Captured (`fragment_browser_options_item`), Cloud Backup file
-  and transfer tiles all snapped off the off-scale 11.5sp with it. (The
-  buy-credit screens still use 11.5sp; they aren't grid meta rows, so they
-  were deliberately left alone rather than swept up.)
+  lockstep** — Captured (`fragment_browser_options_item`), Backups file
+  and transfer tiles all snapped off the off-scale 11.5sp with it.
 - **Grid tile title: hidden for self-identifying image tiles in BOTH Downloads
   and Captured.** The rule is *not* "images are clutter" — it's
   "drop the title only for the one type whose thumbnail fully identifies it."
@@ -8684,7 +7496,7 @@ here:
   safe because their fragments set the adapter DIRECTLY (no `ConcatAdapter`); if
   you ever wrap one in a banner, switch it to the binding position FIRST.
 - **List-row selection chrome is shared across Downloads / Bookmarks / History /
-  Captured / Cloud Backup / the tab ARCHIVE — keep them identical.** The pattern
+  Captured / Backups / the tab ARCHIVE — keep them identical.** The pattern
   (Files-by-Google): the
   `MaterialCardView` is the row ROOT (no outer `LinearLayout`, no external
   checkmark), the selection check overlays the more/action-button's OWN slot
@@ -8763,8 +7575,8 @@ here:
     this token.
   - **The `Theme.FireDown.More.Button` style defaults `iconTint` to
     `@color/white`** — written for GRID tiles, where the ⋮ sits over artwork.
-    LIST rows must override it to `?attr/colorOnSurfaceVariant`. Cloud Backup
-    does that in XML on every item; Downloads does it at runtime
+    LIST rows must override it to `?attr/colorOnSurfaceVariant`. The Backups
+    list does that in XML on every item; Downloads does it at runtime
     (`setActionIcon`, which is already swapping the icon resource for QUEUED,
     with per-surface cached `ColorStateList`s); Captured does XML for list and
     runtime for grid. Three mechanisms, same result — don't "fix" one into
@@ -9038,8 +7850,8 @@ screen-heights). The rule, borrowed from the chip-rail convention: the root is
   Delete browsing data, destructive action last) — a 2-row category was
   taxonomy noise; cookie policy IS privacy (Fenix's grouping).
 - Deliberately NOT full Fenix-style nesting (root = only doors): the project's
-  own precedent is anti-tap-tax (the Cloud screen was UN-nested because
-  reaching the plan took 4 taps). Nothing moved more than ONE level down.
+  own precedent is anti-tap-tax (the Backup screen was UN-nested because
+  reaching the hosted service's plan took 4 taps). Nothing moved more than ONE level down.
 
 **Sub-screens must apply their prefs to Gecko THEMSELVES** — SettingsFragment's
 SharedPreferenceChangeListener is unregistered while a sub-screen is
@@ -9080,8 +7892,8 @@ Every settings screen renders its rows as the bottom sheets' grouped cards
   `PreferenceCategory` ends one: a titled category is the grey label above
   the next group (`preference_category_card.xml` via the theme's
   `preferenceCategoryStyle`), a TITLE-LESS category is a bare 16dp break (the
-  Cloud screen's three unlabelled groups). A `FlatPreference` also ends one
-  and keeps its own full-width layout: the Cloud hero + CTA, the tracking
+  Backup screen's three unlabelled groups). A `FlatPreference` also ends one
+  and keeps its own full-width layout: the Backup hero + CTA, the tracking
   count, the DoH server field, and `FootnotePreference` (the summary-only
   disclosure lines — translations' Mozilla-download notice, the tab archive's
   retention note), which sit flat under the cards like an Android Settings
@@ -9115,7 +7927,7 @@ Every settings screen renders its rows as the bottom sheets' grouped cards
   `#1C1C1F` on black). "White cards on a grey page" (Android 16's light
   shape) was sketched and NOT chosen: it changes the page colour behind the
   Settings toolbar, and the activity's non-preference pages (feedback,
-  share, buy credit) would then sit on a different ground than the lists
+  share) would then sit on a different ground than the lists
   beside them.
 - **Labels and icons stay grey.** Category labels are `colorOnSurfaceVariant`,
   not the old coral `colorAccent` (brand coral is ~2.3:1 on the light page,
@@ -9166,7 +7978,7 @@ Downloads ⋮ occupies, plus the `SelectionStyling` wash. **The SIZE is its own
 right-aligned column at title weight**, between the text and the check — the
 row's loudest number, because it is the sort key and the decision; the facts
 line is `[cloud] duration · date`. The confirm dialog COUNTS the backed-up
-files ("N of them are also in your cloud backup and stay there") rather than
+files ("N of them are also in your backup folder and stay there") rather than
 implying every file is. Delete is the normal `TaskRepository.requestDelete`
 in 50-entity chunks, optimistic (rows leave now, the resume re-scan
 reconciles). **History (on-device, two rounds):** it first shipped as the
@@ -9200,118 +8012,97 @@ the Downloads list. Keep it a door in both places, never a copy.
 
 **"Free up space" (Signal's Optimize storage) lives on the same screen.** An
 outlined card, shown ONLY when some finished downloads are already in the
-cloud backup: it removes their PHONE copies through the normal download
+backup folder: it removes their PHONE copies through the normal download
 delete (`TaskRepository.requestDelete`, chunked 50 per intent against Binder
-limits) and they stay in Backups (stream / restore). Candidates = manifest
-content keys (`CloudBackupManager.loadBackedUpKeys`, the name+size match the
-Downloads cloud mark uses) ∩ downloads whose file is really on disk (a
-missing or foreign-owned file frees nothing). Two load-bearing safety rules:
-the card appears only on POSITIVE evidence (an offline/not-set-up pull
-returns an empty set, never "backed up"), and the manifest is RE-PULLED at
-confirm time — only confirmed ∩ still-backed-up is deleted, so a backup
-removed meanwhile (another device, the Backups list) can't turn this into
-deleting a last copy, and an unreachable manifest deletes nothing
-(`storage_offload_unverified`). **The card paints CACHED-FIRST**:
-`CloudBackupManager.cachedBackedUpKeys()` is the key set of the last
-SUCCESSFUL `loadBackedUpKeys` pull, session-lived like `lastStatus()` and
-kept in step with the manager's own mutations (`deleteEntries` removes its
-keys, `deleteAllData` / `forgetCachedStatus` drop it). `refreshOffload`
+limits) and they stay in Backups (stream / restore). Candidates = the
+folder's content keys (`CloudBackupManager.loadBackedUpKeys`, the name+size
+match the Downloads cloud mark uses) ∩ downloads whose file is really on
+disk (a missing or foreign-owned file frees nothing). Two load-bearing
+safety rules: the card appears only on POSITIVE evidence (an unreachable or
+not-set-up folder answers the empty set, never "backed up"), and the folder
+is RE-LISTED at confirm time — only confirmed ∩ still-backed-up is deleted,
+so a backup removed meanwhile (another phone on the same folder, the Backups
+list) can't turn this into deleting a last copy, and an unreachable folder
+deletes nothing (`storage_offload_unverified`). The confirm names the
+provider (`storage_offload_confirm_message_on`); there is no metered wording
+any more — the folder is the user's own storage and nothing expires. **The
+card paints CACHED-FIRST**: `CloudBackupManager.cachedBackedUpKeys()` is the
+key set of the last SUCCESSFUL listing, session-lived like `lastStatus()`
+and kept in step with the manager's own mutations (`deleteEntries` removes
+its keys, `deleteAllData` / `forgetCachedStatus` drop it). `refreshOffload`
 scans the cached keys at once (the card lands with the rest of the screen
-instead of a network beat later — the reported "takes time to load") and
-the fresh pull then updates it in place under the same generation; the
+instead of a listing beat later — the reported "takes time to load") and
+the fresh listing then updates it in place under the same generation; the
 Downloads cloud marks and the review list mark rows from it the same way. A
-cache hit is positive evidence from a real pull; what it cannot see is a
-change made elsewhere (another device, the web client), which the re-pull
+cache hit is positive evidence from a real listing; what it cannot see is a
+change made elsewhere (another phone on the same folder), which the re-list
 covers — and the CONFIRM path never reads the cache, it still acts only on
-the fresh answer. Don't persist the keys to disk: a manifest edited from
-another device would then paint stale marks across process death with no
-pull to correct them until the network answers, and `loadBackedUpKeys` still
-answers a FAILED pull with the empty set (so offline, the cached card can
-show and then hide — honest, and the confirm would delete nothing anyway).
-Deliberately NOT built: Signal's in-place
-placeholder (the Downloads row survives as "in cloud", tap to fetch) — that
-needs a new download state every file-open path would have to honour; the
-Backups list already is the cloud-only view.
+the fresh answer. Don't persist the keys to disk: a folder edited from
+another phone would then paint stale marks across process death with no
+listing to correct them until the folder answers, and `loadBackedUpKeys`
+still answers a FAILED listing with the empty set (so with the folder
+unreachable the cached card can show and then hide — honest, and the
+confirm would delete nothing anyway). Deliberately NOT built: Signal's
+in-place placeholder (the Downloads row survives as "in backup", tap to
+fetch) — that needs a new download state every file-open path would have
+to honour; the Backups list already is the folder-only view.
 
-**The Storage screen ALSO carries the Cloud Backup UPSELL for a user without
-it — Signal's "Save space with paid backups" card, placed where the pain is.**
-The rule used to be "never a pitch for users without Cloud Backup (the
-Downloads banner owns that)"; it was revised on the big-player comparison:
-Signal puts its upsell on ITS storage screen, the one you open because the
-phone is full, which is when "back it up, then free it" is an answer rather
-than a pitch. `storage_upsell_card` shows iff `!isSetUp()` AND the finished
+**The Storage screen ALSO carries the Backup UPSELL for a user without it —
+Signal's "Save space with backups" card, placed where the pain is.** The
+rule used to be "never a pitch for users without Backup (the Downloads
+banner owns that)"; it was revised on the big-player comparison: Signal
+puts its upsell on ITS storage screen, the one you open because the phone
+is full, which is when "back it up, then free it" is an answer rather than
+a pitch. `storage_upsell_card` shows iff `!isSetUp()` AND the finished
 non-vault total is > 0 (`refreshUpsell`, read live on every render and on
-resume, so setting it up and coming back swaps it for the offload card);
-not dismissible (a screen visited on purpose, not a feed); tap → the Cloud
-screen. The copy makes NO starter-credit claim (that grant is a server
-switch the client can't see before registering). The Downloads list banner
-keeps its two stages unchanged.
+resume, so choosing a folder and coming back swaps it for the offload
+card); not dismissible (a screen visited on purpose, not a feed); tap → the
+Backup screen. The Downloads list banner keeps its one stage unchanged.
 
 **"Restore all to this phone" is the counterpart — Signal's "Download your
-backup data" on a lapsed plan — and it is why the offload confirm can stay
-honest.** Signal's Optimize-storage toggle promises media "can be downloaded
-from your backup anytime" and makes good on it by AUTO-downloading offloaded
-media when the subscription ends (its cancel dialog: "Any media stored in
-your backup will be downloaded to your phone now"; its lapse sheet counts
-down to deletion with a Download row). Firedown has no auto path, so two
-things carry the risk instead: (1) the Storage confirm dialog names the
-bound on a METERED account (`storage_offload_confirm_message_metered` —
-"for as long as your storage credit lasts… the backup is removed and these
-files with it"; the plain wording only when the cached quota is KNOWN
-unmetered — an unknown quota degrades to the weaker claim, the P2P-footer
-rule); (2) a batch **restore-all**: `CloudBackupListFragment.
-confirmRestoreAll` restores every CLOUD-ONLY entry (`mCloudOnly` ∩ not
-already restoring — positive evidence only, so an offline lookup hides the
-action rather than restoring files already present), reachable from the
-Backups overflow (`action_restore_all`, visible only when it would do
-something) and from the home grace card's second verb **RESTORE**
-(`home_backup_card_restore` → `SettingsActivity.EXTRA_RESTORE_ALL` →
-`ARG_RESTORE_ALL`, armed until the first cloud-only emission so the deep
-link never asks about a list it hasn't seen; consumed from the args so a
-rotation can't re-open it). Unlike the selection batch restore it IS
-confirmed — gigabytes the user did not pick — and the dialog states count,
-total and free space (`StatFs` on the download path); when it does not fit
-the positive button is DISABLED with the shortfall stated (Signal's "Free
-up %s on this device"), because N restores dying on a full disk would be N
-unexplained ERROR rows in Downloads. The grace card grew an ACTIONS row
-(RESTORE · TOP UP) for it — one row could not hold two verbs beside a
-two-line countdown in the long locales; an alarm card may grow.
+backup data" — and it is why the offload confirm can stay honest.** Signal's
+Optimize-storage toggle promises media "can be downloaded from your backup
+anytime" and makes good on it by AUTO-downloading offloaded media when the
+subscription ends. Firedown has no auto path, and no subscription to end —
+the risk now is the FOLDER going away (a provider signed out, a card
+pulled, a Drive account closed) — so a batch **restore-all** carries it:
+`CloudBackupListFragment.confirmRestoreAll` restores every FOLDER-ONLY
+entry (`mCloudOnly` ∩ not already restoring — positive evidence only, so a
+failed lookup hides the action rather than restoring files already
+present), reachable from the Backups overflow (`action_restore_all`,
+visible only when it would do something). Unlike the selection batch
+restore it IS confirmed — gigabytes the user did not pick — and the dialog
+states count, total and free space (`StatFs` on the download path); when it
+does not fit the positive button is DISABLED with the shortfall stated
+(Signal's "Free up %s on this device"), because N restores dying on a full
+disk would be N unexplained ERROR rows in Downloads. The hosted service's
+grace card (RESTORE · TOP UP) and its `EXTRA_RESTORE_ALL` deep link into
+this went with the service: a folder has no grace period to count down.
 
-**The account WATCH (`CloudWatchWorker`) — the lapse notifications a
-subscription business gets from its billing system and a prepaid anonymous
-one lacks.**
-A 6-hourly periodic Hilt worker (network-constrained), armed by
-`CloudBackupManager.markEnabled` and at boot while `isSetUp()`, self-
-cancelling once not; reads the metered quota with the signed client and:
-- **Lapse notifications** (Signal's "subscription expired" / "Download your
-  backup data" sheets). The home card shows the countdown only to a user who
-  opens the app; one who doesn't learns nothing until the reap deletes the
-  only copy of every file whose phone copy was freed. So: ONE notification on
-  entering read-only grace, ONE more at `REAP_WARNING_DAYS` (3) or fewer
-  (same id — replaces, never stacks), each with **Top up** (Cloud screen) and
-  **Restore** (Backups list + `EXTRA_RESTORE_ALL`) actions. Once per grace
-  EPISODE: the markers (`CLOUD_GRACE_NOTIFIED_UNTIL` / `CLOUD_REAP_NOTIFIED_
-  UNTIL`) hold the quota's `grace_until`, so the re-run of the same lapse is
-  silent while a later lapse is told again. Silent when POST_NOTIFICATIONS is
-  denied (the card/hero carry the state regardless).
-- **There is NO auto top-up.** One shipped for a day on top of Nostr Wallet
-  Connect (re-buy the last plan tile through the connected wallet at ≤1 month
-  runway) and was removed with it — no rail can pay without the user present
-  now, and that is intended. The worker only ever WATCHES; it never pays.
+**There is no account WATCH any more.** The hosted service's
+`CloudWatchWorker` (a 6-hourly periodic worker that read the metered quota
+and posted the lapse notifications — grace entered, reap in 3 days) is
+GONE: a folder has no balance to run out and no reap to warn of. What
+replaced it is event-driven and local: a backup that finds the folder gone
+posts ONE folder-lost notification (see the Backup section), and the Backup
+screen's hero shows the lost state. A periodic WorkManager request outlives
+the class that scheduled it, so `CloudBackupManager.cancelLegacyWatch()`
+cancels the `cloud-watch` unique work once at boot (`App.onCreate`) — keep
+that call until no install from before 1.2.01 can plausibly remain.
 
 ## In-app donations RETIRED — "Support Firedown" is a website handoff
 
 The native Value for Value donate screen (`DonateFragment` + the `donate/`
 package: `LightningInvoiceFetcher`, `BitcoinAddressProvider`, Lightning
 invoice/BTC QR plumbing, `fragment_donate.xml`, 8 donate-only drawables,
-~26 `donate_*` strings) was **removed entirely** (maintainer decision). The
-app's ONE money surface is the paid cloud-backup credit flow (the
-`claude/intelligent-cannon-c5izfr` monetization work: anonymous
-blind-signature credits, Lightning + on-chain Bitcoin rails) — a donate screen beside a
-purchase screen is two competing money-asks (donors feel they "already paid";
-would-be customers donate instead of buying credit), and the donate plumbing
-shared nothing with the credit flow's rails (mint `payRequest` BOLT11 /
-BIP21 address), so it was pure extra surface. Before this, the fiat "Card
+~26 `donate_*` strings) was **removed entirely** (maintainer decision). At
+the time the app's ONE money surface was the paid cloud-backup credit flow
+(anonymous blind-signature credits, Lightning + on-chain Bitcoin rails —
+itself gone with the hosted service in 2026-10; the app sells nothing now)
+— a donate screen beside a purchase screen was two competing money-asks
+(donors feel they "already paid"; would-be customers donate instead of
+buying credit), and the donate plumbing shared nothing with the credit
+flow's rails, so it was pure extra surface. Before this, the fiat "Card
 or PayPal" (Buy Me a Coffee) card had already been dropped from the screen.
 
 What remains: a **"Donate" row** (`settings_donate`) in Settings' app category
@@ -9324,8 +8115,8 @@ beside License/Help/About, which are all bare rows, and a lone summary
 read as out of place there (on-device review). Title translated across
 the 16 maintained locales. **The website must serve /donate** — the donate
 rails (LN address, BTC, fiat) live there now (firedown-website repo), not in
-the APK. Don't reintroduce an in-app donate/payment screen alongside the
-credit flow; if a donation surface ever returns, it's a website page.
+the APK. Don't reintroduce an in-app donate/payment screen; if a donation
+surface ever returns, it's a website page.
 
 ## Prebuilt native dependencies — GitHub Releases, pinned, fetched at sync
 

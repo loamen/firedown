@@ -58,8 +58,8 @@ import dagger.hilt.android.AndroidEntryPoint;
  *
  * <p>What it lists: finished, non-vault downloads whose file is actually on
  * disk (a missing or foreign-owned file frees nothing — same rule as the
- * "Free up space" scan), sorted by size descending. Rows already in the cloud
- * backup carry the inline cloud mark, so "safe to delete" is visible at the
+ * "Free up space" scan), sorted by size descending. Rows already in the backup
+ * folder carry the inline cloud mark, so "safe to delete" is visible at the
  * decision point; the confirm dialog counts them too.
  *
  * <p>Delete goes through the normal download delete
@@ -388,7 +388,7 @@ public class StorageReviewFragment extends BaseFocusFragment {
                 getString(R.string.storage_review_confirm_message, size));
         if (backed > 0) {
             // The one reassurance worth a sentence: a copy survives in the
-            // cloud backup. Counted, not implied — a mixed selection must not
+            // backup folder. Counted, not implied — a mixed selection must not
             // read as if every file were safe.
             message.append(' ').append(getResources().getQuantityString(
                     R.plurals.storage_review_confirm_backed, backed, backed));

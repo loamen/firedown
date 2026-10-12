@@ -24,7 +24,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel;
  *
  * <p>This screen had NO ViewModel: the manifest, the load/error flags, the
  * in-flight-delete guard and the selection all lived as fields on the fragment,
- * so every rotation destroyed them and re-pulled the manifest over the network.
+ * so every rotation destroyed them and re-listed the folder (a network round
+ * trip on Drive).
  * Owning them here fixes that and, incidentally, is what lets the adapter stop
  * being a state holder (see {@link #getSelection()}).
  *
@@ -178,7 +179,8 @@ public class CloudBackupListViewModel extends ViewModel {
     // ---- loading ----
 
     /**
-     * Pulls the manifest. Safe to call repeatedly; a slower earlier pull can
+     * Lists the folder (the "manifest" = every sidecar, decrypted). Safe to
+     * call repeatedly; a slower earlier pull can
      * never overwrite a newer one.
      *
      * @param onSettled runs on BOTH outcomes, for view-only concerns the
@@ -211,8 +213,8 @@ public class CloudBackupListViewModel extends ViewModel {
         });
     }
 
-    /** Loads the quota for the header's context line. Never shows a stale number
-     *  offline — the manager serves its cached status or nothing. */
+    /** Loads the folder's status for the header's context line. Never shows a
+     *  stale answer — the manager serves its cached status or nothing. */
     public void loadStatus() {
         mCloudBackup.loadStatus(mStatus::setValue);
     }

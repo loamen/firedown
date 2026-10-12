@@ -195,7 +195,7 @@ public class DownloadDataRepository {
     /**
      * Synchronous "is this file already in Downloads?" lookup (name + byte-size).
      * Runs the query on the caller's thread — callers MUST be off the main thread
-     * (e.g. a worker thread or a background executor). Used by Cloud Backup to skip
+     * (e.g. a worker thread or a background executor). Used by Backup to skip
      * a duplicate restore and to locate a local copy for a preview backfill.
      */
     public DownloadEntity findByNameSize(String name, long size) {
@@ -204,7 +204,7 @@ public class DownloadDataRepository {
 
     /**
      * Synchronous by-uid lookup. Off-main-thread only (same contract as
-     * {@link #findByNameSize}). Used by the Cloud Backup restore worker to find
+     * {@link #findByNameSize}). Used by the backup restore worker to find
      * its own prior in-flight row across a WorkManager retry (a stable uid keyed
      * on the object id) so the retry reuses the row + destination instead of
      * spawning a duplicate.

@@ -1,7 +1,6 @@
 package com.solarized.firedown.settings;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -27,9 +26,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
-import androidx.fragment.app.DialogFragment;
-import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
@@ -52,55 +48,46 @@ import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.phone.fragments.P2pScanFragment;
 import com.solarized.firedown.sync.CloudBackupManager;
-import com.solarized.firedown.sync.PairClient;
-import com.solarized.firedown.sync.StorageApiClient;
 import com.solarized.firedown.sync.SyncManager;
 import com.solarized.firedown.sync.SyncSecrets;
 import com.solarized.firedown.sync.VaultBackupWorker;
-import com.solarized.firedown.sync.VaultSmokeTest;
-import com.solarized.firedown.sync.crypto.PairSeal;
 import com.solarized.firedown.sync.crypto.SyncIdentity;
 import com.solarized.firedown.utils.NavigationUtils;
 import com.solarized.firedown.utils.QrCodes;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
-import okhttp3.OkHttpClient;
 
 /**
- * The MERGED Cloud screen (toolbar title "Cloud") — pay-per-use downloads backup
- * front and center, bookmarks + account plumbing secondary. This absorbed the old
- * {@code CloudBackupSettingsFragment} sub-screen: the hub-then-sub-screen IA made
- * the plan/status card and the backed-up-files list a four-tap trek from home, and
- * the thing a paying user cares about (the plan, the buy door, the files) was one
- * level deeper than the free bookmarks toggle.
+ * The MERGED Backup screen (toolbar title "Backup") — the encrypted downloads
+ * backup into a folder of the user's choosing front and center, bookmarks +
+ * key plumbing secondary. The folder is any storage the system's file picker
+ * can offer (Google Drive, Dropbox, Nextcloud, an SD card, the phone itself):
+ * the app encrypts into it and reads back from it, and no Firedown server is
+ * involved (the hosted service this replaced is gone — see CLAUDE.md).
  *
  * <p>Top to bottom: the {@link CloudStatusPreference} status hero (whose
  * not-set-up state is the three-step onboarding roadmap), the MORPHING filled
- * CTA ("Create recovery code" pre-key, "Add storage credit" after), the
- * adopt-a-code door, the Manage-backup Backups row, one secondary inline
- * Bookmarks switch (the focused BookmarksSyncFragment was retired — sync runs
- * automatically once on, so its "Sync now" went with it), the shared recovery
- * code behind a device-auth gate, the offline encryption FAQ, and LAST the two
- * SCOPED erasure rows (bookmarks-from-server / backed-up-files). All
- * network/crypto work lives in {@link SyncManager} / {@link CloudBackupManager}.
+ * CTA — "Create recovery code" pre-key, "Choose backup folder" with a key but
+ * no folder, "Change folder" (outlined, calm) once set up, and "Choose the
+ * folder again" (filled) when the folder stopped answering — the
+ * adopt-a-code door, the Backups row, one secondary inline Bookmarks switch,
+ * the shared recovery code behind a device-auth gate, the website's how-it-
+ * works page, and LAST the erasure door. All crypto/IO work lives in
+ * {@link SyncManager} / {@link CloudBackupManager}.
  *
  * <p>The hero binds {@link CloudBackupManager#lastStatus()} synchronously on
  * entry (the singleton's last good snapshot) and the async
  * {@link CloudBackupManager#loadStatus} result then updates it in place — so
- * re-entering the screen never flashes the empty state while the network
- * round-trip is in flight.
- *
- * <p>There is intentionally NO backend-server picker here: bookmark sync is a
- * free, end-to-end-encrypted feature pinned to the hosted server. A configurable /
- * self-hosted backend belongs to the (paid) downloads backup, where pointing at
- * your own object storage is the point.
+ * re-entering the screen never flashes the empty state while the folder
+ * round-trip is in flight. The one fact the cached snapshot cannot carry is a
+ * LOST folder (the cache keeps only successful reads), so the fragment keeps
+ * the latest loaded status itself ({@link #mLastLoaded}) and the CTA follows
+ * it.
  */
 @AndroidEntryPoint
 public class SyncSettingsFragment extends BasePreferenceFragment
@@ -115,15 +102,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     @Inject
     CloudBackupManager mCloudBackup;
 
-    /** Shared OkHttp client — used only by the debug smoke-test row below. */
-    @Inject
-    OkHttpClient mHttpClient;
-
     private CloudStatusPreference mStatus;
-    private CloudBuyButtonPreference mBuy;
+    private CloudBuyButtonPreference mCta;
     private Preference mFiles;
-    /** Scan a browser pairing QR — rides the same set-up gate as Backups. */
-    private Preference mPair;
     /** The ONE erasure door (see settings_sync.xml) → CloudDeleteFragment, the
      *  two-row sub-screen; hidden while neither scoped deletion applies. */
     private Preference mDeleteDoor;
@@ -140,7 +121,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     private Preference mLinkCode;
     // The two title-less card groups updateState() swaps by life stage: the
     // KEY group (Recovery code + the adopt door) and the USE group (Backups,
-    // Pair, Sync bookmarks). XML-inflate orders captured on first use so the
+    // Sync bookmarks). XML-inflate orders captured on first use so the
     // not-set-up state restores the onboarding order exactly.
     private PreferenceCategory mKeyGroup;
     private PreferenceCategory mUseGroup;
@@ -150,6 +131,16 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     /** True while a transfer is running, so a usage refresh doesn't clobber the
      *  live "Transfer in progress…" status. */
     private boolean mTransferActive;
+
+    /**
+     * The latest {@link CloudBackupManager#loadStatus} answer this screen
+     * received, reachable or not. {@link CloudBackupManager#lastStatus()} keeps
+     * only SUCCESSFUL reads, so the folder-lost fact lives here; cleared
+     * whenever the manager forgets its own cache (a new folder, an erase, a
+     * code swap) so a stale "lost" can't outlive the folder that was lost.
+     */
+    @Nullable
+    private CloudBackupManager.Status mLastLoaded;
 
     /** Last bookmark-sync state seen, so the failure snackbar fires only on a
      *  fresh SYNCING -> ERROR transition (not on every entry with a stale
@@ -161,6 +152,19 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             registerForActivityResult(new ActivityResultContracts.CreateDocument("text/plain"),
                     this::onExportFilePicked);
 
+    /**
+     * SAF "open document tree" — the backup folder picker. The user picks ANY
+     * folder the system offers (a Drive/Dropbox/Nextcloud account via its
+     * documents provider, the SD card, the phone); the app takes a persistable
+     * read+write grant on it and keeps everything under
+     * {@code <picked>/Firedown Backup/<account>/}. The same launcher serves
+     * first choice, change and re-choose-after-lost — the folder store adopts
+     * whatever comes back.
+     */
+    private final ActivityResultLauncher<Uri> mFolderPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(),
+                    this::onFolderPicked);
+
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -169,7 +173,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         // here (not lazily when the scanner opens) so the result still lands
         // after a process death or config change while the scanner was up.
         observeScanResult();
-        // Live status: while an upload/restore runs, the hero caption reads
+        // Live status: while a backup/restore runs, the hero caption reads
         // "Transfer in progress…" instead of the static usage.
         WorkManager.getInstance(requireContext().getApplicationContext())
                 .getWorkInfosByTagLiveData(CloudBackupManager.WORK_TAG)
@@ -193,9 +197,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                     }
                     // Only react to a TRANSITION: this LiveData also emits on
                     // every worker progress tick, and an unconditional
-                    // updateState() here re-fired the network loadStatus per
-                    // percent — the idle→active and active→idle edges are the
-                    // only ones that change what this screen shows.
+                    // updateState() here re-read the folder per percent — the
+                    // idle→active and active→idle edges are the only ones that
+                    // change what this screen shows.
                     if (active != mTransferActive) {
                         mTransferActive = active;
                         updateState();
@@ -223,21 +227,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
 
         setPreferencesFromResource(R.xml.settings_sync, rootKey);
 
-        // The one-shot top-up chip retires here, at screen ENTRY, when a
-        // previous visit already rendered it — retiring on entry (not on the
-        // render, not on exit) is what lets the chip survive every re-bind of
-        // the visit that shows it, including the cached-then-fresh double bind.
-        if (mSharedPreferences.getBoolean(Preferences.CLOUD_TOPUP_SHOWN, false)) {
-            mSharedPreferences.edit()
-                    .remove(Preferences.CLOUD_TOPUP_BEFORE_MONTHS)
-                    .remove(Preferences.CLOUD_TOPUP_SHOWN)
-                    .apply();
-        }
-
         mStatus = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_STATUS);
-        mBuy = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_BUY);
+        mCta = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_CTA);
         mFiles = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_FILES);
-        mPair = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_PAIR);
         mDeleteDoor = findPreference(Preferences.SETTINGS_CLOUD_DELETE);
         mBookmarksSwitch = findPreference(Preferences.SYNC_ENABLED);
         mHelp = findPreference(Preferences.SETTINGS_SYNC_HELP);
@@ -246,14 +238,11 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         mKeyGroup = findPreference(Preferences.SETTINGS_CLOUD_GROUP_KEY);
         mUseGroup = findPreference(Preferences.SETTINGS_CLOUD_GROUP_USE);
 
-        if (mBuy != null) {
-            mBuy.setOnPreferenceClickListener(this);
+        if (mCta != null) {
+            mCta.setOnPreferenceClickListener(this);
         }
         if (mFiles != null) {
             mFiles.setOnPreferenceClickListener(this);
-        }
-        if (mPair != null) {
-            mPair.setOnPreferenceClickListener(this);
         }
         if (mDeleteDoor != null) {
             mDeleteDoor.setOnPreferenceClickListener(this);
@@ -289,16 +278,20 @@ public class SyncSettingsFragment extends BasePreferenceFragment
 
         tintIcons();
         updateState();
-        addDebugSmokeTestRow();
         addDebugAccountIdRow();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        // Bookmark sync can be toggled on its focused screen, a purchase can land
-        // from the buy flow, and a backup/restore/delete elsewhere can change
-        // usage — refresh rows + hero on every return.
+        // Bookmark sync can be toggled on its focused screen, and a backup /
+        // restore / delete elsewhere can change usage — refresh rows + hero on
+        // every return. A manager that forgot its cache (an erase, a code swap)
+        // is the signal that OUR last answer is about a different folder/account
+        // too, so it goes with it.
+        if (mCloudBackup.lastStatus() == null) {
+            mLastLoaded = null;
+        }
         updateState();
     }
 
@@ -306,19 +299,19 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     public boolean onPreferenceClick(Preference preference) {
         String key = preference.getKey();
         switch (key) {
-            case Preferences.SETTINGS_CLOUD_BACKUP_BUY -> {
+            case Preferences.SETTINGS_CLOUD_BACKUP_CTA -> {
                 // The MORPHING CTA: the next onboarding step. Pre-key it reads
                 // "Create recovery code" and runs the create flow (mandatory
-                // "I've saved it" gate); with a key it opens the buy flow.
+                // "I've saved it" gate); with a key every other label — choose,
+                // change, choose again — is the same folder picker.
                 if (mCloudBackup.hasAccount()) {
-                    NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_buy);
+                    openFolderPicker();
                 } else {
                     createCode();
                 }
             }
             case Preferences.SETTINGS_CLOUD_BACKUP_FILES ->
                     NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_files);
-            case Preferences.SETTINGS_CLOUD_BACKUP_PAIR -> openPairScanner();
             case Preferences.SETTINGS_CLOUD_DELETE ->
                     NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_delete);
             case Preferences.SETTINGS_SYNC_HELP -> openHelpPage();
@@ -331,33 +324,25 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     /**
      * Reflects persisted state into every section. The KEY is the account
      * gateway: a recovery code must exist before EITHER feature can be used, so
-     * pre-key the CTA morphs to "Create recovery code", the Manage rows are
-     * hidden and the Bookmarks switch is disabled. This is what stops a keyless
-     * purchase (the buy flow used to mint a code silently mid-checkout — see
-     * BuyCreditViewModel).
+     * pre-key the CTA morphs to "Create recovery code", the Backups row is
+     * hidden and the Bookmarks switch is disabled — the folder can only be
+     * chosen once there is a key to encrypt into it with.
      */
     private void updateState() {
         boolean hasKey = mCloudBackup.hasAccount();
+        boolean hasFolder = mCloudBackup.hasFolder();
         boolean setUp = mCloudBackup.isSetUp();
         boolean on = mSyncManager.isEnabled();
 
-        // The MORPHING CTA always shows the next step: "Create recovery code"
-        // until a key exists, then "Add storage credit" (the layout binds the
-        // title into the filled button).
-        if (mBuy != null) {
-            mBuy.setTitle(hasKey
-                    ? R.string.buy_credit_title
-                    : R.string.settings_sync_create_title);
-        }
         // The adopt-an-existing-account door, shown in BOTH states — the second
         // device in a two-device pair usually has a code of its OWN (it created
         // one, or backed a file up, before being pointed at the first device's
-        // account), and gating this row on !hasKey left that user no way in at
+        // folder), and gating this row on !hasKey left that user no way in at
         // all: the only route to one shared account was clearing app data.
         // Post-key it is a REPLACE, so showLinkDialog warns first (the current
-        // code is the only key to whatever sits under it server-side). The
-        // key-first gate is unaffected — that exists to stop a KEYLESS purchase,
-        // and adopting a code produces a key rather than bypassing one.
+        // code is the only key to whatever sits under it in the folder). The
+        // key-first gate is unaffected — adopting a code produces a key rather
+        // than bypassing one.
         if (mLinkCode != null) {
             mLinkCode.setVisible(true);
             mLinkCode.setSummary(hasKey
@@ -368,24 +353,22 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         // KEY group — Recovery code + the adopt door — above the USE group)
         // is the ONBOARDING shape: the adopt door is the second way in, so it
         // belongs right under the create-CTA while there is nothing else to
-        // reach. Once the account is SET UP the priorities invert: Backups is
+        // reach. Once the backup is SET UP the priorities invert: Backups is
         // the daily-use row of the whole screen and the key rows once-ever
-        // actions, so the USE group (Backups, Pair — "directly under Backups,
-        // reaching the same files from a computer" — and Sync bookmarks)
-        // swaps above the KEY group. The GROUPS swap, not rows, so each card
-        // group stays whole in both stages. Base orders are captured once
-        // (orderingAsAdded assigns them at inflate); the not-set-up branch
-        // restores them, so the erase path flips the screen back.
+        // actions, so the USE group (Backups + Sync bookmarks) swaps above the
+        // KEY group. The GROUPS swap, not rows, so each card group stays whole
+        // in both stages. Base orders are captured once (orderingAsAdded
+        // assigns them at inflate); the not-set-up branch restores them, so the
+        // erase path flips the screen back.
         if (mKeyGroup != null && mUseGroup != null) {
             if (mKeyGroupBaseOrder == Integer.MIN_VALUE) {
                 mKeyGroupBaseOrder = mKeyGroup.getOrder();
                 mUseGroupBaseOrder = mUseGroup.getOrder();
             }
-            boolean backupsFirst = hasKey && setUp;
-            mUseGroup.setOrder(backupsFirst ? mKeyGroupBaseOrder : mUseGroupBaseOrder);
-            mKeyGroup.setOrder(backupsFirst ? mUseGroupBaseOrder : mKeyGroupBaseOrder);
+            mUseGroup.setOrder(setUp ? mKeyGroupBaseOrder : mUseGroupBaseOrder);
+            mKeyGroup.setOrder(setUp ? mUseGroupBaseOrder : mKeyGroupBaseOrder);
         }
-        applyManageVisibility(hasKey && setUp);
+        applyManageVisibility(setUp);
         // Bookmarks switch: disabled without a key (key-first gate); checked
         // state mirrors SyncManager (the switch never self-persists).
         if (mBookmarksSwitch != null) {
@@ -404,129 +387,105 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             mShowCode.setVisible(hasKey);
         }
 
-        updateStatusHero(hasKey, setUp);
+        updateStatusHero(hasKey, hasFolder, setUp);
     }
 
     /**
-     * Binds the status hero: last cached snapshot FIRST (synchronous — no flash
-     * of the empty state on re-entry), then the fresh {@link
-     * CloudBackupManager#loadStatus} result updates it in place. The load also
-     * carries the guarded reconcile BOTH ways: a reconciled-empty account
-     * (metered, spent, zero files) retires Cloud Backup; a reconciled-LIVE one
-     * (files or balance) heals the local flag. Offline serves the cached
-     * snapshot, so nothing blanks out on a network blip.
+     * Binds the status hero: the last cached snapshot FIRST (synchronous — no
+     * flash of the empty state on re-entry), then the fresh {@link
+     * CloudBackupManager#loadStatus} result updates it in place. The CTA
+     * follows the same two-phase bind, because its label depends on whether
+     * the folder answered ({@link #applyCta}).
      */
-    private void updateStatusHero(boolean hasKey, boolean setUp) {
+    private void updateStatusHero(boolean hasKey, boolean hasFolder, boolean setUp) {
         if (mStatus == null) {
             return;
         }
-        // The purchased plan shape ("Up to X GB · 1 year") is client-side only —
-        // stored by BuyCreditViewModel at purchase; the server just holds the
-        // anonymous balance. 0/0 = unknown → the hero degrades gracefully.
-        mStatus.setPlan(
-                mSharedPreferences.getInt(Preferences.CLOUD_PLAN_SIZE_GB, 0),
-                mSharedPreferences.getInt(Preferences.CLOUD_PLAN_DURATION_MONTHS, 0));
         mStatus.setActive(mTransferActive);
-        mStatus.setHasKey(hasKey); // onboarding step ① check-off
-        CloudBackupManager.Status cached = mCloudBackup.lastStatus();
-        if (cached != null) {
-            mStatus.setSetUp(cached.setUp);
-            mStatus.setUsage(cached.fileCount, cached.totalBytes);
-            mStatus.setQuota(cached.quota);
+        mStatus.setHasKey(hasKey);       // roadmap step ① check-off
+        mStatus.setHasFolder(hasFolder); // roadmap step ② check-off
+        mStatus.setProvider(mCloudBackup.providerLabel());
+        CloudBackupManager.Status known = knownStatus();
+        if (known != null) {
+            mStatus.setSetUp(known.setUp);
+            mStatus.setReachable(known.reachable);
+            mStatus.setUsage(known.fileCount, known.totalBytes);
         } else {
             mStatus.setSetUp(setUp);
-            mStatus.setUsage(-1, -1);
-            mStatus.setQuota(null);
+            mStatus.setReachable(true);
+            mStatus.setUsage(mCloudBackup.lastKnownFileCount(),
+                    mCloudBackup.lastKnownTotalBytes());
         }
-        applyBuyEmphasis(hasKey, cached != null ? cached.quota : null);
-        // Only a code-less device has nothing to ask the server about. A code
-        // that's not marked set up may still front a FUNDED account (credit
-        // bought, nothing backed up yet) — loadStatus reconciles that.
-        if (!hasKey) {
+        applyCta(hasKey, hasFolder, setUp, known);
+        if (!setUp) {
             return;
         }
         mCloudBackup.loadStatus(status -> {
             if (!isAdded() || mStatus == null) {
                 return;
             }
-            applyManageVisibility(mCloudBackup.hasAccount() && status.setUp);
+            mLastLoaded = status;
+            applyManageVisibility(status.setUp);
             mStatus.setSetUp(status.setUp);
+            mStatus.setReachable(status.reachable);
             mStatus.setUsage(status.fileCount, status.totalBytes);
-            mStatus.setQuota(status.quota);
-            applyCreditDelta(status.quota);
-            applyBuyEmphasis(mCloudBackup.hasAccount(), status.quota);
+            applyCta(mCloudBackup.hasAccount(), mCloudBackup.hasFolder(),
+                    status.setUp, status);
         });
     }
 
     /**
-     * The one-shot top-up receipt ("+N added" on the hero meter). At redeem
-     * time {@code BuyCreditViewModel} snapshots the PRE-purchase runway; this
-     * compares it against a FRESH quota — deliberately only the loadStatus
-     * callback, never the cached bind, because the cache predates the purchase
-     * and a zero delta computed from it would wrongly retire the receipt.
-     * Outcomes: runway grew → show the delta + mark SHOWN (entry retires it
-     * next visit); fresh runway unknown → keep the snapshot pending for a
-     * later load; measured and nothing grew → the snapshot is moot (stale, or
-     * usage grew to absorb it) and is dropped rather than left to fire on some
-     * unrelated future increase.
+     * The status to paint before the fresh read lands: this screen's own last
+     * answer when it has one (it may say LOST, which the manager's cache never
+     * does), else the manager's last successful snapshot.
      */
-    private void applyCreditDelta(StorageApiClient.Quota quota) {
-        int before = mSharedPreferences.getInt(Preferences.CLOUD_TOPUP_BEFORE_MONTHS, -1);
-        if (before < 0) {
-            mStatus.setCreditDelta(0);
-            return;
+    @Nullable
+    private CloudBackupManager.Status knownStatus() {
+        if (mLastLoaded != null) {
+            return mLastLoaded;
         }
-        int nowMonths = CloudBackupManager.runwayMonths(quota);
-        if (nowMonths < 0) {
-            return;
-        }
-        int delta = nowMonths - before;
-        if (delta >= 1) {
-            mStatus.setCreditDelta(delta);
-            mSharedPreferences.edit()
-                    .putBoolean(Preferences.CLOUD_TOPUP_SHOWN, true)
-                    .apply();
-        } else {
-            mStatus.setCreditDelta(0);
-            mSharedPreferences.edit()
-                    .remove(Preferences.CLOUD_TOPUP_BEFORE_MONTHS)
-                    .remove(Preferences.CLOUD_TOPUP_SHOWN)
-                    .apply();
-        }
+        return mCloudBackup.lastStatus();
     }
 
     /**
-     * State-dependent CTA emphasis (see {@link CloudBuyButtonPreference}):
-     * FILLED while the next step is genuinely "pay" — no key yet ("Create
-     * recovery code"), quota unknown-with-key (a fresh account whose starter/
-     * purchase state hasn't loaded — the roadmap's step ② default), unfunded,
-     * or in grace — and OUTLINED once the account is affirmatively funded
-     * (metered, positive balance, not read-only) or on the unmetered beta,
-     * where there is nothing to sell. Bound from the cached snapshot first and
-     * again from the fresh load, the same two-phase bind as the hero.
+     * The MORPHING CTA always shows the next step, with STATE-DEPENDENT
+     * emphasis (see {@link CloudBuyButtonPreference}): FILLED while something
+     * is genuinely needed — no key yet ("Create recovery code"), no folder yet
+     * ("Choose backup folder"), or a folder that stopped answering ("Choose the
+     * folder again") — and OUTLINED once the backup is set up and the folder
+     * answers ("Change folder": available, not urgent). A healthy backup must
+     * not be stared down by a permanent filled button.
      */
-    private void applyBuyEmphasis(boolean hasKey, @Nullable StorageApiClient.Quota quota) {
-        if (mBuy == null) {
+    private void applyCta(boolean hasKey, boolean hasFolder, boolean setUp,
+                          @Nullable CloudBackupManager.Status status) {
+        if (mCta == null) {
             return;
         }
-        boolean calm = false;
-        if (hasKey && quota != null) {
-            calm = !quota.metered
-                    || (quota.balanceMicroGbMonths > 0 && !quota.readOnly);
+        boolean lost = setUp && status != null && status.setUp && !status.reachable;
+        int title;
+        boolean emphasized;
+        if (!hasKey) {
+            title = R.string.settings_sync_create_title;
+            emphasized = true;
+        } else if (!hasFolder) {
+            title = R.string.folder_backup_choose_cta;
+            emphasized = true;
+        } else if (lost) {
+            title = R.string.folder_backup_rechoose_cta;
+            emphasized = true;
+        } else {
+            title = R.string.folder_backup_change_cta;
+            emphasized = false;
         }
-        mBuy.setEmphasized(!calm);
+        mCta.setTitle(title);
+        mCta.setEmphasized(emphasized);
     }
 
-    /** The Manage-backup category (Backups list + right-to-erasure) waits for
-     *  set-up; the buy CTA above it is governed by the key gate alone (a metered
-     *  user buys credit BEFORE their first backup). */
+    /** The Backups row (+ the backed-up-files erasure) waits for set-up; the
+     *  CTA above it is governed by the key gate alone. */
     private void applyManageVisibility(boolean show) {
         if (mFiles != null) {
             mFiles.setVisible(show);
-        }
-        // Same gate: with no account there is nothing for a browser to open.
-        if (mPair != null) {
-            mPair.setVisible(show);
         }
         mBackupsDeletable = show;
         applyDeleteDoor();
@@ -536,6 +495,34 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     private void applyDeleteDoor() {
         if (mDeleteDoor != null) {
             mDeleteDoor.setVisible(mBookmarksDeletable || mBackupsDeletable);
+        }
+    }
+
+    /** Opens the system folder picker, pre-pointed at the current folder when
+     *  there is one (a hint the picker is free to ignore). */
+    private void openFolderPicker() {
+        Uri initial = mCloudBackup.folderStore().treeUri();
+        mFolderPicker.launch(initial);
+    }
+
+    /**
+     * The folder picker's result. The store takes the persistable grant and
+     * remembers the tree; the cached status is about the PREVIOUS folder, so
+     * this screen's own last answer is dropped before the re-read, and the
+     * hero rebinds from the fresh listing (a folder that already holds this
+     * account's backups — a reinstall pointed back at its Drive folder — lists
+     * them straight away).
+     */
+    private void onFolderPicked(@Nullable Uri treeUri) {
+        if (treeUri == null) {
+            return; // user backed out of the picker
+        }
+        mCloudBackup.adoptFolder(treeUri);
+        mLastLoaded = null;
+        updateState();
+        String provider = mCloudBackup.providerLabel();
+        if (!TextUtils.isEmpty(provider)) {
+            snackbar(getString(R.string.folder_backup_folder_set, provider));
         }
     }
 
@@ -555,7 +542,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     /**
      * Reveals the recovery code behind a device-auth check (biometric / PIN /
      * pattern) when the device has a secure lock — the code is the master secret
-     * for the whole synced vault, so a borrowed/unlocked phone shouldn't surface
+     * for everything backed up, so a borrowed/unlocked phone shouldn't surface
      * it from a tap. When no biometric or device credential is enrolled there is
      * nothing to authenticate against, so it reveals directly.
      */
@@ -569,9 +556,10 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * ({@link SyncManager#createRecoveryCode}), then shows it behind the MANDATORY
      * saved-gate: the dialog's Done stays disabled until the user checks "I've
      * saved it", so a key can't be created and forgotten. On dismiss the rows
-     * re-evaluate ({@link #updateState}) — the buy CTA and bookmarks enable now
-     * that a key exists. Guarded on {@link SyncManager#hasCode()} so a stray tap
-     * can never overwrite an existing key.
+     * re-evaluate ({@link #updateState}) — the CTA morphs to "Choose backup
+     * folder" and bookmarks enable now that a key exists. Guarded on
+     * {@link SyncManager#hasCode()} so a stray tap can never overwrite an
+     * existing key.
      */
     private void createCode() {
         if (mSyncManager.hasCode()) {
@@ -582,14 +570,6 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             if (isAdded()) {
                 showCodeDialog(grouped, true);
                 updateState();
-                // Register the storage account NOW (not at first backup) so the
-                // server's one-time starter credit lands and the next status
-                // load shows the granted runway — see registerInBackground.
-                mCloudBackup.registerInBackground(() -> {
-                    if (isAdded()) {
-                        updateState();
-                    }
-                });
             }
         });
     }
@@ -597,9 +577,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     /**
      * Runs {@code onAuth} behind a device-auth check (biometric / PIN / pattern)
      * when the device has a secure lock. Both revealing the recovery code and
-     * exporting it to a file expose the master key for the whole synced vault, so
-     * both gate through here. With no biometric / device credential enrolled there
-     * is nothing to authenticate against, so {@code onAuth} runs directly.
+     * exporting it to a file expose the master key for everything backed up, so
+     * both gate through here. With no biometric / device credential enrolled
+     * there is nothing to authenticate against, so {@code onAuth} runs directly.
      */
     private void authThenReveal(Runnable onAuth) {
         if (!mAppLock.isBiometricEnabled()) {
@@ -628,8 +608,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /** Turning the bookmarks switch OFF = sign out of bookmark sync (the doc
-     *  stays on the server; the shared code is wiped only if Cloud Backup no
-     *  longer needs it — see SyncManager.disable). */
+     *  stays on the server; the shared code is wiped only if the downloads
+     *  backup no longer needs it — see SyncManager.disable). */
     private void showSignOutDialog() {
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.settings_sync_sign_out_title)
@@ -706,19 +686,19 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * "I have a recovery code" — links this device to an existing account (restore
-     * downloads backup + storage credit) via {@link SyncManager#linkWithCode},
-     * which stores the code WITHOUT enabling bookmark sync. Reuses the code-input
-     * dialog layout.
+     * "I have a recovery code" — links this device to an existing account (the
+     * key that decrypts a backup folder another install wrote) via
+     * {@link SyncManager#linkWithCode}, which stores the code WITHOUT enabling
+     * bookmark sync. Reuses the code-input dialog layout.
      *
      * <p>When this device ALREADY has a code, adopting another one is a REPLACE
      * and is confirmed first. The warning is not ceremony: the recovery code is
      * the ONLY key to what sits under it, so a user who never saved the current
-     * one is about to lose reach of their own backed-up files and any paid
-     * credit — nothing is deleted server-side, it simply becomes unreachable
-     * from here. The confirm step therefore points at the Recovery code row
-     * (save it first) rather than trying to be clever, and it is the one place
-     * this screen asks twice.
+     * one is about to lose reach of their own backed-up files — nothing is
+     * deleted in the folder, it simply becomes unreadable from here. The
+     * confirm step therefore points at the Recovery code row (save it first)
+     * rather than trying to be clever, and it is the one place this screen
+     * asks twice.
      */
     private void showLinkDialog() {
         if (mCloudBackup.hasAccount()) {
@@ -776,8 +756,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                     // The account is changing, so the cached status snapshot is
                     // about a DIFFERENT account (SyncManager clears the durable
                     // half of the same problem). Dropped BEFORE updateState so
-                    // no surface can repaint the old balance in between.
+                    // no surface can repaint the old figures in between.
                     mCloudBackup.forgetCachedStatus();
+                    mLastLoaded = null;
                     mSyncManager.linkWithCode(code, ok -> {
                         if (!isAdded()) {
                             return;
@@ -786,18 +767,6 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                         snackbar(getString(ok
                                 ? R.string.settings_sync_link_ok
                                 : R.string.settings_sync_link_bad));
-                        if (ok) {
-                            // Adopting a code on the Cloud screen is cloud
-                            // intent too: register so a pre-feature account
-                            // self-heals its starter grant (granted-once
-                            // server-side, so an already-granted account is a
-                            // no-op) and the hero reflects the balance.
-                            mCloudBackup.registerInBackground(() -> {
-                                if (isAdded()) {
-                                    updateState();
-                                }
-                            });
-                        }
                     });
                 })
                 .setNegativeButton(R.string.cancel, null)
@@ -846,7 +815,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                 // act WITHOUT closing the dialog (their click listeners are
                 // overridden below to suppress the default dismiss). Save-to-file
                 // lives HERE — inside the one auth-gated reveal — instead of as
-                // its own row + second auth prompt on the Cloud screen (the old
+                // its own row + second auth prompt on the Backup screen (the old
                 // two-rows-for-one-object shape); it matters most in CREATE mode,
                 // where saving the only key is exactly the step being gated.
                 .setNeutralButton(R.string.settings_sync_code_copy, null)
@@ -899,8 +868,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * <p>Consumed with {@code set(key, null)}, NEVER {@code remove(key)} —
      * remove() DETACHES the handle's cached LiveData for that key, so a second
      * scan in the same session would silently never arrive. That trap is
-     * documented from the Cloud Backup item sheet; it is the same handle
-     * mechanism here.
+     * documented from the Backups item sheet; it is the same handle mechanism
+     * here.
      *
      * <p>An unparseable payload is reported and dropped rather than prefilled:
      * a QR that decodes to some other app's text is not a typo to correct, and
@@ -919,335 +888,12 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                     }
                     entry.getSavedStateHandle().set(P2pScanFragment.RESULT_CODE, (String) null);
                     String trimmed = code.trim();
-
-                    // ONE scanner serves two rows, told apart by the PAYLOAD
-                    // rather than by a mode flag: a browser pairing code is
-                    // self-identifying (scheme + FDP1 prefix + a valid P-256
-                    // point) while a recovery code has no prefix at all. A flag
-                    // would have to be threaded through the scanner's
-                    // saved-state round trip and could go stale across process
-                    // death; the payload cannot.
-                    PairSeal.Ref pairing = PairSeal.parse(trimmed);
-                    if (pairing != null) {
-                        confirmPairing(pairing);
-                        return;
-                    }
                     if (!mSyncManager.looksLikeRecoveryCode(trimmed)) {
                         snackbar(getString(R.string.settings_sync_scan_bad));
                         return;
                     }
                     showLinkCodeInput(trimmed);
                 });
-    }
-
-    /* ------------------------------------------------------ browser pairing */
-
-    /** Opens the shared scanner for a browser pairing QR. */
-    private void openPairScanner() {
-        Bundle args = new Bundle();
-        args.putInt(P2pScanFragment.ARG_TITLE_RES, R.string.pair_scan_title);
-        NavHostFragment.findNavController(this).navigate(R.id.action_sync_to_scan, args);
-    }
-
-    /**
-     * Resolves the scanned pairing against OUR OWN backend and asks the user to
-     * approve it.
-     *
-     * <p>Three checks stand between a scan and handing over keys, and they are
-     * layered because each covers what the others cannot:
-     * <ol>
-     *   <li>The lookup goes to {@link Preferences#STORAGE_DEFAULT_BACKEND}, never
-     *       to anything the QR named — so a hostile QR cannot serve its own
-     *       answer.</li>
-     *   <li>The public key the server recorded is compared to the SCANNED one.
-     *       A server that swapped it (to read the sealed blob itself) fails this
-     *       comparison, because the scan is out-of-band.</li>
-     *   <li>The user is shown the server-attested site AND a six-digit code that
-     *       must match what their browser is displaying. This is the one that
-     *       catches a convincing fake: the server cannot tell a real browser
-     *       from a program claiming to be one, so an attacker CAN mint a session
-     *       that truthfully reports firedown.app — but they cannot make the
-     *       victim's own screen show that session's code.</li>
-     * </ol>
-     */
-    private void confirmPairing(PairSeal.Ref ref) {
-        if (!mCloudBackup.hasAccount()) {
-            snackbar(getString(R.string.pair_error_no_account));
-            return;
-        }
-        snackbar(getString(R.string.pair_working));
-        Handler main = new Handler(Looper.getMainLooper());
-        new Thread(() -> {
-            PairClient client = new PairClient(mHttpClient);
-            PairClient.Pairing pairing;
-            try {
-                pairing = client.lookup(ref.pairId);
-            } catch (PairClient.GoneException e) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_expired)));
-                return;
-            } catch (IOException e) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_generic)));
-                return;
-            }
-            if (pairing == null) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_generic)));
-                return;
-            }
-            // The out-of-band check. Compared as the exact base64url string the
-            // server echoes, so there is no re-encoding step to disagree about.
-            if (!pairing.pubkey.equals(ref.pubkeyB64)) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_key_mismatch)));
-                return;
-            }
-            String site = pairing.origin;
-            // Minted HERE, before the dialog, and reused verbatim by the seal:
-            // the verification code covers this key, so showing digits for a
-            // key we had not committed to would be showing digits for a
-            // handshake that never happens.
-            PairSeal.Ephemeral eph = PairSeal.newEphemeral();
-            String code = PairSeal.verificationCode(ref.pairId, ref.pubkey, eph.publicKey);
-
-            // ANNOUNCE BEFORE ASKING. Publishing the ephemeral PUBLIC key here
-            // is what lets the browser show these same six digits while this
-            // sheet is up — without it the code could not exist on the other
-            // screen until we had already sealed and sent the keys, so "Allow"
-            // was a blind decision and the sheet's own instruction ("check this
-            // matches your computer") was unperformable.
-            try {
-                client.announce(ref.pairId, PairSeal.encodePublicKey(eph.publicKey));
-            } catch (PairClient.ConflictException e) {
-                // Someone else claimed this pairing id with a different key, so
-                // the code on the browser is THEIRS. Approving would hand them
-                // this account. The only correct outcome is to stop.
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_conflict)));
-                return;
-            } catch (PairClient.GoneException e) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_expired)));
-                return;
-            } catch (IOException e) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_generic)));
-                return;
-            }
-
-            main.post(() -> {
-                if (!isAdded()) {
-                    return;
-                }
-                showPairApproval(ref, eph, site, code);
-            });
-        }, "pair-lookup").start();
-    }
-
-    /**
-     * Shows the approval sheet for a resolved pairing.
-     *
-     * <p>A CUSTOM VIEW, not {@code setMessage}: the six digits are the one
-     * thing the user has to act on, and a concatenated message can only set
-     * them at body size inside a sentence — which is what this replaced. See
-     * {@code dialog_pair_confirm.xml} for the ranking and the colour rules.
-     *
-     * <p>The pairing itself is handed to {@link PairApprovalViewModel} rather
-     * than captured by the dialog, because the dialog is destroyed and rebuilt
-     * on a rotation and the ephemeral key MUST survive that — it is half of the
-     * handshake the shown code attests to. It cannot travel in the arguments
-     * Bundle instead: saved-state Bundles are handed to the system process, and
-     * an ECDH private key is not something to post through it to save twenty
-     * lines.
-     */
-    private void showPairApproval(PairSeal.Ref ref, PairSeal.Ephemeral eph,
-                                  String site, String code) {
-        // show() commits, which THROWS once the manager has saved its state —
-        // and the lookup that leads here is a network round-trip, so it can
-        // land after the screen went to the background. Dropping the pairing
-        // there is safe (it expires server-side); crashing is not.
-        if (getChildFragmentManager().isStateSaved()) {
-            return;
-        }
-        PairApprovalViewModel vm = new ViewModelProvider(this).get(PairApprovalViewModel.class);
-        vm.pending = new PairApprovalViewModel.Pending(ref, eph, site, code);
-        new PairApprovalDialogFragment()
-                .show(getChildFragmentManager(), PairApprovalDialogFragment.TAG);
-    }
-
-    /** Called by {@link PairApprovalDialogFragment} once the user confirms. */
-    private void onPairApproved(PairApprovalViewModel.Pending pending) {
-        deliverPairing(requireContext().getApplicationContext(), pending.ref, pending.eph);
-    }
-
-    /**
-     * Holds the resolved-but-unapproved pairing across a configuration change.
-     *
-     * <p>Scoped to {@link SyncSettingsFragment}, so the dialog reaches it with
-     * {@code requireParentFragment()} — which is why the dialog is shown on the
-     * CHILD fragment manager. Without this the rotation dropped the pairing and
-     * the user had to rescan.
-     */
-    public static final class PairApprovalViewModel extends ViewModel {
-
-        static final class Pending {
-            final PairSeal.Ref ref;
-            final PairSeal.Ephemeral eph;
-            final String site;
-            final String code;
-            // One-shot guard. It lives HERE, not in the dialog, because the
-            // dialog is a fresh object after a rotation: a per-dialog flag
-            // would reset and let a second seal-and-deliver run. Two deliveries
-            // both seal fine locally, but the server is first-delivery-wins, so
-            // the second 409s and the user sees "paired" then "expired".
-            final AtomicBoolean delivered = new AtomicBoolean();
-
-            Pending(PairSeal.Ref ref, PairSeal.Ephemeral eph, String site, String code) {
-                this.ref = ref;
-                this.eph = eph;
-                this.site = site;
-                this.code = code;
-            }
-        }
-
-        @Nullable
-        Pending pending;
-
-        @Override
-        protected void onCleared() {
-            super.onCleared();
-            // Nothing to zero (the scalar is a BigInteger, immutable), but drop
-            // the reference so the key is collectable as soon as the screen is.
-            pending = null;
-        }
-    }
-
-    /**
-     * The approval sheet, as a real fragment so a rotation does not leak the
-     * window (and, with the ViewModel above, does not drop the pairing either).
-     */
-    public static class PairApprovalDialogFragment extends DialogFragment {
-
-        static final String TAG = "pair-approval";
-
-        @NonNull
-        @Override
-        public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-            SyncSettingsFragment parent = (SyncSettingsFragment) requireParentFragment();
-            PairApprovalViewModel vm =
-                    new ViewModelProvider(parent).get(PairApprovalViewModel.class);
-            PairApprovalViewModel.Pending pending = vm.pending;
-            if (pending == null) {
-                // Process death: the ViewModel is gone, so the ephemeral key
-                // this code attests to is gone too. There is nothing honest to
-                // show — the pairing expires server-side and the user rescans.
-                Dialog dialog = new Dialog(requireContext());
-                dialog.setOnShowListener(d -> dismissAllowingStateLoss());
-                return dialog;
-            }
-
-            View view = getLayoutInflater().inflate(R.layout.dialog_pair_confirm, null);
-            ((TextView) view.findViewById(R.id.pair_site)).setText(pending.site);
-
-            TextView codeView = view.findViewById(R.id.pair_code);
-            codeView.setText(groupPairCode(pending.code));
-            // The task is a digit-by-digit comparison against another screen, so
-            // TalkBack must not read the code as a NUMBER ("eight hundred
-            // fifty-three thousand…") — it has to speak the digits, in order.
-            codeView.setContentDescription(spokenPairCode(pending.code));
-
-            return new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(R.string.pair_confirm_title)
-                    .setView(view)
-                    .setNegativeButton(android.R.string.cancel, (d, w) -> vm.pending = null)
-                    .setPositiveButton(R.string.pair_confirm_action, (d, w) -> {
-                        if (pending.delivered.compareAndSet(false, true)) {
-                            vm.pending = null;
-                            parent.onPairApproved(pending);
-                        }
-                    })
-                    .create();
-        }
-    }
-
-    /**
-     * Splits the verification code 3+3 for a quicker visual compare. Anything
-     * that is not the expected six digits is returned verbatim rather than cut
-     * blindly — the length is {@link PairSeal}'s contract, not this method's.
-     */
-    private static String groupPairCode(String code) {
-        if (code == null || code.length() != PairSeal.CODE_DIGITS) {
-            return code;
-        }
-        int half = PairSeal.CODE_DIGITS / 2;
-        return code.substring(0, half) + " " + code.substring(half);
-    }
-
-    /** The same code as separated digits, so a screen reader spells it out. */
-    private static String spokenPairCode(String code) {
-        if (code == null) {
-            return null;
-        }
-        return TextUtils.join(" ", code.split(""));
-    }
-
-    /**
-     * Success message for a delivered pairing.
-     *
-     * <p>It no longer carries the verification code, and no longer has to hang
-     * around INDEFINITELY so the user can read digits off it: under the v3
-     * handshake the comparison happens BEFORE Allow, with both screens showing
-     * the code at once. By the time this fires the checking is done, so a
-     * lingering snackbar with a number on it would invite a second, pointless
-     * comparison. New string key rather than a reworded one — the old message
-     * took a format argument and this takes none, and {@code getString(int)}
-     * does no formatting, so reusing the key would render a literal "%1$s" in
-     * every translation with nothing failing at build time.
-     */
-    private void snackbarPairDone() {
-        if (!isAdded()) {
-            return;
-        }
-        snackbar(getString(R.string.pair_success_done));
-    }
-
-    /**
-     * Seals this account's storage keys to the browser's key and delivers them.
-     *
-     * <p>The verification code is deliberately NOT passed in any more: under
-     * the v3 handshake it was compared on both screens before the user tapped
-     * Allow, so there is nothing left for this step to display.
-     */
-    private void deliverPairing(Context appContext, PairSeal.Ref ref,
-                                PairSeal.Ephemeral eph) {
-        Handler main = new Handler(Looper.getMainLooper());
-        new Thread(() -> {
-            byte[] recovery = new SyncSecrets(appContext).load();
-            if (recovery == null) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_no_account)));
-                return;
-            }
-            SyncIdentity.PairingKeys keys = null;
-            byte[] sealed = null;
-            try {
-                keys = SyncIdentity.pairingKeys(recovery);
-                sealed = PairSeal.seal(ref.pairId, ref.pubkey, eph,
-                        keys.accountId, keys.authSeed, keys.storageKey);
-                new PairClient(mHttpClient).complete(ref.pairId, sealed);
-                main.post(this::snackbarPairDone);
-            } catch (PairClient.GoneException e) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_expired)));
-            } catch (IOException e) {
-                main.post(() -> snackbarIfAdded(getString(R.string.pair_error_generic)));
-            } finally {
-                // The sealed blob is ciphertext, but the inputs are the account
-                // itself — wipe them rather than leave them for the GC.
-                SyncSecrets.wipe(recovery);
-                if (keys != null) {
-                    keys.wipe();
-                }
-            }
-        }, "pair-complete").start();
-    }
-
-    private void snackbarIfAdded(String text) {
-        if (isAdded()) {
-            snackbar(text);
-        }
     }
 
     /**
@@ -1307,8 +953,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         image.setImageBitmap(qr);
         toggle.setOnClickListener(v -> {
             boolean showingQr = qrPanel.getVisibility() == View.VISIBLE;
-            // Exactly one panel visible, both set on every tap — the same
-            // one-sided-set trap the home cloud slot documents.
+            // Exactly one panel visible, both set on every tap — the
+            // one-sided-set trap.
             qrPanel.setVisibility(showingQr ? View.GONE : View.VISIBLE);
             codePanel.setVisibility(showingQr ? View.VISIBLE : View.GONE);
             toggle.setText(showingQr
@@ -1334,20 +980,10 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * Debug-only row that round-trips a file through the live storage server,
-     * reusing the shared recovery code. Never added in a release build. This is
-     * the on-device smoke test for the storage client; it lands at the very
-     * bottom of the screen, out of the way.
-     */
-    /**
-     * Debug-only row showing the storage ACCOUNT ID (Crockford base32, the
-     * {@code X-Firedown-Account} wire form); tap copies it. This is the dev
-     * free-testing handshake with the server's operator grant: copy here, then
-     * on the VPS {@code storage-api --grant <base32> --grant-gbm 100000} funds
-     * the account so uploads test freely THROUGH the real metered pipeline —
-     * deliberately not a client/server "uploads free" bypass, which would be a
-     * standing backdoor and would skip the billing paths a test should
-     * exercise. Never added in a release build; absent until a code exists.
+     * Debug-only row showing the ACCOUNT ID (Crockford base32) — the name of
+     * this account's directory under {@code <folder>/Firedown Backup/}, so a
+     * dev can find the right subtree in a file manager; tap copies it. Never
+     * added in a release build; absent until a code exists.
      */
     private void addDebugAccountIdRow() {
         if (!BuildConfig.DEBUG) {
@@ -1371,52 +1007,12 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         row.setKey("debug.account.id");
         row.setPersistent(false);
         row.setTitle("Account id (debug)");
-        row.setSummary(base32 + " — tap to copy; grant test credit with: storage-api --grant <id>");
+        row.setSummary(base32 + " — tap to copy; the account directory under Firedown Backup/");
         row.setOnPreferenceClickListener(pref -> {
             copyToClipboard(base32);
             return true;
         });
         screen.addPreference(row);
-    }
-
-    private void addDebugSmokeTestRow() {
-        if (!BuildConfig.DEBUG) {
-            return;
-        }
-        PreferenceScreen screen = getPreferenceScreen();
-        if (screen == null) {
-            return;
-        }
-        Preference row = new Preference(requireContext());
-        row.setKey("debug.vault.smoke");
-        row.setPersistent(false);
-        row.setTitle("Test storage vault (debug)");
-        row.setSummary("Round-trip a file through storage.firedown.app");
-        row.setOnPreferenceClickListener(pref -> {
-            runDebugSmokeTest(pref);
-            return true;
-        });
-        screen.addPreference(row);
-    }
-
-    private void runDebugSmokeTest(Preference row) {
-        row.setEnabled(false);
-        row.setSummary("Running…");
-        snackbar("Vault smoke test started…");
-        Context appContext = requireContext().getApplicationContext();
-        Handler main = new Handler(Looper.getMainLooper());
-        new Thread(() -> {
-            VaultSmokeTest.Result result = VaultSmokeTest.run(
-                    appContext, mHttpClient, Preferences.STORAGE_DEFAULT_BACKEND);
-            main.post(() -> {
-                if (!isAdded()) {
-                    return;
-                }
-                row.setEnabled(true);
-                row.setSummary(result.message);
-                snackbar(result.message);
-            });
-        }, "vault-smoke-test").start();
     }
 
     /** Whether a WorkInfo carries the backup identity tags stamped at enqueue

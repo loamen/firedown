@@ -19,7 +19,7 @@ import java.io.IOException;
 
 /**
  * Generates a tiny base64 JPEG preview for a local file, stored inside the
- * encrypted Cloud Backup manifest so the backed-up-files list can show a
+ * encrypted backup sidecar so the backed-up-files list can show a
  * thumbnail offline — even after the local copy is deleted (the whole point of
  * backing up). Kept small by design (~{@value #MAX_DIM}px longest side) so a
  * manifest with many files stays well under the 16 MiB server cap.

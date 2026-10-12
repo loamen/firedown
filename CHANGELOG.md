@@ -1,6 +1,7 @@
 ## [1.2.01] - 2026-10-12
 
-- Cloud Backup is closing on 31 December 2026: new backups are off, restore everything you want to keep to this phone before then — after that date the backed-up files are deleted
+- Backup: the hosted Cloud Backup is replaced by backing up to a folder of your choice — Google Drive, Dropbox, Nextcloud, an SD card or the phone itself, anything the system folder picker offers. Files are encrypted on the phone before they are written, under the same recovery code bookmark sync uses; the Backups list, restore, open-without-restoring, "Free up space" and the download menu's "Back up" all work against the folder. Nothing goes through a Firedown server
+- Removed with the hosted service: storage credit and its Bitcoin payments, "Pair a browser" and the web client. Restore anything you still want from the old Cloud Backup to this phone BEFORE updating, then back it up into a folder
 
 ## [1.2.00] - 2026-10-08
 

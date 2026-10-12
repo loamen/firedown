@@ -76,13 +76,14 @@ public class GlideModule extends AppGlideModule {
         registry.replace(GlideUrl.class, InputStream.class, new OkHttpUrlLoader.Factory(client));
         registry.append(DownloadEntity.class, ParcelFileDescriptor.class, new DownloadEntityModelLoaderFactory(context));
         registry.append(DownloadEntity.class, Uri.class, new DownloadEntityUriModelLoaderFactory(context));
-        // Cloud Backup vault objects → decrypt-on-read InputStream, so a preview
-        // can be shown from the CLOUD file (Backups list / stream viewer) even
-        // after the local copy is deleted. Built-in stream decoders take it from
-        // there (images); the DEK is unwrapped on-device by the loader.
+        // Backed-up objects in the backup FOLDER → decrypt-on-read InputStream,
+        // so a preview can be shown from the encrypted file (Backups list /
+        // stream viewer) even after the local copy is deleted. Built-in stream
+        // decoders take it from there (images); the DEK is unwrapped on-device
+        // by the loader.
         registry.append(VaultObjectModel.class, InputStream.class,
-                new VaultObjectModelLoader.Factory(context, client));
-        // The STORED manifest preview (base64 JPEG). Registered so the Backups
+                new VaultObjectModelLoader.Factory(context));
+        // The STORED sidecar preview (base64 JPEG). Registered so the Backups
         // list renders it through Glide — its memory cache and bitmap pool —
         // instead of decoding base64+JPEG on the main thread into a hand-rolled
         // LruCache. Keyed by the server-random objectId; callers must pass

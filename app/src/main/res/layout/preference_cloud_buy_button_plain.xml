@@ -2,8 +2,8 @@
 <!--
   The CALM variant of the morphing CTA (see preference_cloud_buy_button.xml for
   the filled one and CloudBuyButtonPreference for the switch): an OUTLINED
-  button, used while the account is comfortably funded and "Add storage credit"
-  is available-but-not-the-next-step. Identical structure — the button carries
+  button, used while the backup is healthy and the row only offers "Change
+  folder" — available, not the next step. Identical structure — the button carries
   @android:id/title so the Preference title binding drives the label, and it is
   non-clickable/duplicateParentState because the row owns the click.
 -->

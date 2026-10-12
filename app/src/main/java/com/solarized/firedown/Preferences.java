@@ -88,20 +88,11 @@ public class Preferences {
     // ---- bookmarks sync (docs/BOOKMARKS_SYNC.md) ----
     /** Whether bookmark sync is enabled (off by default; user opts in). */
     public static final String SYNC_ENABLED = "com.solarized.firedown.preferences.sync.enabled";
-    /** The hosted backend base URL. Bookmark sync is pinned to this — there is no
-     *  BYO-backend picker (a configurable/self-hosted backend is a downloads-vault
-     *  concern, not a free-bookmarks one). See {@code SyncManager#backendUrl}. */
+    /** The hosted backend base URL (api.firedown.app): bookmark sync, crash
+     *  reports, feedback, the P2P mailboxes and relay credentials. Bookmark sync
+     *  is pinned to this — there is no BYO-backend picker. See
+     *  {@code SyncManager#backendUrl}. */
     public static final String SYNC_DEFAULT_BACKEND = "https://api.firedown.app";
-    /** The hosted storage (encrypted downloads-vault) backend base URL. Distinct
-     *  service from bookmark sync, same recovery-code-derived identity. Unlike
-     *  bookmarks this IS a paid/vault concern, so a BYO-backend picker is allowed
-     *  here later; this is just the default. */
-    public static final String STORAGE_DEFAULT_BACKEND = "https://storage.firedown.app";
-    /** The payments-mint backend base URL (mint.firedown.app). Issues blind-signed
-     *  storage credits; UNAUTHENTICATED (the mint never sees the account — that
-     *  unlinkability is the point). Same default-constant shape as
-     *  {@link #STORAGE_DEFAULT_BACKEND}. */
-    public static final String MINT_DEFAULT_BACKEND = "https://mint.firedown.app";
     /** Epoch millis of the last successful sync (0 = never). */
     public static final String SYNC_LAST_SYNCED_AT = "com.solarized.firedown.preferences.sync.last.synced.at";
     /** Last server document version observed (status display). */
@@ -120,100 +111,74 @@ public class Preferences {
     public static final String SETTINGS_SYNC_RESTORE = "com.solarized.firedown.preferences.sync.restore";
     /** Opens the offline "How sync encryption works" FAQ dialog. */
     public static final String SETTINGS_SYNC_HELP = "com.solarized.firedown.preferences.sync.help";
-    /** "I have a recovery code" — link this device to an existing account (restore
-     *  downloads backup + storage credit). Shown only when no code exists yet. */
+    /** "I have a recovery code" — adopt another phone's code on this device (the
+     *  new-phone door: the same code + the same folder = the same backups). */
     public static final String SETTINGS_SYNC_LINK_CODE = "com.solarized.firedown.preferences.sync.link.code";
     /** Right-to-erasure: delete the encrypted document from the server. */
-    // (No category-header keys: the Cloud screen is header-FREE — the last
+    // (No category-header keys: the Backup screen is header-FREE — the last
     // header, Bookmarks, umbrella'd every row after it as its children, and
     // every category on the merged screen had collapsed to a single child.)
 
-    // ---- Cloud Backup (encrypted downloads → storage.firedown.app) ----
+    // ---- Backup (encrypted downloads → a folder the user picks, SAF) ----
     // A SEPARATE feature from the local "Safe Folder" (file_safe / files/safe/),
-    // which never leaves the device. Cloud Backup deliberately DOES leave the
-    // device, end-to-end encrypted, sharing the bookmark-sync recovery code
-    // (one account across services). User-facing copy says "Cloud Backup",
-    // never "vault" — that word is the local Safe Folder.
-    /** Set once the user has set up Cloud Backup / has data on the server. Unlike
-     *  bookmark sync there is no on/off switch (it is action-driven — backing up a
-     *  download sets it up on demand); this flag exists so disabling bookmark sync
-     *  does NOT wipe the shared recovery code while Cloud Backup still needs it
-     *  (and vice-versa). Cleared by the loadStatus reconcile when the server shows a dead account. */
+    // which never leaves the device. Backup deliberately DOES leave the device,
+    // end-to-end encrypted into a folder of the user's choosing (Google Drive,
+    // Dropbox, Nextcloud, an SD card — any Storage Access Framework provider),
+    // sharing the bookmark-sync recovery code (one key for both). User-facing
+    // copy says "Backup", never "vault" — that word is the local Safe Folder.
+    // Internal names keep the historical Cloud*/Vault* prefixes (the classes,
+    // the keys below, the nav ids): the hosted service they were built for is
+    // gone, the shapes survived — see CLAUDE.md "Backup — the folder model".
+    /** Set once a backup folder has been chosen. Unlike bookmark sync there is
+     *  no on/off switch (backup is action-driven — backing up a download sets it
+     *  up on demand); this flag exists so disabling bookmark sync does NOT wipe
+     *  the shared recovery code while Backup still needs it (and vice-versa).
+     *  "Delete backed-up files" keeps it: the folder stays chosen, so the next
+     *  backup lands in the same place. */
     public static final String CLOUD_BACKUP_ENABLED = "com.solarized.firedown.preferences.cloud.backup.enabled";
     /** True once the Downloads "back up your downloads" announce banner has been
-     *  dismissed (or Cloud Backup got set up) — retires it permanently. The twin
+     *  dismissed (or Backup got set up) — retires it permanently. The twin
      *  of {@link #SYNC_BANNER_DISMISSED}, which does the same for the Bookmarks
      *  list's sync banner. */
     public static final String CLOUD_BACKUP_BANNER_DISMISSED = "com.solarized.firedown.preferences.cloud.backup.banner.dismissed";
-    /** Stage-2 (ACTIVATION) retirement for the same banner: set up, credit
-     *  granted, nothing backed up yet → "your free credit is waiting". Its own
-     *  key because the two stages retire independently (dismissing the
-     *  discovery pitch pre-setup must not consume the activation nudge, and
-     *  vice versa); set on dismiss or on the first evidence of a backed-up
-     *  file, after which the banner is gone forever. */
-    public static final String CLOUD_ACTIVATE_BANNER_DISMISSED = "com.solarized.firedown.preferences.cloud.activate.banner.dismissed";
-    /** The ACCUMULATED purchased storage plan (size cap in GB × coverage months),
-     *  stored CLIENT-side and MERGED at each redeem success (BuyCreditViewModel:
-     *  size = largest bought, months = summed GB-months at that size — mirroring
-     *  the server's summing balance) — the server deliberately only knows the
-     *  anonymous GB-month balance, so this is the only place the status hero can
-     *  learn "Up to 50 GB · 1 year" and size its month-tick runway. 0 = unknown
-     *  (legacy denomination purchase, or a recovery-code restore on a new device)
-     *  → the hero falls back to the raw balance + a tickless covered-until line.
-     *  Survives "Delete backed-up files" (the balance does too). */
-    public static final String CLOUD_PLAN_SIZE_GB = "com.solarized.firedown.preferences.cloud.plan.size.gb";
-    public static final String CLOUD_PLAN_DURATION_MONTHS = "com.solarized.firedown.preferences.cloud.plan.duration.months";
-    /** One-shot top-up receipt state (the "+N added" chip on the Cloud hero):
-     *  BEFORE_MONTHS is the runway snapshot taken at redeem time (absent = no
-     *  pending receipt; only written when the pre-purchase runway was KNOWN, so
-     *  a stale cache can never let the chip claim the whole runway was
-     *  "added"); SHOWN flips true the visit the chip first renders and the
-     *  NEXT screen entry retires both keys — the chip lives for exactly one
-     *  full visit. State machine: BuyCreditViewModel writes, SyncSettingsFragment
-     *  consumes ({@code applyCreditDelta}). */
-    public static final String CLOUD_TOPUP_BEFORE_MONTHS = "com.solarized.firedown.preferences.cloud.topup.before.months";
-    public static final String CLOUD_TOPUP_SHOWN = "com.solarized.firedown.preferences.cloud.topup.shown";
-    /** The quota's grace_until for which the lapse notification (stage 1 /
-     *  stage 2) was already posted — once per grace episode. */
-    public static final String CLOUD_GRACE_NOTIFIED_UNTIL = "com.solarized.firedown.preferences.cloud.grace.notified.until";
-    public static final String CLOUD_REAP_NOTIFIED_UNTIL = "com.solarized.firedown.preferences.cloud.reap.notified.until";
-    /** CACHE, not a setting: the last successfully-read total bytes held in Cloud
-     *  Backup (-1 = unknown). The in-memory {@code lastStatus()} snapshot dies
-     *  with the process, so on a COLD start the home backup pill had nothing to
-     *  paint and popped in a second later, under the wordmark. This survives the
-     *  process so the resting figure is on screen immediately.
-     *
-     *  <p><b>Only the TOTAL is persisted — never the quota.</b> The quota drives
-     *  the ALARM (read-only grace → the "Backup paused" card and its countdown);
-     *  restoring that from disk could tell a user their files are about to be
-     *  deleted on an account that has since topped up. Alarms stay
-     *  evidence-based, read fresh from the server every time. A lifetime total
-     *  is the opposite: it changes slowly and is superseded the moment the pull
-     *  lands, so a slightly stale one costs nothing.
-     *
-     *  <p>Cleared wherever the data it describes can vanish — "Delete backed-up
-     *  files" and the loadStatus dead-account reconcile. That clearing is what
-     *  makes reading it back safe. */
+    /** CACHE, not a setting: the last successfully-read total bytes held in the
+     *  backup folder (-1 = unknown). The in-memory {@code lastStatus()} snapshot
+     *  dies with the process; this survives it so the Backup hero's
+     *  folder-unreachable state can say "Last seen: N files · X" and the
+     *  Downloads banner can gate on a known-empty folder without a listing.
+     *  Cleared wherever the data it describes can vanish — "Delete backed-up
+     *  files" and a forgotten folder. That clearing is what makes reading it
+     *  back safe. */
     public static final String CLOUD_LAST_TOTAL_BYTES = "com.solarized.firedown.preferences.cloud.last.total.bytes";
-    /** Settings entry that opens the Cloud Backup screen. */
+    /** The file count twin of {@link #CLOUD_LAST_TOTAL_BYTES} (-1 = unknown). */
+    public static final String CLOUD_LAST_FILE_COUNT = "com.solarized.firedown.preferences.cloud.last.file.count";
+    /** The persisted SAF tree grant of the backup folder, as a URI string
+     *  (absent = no folder chosen). The grant itself lives with the system
+     *  ({@code takePersistableUriPermission}); this only remembers WHICH tree.
+     *  Deliberately in the default prefs (which Auto Backup carries): on a
+     *  restored install the URI names a grant this install does not hold, and
+     *  the Backup screen's folder-unreachable state ("Choose the folder again")
+     *  is exactly the right first screen for a new phone. */
+    public static final String FOLDER_BACKUP_TREE_URI = "com.solarized.firedown.preferences.cloud.backup.folder.tree";
+    /** Settings entry that opens the Backup screen (historical key; unreferenced). */
     public static final String SETTINGS_CLOUD_BACKUP = "com.solarized.firedown.preferences.settings.cloud.backup";
-    /** Cloud Backup screen actions (clickable preferences). */
+    /** Backup screen actions (clickable preferences). */
     public static final String SETTINGS_CLOUD_BACKUP_STATUS = "com.solarized.firedown.preferences.cloud.backup.status";
     public static final String SETTINGS_CLOUD_BACKUP_FILES = "com.solarized.firedown.preferences.cloud.backup.files";
-    /** Click-row: scan a browser pairing QR (opens the web client without the
-     *  user typing their recovery code into a web page). */
-    public static final String SETTINGS_CLOUD_BACKUP_PAIR = "com.solarized.firedown.preferences.cloud.backup.pair";
-    /** Opens the "Add storage credit" purchase flow (metered-balance top-up). */
-    public static final String SETTINGS_CLOUD_BACKUP_BUY = "com.solarized.firedown.preferences.cloud.backup.buy";
+    /** The Backup screen's MORPHING CTA (the button under the hero): "Create
+     *  recovery code" pre-key, "Choose backup folder" once a key exists, "Change
+     *  folder" once set up, "Choose the folder again" when the folder is
+     *  unreachable. The key value is historical. */
+    public static final String SETTINGS_CLOUD_BACKUP_CTA = "com.solarized.firedown.preferences.cloud.backup.buy";
     public static final String SETTINGS_CLOUD_BACKUP_SHOW_CODE = "com.solarized.firedown.preferences.cloud.backup.show.code";
-    /** The ONE erasure door on the Cloud screen — opens the scoped chooser. */
+    /** The ONE erasure door on the Backup screen — opens the scoped sub-screen. */
     public static final String SETTINGS_CLOUD_DELETE = "com.solarized.firedown.preferences.cloud.delete";
-    /** The Cloud screen's two title-less card groups SyncSettingsFragment
+    /** The Backup screen's two title-less card groups SyncSettingsFragment
      *  swaps by life stage: the recovery-code pair, and the daily-use rows
-     *  (Backups / Pair / Sync bookmarks). Group containers, never persisted. */
+     *  (Backups / Sync bookmarks). Group containers, never persisted. */
     public static final String SETTINGS_CLOUD_GROUP_KEY = "com.solarized.firedown.preferences.cloud.group.key";
     public static final String SETTINGS_CLOUD_GROUP_USE = "com.solarized.firedown.preferences.cloud.group.use";
-    /** The two rows of the "Delete cloud data" sub-screen (CloudDeleteFragment). */
+    /** The two rows of the "Delete backup data" sub-screen (CloudDeleteFragment). */
     public static final String SETTINGS_CLOUD_DELETE_BOOKMARKS = "com.solarized.firedown.preferences.cloud.delete.bookmarks";
     public static final String SETTINGS_CLOUD_DELETE_BACKUPS = "com.solarized.firedown.preferences.cloud.delete.backups";
     public static final String SETTINGS_CLOUD_BACKUP_HELP = "com.solarized.firedown.preferences.cloud.backup.help";

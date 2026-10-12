@@ -5,9 +5,9 @@
   fork a second layout):
     - WebBookmarkFragment: bookmark sync is OFF and the banner hasn't been
       dismissed (and not in incognito). Retired by SYNC_BANNER_DISMISSED.
-    - DownloadFragment: Cloud Backup isn't set up, the list has rows, and the
+    - DownloadFragment: Backup isn't set up, the list has rows, and the
       banner hasn't been dismissed. Retired by CLOUD_BACKUP_BANNER_DISMISSED.
-  Card tap opens the relevant Cloud screen; the X retires it permanently. In
+  Card tap opens the relevant settings screen; the X retires it permanently. In
   both cases turning the feature ON also retires it.
 
   The title/subtitle/icon are set from CODE (BannerViewHolder.bind), so the

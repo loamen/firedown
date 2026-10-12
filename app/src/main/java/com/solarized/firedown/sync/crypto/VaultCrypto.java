@@ -9,20 +9,21 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Client-side encryption for the encrypted-storage vault (storage.firedown.app,
- * cloud-storage-spec.md §5). All of it runs on-device; the server stores opaque
- * ciphertext and never sees a filename, a key, or a plaintext byte.
+ * Client-side encryption for the backup folder's objects. All of it runs
+ * on-device; whoever holds the folder (Google Drive, Dropbox, an SD card — and
+ * the hosted service this format was written for) stores opaque ciphertext and
+ * never sees a filename, a key, or a plaintext byte.
  *
  * <p>Model:</p>
  * <ul>
  *   <li><b>Per-file DEK</b> — a random AES-256 key per file. File bytes are
  *       chunked and each chunk is AES-256-GCM'd under the DEK with a fresh random
- *       IV, so uploads are resumable and a partial upload never reuses a nonce.
+ *       IV, so a backup is chunk-addressable and a partial write never reuses a nonce.
  *       (No gzip — downloaded media is already compressed; gzip would only burn
  *       CPU, unlike the bookmark JSON blob.)</li>
  *   <li><b>Wrapped DEK</b> — the DEK encrypted under the storage master key
- *       ({@link SyncIdentity#storageMasterKey()}) and stored INSIDE the client's
- *       encrypted manifest, never sent to the server in the clear.</li>
+ *       ({@link SyncIdentity#storageMasterKey()}) and stored INSIDE the object's
+ *       encrypted sidecar, never written to the folder in the clear.</li>
  * </ul>
  *
  * <p>Framing mirrors {@link BookmarkBlob}: {@code MAGIC | version(1) | iv(12) |
@@ -31,31 +32,29 @@ import javax.crypto.spec.SecretKeySpec;
  *
  * <p><b>FDVC2 binds each chunk to ITS OBJECT AND POSITION</b> via GCM's
  * additional authenticated data. FDVC1 chunks authenticated only their bytes,
- * so a malicious server could return the same file's chunks in a different
- * order (restore iterates the SERVER-SUPPLIED url list) and every chunk still
+ * so a hostile folder provider could serve the same file's chunks in a different
+ * order and every chunk still
  * decrypted cleanly — a scrambled file that "restored successfully", with only
  * the chunk-count and byte-total checks as backstops (neither can see a
  * reorder). With AAD, a chunk served at the wrong index — or swapped in from
  * another object — fails GCM authentication outright.</p>
  *
- * <p>The AAD is a FIFTH shared wire format (with the canonical, the blob
- * framings, {@code FDPR1}, and the QR payload) and must byte-match the web
- * client's {@code fd-crypto.js}:</p>
+ * <p>The AAD is part of the on-disk format every existing backup folder holds
+ * (the hosted service's web client once pinned the same bytes), so it is fixed:</p>
  *
  * <pre>AAD = objectId (hex-decoded, 16 bytes) || chunkIndex (uint32, big-endian)</pre>
  *
- * <p>The object id is the server-issued 32-char lowercase hex id, DECODED to
+ * <p>The object id is the 32-char lowercase hex id {@code FolderStore} mints, DECODED to
  * its raw 16 bytes (decoding rather than UTF-8-ing the string makes letter
  * case irrelevant); the index is 0-based in upload order. AAD is authenticated
  * but NOT stored, so the ciphertext length — and with it
- * {@code VaultEngine.CHUNK_OVERHEAD} (34) and every declared
- * byte_size/chunk_size the server signs into presigned PUT Content-Lengths —
- * is byte-identical to FDVC1. The version byte at offset 5 makes the format
+ * {@code VaultEngine.CHUNK_OVERHEAD} (34), and so every chunk's byte range
+ * inside the object file — is byte-identical to FDVC1. The version byte at offset 5 makes the format
  * self-describing: {@link #decryptChunk} branches on the byte it reads, so no
- * manifest field records which format an object uses and every FDVC1 object
- * already in the bucket stays restorable. (The reverse is not true: an APK
- * from before FDVC2 rejects a chunk written after it — accepted for this
- * deployment, recorded in the commit that introduced it.)</p>
+ * sidecar field records which format an object uses and every FDVC1 object
+ * carried over from the hosted service stays restorable. (The reverse is not
+ * true: an APK from before FDVC2 rejects a chunk written after it — accepted,
+ * recorded in the commit that introduced it.)</p>
  */
 public final class VaultCrypto {
 

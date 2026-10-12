@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import dagger.hilt.android.AndroidEntryPoint;
 
 /**
- * Handles the "Back up to cloud" action on the download-finished notification
+ * Handles the "Back up" action on the download-finished notification
  * ({@code RunnableManager.startNotificationFinish}). The notification is the one
  * surface that fires at the moment the user just saved a file they care about,
  * so it carries the same per-item backup door the options sheet has — but a
@@ -80,9 +80,9 @@ public class CloudBackupNotificationReceiver extends BroadcastReceiver {
     private void backup(Context context, int downloadId, int notificationId) {
         // Re-check every gate against CURRENT state (see the class doc): the
         // entity may have been deleted, re-downloaded, or moved to the vault
-        // since the notification was posted, and cloud backup may have been
-        // erased. The vault gate is a contract, not a convenience — vault
-        // content never leaves the device.
+        // since the notification was posted, and the backup folder may have
+        // been forgotten. The vault gate is a contract, not a convenience —
+        // vault content never leaves the device.
         if (!mCloudBackup.isSetUp()) {
             return;
         }

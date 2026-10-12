@@ -80,7 +80,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
      *  of the raw scheme string. */
     private static final String P2P_URL_PREFIX = "p2p://";
 
-    /** A file restored from Cloud Backup whose ORIGINAL origin wasn't recorded
+    /** A file restored from the backup folder whose ORIGINAL origin wasn't recorded
      *  stores a {@code cloud://firedown} pseudo-URL (see
      *  VaultRestoreWorker.RESTORED_ORIGIN_FALLBACK). Like the p2p one it has no
      *  web origin, so the meta line shows the feature's user-facing name rather
@@ -170,9 +170,9 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     private final DateOrganizer mDateBuckets = new DateOrganizer();
 
     /** Content keys (name + size, see {@link CloudBackupManager#contentKey}) of
-     *  files backed up to the cloud. A FINISHED row whose key is present shows a
-     *  quiet "backed up" badge on its thumbnail. Empty = none loaded / not a
-     *  cloud-backup user / offline — so a badge is shown ONLY for a positively
+     *  files in the backup folder. A FINISHED row whose key is present shows a
+     *  quiet "backed up" badge on its thumbnail. Empty = none loaded / no backup
+     *  folder / folder unreachable — so a badge is shown ONLY for a positively
      *  known key, never a wrong "not backed up". Set by the fragment on resume
      *  ({@link #setBackedUpKeys}). */
     @NonNull private Set<String> mBackedUpKeys = Collections.emptySet();
@@ -467,7 +467,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     }
 
     /**
-     * Sets the backed-up content keys (the cloud-backup badge source). A full
+     * Sets the backed-up content keys (the backed-up badge source). A full
      * rebind is needed — the paged list didn't change, so DiffUtil won't rebind
      * the rows whose badge should now appear/disappear. No-op when unchanged
      * (the common resume where nothing was backed up meanwhile).
@@ -481,7 +481,7 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         notifyDataSetChanged();
     }
 
-    /** Whether this FINISHED, non-safe file is backed up to the cloud (its
+    /** Whether this FINISHED, non-safe file is in the backup folder (its
      *  content key is in {@link #mBackedUpKeys}). Safe-folder files never leave
      *  the device, so they're never badged. */
 

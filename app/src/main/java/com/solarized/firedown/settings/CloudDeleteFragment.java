@@ -18,10 +18,11 @@ import javax.inject.Inject;
 import dagger.hilt.android.AndroidEntryPoint;
 
 /**
- * "Delete cloud data" — the sub-screen behind the ONE erasure door on the
- * Cloud screen, holding the two SCOPED server-side deletions as rows:
- * bookmarks (turns sync off too) and backed-up files (keeps the balance, the
- * code and the enabled flag — see {@link CloudBackupManager#deleteAllData}).
+ * "Delete backup data" — the sub-screen behind the ONE erasure door on the
+ * Backup screen, holding the two SCOPED deletions as rows: bookmarks (the
+ * server-side document; turns sync off too) and backed-up files (the account
+ * directory in the backup FOLDER; keeps the code and the folder grant — see
+ * {@link CloudBackupManager#deleteAllData}).
  * Each row confirms in its own dialog; the dialogs moved here verbatim from
  * {@code SyncSettingsFragment}, which used to offer them from two root rows and
  * then, briefly, from a chooser dialog. A destination was preferred over that
@@ -30,7 +31,7 @@ import dagger.hilt.android.AndroidEntryPoint;
  *
  * <p>Row visibility follows what applies RIGHT NOW — bookmark sync on, backup
  * set up — re-read on every resume and after each deletion completes, so a
- * finished erasure retires its own row. The Cloud screen re-evaluates the door
+ * finished erasure retires its own row. The Backup screen re-evaluates the door
  * itself when the user returns (its {@code onResume} → {@code updateState}).
  *
  * <p>{@code @AndroidEntryPoint} is required because the base fragment declares
@@ -122,11 +123,11 @@ public class CloudDeleteFragment extends BasePreferenceFragment
     }
 
     /**
-     * Confirms and runs the backed-up-files erasure. The server deletes objects
-     * + manifest but KEEPS the quota row, and the client keeps the plan prefs,
-     * the recovery code and the enabled flag — the surviving paid balance is
-     * reachable only through the code (see CLAUDE.md, "Delete backed-up files
-     * keeps the balance").
+     * Confirms and runs the backed-up-files erasure: the account directory
+     * under "Firedown Backup" in the chosen folder is deleted, object files
+     * and sidecars alike. The recovery code and the folder grant are kept —
+     * the same code and folder back the next file up, and the code still
+     * keys bookmark sync.
      */
     private void showDeleteBackupsDialog() {
         new MaterialAlertDialogBuilder(requireContext())

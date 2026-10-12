@@ -2,6 +2,7 @@ package com.solarized.firedown.sync;
 
 import android.app.Notification;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.graphics.BitmapFactory;
 import android.os.Build;
@@ -15,7 +16,6 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.solarized.firedown.App;
-import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.StoragePaths;
 import com.solarized.firedown.data.Download;
@@ -26,38 +26,33 @@ import com.solarized.firedown.sync.crypto.SyncIdentity;
 import com.solarized.firedown.sync.model.VaultEntry;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
-import okhttp3.OkHttpClient;
 
 /**
- * Restores one backed-up file from Cloud Backup into the public
- * {@code Download/Firedown} folder and registers it as a FINISHED download so it
- * appears in the Downloads list — the reverse of {@link VaultBackupWorker}.
+ * Restores one backed-up file from the backup folder into the public
+ * {@code Download/Firedown} folder and registers it as a FINISHED download so
+ * it appears in the Downloads list — the reverse of {@link VaultBackupWorker}.
  *
- * <p>The fetch + decrypt + reassemble is {@link VaultEngine#restoreFile}; this
+ * <p>The read + decrypt + reassemble is {@link VaultEngine#restoreFile}; this
  * worker chooses a non-colliding destination (mirroring the normal download
  * path), writes there, and inserts a {@link DownloadEntity} via the same
  * repository every download uses. Runs as a foreground (dataSync) worker so a
- * large restore isn't killed when backgrounded.
+ * large restore isn't killed when backgrounded. A provider that fetches on
+ * read (Drive, with a cold cache) makes the stream a download in disguise;
+ * nothing here needs to know.
  */
 @HiltWorker
 public class VaultRestoreWorker extends Worker {
 
-    /** Input-data keys (the VaultEntry fields, set by the list fragment). */
     /**
      * Tag prefix carrying the objectId of the file being restored, so the
      * Backups list can tell WHICH entry a running restore belongs to.
-     * (WorkManager exposes tags on WorkInfo but not input data.)
-     *
-     * <p>Needed because removing an entry mid-restore used to be silent and
-     * nondeterministic: the worker holds its inputs, never re-reads the
-     * manifest, and only discovers the removal when its next chunk GET 404s —
-     * by which time the outcome depends on how much had already downloaded.
-     * With this the list can warn first and cancel deterministically. Mirrors
-     * {@code VaultBackupWorker.TAG_NAME}.
+     * (WorkManager exposes tags on WorkInfo but not input data.) Lets the list
+     * warn before removing an entry mid-restore and cancel deterministically.
      */
     public static final String TAG_OBJECT = "robj:";
 
@@ -68,15 +63,15 @@ public class VaultRestoreWorker extends Worker {
     public static final String KEY_SIZE = "size";
     public static final String KEY_DOWNLOADED_AT = "downloaded_at";
     public static final String KEY_CHUNK_COUNT = "chunk_count";
-    /** The download's origin URL from the manifest (nullable — absent on files
+    /** The download's origin URL from the sidecar (nullable — absent on files
      *  backed up before it was stored), used for the restored row's MIME · domain. */
     public static final String KEY_ORIGIN = "origin";
 
-    /** Synthetic origin for a restored file whose manifest entry predates
-     *  {@link #KEY_ORIGIN} (so its real domain is unknown). Names the transport
-     *  honestly rather than leaving the row's domain blank — same convention as a
-     *  P2P-received file's {@code p2p://<device>} origin. */
-    private static final String RESTORED_ORIGIN_FALLBACK = "cloud://firedown";
+    /** Synthetic origin for a restored file whose entry carries no origin (so
+     *  its real domain is unknown). Names the transport honestly rather than
+     *  leaving the row's domain blank — same convention as a P2P-received
+     *  file's {@code p2p://<device>} origin. */
+    private static final String RESTORED_ORIGIN_FALLBACK = "backup://folder";
 
     /** Output-data keys read by the list fragment to report a result. */
     public static final String KEY_STATUS = "status";
@@ -88,31 +83,28 @@ public class VaultRestoreWorker extends Worker {
 
     private static final int NOTIFICATION_ID = 0x6272; // "Br"
 
-    /** Retry ceiling for a persistently-failing restore (mirrors
-     *  {@code VaultBackupWorker.MAX_RUN_ATTEMPTS}). Without it a transient error
-     *  that never clears would retry forever, pinning the in-flight PROGRESS row
-     *  at the top of Downloads indefinitely; past the cap the row resolves to a
-     *  visible ERROR the user can dismiss or retry deliberately.
-     *  {@code getRunAttemptCount()} is 0 on the first run. */
-    private static final int MAX_RUN_ATTEMPTS = 10;
+    /** Retry ceiling for a persistently-failing restore. Without it a transient
+     *  error that never clears would retry forever, pinning the in-flight
+     *  PROGRESS row at the top of Downloads; past the cap the row resolves to a
+     *  visible ERROR the user can dismiss or retry deliberately. */
+    private static final int MAX_RUN_ATTEMPTS = 5;
 
     private final Context mContext;
-    private final OkHttpClient mClient;
+    private final SharedPreferences mPrefs;
     private final DownloadDataRepository mRepo;
-    /** In-flight storage client, cancelled by {@link #onStopped()} (Worker threads
-     *  aren't interrupted on cancel, so a rate-limit retry loop would otherwise run
-     *  to exhaustion). Volatile: onStopped runs off the doWork thread. */
-    private volatile StorageApiClient mApi;
+    /** In-flight engine, stopped by {@link #onStopped()} (Worker threads aren't
+     *  interrupted on cancel). Volatile: onStopped runs off the doWork thread. */
+    private volatile VaultEngine mEngine;
 
     @AssistedInject
     public VaultRestoreWorker(
             @Assisted @NonNull Context context,
             @Assisted @NonNull WorkerParameters params,
-            OkHttpClient client,
+            SharedPreferences prefs,
             DownloadDataRepository repo) {
         super(context, params);
         this.mContext = context;
-        this.mClient = client;
+        this.mPrefs = prefs;
         this.mRepo = repo;
     }
 
@@ -133,11 +125,9 @@ public class VaultRestoreWorker extends Worker {
 
         // Already in Downloads? Skip the restore (don't duplicate the file). The
         // match is by name + byte-size and is only honoured for a FINISHED row
-        // whose local file still exists on disk. The FINISHED guard matters now
-        // that we insert our OWN in-flight PROGRESS row with file_size = the full
-        // size: without it, a retry (or a re-tapped restore) would match its own
-        // partial-file row here and wrongly report "already present". A stale row
-        // pointing at a deleted file also falls through to a real restore.
+        // whose local file still exists on disk (we insert our OWN in-flight
+        // PROGRESS row with file_size = the full size, which must not match
+        // itself on a retry).
         DownloadEntity present = mRepo.findByNameSize(name, size);
         if (present != null && present.getFileStatus() == Download.FINISHED
                 && present.getFilePath() != null
@@ -157,8 +147,7 @@ public class VaultRestoreWorker extends Worker {
 
         // Retry-idempotent destination: reuse a prior attempt's row + path (and
         // drop its partial) so a retry rewrites the SAME file/row rather than
-        // drifting to "name (1)" and leaving an orphan file + a dangling row. The
-        // first attempt picks a non-colliding path in Download/Firedown.
+        // drifting to "name (1)" and leaving an orphan file + a dangling row.
         DownloadEntity prior = mRepo.findByIdSync(rowId);
         File dest;
         if (prior != null && prior.getFilePath() != null) {
@@ -170,13 +159,9 @@ public class VaultRestoreWorker extends Worker {
         }
 
         // Insert the row NOW as a LIVE download (PROGRESS, 0%) so the restore is
-        // visible in the Downloads list as it streams — the reverse of an upload's
-        // transfer row, and the whole point of showing "downloading from backup".
-        // One reused entity drives every progress tick and the terminal write
-        // (repository.add snapshots each call, so mutating this object is safe —
-        // the DownloadTask progress-write pattern). Origin restores the row's
-        // MIME · domain like any download; older backups with no origin fall back
-        // to the honest cloud transport label so the domain is never blank.
+        // visible in the Downloads list as it streams. One reused entity drives
+        // every progress tick and the terminal write (repository.add snapshots
+        // each call, so mutating this object is safe).
         String rowOrigin = (origin == null || origin.isEmpty())
                 ? RESTORED_ORIGIN_FALLBACK : origin;
         DownloadEntity download = new DownloadEntity();
@@ -186,7 +171,7 @@ public class VaultRestoreWorker extends Worker {
         download.setFileMimeType(mime);
         download.setFileStatus(Download.PROGRESS);
         download.setFileProgress(0);
-        download.setFileSize(size); // manifest plaintext size — the bar's total
+        download.setFileSize(size); // sidecar plaintext size — the bar's total
         download.setFileSafe(false);
         download.setFileDate(downloadedAt > 0 ? downloadedAt : System.currentTimeMillis());
         download.setFileUrl(rowOrigin);
@@ -210,16 +195,16 @@ public class VaultRestoreWorker extends Worker {
             SyncSecrets.wipe(code);
         }
 
-        StorageApiClient api = new StorageApiClient(mClient, Preferences.STORAGE_DEFAULT_BACKEND);
-        mApi = api;
+        FolderStore store = new FolderStore(mContext, mPrefs);
+        VaultEngine engine = new VaultEngine(store, identity);
+        mEngine = engine;
         if (isStopped()) {
-            api.cancel();
+            engine.cancel();
         }
-        VaultEngine engine = new VaultEngine(api, identity);
         VaultEntry entry = new VaultEntry(objectId, wrappedDek, name, size, mime,
                 downloadedAt, chunkCount, null, origin); // thumb unused on restore
 
-        // Throttle progress writes to whole-percent steps (mirrors the upload
+        // Throttle progress writes to whole-percent steps (mirrors the backup
         // worker's publishProgress) so a many-chunk restore doesn't hammer the DB.
         final int[] lastPct = { -1 };
         try {
@@ -231,33 +216,24 @@ public class VaultRestoreWorker extends Worker {
                     mRepo.add(download);
                 }
             });
-        } catch (StorageApiClient.FatalException e) {
-            // A 4xx (e.g. the object was reaped) won't fix itself — terminal. Mark
-            // the row ERROR (a visible failed download the user can dismiss/retry),
-            // not a silent delete. Checked before the bare-IOException branch
-            // (FatalException IS one).
+        } catch (FolderStore.UnreachableException | FileNotFoundException e) {
+            // The folder is gone, or the object is not in it (deleted from
+            // another phone, or never synced here) — a retry cannot change
+            // that. Mark the row ERROR (a visible failed download the user can
+            // dismiss/retry), not a silent delete. Both ARE IOExceptions, so
+            // this branch precedes the bare one.
             return restoreFailed(download, dest);
         } catch (IOException e) {
-            // 429/5xx (TransientException) OR a bare socket drop / read timeout
-            // mid-restore — retryable. Drop the partial so the retry rewrites clean
-            // rather than failing on a flaky link.
+            // A read that failed on a reachable folder (a provider fetching
+            // from the network mid-stream, a cancel) — retryable. Drop the
+            // partial so the retry rewrites clean.
             deleteQuietly(dest);
-            if (isStopped()) {
-                // CANCELLED, not flaky: the Backups list cancels a restore whose
-                // entry is being removed (its object is about to be freed), and
-                // onStopped() cancels the api client, which surfaces here as an
-                // IOException. A cancelled worker never runs its retry, so
-                // returning Result.retry() below would strand the Downloads row
-                // at PROGRESS forever. Resolve it to a visible ERROR the user can
-                // dismiss — the same terminal state every other dead-end takes.
-                download.setFileStatus(Download.ERROR);
-                download.setFileProgress(0);
-                mRepo.add(download);
-                return failure();
-            }
-            if (getRunAttemptCount() >= MAX_RUN_ATTEMPTS) {
-                // Persistently failing — stop retrying and resolve the row to a
-                // visible ERROR instead of pinning it at PROGRESS forever.
+            if (isStopped() || getRunAttemptCount() >= MAX_RUN_ATTEMPTS) {
+                // CANCELLED (the Backups list cancels a restore whose entry is
+                // being removed) or persistently failing: a cancelled worker
+                // never runs its retry, so Result.retry() would strand the
+                // Downloads row at PROGRESS forever. Resolve it to a visible
+                // ERROR the user can dismiss.
                 download.setFileStatus(Download.ERROR);
                 download.setFileProgress(0);
                 mRepo.add(download);
@@ -310,11 +286,9 @@ public class VaultRestoreWorker extends Worker {
 
     @Override
     public void onStopped() {
-        // See VaultBackupWorker.onStopped — cancel the storage client so its
-        // rate-limit retry loop unwinds at once instead of running to exhaustion.
-        StorageApiClient api = mApi;
-        if (api != null) {
-            api.cancel();
+        VaultEngine engine = mEngine;
+        if (engine != null) {
+            engine.cancel();
         }
         super.onStopped();
     }

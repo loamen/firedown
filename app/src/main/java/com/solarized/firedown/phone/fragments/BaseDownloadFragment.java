@@ -175,7 +175,7 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
      * Refreshes the set of backed-up content keys that drives the per-row cloud
      * badge (see {@link DownloadItemAdapter#setBackedUpKeys}). Runs on resume so a
      * file backed up while away picks up its badge on return. Cheap + gated: a
-     * non-cloud-backup user gets an empty set with no network touch, and the
+     * user without a backup folder gets an empty set with no folder read, and the
      * adapter no-ops when the set is unchanged.
      */
     private void refreshCloudBadges() {
@@ -431,10 +431,10 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
             // (same pattern as gif_maker/frame_grabber). The engine session's
             // lifetime is the fragment's view lifetime.
             NavigationUtils.navigateSafe(mNavController, R.id.p2p_send, bundle);
-        } else if (iconId == R.drawable.ic_cloud_upload_24) {
-            // "Back up to cloud" — encrypt + upload this finished download to
-            // Cloud Backup. Action-driven: sets up the (shared) recovery code on
-            // demand if the user has none yet.
+        } else if (iconId == R.drawable.ic_folder_upload_24) {
+            // "Back up to <folder>" — encrypt + copy this finished download
+            // into the backup folder. Action-driven: sets up the (shared)
+            // recovery code and the folder on demand if either is missing.
             startCloudBackup(entity);
         } else if (iconId == R.drawable.ic_edit_24) {
             NavigationUtils.navigateSafe(mNavController, R.id.dialog_rename, bundle);
@@ -478,9 +478,10 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
     }
 
     /**
-     * Backs a finished download up to Cloud Backup. Reuses the shared recovery
-     * code when one exists (bookmark sync or a prior backup); otherwise runs a
-     * one-time setup that mints and shows the code first ("it's the only key").
+     * Backs a finished download up to the backup folder. Reuses the shared
+     * recovery code when one exists (bookmark sync or a prior backup);
+     * otherwise runs a one-time setup that mints and shows the code first
+     * ("it's the only key"), then sends the user to choose the folder.
      */
     private void startCloudBackup(DownloadEntity entity) {
         if (entity == null || entity.getFilePath() == null) {
@@ -504,11 +505,41 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
         if (targets.isEmpty()) {
             return;
         }
-        if (mCloudBackup.hasAccount()) {
-            enqueueCloudBackup(targets);
-        } else {
+        if (!mCloudBackup.hasAccount()) {
             showCloudBackupSetupDialog(targets);
+        } else if (!mCloudBackup.hasFolder()) {
+            openBackupScreenForFolder();
+        } else {
+            enqueueCloudBackup(targets);
         }
+    }
+
+    /**
+     * The code exists but no folder has been chosen yet: a backup cannot be
+     * enqueued (the worker would fail at once with SLUG_NOT_SET_UP), so hand
+     * the user to the Backup screen, whose CTA is "Choose backup folder" in
+     * exactly this state. The SAF picker is not launched from here on
+     * purpose — the screen explains WHERE the folder goes (any provider:
+     * Drive, Dropbox, Nextcloud, an SD card) before the system picker opens
+     * cold, and it is the one place the folder is managed afterwards. The
+     * selection is not carried across: once the folder is set, the same
+     * tap on the download sheet backs the file up.
+     */
+    private void openBackupScreenForFolder() {
+        if (mActivity == null) {
+            return;
+        }
+        Snackbar bar = makeSnackbar(mActivity.getSnackAnchorView(),
+                R.string.folder_backup_choose_first, mCurrentDestinationId == R.id.vault);
+        bar.setAction(R.string.folder_backup_choose_cta, v -> {
+            if (mActivity == null) {
+                return;
+            }
+            Intent intent = new Intent(mActivity, SettingsActivity.class);
+            intent.putExtra(SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP, true);
+            startActivity(intent);
+        });
+        bar.show();
     }
 
     /** First-time setup confirm before minting the recovery code. */
@@ -526,9 +557,10 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
 
     /**
      * Shows the freshly-minted recovery code with a "save this, no recovery" gate
-     * (reuses the bookmark-sync show-code layout), then starts the backup. The
-     * code is the only key to the cloud backup, so the user must acknowledge they
-     * saved it before the upload begins.
+     * (reuses the bookmark-sync show-code layout), then continues the backup —
+     * to the folder step when none is chosen yet, else straight to the
+     * enqueue. The code is the only key to the backup, so the user must
+     * acknowledge they saved it before anything is written.
      */
     private void showCloudBackupCodeDialog(String grouped, List<DownloadEntity> targets) {
         if (grouped == null) {
@@ -556,7 +588,11 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
         savedCheck.setOnCheckedChangeListener((b, checked) -> done.setEnabled(checked));
         done.setOnClickListener(v -> {
             dialog.dismiss();
-            enqueueCloudBackup(targets);
+            if (mCloudBackup.hasFolder()) {
+                enqueueCloudBackup(targets);
+            } else {
+                openBackupScreenForFolder();
+            }
         });
     }
 
@@ -685,7 +721,7 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
             }
             shareItems(paths);
         } else if (id == R.id.action_cloud_backup_selected) {
-            // Back up the selected finished, non-vault downloads to Cloud Backup.
+            // Back up the selected finished, non-vault downloads into the backup folder.
             // Mirror the per-item gating (no error, not in-progress, not safe, has
             // a file) so an in-progress / errored selection is skipped, not sent.
             List<DownloadEntity> eligible = new ArrayList<>();
@@ -722,11 +758,11 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
         } else if (id == R.id.action_cloud_backup) {
             Intent intent = new Intent(mActivity, SettingsActivity.class);
             // Routing, two ways:
-            //  - in use (has backups) → the backed-up-files list (useful);
-            //  - everything else      → the merged Cloud screen, which handles
-            //    both remaining states itself: a keyed-but-empty account gets the
-            //    status hero + "Add storage credit" CTA, a keyless user gets the
-            //    Create / "I have a recovery code" gateway (key-first gate).
+            //  - set up (code + folder) → the backed-up-files list (useful);
+            //  - everything else       → the Backup screen, which handles the
+            //    remaining states itself: a keyed user with no folder gets the
+            //    "Choose backup folder" CTA, a keyless user gets the Create /
+            //    "I have a recovery code" gateway (key-first gate).
             String extra = mCloudBackup.isSetUp()
                     ? SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP_FILES
                     : SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP;

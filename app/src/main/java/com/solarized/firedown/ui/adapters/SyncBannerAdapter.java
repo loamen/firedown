@@ -27,11 +27,11 @@ import com.solarized.firedown.utils.SelectionStyling;
  * <ul>
  *   <li>{@code WebBookmarkFragment} — "Sync your bookmarks across devices"
  *       (the original; the no-copy constructor keeps its defaults).</li>
- *   <li>{@code DownloadFragment} — "Back up your downloads to the cloud".</li>
+ *   <li>{@code DownloadFragment} — "Keep your downloads if you lose your phone".</li>
  * </ul>
- * The class keeps its historical {@code Sync*} name the way the Cloud Backup
- * feature keeps its internal {@code Vault*} names: user-facing copy is the
- * thing that says "Cloud Backup", not the type.
+ * The class keeps its historical {@code Sync*} name the way Backup keeps its
+ * internal {@code Cloud*}/{@code Vault*} names: user-facing copy is the thing
+ * that says "Backup", not the type.
  *
  * <p>Same self-hiding ConcatAdapter-header pattern as
  * {@link SafeFolderHeaderAdapter}.
@@ -74,7 +74,7 @@ public class SyncBannerAdapter extends RecyclerView.Adapter<SyncBannerAdapter.Ba
      * Swap the banner's copy in place — the STAGE mechanism: one banner
      * instance carries state-dependent text (the Downloads cloud banner's
      * discovery vs activation stages) instead of a second adapter, the same
-     * one-affordance rule as the Cloud screen's morphing CTA. Idempotent; a
+     * one-affordance rule as the Backup screen's morphing CTA. Idempotent; a
      * visible card rebinds so the new copy paints immediately.
      */
     public void setCopy(@StringRes int titleRes, @StringRes int subtitleRes) {

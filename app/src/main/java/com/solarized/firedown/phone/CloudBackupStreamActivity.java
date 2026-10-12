@@ -35,16 +35,16 @@ import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.ui.PlayerView;
+import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.google.android.material.snackbar.Snackbar;
-import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.phone.player.PlaybackDebugInfo;
 import com.solarized.firedown.glide.MimeTypeThumbnail;
 import com.solarized.firedown.glide.VaultObjectModel;
-import com.solarized.firedown.sync.StorageApiClient;
+import com.solarized.firedown.sync.FolderStore;
 import com.solarized.firedown.sync.SyncSecrets;
 import com.solarized.firedown.sync.VaultDataSource;
 import com.solarized.firedown.sync.VaultObjectReader;
@@ -56,28 +56,16 @@ import com.solarized.firedown.utils.FileUriHelper;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.inject.Inject;
-
 import dagger.hilt.android.AndroidEntryPoint;
-import okhttp3.OkHttpClient;
 
 /**
- * Plays / shows a backed-up cloud file WITHOUT restoring it to disk first, by
- * streaming its encrypted chunks on demand through {@link VaultObjectReader}
- * (decrypt-on-read) into a media3 {@link VaultDataSource}. Only reached for
- * video/audio/image entries with NO local copy — a local copy is opened directly
- * by the item sheet, and non-media types have no in-app viewer (they must be
- * restored). The chunks are decrypted on-device; the DEK is unwrapped here from
- * the manifest's wrapped blob under the recovery-code storage master key (loaded
- * on a background thread — the server never sees a key or a plaintext byte).
- *
- * <p>Chrome mirrors the local media viewer ({@code MediaViewerFragment}): the same
- * custom PlayerView controller (±10s seek buttons + double-tap seek), immersive
- * edge-to-edge with system bars + the overlay ActionBar (carrying the file title)
- * toggled in lockstep with the controller, and the PlayerView's built-in buffering
- * spinner. It stays a self-contained screen because PlayerActivity assumes a local
- * {@code DownloadEntity} file path and would need risky changes to thread a
- * decrypt-on-read source + async key load.</p>
+ * Plays / shows a backed-up file WITHOUT restoring it to disk first, by
+ * streaming it out of the backup folder through {@link VaultDataSource} (video /
+ * audio, into ExoPlayer) or Glide's vault loader (images): each 8 MiB chunk is
+ * read from the object file and decrypted on demand, so a seek costs one chunk,
+ * not the file. The recovery code is loaded and the DEK unwrapped on a
+ * background thread; the folder's provider sees only ciphertext. Entered from
+ * the Backups list's item sheet ("Open") for an entry that has no local copy.
  */
 @AndroidEntryPoint
 public class CloudBackupStreamActivity extends AppCompatActivity {
@@ -94,8 +82,6 @@ public class CloudBackupStreamActivity extends AppCompatActivity {
     /** Controller auto-hide timeout (matches the local viewer's 5 s). */
     private static final int CONTROLLER_TIMEOUT_MS = 5000;
 
-    @Inject
-    OkHttpClient mHttpClient;
 
     private final Handler mMain = new Handler(Looper.getMainLooper());
     private final ExecutorService mIo = Executors.newSingleThreadExecutor();
@@ -200,9 +186,9 @@ public class CloudBackupStreamActivity extends AppCompatActivity {
             VaultObjectReader reader;
             try {
                 SyncIdentity identity = SyncIdentity.fromCode(code);
-                StorageApiClient api = new StorageApiClient(mHttpClient,
-                        Preferences.STORAGE_DEFAULT_BACKEND);
-                reader = new VaultObjectReader(api, identity, entry);
+                FolderStore store = new FolderStore(this,
+                        PreferenceManager.getDefaultSharedPreferences(this));
+                reader = new VaultObjectReader(store, identity, entry);
             } catch (Exception e) {
                 mMain.post(this::fail);
                 return;

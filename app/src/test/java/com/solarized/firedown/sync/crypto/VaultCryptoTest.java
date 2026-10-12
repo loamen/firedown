@@ -17,15 +17,15 @@ import javax.crypto.spec.SecretKeySpec;
 
 /**
  * JVM unit tests for the vault chunk framing — specifically the FDVC2
- * position-binding AAD, whose byte layout is a shared wire format with the web
- * client ({@code backup/fd-crypto.js}). Android-free on purpose (like
- * {@link PairSealTest}), so it runs under a plain JVM with just junit on the
- * classpath — do that rather than assuming (the PairSealTest lesson: it had
- * been failing for a whole format bump because nobody ran the suite).
+ * position-binding AAD, whose byte layout is the on-disk format every existing
+ * backup folder holds (and the hosted service's retired web client once pinned
+ * to the same bytes). Android-free on purpose, so it runs under a plain JVM
+ * with just junit on the classpath — run it rather than assuming: a format pin
+ * nobody runs is how a bump once went unnoticed for a whole release.
  */
 public class VaultCryptoTest {
 
-    /** A server-shaped object id: 16 bytes, 32 lowercase hex chars. */
+    /** A FolderStore-shaped object id: 16 bytes, 32 lowercase hex chars. */
     private static final String OBJ = "00112233445566778899aabbccddeeff";
 
     private static byte[] hex(String s) {
@@ -96,14 +96,13 @@ public class VaultCryptoTest {
 
     @Test
     public void fdvc2InteropVectorDecrypts() throws Exception {
-        // Cross-client pin: this exact blob was sealed with node:crypto
-        // (OpenSSL — an implementation sharing code with neither client) from
-        // fixed inputs, and the SAME hex is asserted by the web client's
-        // tools/fd-crypto-selftest.mjs. If either client's AAD layout
-        // (hexDecode(objectId) || uint32-BE chunkIndex) drifts by a byte, its
-        // copy of this decrypt fails — the tripwire that replaces "a file
-        // written by one client is unreadable by the other with no useful
-        // diagnostic". Regenerating means re-copying the hex into BOTH tests.
+        // Format pin: this exact blob was sealed with node:crypto (OpenSSL — an
+        // implementation sharing no code with this app) from fixed inputs. The
+        // FDVC2 layout, AAD included (hexDecode(objectId) || uint32-BE
+        // chunkIndex), is what every existing backup folder holds, so a byte of
+        // drift here would make files written by an older release unreadable
+        // with no useful diagnostic. (The retired web client asserted the same
+        // hex; the format outlives it because the folders do.)
         byte[] dek = hex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
         byte[] blob = hex("464456433202a0a1a2a3a4a5a6a7a8a9aaab80710e4821a475d14213e6a66b0e"
                 + "e0bd18d9377bb2c1704cea6b45f210d9b800603ec9bbd5a65b81972fe36e3054");

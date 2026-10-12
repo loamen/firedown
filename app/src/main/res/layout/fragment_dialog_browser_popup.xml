@@ -38,7 +38,7 @@
          (the two icon rows are one action block, so one card)
       6. Tabs     card group — New tab, New private tab, Translate
       7. Library  card group — Bookmarks, History, Safe Folder (no label)
-      8. System   card group — Cloud, Settings, optional Quit
+      8. System   card group — Backup, Settings, optional Quit
 
     The Bookmark★ star is the promoted bookmark toggle; there is no
     longer a "Bookmark page" list row (its add/edit both live on the
@@ -393,7 +393,7 @@
                 style="@style/Firedown.Widget.SheetGroup"
                 android:layout_marginHorizontal="16dp">
 
-            <!-- Sync — bookmarks + encrypted download backup (one account). -->
+            <!-- Backup — the encrypted download backup folder + bookmark sync (one code). -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/popup_sync"
                 style="@style/Firedown.Widget.SheetRowCard"
@@ -402,7 +402,7 @@
                 <TextView
                     style="@style/Firedown.Widget.SheetRowText"
                     android:text="@string/settings_account_title"
-                    app:drawableStartCompat="@drawable/cloud_outline_24" />
+                    app:drawableStartCompat="@drawable/ic_folder_upload_24" />
 
             </com.google.android.material.card.MaterialCardView>
 

@@ -63,7 +63,7 @@ public class VaultFragment extends BaseDownloadFragment implements OnItemClickLi
 
     }
 
-    /** The Safe Folder never leaves the device — no cloud-backup badge here. */
+    /** The Safe Folder never leaves the device — no backed-up badge here. */
     @Override
     protected boolean showsCloudBadges() {
         return false;

@@ -80,9 +80,9 @@ import dagger.hilt.android.AndroidEntryPoint;
  * "vault never leaves its gate" contract as backup/P2P). The footnote says so.
  *
  * <p><b>Free up space</b> (Signal's "Optimize storage"): when some finished
- * downloads are already in the cloud backup, a card offers to remove their
+ * downloads are already in the backup folder, a card offers to remove their
  * phone copies — they stay in Backups, where they can be streamed or restored.
- * The candidates are the manifest's content keys ({@link
+ * The candidates are the folder's content keys ({@link
  * CloudBackupManager#contentKey}, the same name+size match the Downloads cloud
  * mark uses) intersected with downloads whose file is really on disk (a
  * missing file frees nothing). Two safety rules, both load-bearing:
@@ -96,11 +96,11 @@ import dagger.hilt.android.AndroidEntryPoint;
  *       place. A cache hit is still positive evidence from a real pull —
  *       what it can miss is a change made elsewhere, which the re-pull
  *       covers.</li>
- *   <li>The manifest is RE-PULLED at confirm time and the delete is the
+ *   <li>The folder is RE-LISTED at confirm time and the delete is the
  *       intersection of what the user confirmed with what is still backed up
- *       now. A backup removed meanwhile (another device, the Backups list)
- *       must not turn "free up space" into deleting a file's last copy; an
- *       unreachable manifest deletes nothing.</li>
+ *       now. A backup removed meanwhile (another phone on the same folder,
+ *       the Backups list) must not turn "free up space" into deleting a
+ *       file's last copy; an unreachable folder deletes nothing.</li>
  * </ul>
  * Deletion goes through the normal download delete ({@link
  * TaskRepository#requestDelete} → the download service), in chunks so a
@@ -334,8 +334,8 @@ public class StorageFragment extends BaseFocusFragment {
     }
 
     /**
-     * The Cloud Backup upsell (Signal's "Save space with paid backups" on its
-     * storage screen): shown only to a user WITHOUT Cloud Backup whose finished
+     * The Backup upsell (Signal's "Save space with paid backups" on its
+     * storage screen): shown only to a user WITHOUT a backup folder whose finished
      * downloads take space — read live on every render and resume, so setting
      * it up and coming back swaps it for the offload card. A user with nothing
      * downloaded sees neither: there is nothing to save space on.
@@ -451,25 +451,19 @@ public class StorageFragment extends BaseFocusFragment {
     }
 
     /**
-     * The dialog's honest-copy rule: on a METERED account the "they stay in
-     * your cloud backup" promise is bounded by the storage credit (runout →
-     * grace → the server reaps the backup, these files with it), so the
-     * message says so. Only a quota that is KNOWN to be unmetered (the beta,
-     * where there is nothing to run out) gets the unconditional wording — an
-     * unknown quota (offline) degrades to the WEAKER claim, never the
-     * stronger one (the P2P footer rule). Signal keeps its toggle copy
-     * unconditional and instead auto-downloads offloaded media when the plan
-     * ends; we have no such path yet, so the caveat belongs at the one
-     * moment the user decides.
+     * The dialog's honest-copy rule: the "they stay in your backup" promise
+     * is bounded by the folder itself — the backup lives wherever the user
+     * put it (Drive, Dropbox, an SD card), and a provider that deletes or
+     * loses the folder takes these files with it. There is no credit to run
+     * out and no server to reap, so one wording covers every account; the
+     * message names the folder's provider when the system can.
      */
-    @StringRes
-    private int offloadConfirmMessage() {
-        CloudBackupManager.Status status = mCloudBackup.lastStatus();
-        boolean knownUnmetered = status != null && status.quota != null
-                && !status.quota.metered;
-        return knownUnmetered
-                ? R.string.storage_offload_confirm_message
-                : R.string.storage_offload_confirm_message_metered;
+    private CharSequence offloadConfirmMessage() {
+        String provider = mCloudBackup.providerLabel();
+        if (provider == null || provider.isEmpty()) {
+            return getString(R.string.storage_offload_confirm_message);
+        }
+        return getString(R.string.storage_offload_confirm_message_on, provider);
     }
 
     private void performOffload(List<DownloadEntity> confirmed) {
@@ -478,8 +472,8 @@ public class StorageFragment extends BaseFocusFragment {
         }
         final Context app = requireContext().getApplicationContext();
         final int gen = ++mOffloadGen;
-        // Re-verify against a FRESH manifest: only what the user confirmed AND
-        // is still backed up right now is removed. An unreachable manifest
+        // Re-verify against a FRESH folder listing: only what the user confirmed AND
+        // is still backed up right now is removed. An unreachable folder
         // yields an empty key set, which deletes nothing.
         mCloudBackup.loadBackedUpKeys(keys -> scanCandidates(keys, gen, fresh -> {
             Set<Integer> stillBacked = new HashSet<>();

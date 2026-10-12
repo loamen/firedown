@@ -108,10 +108,10 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
     // No cloud state on the home (maintainer, 2026-10-12: "we don't need all
     // the plumbing for backups, downloaded bytes and blocked ads in home").
-    // The transfer chip and the grace deadline card that lived under the
-    // mark (home v5) are gone with their WorkManager observer and quota load;
-    // the deadline is told by CloudWatchWorker's notifications and the Cloud
-    // screen's hero, transfers by the Backups list rows.
+    // The transfer chip and the deadline card that lived under the mark
+    // (home v5) went with their WorkManager observer and status load, and the
+    // hosted service they reported on is gone since; a transfer shows as a
+    // Backups list row, a lost backup folder on the Backup screen's hero.
     // The brand flame doubles as the live "a download is running" indicator:
     // a soft ember glow that breathes behind the logo while the active+queued
     // count (the same signal as the bottom-bar badge) is > 0, and is GONE

@@ -1,9 +1,11 @@
 package com.solarized.firedown.glide;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.preference.PreferenceManager;
 
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.DataSource;
@@ -13,8 +15,7 @@ import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.MultiModelLoaderFactory;
 import com.bumptech.glide.signature.ObjectKey;
-import com.solarized.firedown.Preferences;
-import com.solarized.firedown.sync.StorageApiClient;
+import com.solarized.firedown.sync.FolderStore;
 import com.solarized.firedown.sync.SyncSecrets;
 import com.solarized.firedown.sync.VaultObjectInputStream;
 import com.solarized.firedown.sync.VaultObjectReader;
@@ -24,33 +25,27 @@ import com.solarized.firedown.sync.model.VaultEntry;
 import java.io.IOException;
 import java.io.InputStream;
 
-import okhttp3.OkHttpClient;
-
 /**
  * Glide {@link ModelLoader} that loads a {@link VaultObjectModel} as a
- * decrypt-on-read {@link InputStream} over its cloud vault object. It's the
- * "vault Glide decoder": with it registered, {@code Glide.with(...).load(model)}
- * pulls a preview straight from the encrypted cloud file — the recovery code is
- * loaded on Glide's own background thread, the DEK unwrapped on-device, and each
- * 8&nbsp;MiB chunk decrypted as the decoder reads. Built-in stream decoders then
- * handle images; the server never sees a key or a plaintext byte.
+ * decrypt-on-read {@link InputStream} over its object in the backup folder.
+ * With it registered, {@code Glide.with(...).load(model)} pulls a preview
+ * straight from the encrypted file — the recovery code is loaded on Glide's
+ * own background thread, the DEK unwrapped on-device, and each 8&nbsp;MiB chunk
+ * decrypted as the decoder reads. Built-in stream decoders then handle images.
  */
 public final class VaultObjectModelLoader implements ModelLoader<VaultObjectModel, InputStream> {
 
     private final Context appContext;
-    private final OkHttpClient client;
 
-    public VaultObjectModelLoader(Context appContext, OkHttpClient client) {
+    public VaultObjectModelLoader(Context appContext) {
         this.appContext = appContext;
-        this.client = client;
     }
 
     @Nullable
     @Override
     public LoadData<InputStream> buildLoadData(@NonNull VaultObjectModel model, int width,
                                                int height, @NonNull Options options) {
-        return new LoadData<>(new ObjectKey(model.cacheKey()),
-                new Fetcher(appContext, client, model));
+        return new LoadData<>(new ObjectKey(model.cacheKey()), new Fetcher(appContext, model));
     }
 
     @Override
@@ -59,17 +54,15 @@ public final class VaultObjectModelLoader implements ModelLoader<VaultObjectMode
     }
 
     /** Opens the decrypt-on-read stream on Glide's source thread. The reader's
-     *  construction is cheap (the object's presigned URLs are fetched lazily on
-     *  the first chunk read, which Glide does on the same background thread). */
+     *  construction locates and opens the object (a folder listing + an open),
+     *  which Glide does on the same background thread. */
     private static final class Fetcher implements DataFetcher<InputStream> {
         private final Context appContext;
-        private final OkHttpClient client;
         private final VaultObjectModel model;
         private VaultObjectInputStream stream;
 
-        Fetcher(Context appContext, OkHttpClient client, VaultObjectModel model) {
+        Fetcher(Context appContext, VaultObjectModel model) {
             this.appContext = appContext;
-            this.client = client;
             this.model = model;
         }
 
@@ -83,10 +76,11 @@ public final class VaultObjectModelLoader implements ModelLoader<VaultObjectMode
             }
             try {
                 SyncIdentity identity = SyncIdentity.fromCode(code);
-                StorageApiClient api = new StorageApiClient(client, Preferences.STORAGE_DEFAULT_BACKEND);
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(appContext);
+                FolderStore store = new FolderStore(appContext, prefs);
                 VaultEntry entry = new VaultEntry(model.objectId, model.wrappedDek, null,
                         model.size, null, 0, model.chunkCount, null, null); // thumb + origin unused for decode
-                VaultObjectReader reader = new VaultObjectReader(api, identity, entry);
+                VaultObjectReader reader = new VaultObjectReader(store, identity, entry);
                 stream = new VaultObjectInputStream(reader);
                 callback.onDataReady(stream);
             } catch (Exception e) {
@@ -99,7 +93,7 @@ public final class VaultObjectModelLoader implements ModelLoader<VaultObjectMode
         @Override
         public void cleanup() {
             if (stream != null) {
-                stream.close(); // closes the reader → wipes the DEK
+                stream.close(); // closes the reader → wipes the DEK, closes the object
                 stream = null;
             }
         }
@@ -122,25 +116,23 @@ public final class VaultObjectModelLoader implements ModelLoader<VaultObjectMode
         @NonNull
         @Override
         public DataSource getDataSource() {
-            return DataSource.REMOTE;
+            return DataSource.LOCAL;
         }
     }
 
-    /** Registered in {@code GlideModule}. Holds the app context + the shared
-     *  OkHttp client (from the Hilt EntryPoint) for every vault load. */
+    /** Registered in {@code GlideModule}. Holds the app context for every
+     *  folder load. */
     public static final class Factory implements ModelLoaderFactory<VaultObjectModel, InputStream> {
         private final Context appContext;
-        private final OkHttpClient client;
 
-        public Factory(Context context, OkHttpClient client) {
+        public Factory(Context context) {
             this.appContext = context.getApplicationContext();
-            this.client = client;
         }
 
         @NonNull
         @Override
         public ModelLoader<VaultObjectModel, InputStream> build(@NonNull MultiModelLoaderFactory factory) {
-            return new VaultObjectModelLoader(appContext, client);
+            return new VaultObjectModelLoader(appContext);
         }
 
         @Override

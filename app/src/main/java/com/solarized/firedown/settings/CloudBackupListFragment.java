@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.os.StatFs;
@@ -39,9 +40,7 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.work.Constraints;
 import androidx.work.Data;
-import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
@@ -57,7 +56,6 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.sync.PendingRemovals;
-import com.solarized.firedown.sync.StorageApiClient;
 import com.solarized.firedown.sync.VaultBackupWorker;
 import com.solarized.firedown.sync.VaultRestoreWorker;
 import com.solarized.firedown.sync.model.VaultEntry;
@@ -80,10 +78,10 @@ import javax.inject.Inject;
 import dagger.hilt.android.AndroidEntryPoint;
 
 /**
- * The "Backed-up files" screen — a RecyclerView of every file in Cloud Backup
+ * The "Backed-up files" screen — a RecyclerView of every file in the backup folder
  * (stored preview / mime fallback + name + "size · date"), styled like the
  * Downloads list. Tapping a row opens {@link CloudBackupItemSheetDialogFragment}
- * (Restore / Remove). Reached from the Cloud Backup settings screen and the
+ * (Restore / Remove). Reached from the Backup screen and the
  * Downloads toolbar overflow.
  *
  * <p>Remove is <b>optimistic</b>: the row disappears immediately (the slow server
@@ -102,12 +100,6 @@ public class CloudBackupListFragment extends Fragment
 
     /** Persisted grid/list choice for the Backups list (own key — independent of
      *  the Downloads list's grid pref). */
-    /** Boolean fragment argument: open the "Restore all to this phone"
-     *  confirmation as soon as the cloud-only set is known — the home grace
-     *  card's RESTORE action (Signal's "Download your backup data" on a lapsed
-     *  plan). Routed by {@code SettingsActivity.EXTRA_RESTORE_ALL}. */
-    public static final String ARG_RESTORE_ALL = "restore_all";
-
     private static final String PREF_GRID = "cloud_backup_grid";
     private GridLayoutManager mLayoutManager;
     /** Grid vs list for the committed file rows (transfer rows stay full-width). */
@@ -122,7 +114,7 @@ public class CloudBackupListFragment extends Fragment
     /** Pull-to-refresh around the list. Present because this screen is
      *  NETWORK-backed — see the layout comment. */
     private SwipeRefreshLayout mSwipeRefresh;
-    /** Text-only header: inventory (count · size) + quota/trust context. Hidden
+    /** Text-only header: inventory (count · size) + folder/trust context. Hidden
      *  while there are no committed rows — the LCEE illustrations own the
      *  empty/loading/error states, a header over them would just restate them. */
     private View mHeader;
@@ -136,7 +128,7 @@ public class CloudBackupListFragment extends Fragment
      *  (no network re-pull), keeps the selection, and keeps the load/error flags.
      *  See CloudBackupListViewModel for what deliberately did NOT move. */
     private CloudBackupListViewModel mViewModel;
-    /** Latest quota (for the header's context line); null until loaded/offline. */
+    /** Latest folder status (for the header's context line); null until loaded. */
     private CloudBackupManager.Status mStatusInfo;
     private RecyclerView mRecycler;
     private CloudBackupFileAdapter mAdapter;
@@ -146,14 +138,14 @@ public class CloudBackupListFragment extends Fragment
      *  emission; never mutated here (the VM owns the list). */
     private List<VaultEntry> mEntries = new ArrayList<>();
     private boolean mLoading = true;
-    /** True when the last manifest pull FAILED (network/transient). render()
+    /** True when the last folder listing FAILED (folder unreachable). render()
      *  reads it to show the honest error empty-state instead of "no backups
      *  yet"; reset on the next successful load. */
     private boolean mLoadFailed;
 
-    /** Object ids whose server delete is IN FLIGHT (optimistically removed from the
-     *  UI, not yet confirmed gone). A load() that lands before the delete's OCC push
-     *  commits would otherwise RESURRECT the row (it's still in the pulled manifest);
+    /** Object ids whose folder delete is IN FLIGHT (optimistically removed from the
+     *  UI, not yet confirmed gone). A load() that lands before the sidecar is
+     *  deleted would otherwise RESURRECT the row (it's still in the listing);
      *  load() filters these out. The ordering semantics (why delete-SUCCESS does NOT
      *  clear an id — only a fresh pull or a delete-FAILURE does) live in
      *  {@link PendingRemovals}, where they're unit-tested. */
@@ -175,9 +167,9 @@ public class CloudBackupListFragment extends Fragment
     private final Set<String> mReloadedTransferIds = new HashSet<>();
     /** Work IDs whose failure snackbar has already been shown. Its OWN set:
      *  {@link #mReloadedTransferIds} is claimed by the SUCCESS reload and the
-     *  payment-required quota re-pull, and reusing it would let whichever of
+     *  folder-lost status re-read, and reusing it would let whichever of
      *  those ran first silently swallow the snackbar for the same work id (a
-     *  failed backup takes both the re-pull branch and this one). The observer
+     *  failed backup takes both the re-read branch and this one). The observer
      *  re-fires on every WorkInfo tick, so a guard is required either way —
      *  without one the snackbar would re-show for the whole time a FAILED
      *  record lingers. */
@@ -204,12 +196,6 @@ public class CloudBackupListFragment extends Fragment
      * paths, where "this is the last copy" is the fact the decision turns on.
      */
     private final Set<String> mCloudOnly = new HashSet<>();
-    /** Set when the screen was opened by the home grace card's "Restore" (the
-     *  {@link #ARG_RESTORE_ALL} deep link) and the cloud-only set has not
-     *  landed yet: the confirmation opens on the first cloud-only emission
-     *  after the manifest, so the deep link never asks about a list it hasn't
-     *  seen. Consumed once. */
-    private boolean mPendingRestoreAll;
     /** Work id of the most recent single-file restore — the only consumer is
      *  {@link #startRestore}, which observes just that one request's outcome.
      *  The batch path never reads it (it reports a count up-front instead of
@@ -418,11 +404,6 @@ public class CloudBackupListFragment extends Fragment
                     confirmRestoreAll();
                     return true;
                 }
-                if (!mSelectionMode && item.getItemId() == R.id.action_buy_credit) {
-                    NavigationUtils.navigateSafe(
-                            mNavController, R.id.action_cloud_backup_files_to_buy);
-                    return true;
-                }
                 if (!mSelectionMode && item.getItemId() == R.id.action_cloud_settings) {
                     NavigationUtils.navigateSafe(
                             mNavController, R.id.action_cloud_backup_files_to_sync);
@@ -449,12 +430,6 @@ public class CloudBackupListFragment extends Fragment
 
         observeSheetResult();
         observeTransfers();
-        Bundle args = getArguments();
-        if (args != null && args.getBoolean(ARG_RESTORE_ALL, false)) {
-            // Consume it: a rotation must not re-open the dialog.
-            args.remove(ARG_RESTORE_ALL);
-            mPendingRestoreAll = true;
-        }
         observeViewModel();
         // On a fresh ViewModel only: a rotation keeps the manifest, so re-pulling
         // here would put the network back in the rotation path — the whole point
@@ -494,10 +469,6 @@ public class CloudBackupListFragment extends Fragment
             }
             // The restore-all overflow item is gated on this set.
             requireActivity().invalidateOptionsMenu();
-            if (mPendingRestoreAll && ids != null && !mEntries.isEmpty()) {
-                mPendingRestoreAll = false;
-                confirmRestoreAll();
-            }
         });
         mViewModel.getSelection().observe(getViewLifecycleOwner(), selection -> {
             mAdapter.setSelection(selection);
@@ -591,14 +562,14 @@ public class CloudBackupListFragment extends Fragment
                                 }
                             }
                             // A backup that reached SUCCEEDED has already committed its
-                            // manifest entry (the OCC push runs inside doWork, before
-                            // the worker returns), so reload ONCE per finished worker to
+                            // sidecar (written inside doWork, before the worker
+                            // returns), so reload ONCE per finished worker to
                             // surface its committed row immediately — otherwise a
                             // finished upload's progress row is dropped here but its
                             // committed row isn't pulled until the whole batch goes idle
                             // (justFinished), so it disappears until the last one lands.
                             // A restore also succeeds under WORK_TAG but doesn't touch
-                            // the manifest, so its reload is a harmless idempotent pull.
+                            // the folder, so its reload is a harmless idempotent listing.
                             if (s == WorkInfo.State.SUCCEEDED
                                     && mReloadedTransferIds.add(wi.getId().toString())) {
                                 newlyFinished = true;
@@ -660,25 +631,24 @@ public class CloudBackupListFragment extends Fragment
                                     ? wi.getOutputData().getString(
                                             VaultBackupWorker.KEY_ERROR_SLUG)
                                     : null;
-                            // A write refused for payment is the server telling us
-                            // the account has no credit — which can DISAGREE with
-                            // what the hero is showing (the status is served from a
-                            // cache on a transient failure, and a debit sweep can
-                            // drain the balance between two screen visits). Re-pull
-                            // the quota so the header stops advertising coverage the
-                            // server will not honour. Once per failed work id: this
-                            // observer re-fires on every tick.
-                            if (SLUG_PAYMENT_REQUIRED.equals(slug)
+                            // A backup that failed because the FOLDER stopped
+                            // answering is the worker telling us what the header
+                            // may not know yet (the status it shows came from an
+                            // earlier read). Re-read the folder so the header
+                            // flips to the lost wording instead of advertising a
+                            // backup that cannot be written. Once per failed work
+                            // id: this observer re-fires on every tick.
+                            if (SLUG_FOLDER.equals(slug)
                                     && mReloadedTransferIds.add(wi.getId().toString())) {
                                 mViewModel.loadStatus();
                             }
                             // The ROW gets a compact label; the full sentence goes
                             // to a snackbar (see notifyFailure). The row's state
                             // line is singleLine + ellipsized and shares its row
-                            // with the mime chip, so a sentence like "Not enough
-                            // credit for this file — add credit or remove backups"
-                            // arrived as "Not enough credi…" — the remedy, which is
-                            // the whole point of naming the cause, was the part
+                            // with the mime chip, so a sentence like "Can't reach
+                            // the backup folder — choose it again in Settings"
+                            // arrived as "Can't reach the ba…" — the remedy, which
+                            // is the whole point of naming the cause, was the part
                             // that got cut.
                             if (failed) {
                                 notifyFailure(wi.getId().toString(), slug, total);
@@ -829,7 +799,8 @@ public class CloudBackupListFragment extends Fragment
     private void render() {
         // COMMITTED rows, not getItemCount(): that counts in-progress TRANSFER
         // rows too, and those arrive instantly from WorkManager while the
-        // manifest is still being pulled over the network. Treating one as
+        // folder is still being listed (Drive answers a cold listing from
+        // the network). Treating one as
         // "the list is ready" is what made opening Backups mid-upload show the
         // uploading item ALONE for a beat and then pop the whole list in behind
         // it (reported on-device) — two transitions where there should be one.
@@ -865,12 +836,12 @@ public class CloudBackupListFragment extends Fragment
     }
 
     /** The text-only header over the list: line 1 = inventory ("12 files ·
-     *  51 MB", led by "Backing up…" while a transfer runs), line 2 = quota
-     *  context + trust ("of 11 GB included · encrypted end-to-end" unmetered,
-     *  the GB-months balance metered, just the trust line when the quota is
-     *  unknown/offline — never a stale number). Facts come from the LOADED
-     *  entries (instant, no network), so it updates with every delete/commit;
-     *  hidden without committed rows (the illustrations own those states). */
+     *  51 MB", led by "Backing up…" while a transfer runs), line 2 = where the
+     *  backup lives + trust ("Firedown Backup on Google Drive · encrypted
+     *  end-to-end"), or the lost wording when the folder stopped answering.
+     *  Facts come from the LOADED entries (instant, no IO), so it updates with
+     *  every delete/commit; hidden without committed rows (the illustrations
+     *  own those states). */
     private void updateHeader() {
         if (mHeader == null || !isAdded()) {
             return;
@@ -892,57 +863,39 @@ public class CloudBackupListFragment extends Fragment
                     : R.string.home_cloud_waiting) + " · " + line1;
         }
         mHeaderLine1.setText(line1);
-        // Line 2 = account STATUS, then trust — status first so that if the line
+        // Line 2 = folder STATUS, then trust — status first so that if the line
         // ever has to wrap, it is the boilerplate tail that moves, not the fact.
-        // The unmetered beta keeps its own composed string (its byte allowance
-        // reads "of X GB included · …", not a bare figure).
-        StorageApiClient.Quota quota = mStatusInfo != null ? mStatusInfo.quota : null;
         String trust = getString(R.string.cloud_backup_header_encrypted);
-        String line2;
-        if (quota != null && !quota.metered && quota.bytesLimit > 0) {
-            line2 = getString(R.string.cloud_backup_header_beta,
-                    Formatter.formatShortFileSize(requireContext(), quota.bytesLimit));
-        } else {
-            String status = headerStatus(quota);
-            line2 = status == null ? trust : status + " · " + trust;
-        }
-        mHeaderLine2.setText(line2);
+        String status = headerStatus(mStatusInfo);
+        mHeaderLine2.setText(status == null ? trust : status + " · " + trust);
         mHeader.setVisibility(View.VISIBLE);
     }
 
     /**
-     * The account's status phrase for header line 2, or null when the server
-     * gave us no figure (offline, or funded with no projection) — never a stale
-     * or invented number. Metered context is TIME, never the raw GB-months
-     * ledger unit (the old "5409.5 GB-months" here was an on-device confusion
-     * report).
-     * <ul>
-     *   <li>grace (ran out, read-only) → "Read-only";</li>
-     *   <li>metered + a projection → "≈ 1 year of coverage";</li>
-     *   <li>everything else → null, so line 2 is the trust phrase alone.</li>
-     * </ul>
+     * The folder's status phrase for header line 2, or null before the first
+     * read — never an invented location. A folder that answered names where
+     * the backup lives ("Firedown Backup on Google Drive"); one that stopped
+     * answering says so, in words, in the same slot.
      *
-     * <p>This used to be a tappable coral/amber chip that doubled as the top-up
-     * door. The door moved to the toolbar overflow (an action belongs with the
-     * screen's actions) and what stayed behind is plain STATUS text, which is
-     * the half that has to be visible without opening a menu.
-     *
-     * <p>It carries NO colour. The chip tinted its grace label with
-     * {@code backup_warning}, which measures <b>2.09:1</b> on the light surface —
-     * the state most needing to be read was the least readable, the same defect
-     * class as the old home pill's 1.37:1. The word "Read-only" carries the
-     * state on its own (WCAG 1.4.1 requires that regardless), so the fix is to
-     * drop the tint rather than to find a legible amber.
+     * <p>This used to be a tappable coral/amber chip that doubled as the
+     * top-up door of the hosted service. What stayed behind is plain STATUS
+     * text, which is the half that has to be visible without opening a menu,
+     * and it carries NO colour: a tinted "lost" label would be the
+     * invisible-in-daylight defect class ({@code backup_warning} measures
+     * 2.09:1 on the light surface); the words carry the state on their own.
      */
     @Nullable
-    private String headerStatus(@Nullable StorageApiClient.Quota quota) {
-        if (quota == null || !quota.metered) {
+    private String headerStatus(@Nullable CloudBackupManager.Status status) {
+        if (status == null || !status.setUp) {
             return null;
         }
-        if (quota.readOnly) {
-            return getString(R.string.cloud_status_chip_readonly);
+        if (!status.reachable) {
+            return getString(R.string.folder_backup_lost_title);
         }
-        return CloudStatusPreference.coverageLabel(requireContext(), quota);
+        if (TextUtils.isEmpty(status.providerLabel)) {
+            return getString(R.string.folder_backup_hero_title);
+        }
+        return getString(R.string.folder_backup_header_on, status.providerLabel);
     }
 
 
@@ -1218,45 +1171,12 @@ public class CloudBackupListFragment extends Fragment
         }
     }
 
-    // Storage error slugs worth explaining to a user. Mirrors
-    // firedown-api internal/storage/api/errors.go — keep in step with it.
-    private static final String SLUG_PAYMENT_REQUIRED = "payment-required";
-    private static final String SLUG_QUOTA_EXHAUSTED = "quota-exhausted";
-    private static final String SLUG_PAYLOAD_TOO_LARGE = "payload-too-large";
-    private static final String SLUG_OBJECT_COUNT_EXCEEDED = "object-count-exceeded";
-    private static final String SLUG_INSUFFICIENT_CREDIT = "insufficient-credit";
+    // The two backup-failure slugs the worker names (VaultBackupWorker). Every
+    // other failure — a retry ceiling, a torn write — stays generic, which is
+    // the honest answer when the reason is something we have not seen before.
+    private static final String SLUG_FOLDER = VaultBackupWorker.SLUG_FOLDER;
+    private static final String SLUG_NOT_SET_UP = VaultBackupWorker.SLUG_NOT_SET_UP;
 
-    /**
-     * A specific explanation for a terminal backup failure, or null to fall back
-     * to the generic "Backup failed".
-     *
-     * <p>Driven ENTIRELY by the server's slug — deliberately not by guessing from
-     * the file's size. Metered mode has NO byte cap (the gate is balance &gt; 0,
-     * not a byte projection), so a large file failing there is almost never an
-     * out-of-space problem, and a message asserting one would send the user to
-     * buy credit they already have. Only the four slugs below get a claim; every
-     * other failure stays generic, which is the honest answer when the reason is
-     * a retry ceiling, a dropped upload or something we have not seen before.
-     *
-     * <p>Numbers are included only where they are true: the free-space figure
-     * exists solely on the UNMETERED flat cap, so "quota-exhausted" gets it and
-     * "payment-required" (metered) cannot — that one says the balance is out, and
-     * says nothing about bytes.
-     *
-     * <p><b>"insufficient-credit" vs "payment-required" is the distinction that
-     * cost the most.</b> The server used to answer payment-required for both, so
-     * an account holding 16.78 GB-months with 2.2 GB stored was told "Out of
-     * storage credit" when refused a 4.3 GB file — while its own Cloud screen
-     * said "7 months of coverage". It was funded; it just could not prepay the
-     * server's minimum period for that much data. The two remedies differ too:
-     * out-of-credit means buy, insufficient-credit means buy OR remove backups.
-     *
-     * <p><b>"object-count-exceeded" is why trusting the STATUS instead of the slug
-     * would be wrong.</b> The server used to answer 402 for the object-count cap
-     * too, so a FUNDED account (months of credit left, per its own header) got
-     * "Out of storage credit — add credit" for a refusal that no purchase can
-     * fix. It has its own slug and its own message: delete something.
-     */
     /**
      * The COMPACT cause for the transfer row's state line, or null for the
      * generic "Backup failed".
@@ -1271,7 +1191,8 @@ public class CloudBackupListFragment extends Fragment
      *
      * <p>These stay parallel to {@link #failureText}'s cases — same slugs, same
      * meanings, different lengths. The sentence is not lost: it goes to the
-     * snackbar, with the buy screen one tap away where credit is the cause.
+     * snackbar, with the Backup screen one tap away where the folder is the
+     * cause.
      */
     @Nullable
     private String failureShort(@Nullable String slug) {
@@ -1279,16 +1200,10 @@ public class CloudBackupListFragment extends Fragment
             return null;
         }
         switch (slug) {
-            case SLUG_PAYLOAD_TOO_LARGE:
-                return getString(R.string.cloud_backup_state_too_large);
-            case SLUG_PAYMENT_REQUIRED:
-                return getString(R.string.cloud_backup_state_no_credit);
-            case SLUG_INSUFFICIENT_CREDIT:
-                return getString(R.string.cloud_backup_state_low_credit);
-            case SLUG_OBJECT_COUNT_EXCEEDED:
-                return getString(R.string.cloud_backup_state_too_many);
-            case SLUG_QUOTA_EXHAUSTED:
-                return getString(R.string.cloud_backup_state_no_space);
+            case SLUG_FOLDER:
+                return getString(R.string.folder_backup_state_lost);
+            case SLUG_NOT_SET_UP:
+                return getString(R.string.folder_backup_state_not_set_up);
             default:
                 return null;
         }
@@ -1296,19 +1211,19 @@ public class CloudBackupListFragment extends Fragment
 
     /**
      * Announces a terminal failure ONCE per work id, with the full explanation
-     * and — where a purchase is the remedy — a tap that goes and makes it.
+     * and — where choosing the folder is the remedy — a tap that goes there.
      *
      * <p>A snackbar is the right home for the sentence the row can't hold: it has
      * two full-width lines, and unlike row text it can carry an ACTION, so
-     * "add credit" stops being advice the user has to go and act on themselves.
-     * The row keeps the persistent record (a snackbar is gone in seconds); the
-     * snackbar carries the detail and the door. Neither alone was enough — the
-     * row alone truncated the remedy, and a snackbar alone left no trace once
-     * dismissed.
+     * "choose the folder again" stops being advice the user has to go and act
+     * on themselves. The row keeps the persistent record (a snackbar is gone in
+     * seconds); the snackbar carries the detail and the door. Neither alone was
+     * enough — the row alone truncated the remedy, and a snackbar alone left no
+     * trace once dismissed.
      *
      * <p>Guarded by its own id set, NOT {@code mReloadedTransferIds}: that one is
-     * already claimed by the SUCCEEDED reload and the payment-required quota
-     * re-pull, and a shared set would make whichever branch ran first silently
+     * already claimed by the SUCCEEDED reload and the folder-lost status
+     * re-read, and a shared set would make whichever branch ran first silently
      * suppress the other on the same work id.
      */
     private void notifyFailure(String workId, @Nullable String slug, long fileBytes) {
@@ -1321,16 +1236,10 @@ public class CloudBackupListFragment extends Fragment
             return;
         }
         Snackbar bar = Snackbar.make(view, text, Snackbar.LENGTH_LONG);
-        // Only offer the buy door when buying is genuinely the remedy. An
-        // object-count or too-large failure is not fixed by paying, and a
-        // "Top up" button on those would be the same wrong advice the shared
-        // payment-required slug used to give.
-        if (SLUG_PAYMENT_REQUIRED.equals(slug)
-                || SLUG_INSUFFICIENT_CREDIT.equals(slug)
-                || SLUG_QUOTA_EXHAUSTED.equals(slug)) {
-            bar.setAction(R.string.home_cloud_top_up, v -> NavigationUtils.navigateSafe(
-                    mNavController, R.id.action_cloud_backup_files_to_buy));
-        }
+        // Both slugs are fixed on the Backup screen (choose the folder / finish
+        // the setup), so both carry the door.
+        bar.setAction(R.string.settings_account_title, v -> NavigationUtils.navigateSafe(
+                mNavController, R.id.action_cloud_backup_files_to_sync));
         bar.show();
     }
 
@@ -1340,43 +1249,13 @@ public class CloudBackupListFragment extends Fragment
             return null;
         }
         switch (slug) {
-            case SLUG_PAYLOAD_TOO_LARGE:
-                return fileBytes > 0
-                        ? getString(R.string.cloud_backup_transfer_too_large_detail,
-                                Formatter.formatShortFileSize(requireContext(), fileBytes))
-                        : getString(R.string.cloud_backup_transfer_too_large);
-            case SLUG_PAYMENT_REQUIRED:
-                return getString(R.string.cloud_backup_transfer_no_credit);
-            case SLUG_OBJECT_COUNT_EXCEEDED:
-                return getString(R.string.cloud_backup_transfer_too_many_files);
-            case SLUG_INSUFFICIENT_CREDIT:
-                return getString(R.string.cloud_backup_transfer_not_enough_credit);
-            case SLUG_QUOTA_EXHAUSTED: {
-                long free = freeCapBytes();
-                return (fileBytes > 0 && free >= 0)
-                        ? getString(R.string.cloud_backup_transfer_no_space_detail,
-                                Formatter.formatShortFileSize(requireContext(), fileBytes),
-                                Formatter.formatShortFileSize(requireContext(), free))
-                        : getString(R.string.cloud_backup_transfer_no_space);
-            }
+            case SLUG_FOLDER:
+                return getString(R.string.folder_backup_transfer_lost);
+            case SLUG_NOT_SET_UP:
+                return getString(R.string.folder_backup_transfer_not_set_up);
             default:
                 return null;
         }
-    }
-
-    /** Bytes left under the UNMETERED flat cap, or -1 when there is no such cap
-     *  (metered mode) or the quota has not loaded. Usage is summed from the
-     *  committed rows, which is the same figure the header reports. */
-    private long freeCapBytes() {
-        StorageApiClient.Quota quota = mStatusInfo != null ? mStatusInfo.quota : null;
-        if (quota == null || quota.metered || quota.bytesLimit <= 0) {
-            return -1;
-        }
-        long used = 0;
-        for (VaultEntry e : mEntries) {
-            used += e.size;
-        }
-        return Math.max(0, quota.bytesLimit - used);
     }
 
     /** Confirms then removes every selected file from the cloud (optimistically). */
@@ -1437,8 +1316,8 @@ public class CloudBackupListFragment extends Fragment
         if (targets.isEmpty()) {
             return;
         }
-        // BEFORE the manifest mutation + object free: a restore left running would
-        // keep downloading an object about to disappear and then fail on a 404.
+        // BEFORE the sidecar + object delete: a restore left running would
+        // keep reading an object about to disappear and then fail mid-file.
         cancelRestores(targets);
         for (VaultEntry e : targets) {
             mViewModel.removeOptimistic(e); // guards a racing load() from resurrecting it
@@ -1446,9 +1325,10 @@ public class CloudBackupListFragment extends Fragment
         submitVisible();
         render();
         snackbar(getString(R.string.cloud_backup_remove_done));
-        // ONE batched delete — a single manifest mutation removes them all, so N
-        // deletes don't fire N concurrent OCC mutations that contend on the
-        // manifest version (which spuriously exhausted retries on a big batch).
+        // ONE batched delete on the folder pool — N single deletes would each
+        // take a pool thread and interleave with a list load (the hosted service
+        // had the same shape as N concurrent index pushes contending on one
+        // version, which spuriously exhausted retries on a big batch).
         mCloudBackup.deleteEntries(targets, ok -> {
             if (!isAdded() || ok) {
                 // Success (or view gone): leave the ids guarded; a subsequent load()
@@ -1684,14 +1564,12 @@ public class CloudBackupListFragment extends Fragment
     }
 
     /**
-     * "Restore all to this phone" — every cloud-only entry back into Downloads
-     * in one go: Signal's "Download your backup data" for a lapsed plan, and
-     * the counterpart of the Storage screen's "Free up space" (which removes
-     * phone copies of backed-up files). Reachable from this screen's overflow
-     * whenever something is cloud-only, and from the home grace card's RESTORE
-     * (the {@link #ARG_RESTORE_ALL} deep link) — the moment a user with freed
-     * phone copies most needs it, since runout → grace → reap deletes the only
-     * copy.
+     * "Restore all to this phone" — every folder-only entry back into Downloads
+     * in one go: the counterpart of the Storage screen's "Free up space" (which
+     * removes phone copies of backed-up files), and the way back before
+     * changing or giving up a backup folder. Reachable from this screen's
+     * overflow whenever something exists only in the backup folder. (The hosted
+     * service's grace-card deep link into this dialog went with that service.)
      *
      * <p>Unlike the selection batch restore this one IS confirmed: it can be
      * gigabytes the user did not pick file by file, so the dialog states the
@@ -1799,12 +1677,12 @@ public class CloudBackupListFragment extends Fragment
                 .putInt(VaultRestoreWorker.KEY_CHUNK_COUNT, entry.chunkCount)
                 .putString(VaultRestoreWorker.KEY_ORIGIN, entry.origin)
                 .build();
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build();
+        // No network constraint: the folder may be on the phone or an SD card,
+        // and a provider that does need the network answers the read with an
+        // error the worker retries (the backup worker is unconstrained for the
+        // same reason).
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(VaultRestoreWorker.class)
                 .setInputData(input)
-                .setConstraints(constraints)
                 .addTag(CloudBackupManager.WORK_TAG)
                 // Identifies WHICH entry this restore is for, so a remove can
                 // warn about it and cancel it deterministically instead of

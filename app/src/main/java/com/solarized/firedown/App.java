@@ -29,7 +29,6 @@ import com.solarized.firedown.data.di.Qualifiers;
 import com.solarized.firedown.data.repository.WebHistoryDataRepository;
 import com.solarized.firedown.phone.BrowserActivity;
 import com.solarized.firedown.sync.CloudBackupManager;
-import com.solarized.firedown.sync.CloudWatchWorker;
 import com.solarized.firedown.sync.SyncManager;
 
 
@@ -164,12 +163,11 @@ public class App extends Application implements Configuration.Provider{
         // Wire bookmark-sync repository semantics + periodic job from saved state
         // (no-op when sync is off; tombstone-on-delete needs this at boot).
         mSyncManager.init();
-        // The Cloud Backup account watch (lapse notifications, auto top-up):
-        // periodic while set up, self-cancelling once not. KEEP-armed, so this
-        // is a no-op when a previous boot already scheduled it.
-        if (mCloudBackup.isSetUp()) {
-            CloudWatchWorker.schedule(this);
-        }
+        // A periodic WorkManager job left by the hosted Cloud Backup's account
+        // watch (lapse notifications) is cancelled once: the folder backup has
+        // no account to watch, and WorkManager keeps a periodic request across
+        // updates until something cancels it.
+        mCloudBackup.cancelLegacyWatch();
 
         // One-time migration: lift legacy 'shortcuts' rows into the
         // bookmarks table as pinned entries, then drop the legacy

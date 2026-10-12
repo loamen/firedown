@@ -4,7 +4,7 @@
   file's preview thumbnail + name + 'MIME · size · date', mirroring the list row)
   + one group of grouped sheet cards (Open / Restore / Remove — the shape every
   option sheet uses, see Firedown.Widget.SheetRowCard; no hairline, the group
-  does the sectioning). "Remove from cloud" uses the SheetRowText.Final
+  does the sectioning). "Remove from backup" uses the SheetRowText.Final
   (destructive) style — colorPrimary text + tint, the same treatment the
   popup/option sheets give their destructive row — unlike the neutral
   "Restore". The Open row is revealed at runtime, so the fragment recomputes

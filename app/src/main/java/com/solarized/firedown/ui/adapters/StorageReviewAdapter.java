@@ -114,7 +114,7 @@ public class StorageReviewAdapter extends ListAdapter<DownloadEntity, StorageRev
         mUnChecked = SelectionStyling.uncheckedDrawable(context);
     }
 
-    /** Content keys of the files in the cloud backup — drives the inline mark. */
+    /** Content keys of the files in the backup folder — drives the inline mark. */
     public void setBackedUpKeys(@NonNull Set<String> keys) {
         if (mBackedUpKeys.equals(keys)) {
             return;

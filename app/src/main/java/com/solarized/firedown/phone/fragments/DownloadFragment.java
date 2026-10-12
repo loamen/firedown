@@ -133,15 +133,15 @@ public class DownloadFragment extends BaseDownloadFragment implements
      *  being an imposition on everyone. */
     private int mVaultRows = 0;
 
-    /** One-time announce banner for Cloud Backup, prepended via the same
+    /** One-time announce banner for the folder backup, prepended via the same
      *  {@link androidx.recyclerview.widget.ConcatAdapter} as the incognito
-     *  header. Shown only while Cloud Backup is NOT set up, the list has rows,
+     *  header. Shown only while the backup is NOT set up, the list has rows,
      *  and the banner hasn't been retired — see updateCloudBannerVisibility.
      *  The bookmarks list carries the twin of this for bookmark sync. */
     private SyncBannerAdapter mCloudBannerAdapter;
 
     /** Latest "the current query matched at least one row" value, fed by the
-     *  aggregates stream — the Cloud Backup banner's second visibility input. */
+     *  aggregates stream — the backup banner's second visibility input. */
     private boolean mHasRows = false;
 
     /** Set when a new query has been dispatched; consumed on the next successful refresh. */
@@ -248,11 +248,11 @@ public class DownloadFragment extends BaseDownloadFragment implements
         mSafeFolderAdapter = new SafeFolderHeaderAdapter(() ->
                 startActivity(new Intent(requireContext(), VaultActivity.class)));
         mCloudBannerAdapter = new SyncBannerAdapter(this, R.string.cloud_banner_title,
-                R.string.cloud_banner_subtitle, R.drawable.cloud_outline_24);
+                R.string.cloud_banner_subtitle, R.drawable.ic_folder_upload_24);
         // ConcatAdapter stacks at most TWO cards above the first section:
         // the Safe Folder row (furniture — permanent on the unfiltered list,
         // carrying the live incognito-download state when there is any) and
-        // the Cloud Backup announce banner below it (a dismissible promo).
+        // the Backup announce banner below it (a dismissible promo).
         // Furniture first, promo second, so the permanent row never shifts
         // when the promo comes or goes; both hide via getItemCount == 0 so
         // the paginated list's positions don't jump.
@@ -485,7 +485,7 @@ public class DownloadFragment extends BaseDownloadFragment implements
     @Override
     public void onResume() {
         super.onResume();
-        // Returning from the Cloud screen may have set Cloud Backup up, which
+        // Returning from the Backup screen may have set Backup up, which
         // retires the banner; nothing else observes that flag.
         updateCloudBannerVisibility();
     }
@@ -821,9 +821,9 @@ public class DownloadFragment extends BaseDownloadFragment implements
     }
 
     /**
-     * Shows the one-time Cloud Backup announce banner while the feature is not
+     * Shows the one-time Backup announce banner while the feature is not
      * set up, the list actually has something worth backing up, and the banner
-     * hasn't been retired. Retires it permanently once Cloud Backup IS set up —
+     * hasn't been retired. Retires it permanently once Backup IS set up —
      * the same shape as the bookmarks sync banner (WebBookmarkFragment).
      *
      * <p>The rows gate is deliberate: promoting a backup feature on an empty
@@ -835,67 +835,18 @@ public class DownloadFragment extends BaseDownloadFragment implements
             return;
         }
         if (!mCloudBackup.isSetUp()) {
-            // Stage 1 — DISCOVERY: no cloud setup yet, pitch the feature.
-            mCloudBannerAdapter.setCopy(
-                    R.string.cloud_banner_title, R.string.cloud_banner_subtitle);
+            // DISCOVERY: no backup folder yet, pitch the feature once.
             mCloudBannerAdapter.setVisible(mHasRows && !isCloudBannerDismissed());
             return;
         }
-        // Set up: the discovery stage's job is done, permanently.
+        // Set up: the banner's job is done, permanently. (The hosted service
+        // had a second "activation" stage here — "your free credit is
+        // waiting" — keyed on a server-side balance; a folder has no balance
+        // and nothing to activate, so one stage is the whole banner now.)
         if (!isCloudBannerDismissed()) {
             setCloudBannerDismissed(true);
         }
-        // Stage 2 — ACTIVATION: set up, credit granted, but nothing backed up
-        // yet (the measured funnel gap: most code-holders never press "Back up
-        // to cloud" on a single file). Same banner instance, second-stage copy
-        // — one affordance with state-dependent text, the morphing-CTA rule,
-        // never a second banner. Shown only on a KNOWN-empty cloud (cached
-        // snapshot or the durable total): an unknown must not claim "your
-        // credit is waiting", and the first evidence of a backed-up file
-        // retires the stage forever.
-        Boolean cloudEmpty = cloudKnownEmpty();
-        if (cloudEmpty != null && !cloudEmpty && !isActivateBannerDismissed()) {
-            setActivateBannerDismissed(true); // first backup seen → done
-        }
-        boolean showActivate = cloudEmpty != null && cloudEmpty
-                && mHasRows && !isActivateBannerDismissed();
-        if (showActivate) {
-            mCloudBannerAdapter.setCopy(
-                    R.string.cloud_banner_activate_title,
-                    R.string.cloud_banner_activate_subtitle);
-        }
-        mCloudBannerAdapter.setVisible(showActivate);
-    }
-
-    /**
-     * Whether the cloud holds zero backed-up files: {@code TRUE} = known
-     * empty, {@code FALSE} = known non-empty, {@code null} = unknown (no
-     * in-memory snapshot and no durable cached total — claim nothing). Reads
-     * only local state; this runs on every banner re-evaluation and must not
-     * touch the network.
-     */
-    @Nullable
-    private Boolean cloudKnownEmpty() {
-        CloudBackupManager.Status status = mCloudBackup.lastStatus();
-        if (status != null && status.fileCount >= 0) {
-            return status.fileCount == 0;
-        }
-        long cachedBytes = mSharedPreferences.getLong(
-                Preferences.CLOUD_LAST_TOTAL_BYTES, -1);
-        if (cachedBytes < 0) {
-            return null;
-        }
-        return cachedBytes == 0;
-    }
-
-    private boolean isActivateBannerDismissed() {
-        return mSharedPreferences.getBoolean(
-                Preferences.CLOUD_ACTIVATE_BANNER_DISMISSED, false);
-    }
-
-    private void setActivateBannerDismissed(boolean dismissed) {
-        mSharedPreferences.edit()
-                .putBoolean(Preferences.CLOUD_ACTIVATE_BANNER_DISMISSED, dismissed).apply();
+        mCloudBannerAdapter.setVisible(false);
     }
 
     private boolean isCloudBannerDismissed() {
@@ -909,9 +860,9 @@ public class DownloadFragment extends BaseDownloadFragment implements
 
     @Override
     public void onSyncBannerClicked() {
-        // The merged Cloud screen — the recovery-code / credit roadmap lives
-        // there, and setting Cloud Backup up starts with a code. popUpTo is
-        // handled by SettingsActivity so Back returns here, not into settings.
+        // The Backup screen — the recovery-code / folder roadmap lives there,
+        // and setting the backup up starts with a code. popUpTo is handled by
+        // SettingsActivity so Back returns here, not into settings.
         Intent cloudIntent = new Intent(requireContext(), SettingsActivity.class);
         cloudIntent.putExtra(SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP, true);
         startActivity(cloudIntent);
@@ -919,14 +870,7 @@ public class DownloadFragment extends BaseDownloadFragment implements
 
     @Override
     public void onSyncBannerDismissed() {
-        // Dismiss the stage that is actually showing — the two retire
-        // independently (a pre-setup dismissal must not consume the
-        // activation nudge the user has never seen, and vice versa).
-        if (mCloudBackup.isSetUp()) {
-            setActivateBannerDismissed(true);
-        } else {
-            setCloudBannerDismissed(true);
-        }
+        setCloudBannerDismissed(true);
         if (mCloudBannerAdapter != null) {
             mCloudBannerAdapter.setVisible(false);
         }

@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Custom layout for the MORPHING CTA Preference on the merged Cloud screen —
-  the ONE prominent action, a filled button directly under the status hero.
+  Custom layout for the MORPHING CTA Preference on the Backup screen — the
+  ONE prominent action, a filled button directly under the status hero.
   Its label is the Preference TITLE (the button carries @android:id/title —
   MaterialButton IS a TextView, so the standard Preference title binding
-  drives it): SyncSettingsFragment sets "Create recovery code" pre-key and
-  "Add storage credit" once a key exists, so the button always shows the
-  next onboarding step. The BUTTON is deliberately non-clickable/
+  drives it): SyncSettingsFragment sets "Create recovery code" pre-key, then
+  "Choose backup folder", then "Change folder" / "Choose the folder again",
+  so the button always shows the next step. The file name keeps the
+  historical "buy" (it was the hosted service's top-up door). The BUTTON is deliberately non-clickable/
   non-focusable: the Preference row owns the click; duplicateParentState
   keeps its pressed ripple in step with the row.
 -->

@@ -90,7 +90,7 @@ public class GlideHelper {
      */
     /**
      * Public view of {@link #effectiveThumbnailFrame}: the exact frame position
-     * (µs) the Downloads list renders for this entity. Cloud Backup reuses it so a
+     * (µs) the Downloads list renders for this entity. Backup reuses it so a
      * backed-up file's stored preview is the SAME frame as the list thumbnail
      * (precise + never the black opening frame), instead of guessing an offset.
      */

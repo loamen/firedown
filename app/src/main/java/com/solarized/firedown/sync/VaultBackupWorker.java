@@ -1,10 +1,13 @@
 package com.solarized.firedown.sync;
 
+import android.Manifest;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.graphics.BitmapFactory;
 import android.os.Build;
@@ -13,13 +16,12 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.hilt.work.HiltWorker;
-import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.ForegroundInfo;
-import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.Worker;
@@ -42,18 +44,22 @@ import java.io.IOException;
 
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
-import okhttp3.OkHttpClient;
 
 /**
- * Backs one finished download up to Cloud Backup (encrypted → presigned PUT to
- * R2 → manifest). Runs as a foreground worker so a larger upload isn't killed
- * when the app is backgrounded — the app already declares the {@code dataSync}
- * foreground-service type its downloads use.
+ * Backs one finished download up into the backup folder (encrypted → one
+ * object file + its sidecar, see {@link VaultEngine}). Runs as a foreground
+ * worker so a large file isn't killed when the app is backgrounded — the app
+ * already declares the {@code dataSync} foreground-service type its downloads
+ * use. No network constraint: the folder is written through its provider
+ * (a local copy for Drive/Dropbox/Nextcloud, which upload on their own; the
+ * SD card needs nothing), so a backup works offline.
  *
- * <p>The actual encrypt/chunk/upload/manifest work is {@link VaultEngine}; this
- * worker only loads the shared recovery-code identity, drives the engine, and
- * reports a terminal status the UI observes (mirrors {@link SyncWorker}). No
- * key/credential data is ever logged.
+ * <p>This worker only loads the shared recovery-code identity, drives the
+ * engine, and reports a terminal status the UI observes. The one failure it
+ * NAMES is the folder being unreachable ({@link #SLUG_FOLDER}): terminal, and
+ * told once as a notification (tap → the Backup screen, whose hero shows the
+ * folder-lost state with "Choose the folder again"). No key/credential data is
+ * ever logged.
  */
 @HiltWorker
 public class VaultBackupWorker extends Worker {
@@ -64,24 +70,21 @@ public class VaultBackupWorker extends Worker {
     public static final String KEY_PATH = "path";
     public static final String KEY_MIME = "mime";
     public static final String KEY_NAME = "name";
-    /** The download's origin URL, stored in the manifest so a restored file's row
+    /** The download's origin URL, stored in the sidecar so a restored file's row
      *  shows its real {@code MIME · domain} instead of a blank domain (nullable). */
     public static final String KEY_ORIGIN = "origin";
-
-    /** The download's OWN date (epoch millis), stored in the manifest so a
-     *  restored file lands in the same date section the original sat in. Without
-     *  it the entry was stamped with the BACKUP time and a restored row jumped to
-     *  "Last 7 days". 0 / absent = unknown, engine falls back to now(). */
+    /** The download's OWN date (epoch millis), stored so a restored file lands
+     *  in the same date section the original sat in. 0 / absent = unknown. */
     public static final String KEY_DOWNLOADED_AT = "downloaded_at";
 
     /**
      * Tag prefixes the enqueuing fragment stamps on the BACKUP request so the
-     * backed-up-files list can render a transfer row for an ENQUEUED worker.
+     * Backups list can render a transfer row for an ENQUEUED worker.
      * {@code WorkInfo} exposes tags but NOT input data, and progress is empty
      * until the worker actually starts (FGS spin-up + code load) — so without
-     * these, the list looked completely EMPTY right after "Back up to cloud"
-     * (the exact moment the snackbar's View lands the user there). Restores
-     * deliberately carry none, so they stay row-less as before.
+     * these, the list looked completely EMPTY right after "Back up" (the exact
+     * moment the snackbar's View lands the user there). Restores deliberately
+     * carry none, so they stay row-less as before.
      */
     public static final String TAG_NAME = "bname:";
     public static final String TAG_MIME = "bmime:";
@@ -94,77 +97,60 @@ public class VaultBackupWorker extends Worker {
     public static final String KEY_STATUS = "status";
     public static final String STATUS_OK = "ok";
     public static final String STATUS_ERROR = "error";
-    /**
-     * Output data: the server's error slug on a terminal failure, so the list
-     * row can NAME the cause instead of saying only "Backup failed". The slugs
-     * that matter to a user are the 402 pair — "quota-exhausted" (unmetered flat
-     * cap) and "payment-required" (metered, no credit) — plus "payload-too-large"
-     * (the FILE is over the per-object cap, a different problem from being out of
-     * room). Absent for the retryable/unknown failures, which stay generic.
-     */
+    /** Output data: the named cause of a terminal failure, so the list row can
+     *  say WHY instead of only "Backup failed". Absent for the retryable /
+     *  unknown failures, which stay generic. */
     public static final String KEY_ERROR_SLUG = "error_slug";
+    /** The folder could not be reached (grant revoked, provider gone, card
+     *  removed) — the one cause worth its own words. */
+    public static final String SLUG_FOLDER = "folder";
+    /** No backup folder has been chosen (a job queued by a build that still
+     *  had one, or the folder was forgotten between enqueue and run). */
+    public static final String SLUG_NOT_SET_UP = "not-set-up";
 
-    /** Progress-data keys the backed-up-files list reads to render a per-item
+    /** Progress-data keys the Backups list reads to render a per-item
      *  determinate bar (KEY_NAME/KEY_MIME above identify the file). */
     public static final String KEY_PROGRESS_DONE = "progress_done";
     public static final String KEY_PROGRESS_TOTAL = "progress_total";
 
     /** A fixed notification id for the in-progress foreground notification. */
     private static final int NOTIFICATION_ID = 0x6242; // "Bb"
+    /** The ONE "can't reach your backup folder" notification — a fixed id so
+     *  a burst of failing backups replaces it rather than stacking. */
+    private static final int NOTIFICATION_FOLDER_LOST_ID = 0x6246; // "Bf"
 
-    /** Give-up ceiling for the retry branch. A backup that keeps failing — e.g. a
-     *  large file whose per-chunk presigned URLs keep expiring mid-upload on a slow
-     *  link (the whole file re-uploads from scratch each attempt), or a wedged
-     *  manifest — must not re-upload forever (battery + bandwidth churn, a fresh
-     *  pending object leaked per attempt). getRunAttemptCount() is 0 on the first
-     *  run, so this allows ~this many attempts before a clean terminal failure the
-     *  user can retry manually. */
-    private static final int MAX_RUN_ATTEMPTS = 10;
+    /** Give-up ceiling for the retry branch: a backup that keeps failing on a
+     *  reachable folder (a provider that refuses the write, a full disk) must
+     *  not retry forever. getRunAttemptCount() is 0 on the first run. */
+    private static final int MAX_RUN_ATTEMPTS = 5;
 
     private final Context mContext;
-    private final OkHttpClient mClient;
     private final SharedPreferences mPrefs;
     /** The most recent setProgressAsync future, drained before returning a Result. */
     private ListenableFuture<Void> mLastProgress;
     /** Last published whole-percent, to throttle per-chunk progress writes. */
     private int mLastPct = -1;
-    /** The in-flight storage client, so {@link #onStopped()} can cancel its
-     *  network calls. {@code Worker} threads are NOT interrupted on cancel, so a
-     *  rate-limit retry loop would otherwise run to exhaustion after the user
-     *  cancels. Volatile: onStopped runs on a different thread than doWork. */
-    private volatile StorageApiClient mApi;
+    /** The in-flight engine, so {@link #onStopped()} can stop it at the next
+     *  chunk — {@code Worker} threads are NOT interrupted on cancel. */
+    private volatile VaultEngine mEngine;
 
     /**
      * Builds and enqueues the backup worker for one finished download — the ONE
-     * definition of the request shape (input data, identity tags, constraints)
-     * and the unique-work key, shared by every door: the download options
-     * sheet / multi-select ({@code BaseDownloadFragment}) and the
-     * download-finished notification's "Back up to cloud" action
-     * ({@link CloudBackupNotificationReceiver}). Returns the request so a
-     * caller with a lifecycle can observe its terminal {@code WorkInfo} (the
-     * fragment's failure snackbar); fire-and-forget callers ignore it.
+     * definition of the request shape (input data, identity tags) and the
+     * unique-work key, shared by every door: the download options sheet /
+     * multi-select ({@code BaseDownloadFragment}) and the download-finished
+     * notification's "Back up" action ({@link CloudBackupNotificationReceiver}).
      *
      * <p>UNIQUE per file CONTENT (name + size), REPLACE. Keyed on content — NOT
      * the path — because the SAME video downloaded twice lands at two different
-     * paths with the same name+size; a path key let both run concurrently
-     * (4 workers all uploading the same 665 MB file were seen on-device,
-     * spamming "setProgressAsync must complete before Result" and making cancel
-     * useless). name+size matches the engine's own dedup key, so unique work
-     * still collapses every backup of the same content to ONE worker. REPLACE
-     * (was KEEP) so a re-tap means RETRY NOW: under KEEP a wedged/back-off
-     * worker made "Back up to cloud" a silent no-op — there was NO way to kick
-     * a stuck backup (on-device: legacy pre-fix workers spinning in retry
-     * backoff for hours, un-cancellable rows). REPLACE cancels the old attempt
-     * and starts fresh; rapid duplicate taps still collapse (each replaces the
-     * last, one survivor), a replaced partial upload is just a pending orphan
-     * the server's ReapPending sweeps, and a re-tap after SUCCESS re-runs into
-     * the engine's commit-time dedup which returns the existing entry (no
-     * duplicate, no re-upload of the object).
+     * paths with the same name+size; name+size matches the engine's own dedup
+     * key, so unique work still collapses every backup of the same content to
+     * ONE worker. REPLACE so a re-tap means RETRY NOW: under KEEP a wedged
+     * worker made "Back up" a silent no-op. A replaced partial write is freed by
+     * the engine's own cleanup, and a re-tap after SUCCESS re-runs into the
+     * engine's dedup, which returns the existing entry.
      */
     public static OneTimeWorkRequest enqueue(Context context, DownloadEntity entity) {
-        // The origin URL to preserve in the manifest, so a restored file's row
-        // shows its real MIME · domain — same source the list adapter parses
-        // the domain from (origin URL first, media URL as the fallback).
         String origin = entity.getOriginUrl();
         if (origin == null || origin.isEmpty()) {
             origin = entity.getFileUrl();
@@ -174,26 +160,12 @@ public class VaultBackupWorker extends Worker {
                 .putString(KEY_MIME, entity.getFileMimeType())
                 .putString(KEY_NAME, entity.getFileName())
                 .putString(KEY_ORIGIN, origin)
-                // The download's own date, so a restored copy keeps it instead of
-                // being stamped with the backup time (see KEY_DOWNLOADED_AT).
                 .putLong(KEY_DOWNLOADED_AT, entity.getFileDate())
-                // Reuse the exact frame the Downloads list renders, so the stored
-                // preview is the same (precise) frame, not a guessed offset.
                 .putLong(KEY_FRAME_US, GlideHelper.thumbnailFrameUs(entity))
-                .build();
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(VaultBackupWorker.class)
                 .setInputData(input)
-                .setConstraints(constraints)
                 .addTag(CloudBackupManager.WORK_TAG)
-                // Identity tags so the backed-up-files list can render a transfer
-                // row while the worker is still ENQUEUED — WorkInfo exposes tags
-                // but NOT input data, and progress is empty until the worker
-                // starts, which made the list look EMPTY right after "Back up to
-                // cloud" (the moment the snackbar's View opens it). Name payload
-                // capped (tags are DB rows, filenames can be huge; display-only).
                 .addTag(TAG_NAME + truncateTag(entity.getFileName()))
                 .addTag(TAG_MIME + truncateTag(entity.getFileMimeType()))
                 .addTag(TAG_SIZE + entity.getFileSize())
@@ -217,11 +189,9 @@ public class VaultBackupWorker extends Worker {
     public VaultBackupWorker(
             @Assisted @NonNull Context context,
             @Assisted @NonNull WorkerParameters params,
-            OkHttpClient client,
             SharedPreferences prefs) {
         super(context, params);
         this.mContext = context;
-        this.mClient = client;
         this.mPrefs = prefs;
     }
 
@@ -240,17 +210,16 @@ public class VaultBackupWorker extends Worker {
             }
             return failure();
         }
+        FolderStore store = new FolderStore(mContext, mPrefs);
+        if (!store.isConfigured()) {
+            return failure(SLUG_NOT_SET_UP);
+        }
         File file = new File(path);
-        // exists()/canRead() false ALSO means "present but unreadable" — the state
-        // of a RESTORED foreign-owned file (Android 11+: a reinstalled app doesn't
-        // own its old public files; a direct File open EACCES-es). Resolve access
-        // the way every other read path does (RestoredFileAccess): the owned file
-        // first, then the persisted SAF grant. Without this, the raw open's
-        // FileNotFoundException fell into the transient-IOException branch and the
-        // worker silently RETRIED for hours — the on-device "stuck at Backing up…
-        // 0%" on a restored file. Only when NEITHER path opens is the file
-        // genuinely inaccessible — a PERMANENT condition, failed terminally
-        // (a retry can't grow a grant).
+        // exists()/canRead() false ALSO means "present but unreadable" — the
+        // state of a RESTORED foreign-owned file (Android 11+). Resolve access
+        // the way every other read path does (RestoredFileAccess): the owned
+        // file first, then the persisted SAF grant. Only when NEITHER opens is
+        // the file genuinely inaccessible — PERMANENT, failed terminally.
         final boolean direct = file.exists() && file.canRead();
         long size = direct ? file.length() : RestoredFileAccess.length(mContext, path);
         if (!direct) {
@@ -271,7 +240,7 @@ public class VaultBackupWorker extends Worker {
             }
         }
 
-        // Promote to foreground for the upload (dataSync). Best-effort: if the OS
+        // Promote to foreground for the write (dataSync). Best-effort: if the OS
         // refuses (rare), the work still runs in the background.
         try {
             setForegroundAsync(foregroundInfo(name)).get();
@@ -284,7 +253,7 @@ public class VaultBackupWorker extends Worker {
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "backup failed: no recovery code (signed out between enqueue and run?)");
             }
-            return failure(); // not set up (e.g. signed out between enqueue and run)
+            return failure(SLUG_NOT_SET_UP);
         }
         SyncIdentity identity;
         try {
@@ -293,47 +262,31 @@ public class VaultBackupWorker extends Worker {
             SyncSecrets.wipe(code);
         }
 
-        StorageApiClient api = new StorageApiClient(mClient, Preferences.STORAGE_DEFAULT_BACKEND);
-        mApi = api;
-        // A cancel that landed before the client was built (the worker was stopped
-        // while going foreground / loading the code) still applies — refuse calls.
+        VaultEngine engine = new VaultEngine(store, identity);
+        mEngine = engine;
         if (isStopped()) {
-            api.cancel();
+            engine.cancel();
         }
-        VaultEngine engine = new VaultEngine(api, identity);
-        // A tiny preview, stored in the encrypted manifest so the list shows a
-        // thumbnail offline even after the local copy is deleted.
-        // Context-aware: reads a RESTORED foreign-owned file via the SAF grant,
-        // so restored files back up WITH a preview instead of the mime glyph.
+        // A tiny preview, stored in the encrypted sidecar so the list shows a
+        // thumbnail even after the local copy is deleted, on every phone sharing
+        // the code. Context-aware: reads a RESTORED foreign-owned file via the
+        // SAF grant.
         String thumb = VaultThumbnail.generate(mContext, path, mime, frameUs);
         if (BuildConfig.DEBUG) {
-            // A null here is why a backed-up file can show a thumbnail on the
-            // device that uploaded it and a mime glyph on every other device
-            // sharing the recovery code: the row falls back to a preview decoded
-            // from the LOCAL file, which the other device does not have. It used
-            // to fail SILENTLY, which is what made that class of report hard to
-            // attribute — so say so.
             Log.d(TAG, "thumb for " + mime + ": "
                     + (thumb == null ? "NULL (row will fall back to the local file, "
-                            + "and other devices will show the mime glyph)"
+                            + "and other phones will show the mime glyph)"
                             : thumb.length() + " b64 chars"));
         }
-        // Publish the file's identity + a determinate per-chunk progress so the
-        // backed-up-files list can show a per-item bar (like the Downloads list).
         final String fName = name;
         final String fMime = mime;
         publishProgress(fName, fMime, 0, size);
         try {
-            // Register ONCE per install (not per backup) — Cloudflare rate-limits
-            // the register endpoints, so re-registering on every upload bursts them.
-            CloudBackupManager.ensureRegistered(mPrefs, api, identity);
             if (direct) {
                 engine.backupFile(file, mime, thumb,
                         (done, total) -> publishProgress(fName, fMime, done, total),
                         origin, downloadedAt);
             } else {
-                // Restored foreign-owned file: stream via the SAF grant. The engine
-                // opens the source exactly once per attempt and reads sequentially.
                 engine.backupStream(file.getName(), size, () -> {
                     ParcelFileDescriptor pfd = RestoredFileAccess.openReadOnly(mContext, path);
                     if (pfd == null) {
@@ -343,42 +296,36 @@ public class VaultBackupWorker extends Worker {
                 }, mime, thumb, (done, total) -> publishProgress(fName, fMime, done, total),
                         origin, downloadedAt);
             }
-        } catch (StorageApiClient.FatalException e) {
-            // A 4xx with a slug (bad request / unknown keyset / …) won't fix itself
-            // — terminal. Checked BEFORE the bare-IOException branch because
-            // FatalException IS an IOException.
+        } catch (FolderStore.UnreachableException e) {
+            // The FOLDER, not the file: grant revoked, provider gone, card out.
+            // Terminal — a retry cannot grow a grant — and told ONCE as a
+            // notification, because the Backup hero's lost state is only seen
+            // by someone who opens the app. Checked BEFORE the bare-IOException
+            // branch (it IS an IOException).
             if (BuildConfig.DEBUG) {
-                Log.e(TAG, "backup failed (fatal server error)", e);
+                Log.e(TAG, "backup failed: folder unreachable", e);
             }
             awaitLastProgress();
-            return failure(e.slug);
+            if (!isStopped()) {
+                notifyFolderLost(name);
+            }
+            return failure(SLUG_FOLDER);
         } catch (FileNotFoundException e) {
             // The file itself can't be opened (deleted mid-flight, or a foreign-
-            // owned file whose grant vanished). PERMANENT — retrying re-fails
-            // identically forever; must be caught BEFORE the bare-IOException
-            // retry branch (FileNotFoundException IS an IOException).
+            // owned file whose grant vanished). PERMANENT.
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "backup failed: file unreadable", e);
             }
             awaitLastProgress();
             return failure();
         } catch (IOException e) {
-            // Everything retryable: a 429/5xx (TransientException) AND a bare
-            // socket drop / read timeout mid-upload (a plain IOException OkHttp
-            // throws, which is NOT a TransientException) AND manifest OCC
-            // exhaustion. On a flaky mobile link these are the common case — retry
-            // with WorkManager's backoff instead of failing the backup permanently
-            // and orphaning the uploaded object.
+            // A failed write on a reachable folder, a cancel, a provider hiccup:
+            // retry with WorkManager's backoff, bounded.
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "backup attempt " + getRunAttemptCount() + " failed (transient)", e);
             }
             awaitLastProgress();
-            if (getRunAttemptCount() >= MAX_RUN_ATTEMPTS) {
-                // Persistently failing (e.g. a large file whose per-chunk presign
-                // URLs keep expiring mid-upload on a slow link — each retry restarts
-                // the whole upload). Stop re-uploading forever; fail cleanly so the
-                // user can retry deliberately. (The real cure is resumable / lazy
-                // per-chunk presign so a long upload isn't bounded by one TTL.)
+            if (isStopped() || getRunAttemptCount() >= MAX_RUN_ATTEMPTS) {
                 return failure();
             }
             return Result.retry();
@@ -392,10 +339,9 @@ public class VaultBackupWorker extends Worker {
 
         // A pending setProgressAsync MUST complete before we return a Result, or
         // WorkManager throws "Calls to setProgressAsync() must complete before a
-        // ListenableWorker signals completion" (the last per-chunk update races
-        // the return).
+        // ListenableWorker signals completion".
         awaitLastProgress();
-        // First successful backup marks Cloud Backup as in use, so the shared
+        // The first successful backup marks Backup as in use, so the shared
         // recovery code survives a bookmark-sync sign-out (see SyncManager).
         mPrefs.edit().putBoolean(Preferences.CLOUD_BACKUP_ENABLED, true).apply();
         return Result.success(new Data.Builder()
@@ -405,14 +351,9 @@ public class VaultBackupWorker extends Worker {
 
     @Override
     public void onStopped() {
-        // WorkManager does NOT interrupt a Worker's thread on cancel, so cancel the
-        // storage client's in-flight call here — otherwise its rate-limit retry
-        // loop keeps hammering the (already throttled) register endpoint after the
-        // user cancelled. Cancelling makes the loop's next chain.proceed throw
-        // "Canceled", and the pre-sleep isCanceled() check bails out immediately.
-        StorageApiClient api = mApi;
-        if (api != null) {
-            api.cancel();
+        VaultEngine engine = mEngine;
+        if (engine != null) {
+            engine.cancel();
         }
         super.onStopped();
     }
@@ -421,8 +362,8 @@ public class VaultBackupWorker extends Worker {
         return failure(null);
     }
 
-    /** @param slug the server's error slug when there was one, else null — the
-     *              list row uses it to name the cause. */
+    /** @param slug the named cause when there is one, else null — the list row
+     *              uses it to say why. */
     private Result failure(@Nullable String slug) {
         Data.Builder out = new Data.Builder().putString(KEY_STATUS, STATUS_ERROR);
         if (slug != null) {
@@ -435,9 +376,6 @@ public class VaultBackupWorker extends Worker {
      *  future is tracked so {@link #awaitLastProgress()} can drain it before the
      *  worker returns a Result. */
     private void publishProgress(String name, String mime, long done, long total) {
-        // A cancelled/stopped worker's WorkSpec is being torn down — a late
-        // setProgressAsync then logs "must complete before Result"/"not RUNNING".
-        // Skip it once stopped.
         if (isStopped()) {
             return;
         }
@@ -471,27 +409,22 @@ public class VaultBackupWorker extends Worker {
         try {
             f.get();
         } catch (Exception ignored) {
-            // interrupted / already-completing — nothing we can do, and the
-            // worker is about to finish anyway.
+            // interrupted / already-completing — the worker is about to finish anyway.
         }
     }
 
     private ForegroundInfo foregroundInfo(String name) {
         // Short and branded: the action is the title, the file name is the body
-        // (ellipsized by the system) — not a two-line sentence. Tapping opens the
-        // Downloads-backup screen (the live status), like a download notification
-        // opens the Downloads list.
+        // (ellipsized by the system). Tapping opens the Backups list (the live
+        // per-item progress), like a download notification opens Downloads.
         String title = mContext.getString(R.string.cloud_backup_notification_title);
         Notification notification = new NotificationCompat.Builder(
                 mContext, App.DOWNLOADS_NOTIFICATION_ID)
-                .setSmallIcon(R.drawable.ic_cloud_upload_24)
+                .setSmallIcon(R.drawable.ic_folder_upload_24)
                 .setLargeIcon(BitmapFactory.decodeResource(
                         mContext.getResources(), R.mipmap.ic_launcher_round))
                 .setContentTitle(title)
                 .setContentText(name != null ? name : title)
-                // Open the Backups files list DIRECTLY (not the Cloud settings
-                // screen) so tapping the "Backing up…" notification lands on the
-                // live per-item progress — the items being uploaded.
                 .setContentIntent(cloudBackupFilesIntent(mContext))
                 .setOngoing(true)
                 .setProgress(0, 0, true) // indeterminate
@@ -504,8 +437,45 @@ public class VaultBackupWorker extends Worker {
         return new ForegroundInfo(NOTIFICATION_ID, notification);
     }
 
-    /** PendingIntent that opens the Downloads-backup status screen (the merged
-     *  Cloud settings screen). Used by the restore notification. */
+    /**
+     * The ONE notification the folder model posts: a backup failed because the
+     * folder could not be reached. Tap → the Backup screen, whose hero shows
+     * the folder-lost state and the "Choose the folder again" CTA. Silent when
+     * notifications are denied (the hero and the Backups header carry the
+     * state regardless). Fixed id: a batch of failing backups replaces it.
+     */
+    private void notifyFolderLost(@Nullable String name) {
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        NotificationManager nm = (NotificationManager)
+                mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) {
+            return;
+        }
+        String title = mContext.getString(R.string.folder_backup_lost_notif_title);
+        String text = name != null
+                ? mContext.getString(R.string.folder_backup_lost_notif_text, name)
+                : mContext.getString(R.string.folder_backup_lost_notif_text_noname);
+        Notification notification = new NotificationCompat.Builder(
+                mContext, App.DOWNLOADS_NOTIFICATION_ID)
+                .setSmallIcon(R.drawable.ic_folder_off_24)
+                .setLargeIcon(BitmapFactory.decodeResource(
+                        mContext.getResources(), R.mipmap.ic_launcher_round))
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(cloudBackupIntent(mContext))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build();
+        nm.notify(NOTIFICATION_FOLDER_LOST_ID, notification);
+    }
+
+    /** PendingIntent that opens the Backup screen (the merged settings screen
+     *  with the hero). Used by the restore notification and the folder-lost
+     *  notification. */
     static PendingIntent cloudBackupIntent(Context context) {
         Intent intent = new Intent(context, SettingsActivity.class);
         intent.putExtra(SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP, true);
@@ -514,7 +484,7 @@ public class VaultBackupWorker extends Worker {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    /** PendingIntent that opens the backed-up-FILES list directly, so the backup
+    /** PendingIntent that opens the Backups list directly, so the backup
      *  notification lands on the live per-item progress (Back returns to the
      *  caller, not into the settings tree — see SettingsActivity). A distinct
      *  request code from {@link #cloudBackupIntent} so the two PendingIntents

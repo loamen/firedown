@@ -119,7 +119,7 @@ public interface DownloadDao {
 
     /**
      * First download whose name and byte-size both match — the "is this file
-     * already in Downloads?" probe used by Cloud Backup (skip a restore that
+     * already in Downloads?" probe used by Backup (skip a restore that
      * would duplicate an existing file, and locate a local copy to backfill a
      * missing preview thumbnail from).
      */

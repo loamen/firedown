@@ -1,5 +1,7 @@
 package com.solarized.firedown.sync;
 
+import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 import android.util.Base64;
 
 import com.solarized.firedown.sync.crypto.SyncIdentity;
@@ -14,50 +16,43 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Random-access, decrypt-on-read view over ONE backed-up vault object — the
- * enabler for STREAMING a cloud file without first downloading + decrypting the
- * whole thing to disk (which is what "restore" does).
+ * Random-access, decrypt-on-read view over ONE backed-up object in the folder —
+ * the enabler for STREAMING a backed-up file without first restoring it to disk.
  *
- * <p>It works because the vault's on-the-wire layout is chunked and every chunk
- * is INDEPENDENTLY sealed: the plaintext is split into fixed
- * {@link VaultEngine#CHUNK_SIZE} (8 MiB) blocks and each block is AES-256-GCM'd
- * under the per-file DEK with its own IV ({@link VaultCrypto#encryptChunk}). So a
- * plaintext byte offset maps to exactly one chunk ({@code offset / CHUNK_SIZE})
- * that can be fetched (a presigned R2 GET) and decrypted on its own — a
- * player/decoder seeking anywhere in the file only pays for the ~8 MiB chunk(s)
- * covering that range, not the whole object.</p>
+ * <p>It works because the object's layout is chunked and every chunk is
+ * INDEPENDENTLY sealed: the plaintext is split into fixed
+ * {@link VaultEngine#CHUNK_SIZE} (8 MiB) blocks, each AES-256-GCM'd under the
+ * per-file DEK with its own IV ({@link VaultCrypto#encryptChunk}) and written
+ * back to back. So a plaintext byte offset maps to exactly one chunk
+ * ({@code offset / CHUNK_SIZE}) at a byte range the sidecar fixes
+ * ({@link VaultEngine#chunkOffset}, {@link VaultEngine#chunkCiphertextLength}),
+ * read with one positional read and decrypted on its own — a player seeking
+ * anywhere pays for the ~8 MiB chunk(s) covering that range, not the file.</p>
  *
- * <p>The DEK is unwrapped once in the constructor from the manifest's wrapped
- * blob under the account's storage master key ({@link
- * SyncIdentity#storageMasterKey()}); the server never sees either. A tiny LRU of
- * decrypted chunks avoids re-fetching the same chunk on adjacent reads (a
- * demuxer reads a chunk in many small {@code readAt} calls). Presigned GET URLs
- * expire (~15 min); a fetch failure re-mints the object's URLs ONCE
- * ({@link StorageApiClient#getObject}) and retries, so a long playback session
- * outliving the TTL resumes transparently.</p>
+ * <p>The DEK is unwrapped once in the constructor from the sidecar's wrapped
+ * blob under the account's storage master key. The object is located (one
+ * directory listing) and opened in the constructor too, so construction is IO
+ * and belongs off the main thread; the descriptor stays open for the reader's
+ * life. A tiny LRU of decrypted chunks avoids re-reading the same chunk on
+ * adjacent reads (a demuxer reads a chunk in many small {@code readAt} calls).</p>
  *
- * <p>Not thread-safe by field, so {@link #readAt} is {@code synchronized} — a
- * media DataSource reads from a single loading thread, but the sync keeps the
- * chunk cache + lazy {@code info} fetch consistent regardless.</p>
+ * <p>Not thread-safe by field, so {@link #readAt} is {@code synchronized}.</p>
  */
 public final class VaultObjectReader {
 
     private static final int B64 = Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP;
     /** Decrypted-chunk LRU size. Two covers a read straddling a chunk boundary
-     *  plus a small seek-back without a re-fetch; larger would hold tens of MiB
-     *  of plaintext in memory for no real gain (sequential playback advances). */
+     *  plus a small seek-back without a re-read; larger would hold tens of MiB
+     *  of plaintext in memory for no real gain. */
     private static final int CACHE_CHUNKS = 2;
 
-    private final StorageApiClient api;
-    private final SyncIdentity identity;
+    private final FolderStore store;
     private final String objectIdHex;
     private final long length;      // plaintext bytes (the file size)
     private final int chunkCount;
     private final byte[] dek;
-
-    /** Presigned download URLs (one per chunk), lazily fetched then re-minted on
-     *  expiry. Null until the first read. */
-    private StorageApiClient.ObjectInfo info;
+    private final Uri object;
+    private final ParcelFileDescriptor pfd;
 
     /** Decrypted-chunk cache, access-ordered so the eldest entry is the LRU
      *  victim. Bounded to {@link #CACHE_CHUNKS}. */
@@ -70,15 +65,25 @@ public final class VaultObjectReader {
 
     private boolean closed;
 
-    public VaultObjectReader(StorageApiClient api, SyncIdentity identity, VaultEntry entry)
-            throws GeneralSecurityException {
-        this.api = api;
-        this.identity = identity;
+    public VaultObjectReader(FolderStore store, SyncIdentity identity, VaultEntry entry)
+            throws GeneralSecurityException, IOException {
+        this.store = store;
         this.objectIdHex = entry.objectId;
         this.length = entry.size;
         this.chunkCount = Math.max(1, entry.chunkCount);
         this.dek = VaultCrypto.unwrapDek(Base64.decode(entry.wrappedDek, B64),
                 identity.storageMasterKey());
+        Uri doc;
+        ParcelFileDescriptor opened;
+        try {
+            doc = store.requireObject(identity.accountBase32(), entry.objectId);
+            opened = store.openRead(doc);
+        } catch (IOException | RuntimeException e) {
+            Arrays.fill(dek, (byte) 0);
+            throw e;
+        }
+        this.object = doc;
+        this.pfd = opened;
     }
 
     /** Total plaintext length of the file. */
@@ -89,10 +94,9 @@ public final class VaultObjectReader {
     /**
      * Reads up to {@code len} plaintext bytes starting at {@code pos} into
      * {@code buf} at {@code off}. Returns the number of bytes read (≥ 1) or
-     * {@code -1} at end of file. Reads never span a chunk decrypt more than
-     * needed — a request straddling a chunk boundary returns only up to that
-     * boundary (the caller loops), which is the standard {@code InputStream}/
-     * {@code DataSource} contract.
+     * {@code -1} at end of file. A request straddling a chunk boundary returns
+     * only up to that boundary (the caller loops), the standard
+     * {@code InputStream}/{@code DataSource} contract.
      */
     public synchronized int readAt(long pos, byte[] buf, int off, int len) throws IOException {
         if (closed) {
@@ -105,13 +109,10 @@ public final class VaultObjectReader {
         int within = (int) (pos % VaultEngine.CHUNK_SIZE);
         byte[] chunk = decryptedChunk(chunkIndex);
         if (within >= chunk.length) {
-            // A short final chunk shorter than its nominal offset — nothing here.
             return -1;
         }
         int available = chunk.length - within;
         int n = Math.min(len, available);
-        // Also clamp to the file's true end (defends against a last chunk that
-        // decrypts longer than the declared size — never observed, cheap guard).
         long remainingInFile = length - pos;
         if (n > remainingInFile) {
             n = (int) remainingInFile;
@@ -122,9 +123,8 @@ public final class VaultObjectReader {
 
     /**
      * Reads the WHOLE object into memory (for images, which media3 can't stream
-     * frame-by-frame and which are small). Refuses an object larger than
-     * {@code maxBytes} with an {@link IOException} so a mislabeled huge file
-     * can't OOM the app.
+     * and which are small). Refuses an object larger than {@code maxBytes} with
+     * an {@link IOException} so a mislabeled huge file can't OOM the app.
      */
     public synchronized byte[] readAll(long maxBytes) throws IOException {
         if (length > maxBytes) {
@@ -144,19 +144,26 @@ public final class VaultObjectReader {
         return out.toByteArray();
     }
 
-    /** Fetches + decrypts chunk {@code i}, serving from the LRU when warm. */
+    /** Reads + decrypts chunk {@code i}, serving from the LRU when warm. */
     private byte[] decryptedChunk(int i) throws IOException {
         byte[] cached = cache.get(i);
         if (cached != null) {
             return cached;
         }
-        byte[] enc = fetchChunk(i);
+        if (i < 0 || i >= chunkCount) {
+            throw new IOException("chunk " + i + " out of range");
+        }
+        int cipherLen = VaultEngine.chunkCiphertextLength(length, i);
+        byte[] enc = store.readRange(object, pfd, VaultEngine.chunkOffset(i), cipherLen);
+        if (enc.length != cipherLen) {
+            throw new IOException("object truncated at chunk " + i
+                    + " (" + enc.length + " of " + cipherLen + " bytes)");
+        }
         byte[] plain;
         try {
-            // The streaming reader ALREADY knows the index (it maps a plaintext
-            // offset to offset / CHUNK_SIZE), so the FDVC2 AAD check comes free:
-            // a server serving chunk j's bytes for chunk i fails authentication
-            // here instead of the player rendering spliced media.
+            // The reader ALREADY knows the index, so the FDVC2 AAD check comes
+            // free: bytes that are not chunk i of this object fail here instead
+            // of the player rendering spliced media.
             plain = VaultCrypto.decryptChunk(enc, dek, objectIdHex, i);
         } catch (GeneralSecurityException e) {
             throw new IOException("chunk " + i + " decrypt failed", e);
@@ -165,47 +172,24 @@ public final class VaultObjectReader {
         return plain;
     }
 
-    /** Fetches encrypted chunk {@code i} from its presigned URL, re-minting the
-     *  object's URLs ONCE if the fetch fails (presigned GETs expire ~15 min into
-     *  a long session). */
-    private byte[] fetchChunk(int i) throws IOException {
-        StorageApiClient.ObjectInfo current = ensureInfo();
-        String url = urlFor(current, i);
-        try {
-            return api.getChunk(url);
-        } catch (IOException first) {
-            // Re-mint fresh presigned URLs and retry once — the create-time URLs
-            // may have expired mid-session. A second failure is real (offline,
-            // deleted object) and propagates.
-            info = null;
-            StorageApiClient.ObjectInfo refreshed = ensureInfo();
-            return api.getChunk(urlFor(refreshed, i));
-        }
-    }
-
-    private StorageApiClient.ObjectInfo ensureInfo() throws IOException {
-        if (info == null) {
-            info = api.getObject(identity, objectIdHex);
-        }
-        return info;
-    }
-
-    private String urlFor(StorageApiClient.ObjectInfo info, int i) throws IOException {
-        if (info.downloadUrls == null || i < 0 || i >= info.downloadUrls.size()) {
-            throw new IOException("no download url for chunk " + i);
-        }
-        return info.downloadUrls.get(i);
-    }
-
-    /** Number of chunks (from the manifest entry). */
+    /** Number of chunks (from the sidecar). */
     public int chunkCount() {
         return chunkCount;
     }
 
-    /** Wipes the unwrapped DEK and drops the plaintext cache. Idempotent. */
+    /** Wipes the unwrapped DEK, drops the plaintext cache and closes the
+     *  object. Idempotent. */
     public synchronized void close() {
+        if (closed) {
+            return;
+        }
         closed = true;
         Arrays.fill(dek, (byte) 0);
         cache.clear();
+        try {
+            pfd.close();
+        } catch (IOException ignored) {
+            // nothing further to do with a descriptor that will not close
+        }
     }
 }

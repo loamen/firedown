@@ -19,7 +19,7 @@ import com.solarized.firedown.R;
  * value; in LIGHT theme the placeholder is a warm cream and the caption must
  * follow it to dark ink (13.5:1) — white would sit at 1.2:1. The resources own
  * the per-theme values; this class only hands them to the three grid adapters
- * (Downloads, Captured, Cloud Backup) so they cannot drift. Never resolve a
+ * (Downloads, Captured, Backups) so they cannot drift. Never resolve a
  * theme attr for one of these at bind time: the tile's ground does not follow
  * the theme surface, so a surface ink is wrong on it in one theme or the other
  * (the CloudBackup TransferVH lesson).

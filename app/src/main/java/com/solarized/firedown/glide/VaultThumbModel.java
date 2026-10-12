@@ -9,7 +9,7 @@ import java.util.Objects;
 
 /**
  * Glide model for the STORED preview of a backed-up file — the base64 JPEG that
- * rides inside the encrypted Cloud Backup manifest ({@code VaultEntry.thumb}).
+ * rides inside the encrypted backup sidecar ({@code VaultEntry.thumb}).
  *
  * <p>This exists so the Backups list can render that preview through Glide
  * instead of a hand-rolled cache. Before it, the list decoded the base64+JPEG

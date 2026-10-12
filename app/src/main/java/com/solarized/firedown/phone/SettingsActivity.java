@@ -13,7 +13,6 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.solarized.firedown.BaseActivity;
 import com.solarized.firedown.R;
-import com.solarized.firedown.settings.CloudBackupListFragment;
 
 public class SettingsActivity extends BaseActivity {
 
@@ -22,26 +21,22 @@ public class SettingsActivity extends BaseActivity {
     public static final String EXTRA_OPEN_SYNC = "com.solarized.firedown.extra.OPEN_SYNC";
 
     /** Intent boolean extra: bookmarks-sync deep link (bookmarks-list overflow +
-     *  sync banner). Lands on the merged Cloud screen, which hosts the inline
+     *  sync banner). Lands on the Backup screen, which hosts the inline
      *  bookmarks switch since the focused Bookmarks screen was retired; kept as
      *  its own extra because callers express a different intent than
      *  {@link #EXTRA_OPEN_SYNC}. */
     public static final String EXTRA_OPEN_BOOKMARKS_SYNC = "com.solarized.firedown.extra.OPEN_BOOKMARKS_SYNC";
 
-    /** Intent boolean extra: open the Cloud screen — the in-progress
-     *  upload/restore notification and the home status line deep-link here. Since
-     *  the Cloud Backup sub-screen merged into the Cloud screen this lands on the
-     *  same destination as {@link #EXTRA_OPEN_SYNC}; both extras are kept because
-     *  callers express different intents (backup status vs account). */
+    /** Intent boolean extra: open the Backup screen — the in-progress
+     *  backup/restore notification, the folder-lost notification and the
+     *  Downloads banner deep-link here. It lands on the same destination as
+     *  {@link #EXTRA_OPEN_SYNC}; both extras are kept because callers express
+     *  different intents (backup status vs account). */
     public static final String EXTRA_OPEN_CLOUD_BACKUP = "com.solarized.firedown.extra.OPEN_CLOUD_BACKUP";
 
     /** Intent boolean extra: open straight to the backed-up-files list (the
      *  Downloads toolbar overflow deep-links here). */
     public static final String EXTRA_OPEN_CLOUD_BACKUP_FILES = "com.solarized.firedown.extra.OPEN_CLOUD_BACKUP_FILES";
-    /** With {@link #EXTRA_OPEN_CLOUD_BACKUP_FILES}: open the list's "Restore all
-     *  to this phone" confirmation once it knows what is cloud-only (the home
-     *  grace card's RESTORE action). */
-    public static final String EXTRA_RESTORE_ALL = "com.solarized.firedown.extra.RESTORE_ALL";
     /** Open Settings → Privacy → "Trackers and ads blocked" (the stats screen)
      *  directly, replacing the settings list on the back stack so Back returns
      *  to the caller — the home's blocked line is its sender. */
@@ -103,8 +98,8 @@ public class SettingsActivity extends BaseActivity {
             navController.navigate(R.id.settings_blocked_stats, null, opts);
         }
 
-        // Deep-link for the bookmarks-list overflow + sync banner: the merged
-        // Cloud screen (it hosts the inline bookmarks switch). Replace the
+        // Deep-link for the bookmarks-list overflow + sync banner: the Backup
+        // screen (it hosts the inline bookmarks switch). Replace the
         // settings list on the back stack so Back returns to the caller
         // (bookmarks), not into the settings tree.
         if (getIntent().getBooleanExtra(EXTRA_OPEN_BOOKMARKS_SYNC, false)) {
@@ -114,8 +109,8 @@ public class SettingsActivity extends BaseActivity {
             navController.navigate(R.id.settings_sync, null, opts);
         }
 
-        // Deep-link straight to the merged Cloud screen (home status line + the
-        // upload/restore notification). Replace the settings list on the back
+        // Deep-link straight to the Backup screen (the Downloads banner + the
+        // backup/restore and folder-lost notifications). Replace the settings list on the back
         // stack so Back finishes this activity and returns to the CALLER (home /
         // whatever was behind the notification) instead of stepping into the
         // settings tree — same contract as the files deep-link below (a user
@@ -136,12 +131,7 @@ public class SettingsActivity extends BaseActivity {
             NavOptions opts = new NavOptions.Builder()
                     .setPopUpTo(R.id.settings, true)
                     .build();
-            Bundle args = null;
-            if (getIntent().getBooleanExtra(EXTRA_RESTORE_ALL, false)) {
-                args = new Bundle();
-                args.putBoolean(CloudBackupListFragment.ARG_RESTORE_ALL, true);
-            }
-            navController.navigate(R.id.settings_cloud_backup_files, args, opts);
+            navController.navigate(R.id.settings_cloud_backup_files, null, opts);
         }
 
         navController.addOnDestinationChangedListener((navController1, navDestination, bundle) -> {
@@ -178,8 +168,6 @@ public class SettingsActivity extends BaseActivity {
                 mToolbar.setTitle(R.string.settings_cloud_delete_title);
             else if(id == R.id.settings_cloud_backup_files)
                 mToolbar.setTitle(R.string.cloud_backup_files_title);
-            else if(id == R.id.settings_cloud_backup_buy)
-                mToolbar.setTitle(R.string.buy_credit_title);
             else if(id == R.id.settings_share_app)
                 mToolbar.setTitle(R.string.share_app_title);
             else if(id == R.id.settings_feedback)

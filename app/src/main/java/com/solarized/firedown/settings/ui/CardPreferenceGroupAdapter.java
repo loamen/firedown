@@ -31,7 +31,7 @@ import com.solarized.firedown.utils.SheetGroups;
  * <p>A GROUP is a maximal run of consecutive card rows in adapter order. A
  * {@link PreferenceCategory} ends one (its header renders as the label above
  * the next group; a TITLE-LESS category renders as a bare 16dp break — the
- * Cloud screen's unlabelled groups), and so does a {@link FlatPreference}
+ * Backup screen's unlabelled groups), and so does a {@link FlatPreference}
  * (the Cloud hero and CTA, the tracking count, the DoH field, footnotes),
  * which keeps its own full-width layout. Everything else is a card: it gets
  * the 16dp side gutter as item margins, a 2dp top margin unless it opens its

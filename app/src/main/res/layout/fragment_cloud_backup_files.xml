@@ -37,29 +37,28 @@
              and comes back only at the top — no lift, no tint band.
 
              TEXT ONLY: inventory line, then status + trust. The header carries
-             no control at all — the "Add storage credit" door is a toolbar
-             OVERFLOW item (menu_cloud_backup), which is what removed the width
-             fight that used to live here.
+             no control at all — every action is a toolbar OVERFLOW item
+             (menu_cloud_backup), which is what removed the width fight that
+             used to live here.
 
-             History, because the obvious "put it back beside the text" is wrong:
-             this row held a trailing runway BUTTON, and on a 360dp phone
-             "Add storage credit ›" ate ~170dp of ~340dp, truncating the trust
-             line to "…encrypted e…" (reported on-device). No width split fixes
-             that — a long translatable BUTTON and a long translatable SUBTITLE
-             are two full-width demands that grow TOGETHER, so the worst case is
-             always simultaneous (German: "Speicherguthaben hinzufügen" beside
-             "Ende-zu-Ende-verschlüsselt"), and line 1 takes a "Backing up… · "
-             prefix during a transfer, so it is no safer a neighbour. Moving the
-             ACTION to the toolbar leaves only text here, and text can WRAP where
-             a button label cannot — hence maxLines=2 on line 2, which degrades
-             by growing rather than by hiding a fact. -->
-        <!-- Line 2 = STATUS · trust ("≈ 1 year of coverage · encrypted
-             end-to-end", "Read-only · …", or the beta's "of 11 GB included · …").
+             History, because the obvious "put a button beside the text" is
+             wrong: under the hosted service this row held a trailing BUTTON,
+             and on a 360dp phone its label ate ~170dp of ~340dp, truncating the
+             trust line to "…encrypted e…" (reported on-device). No width split
+             fixes that — a long translatable BUTTON and a long translatable
+             SUBTITLE are two full-width demands that grow TOGETHER, so the
+             worst case is always simultaneous, and line 1 takes a
+             "Backing up… · " prefix during a transfer, so it is no safer a
+             neighbour. Actions in the toolbar leave only text here, and text
+             can WRAP where a button label cannot — hence maxLines=2 on line 2,
+             which degrades by growing rather than by hiding a fact. -->
+        <!-- Line 2 = STATUS · trust ("Firedown Backup on Google Drive ·
+             encrypted end-to-end", or "Can't reach your backup folder · …").
              Status leads so a wrap moves the boilerplate tail, not the fact. It
-             stays HERE rather than following the door into the overflow because
-             a menu item is invisible until opened, and status you have to go
-             looking for is not status — the read-only grace state in particular
-             has to be readable on arrival. -->
+             stays HERE rather than in the overflow because a menu item is
+             invisible until opened, and status you have to go looking for is
+             not status — the folder-lost state in particular has to be
+             readable on arrival. -->
         <LinearLayout
             android:id="@+id/cb_header"
             android:layout_width="match_parent"

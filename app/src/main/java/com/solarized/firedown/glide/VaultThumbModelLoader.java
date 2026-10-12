@@ -19,7 +19,7 @@ import java.io.InputStream;
 
 /**
  * Glide {@link ModelLoader} for a {@link VaultThumbModel} — the stored base64
- * JPEG preview carried inside the encrypted Cloud Backup manifest. Glide's
+ * JPEG preview carried inside the encrypted backup sidecar. Glide's
  * built-in stream decoders take it from there.
  *
  * <p>Replaces a hand-rolled {@code LruCache} in {@code CloudBackupFileAdapter}

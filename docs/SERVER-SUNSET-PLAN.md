@@ -1,13 +1,18 @@
 # Server sunset — the plan, step by step
 
-Firedown stops running a paid cloud. The hosted Cloud Backup closes, the
-"cloud" VPS that holds storage + mint + the bookmark API is destroyed, and
-probably the TURN relay's box with it. What survives on a Firedown server
-afterwards holds no user data: the website, the update ping it serves, the
-crash collector, feedback, bookmark sync (until it moves into a folder) and
-the P2P mailbox. A folder backup (Google Drive, Dropbox, an SD card through
-the Storage Access Framework) comes LATER as its own feature, with no
-server to migrate from — users bring their files home to the phone first.
+Firedown stops running a paid cloud. The hosted Cloud Backup
+(`storage.firedown.app`), the payments mint (`mint.firedown.app`) and the
+browser client at `firedown.app/backup/` close; the "cloud" VPS that holds
+them is destroyed, and probably the TURN relay's box with it. What survives
+on a Firedown server afterwards holds no user data: the website, the update
+ping it serves, the crash collector, feedback, bookmark sync and the P2P
+mailbox — `firedown-api`, moved onto the www host under its existing name.
+
+The app side of this ships in ONE release: the hosted-service code is
+deleted and **Backup writes to a folder the user picks** instead — Google
+Drive, Dropbox, Nextcloud, an SD card, the phone itself, anything with a
+`DocumentsProvider` — in the same encrypted format, under the same recovery
+code. No read-only phase, no delete date in the app, no migration tool.
 
 This file is the checklist. Tick boxes as steps land; each phase names its
 repo, its gate, and the verification that closes it. Decisions are recorded
@@ -15,17 +20,20 @@ here so they are not re-derived.
 
 ## Decisions (2026-10-12)
 
-- **Order: the app update first, then the server moves.** Release N turns
-  every WRITE door of Cloud Backup off (new backups, purchases, pairing) and
-  keeps every READ door (restore, restore all, stream, delete) until a
-  stated date. Only then does the api move host and the cloud VPS go dark.
-  So most installs stop talking to storage/mint before those hosts vanish,
-  and the ~six accounts holding files get weeks to restore.
-- **No ciphertext migration tool.** The earlier idea (copy objects from the
-  server into the folder under the same keys) is dropped: the sunset release
-  makes everyone restore to the phone, and the folder backup, when it
-  ships, backs up from the phone. Fewer moving parts, no server dependency
-  in the folder feature.
+- **One app release, not two.** An earlier cut of this plan shipped a
+  read-only phase first (every write door off, a stated deletion date, a
+  later release deleting the code). It was dropped (maintainer: "the delete
+  date is irrelevant"): the hosted service had a handful of accounts holding
+  files, and a release that both removes the service and ships its
+  replacement serves them better than weeks of a half-dead screen. The
+  `CloudSunset` switch, its strings and its date are gone from the tree.
+- **The folder backup replaces the service, it does not migrate from it.**
+  Nothing copies objects out of `storage.firedown.app`: a user who wants
+  their hosted files keeps them by restoring to the phone BEFORE updating
+  (the old build's Backups list still restores until Phase 3 pulls the
+  server), then backs them up again into a folder. The folder format is the
+  hosted one (FDVC2 chunks, the sidecar under the bookmark-blob framing), so
+  the crypto, its tests and the shared vectors carried over unchanged.
 - **`api.firedown.app` keeps its NAME and moves HOST.** Every APK in the wild
   posts crashes, feedback and P2P signaling to that name
   (`Preferences.SYNC_DEFAULT_BACKEND`), and the release build PUTs its R8
@@ -39,9 +47,15 @@ here so they are not re-derived.
   is its own box) and the client already degrades to direct + STUN when
   `/v1/relay/creds` answers 404. Dropping it needs no app change: delete
   `FIREDOWN_TURN_SECRET` from `api.env`, destroy the box.
-- **Stop selling the day release N goes out** — server side, so old APKs
-  stop too: deactivate every mint keyset and the app's buy screen shows its
-  existing "No storage credit is available to buy right now".
+- **Stop selling the day the release goes out** — server side, so the old
+  APKs still in the field stop too: deactivate every mint keyset. The new
+  APK has no buy screen to show the refusal; the old one shows its existing
+  "No storage credit is available to buy right now".
+- **Old APKs get `410 Gone`, not a connection refused.** For as long as the
+  www host serves anything, `storage.firedown.app` and `mint.firedown.app`
+  answer every request 410 (a one-line nginx server block, no backend). The
+  old client treats a 4xx as fatal, which is the honest outcome: its Cloud
+  screen reports an error instead of hanging on a DNS miss.
 
 ## Today's hosts
 
@@ -51,160 +65,136 @@ here so they are not re-derived.
 | **cloud VPS** (OVH; Caddy, Postgres) | `storage-api` + R2, `mint-api` + phoenixd + pruned bitcoind, `firedown-api` (bookmarks, crash, feedback, P2P, relay creds) | loses `firedown-api` (Phase 2), destroyed (Phase 3) |
 | **turn** (coturn) | the TURN relay | destroyed (Phase 3), unless kept on purpose |
 
-## Phase 1 — release N: Cloud Backup read-only (`firedown`)
+## Phase 1 — release N: the hosted service deleted, the folder backup shipped (`firedown`)
 
-- [x] **1.1 The switch** — `sync/CloudSunset.java` (`ACTIVE` + `DELETE_AT_MS`),
-      consulted at every write door: download sheet row, multi-select action
-      and batch path, finished-notification action + receiver,
-      `VaultBackupWorker` (pre-update jobs fail with `SLUG_CLOSED`), buy CTA /
-      overflow / screen, pairing, `registerInBackground`, the Storage
-      screen's upsell and "Free up space". Voice: the Cloud hero, the Backups
-      header, the Downloads banner (own dismissal key), the account watch
-      (closing notice twice at most), the Storage review confirm. Strings in
-      16 locales. CLAUDE.md carries the section.
-- [ ] **1.2 Set the date** — `CloudSunset.DELETE_AT_MS` to the real deletion
-      instant (UTC midnight), the same one the operator reaps on in 3.4. Pick
-      it ≥ 6 weeks after the release date. The code carries
-      `2026-12-31T00:00:00Z` (`1_798_675_200_000L`) and the CHANGELOG bullet
-      says "31 December 2026" — change BOTH together, or keep both if that is
-      the date (it is 11 weeks out from the bump, so it satisfies the rule).
-- [ ] **1.3 Build + device pass** — a debug build (the sandbox cannot compile:
-      no Android SDK / GeckoView AAR here, so 1.1 is reviewed, not compiled).
-      Check: the ⋮ row and the multi-select icon are gone; the finished
-      notification has no Back up action; the Cloud screen shows the notice
-      (set-up and keyless devices); the Backups list restores, streams and
-      deletes and its overflow has no top-up; the Downloads banner shows the
-      date for a set-up account and dismisses; the Storage screen has neither
-      card; a queued backup from the previous build fails as "Not uploaded:
-      Cloud Backup is closing"; the watch notification appears once.
-- [ ] **1.4 Release** — the bump and the CHANGELOG entry are DONE on the
-      branch (versionCode 1201, versionName `1.2.01` — the two-digit patch
-      convention of 1.2.00, i.e. what `./gradlew bumpVersion
-      -Pfiredown.versionName=1.2.01` writes; a bare `bumpVersion` would have
-      named it 1.2.1 — and the `## [1.2.01] - 2026-10-12` entry with the
-      closing bullet). So do NOT run `bumpVersion` again for this release.
-      Left: `assembleRelease` (the mapping upload goes to the api — still on
-      the cloud VPS at this point, fine), `releaseStatus`, publish the APK,
-      commit `status.json` on the website.
-- [ ] **1.5 Server, the same day** — stop selling:
-      `UPDATE mint_keysets SET active = false;` on the mint DB. Issue/redeem
-      stay up for the on-chain late window (3.2).
+Branch `ccr-4d141886-ro0eii`. What the release carries, each a box:
 
-Gate: release N is the update every install is offered.
+- [x] **1.1 Delete the hosted service's code.** `StorageApiClient`,
+      `CloudWatchWorker`, the whole payments stack (`MintClient`,
+      `BlindSignature`, `CreditPurchase`, `CreditSettlement`,
+      `CreditSettleWorker`, `PendingPurchase`, `BuyCredit*`, the bitcoin
+      help sheet, their layouts, drawables and JVM tests), browser pairing
+      (`PairSeal`, `PairClient`, `PairApprovalViewModel`, the approval
+      dialog, `PairSealTest`), the hosted live tests (`CloudBackupLiveTest`,
+      `CreditPurchaseLiveTest`, `VaultSmokeTest`), the read-only switch
+      (`CloudSunset`) and 160 strings across the 16 locales. The home's
+      cloud chip/card and the restore-all deep link went with them.
+- [x] **1.2 `FolderStore`** — the SAF tree (persisted read+write grant),
+      `<picked>/Firedown Backup/<account>/objects/<id>.fdvc` + `<id>.entry`
+      (the encrypted sidecar, written LAST as the commit marker), orphan
+      sweep, provider-conflict-copy tolerance, `DocumentsContract` not
+      `DocumentFile`, `UnreachableException` as the one named failure.
+- [x] **1.3 `VaultEngine` over the folder** — same chunk format, same
+      dedup by name+size, sidecar backfill of thumb/origin; backup and
+      restore workers unchanged in shape, no network constraint (the
+      provider's own app syncs).
+- [x] **1.4 `CloudBackupManager` as the folder facade** — `isSetUp` = code
+      AND folder, `adoptFolder`, `providerLabel`, status = two local facts
+      (reachable, contents) cached in memory and mirrored to prefs for the
+      lost state, `cancelLegacyWatch` at boot.
+- [x] **1.5 The UI per the canvas design** — the Backup screen (hero in
+      three states: set up / folder lost / the roadmap), the morphing CTA
+      (Create recovery code → Choose backup folder → Change folder /
+      Choose the folder again), the Backups list header naming the
+      provider, the Storage screen's offload confirm naming the provider,
+      the folder-lost notification, the one-stage Downloads banner, the
+      download sheet's "Back up to <provider>" row. Strings in all 16
+      locales; 24 new keys, 40 reworded.
+- [x] **1.6 Docs** — `SECURITY.md`, this plan, `CLAUDE.md`'s Backup
+      section, the CHANGELOG entry.
+- [ ] **1.7 Build + device pass (maintainer).** The sandbox cannot compile
+      the app: `./gradlew assembleDebug`, `testDebugUnitTest`
+      (`VaultCryptoTest` pins the format), then on a phone: pick a Drive
+      folder, back up, kill the app, restore, stream, delete, revoke the
+      grant and see the lost state, re-pick. Then `bumpVersion`,
+      `assembleRelease` (the mapping upload still points at
+      `api.firedown.app` — fine, the name survives), `releaseStatus`,
+      publish the APK, commit `status.json`.
+- [ ] **1.8 Deactivate the mint keysets** the same day (cloud VPS:
+      `UPDATE mint_keysets SET active = false;`), and watch `--audit` /
+      the ntfy pings for anything the old APKs still do.
 
 ## Phase 2 — move `api.firedown.app` to the www host (`firedown-api` + ops)
 
-Code is done (branch `sunset/api-to-www`); the rest is host work with the
-exact commands in `deploy/deploy-runbook.md` §11.
+Code is done on `sunset/api-to-www` (`sync-api-provision.sh` nginx mode:
+one server block, the three trusted CF headers, its own access log so the
+`/status.json` ping stats never see API traffic, `client_max_body_size
+256m` for the mapping PUT, `proxy_read_timeout 90s` for the 25 s long-poll,
+no ACME — the Cloudflare origin certificate paths, AOP as
+`ssl_verify_client`). The host move is the maintainer's; runbook §11:
 
-- [x] **2.1 Provisioner nginx mode + runbook §11** (and the `keep()` fix it
-      exposed: the env file was truncated before the heredoc read it, so
-      re-runs reset every operator value; TURN/relay/signaling knobs now
-      written through `keep()`).
-- [ ] **2.2 Build + ship** the binary, the provisioner, the landing page and
-      the Origin Certificate to www.
-- [ ] **2.3 Freeze + dump** on the cloud VPS: stop the service, `pg_dump`, tar
-      the mappings, copy `api.env`.
-- [ ] **2.4 Provision on www** (seed `api.env` FIRST), restore, untar, start,
-      local health check.
-- [ ] **2.5 DNS**: `api.firedown.app` → www, proxied.
-- [ ] **2.6 Verify through the edge**: health commit; feedback → ntfy and the
-      page; `uploadReleaseMapping` 2xx; a cross-network P2P share; a bookmark
-      edit syncs; `/v1/crashes` retraces an old report.
-- [ ] **2.7 Decommission the copy** on the cloud VPS; install the weekly
-      backup on www; merge the two doc branches
-      (`firedown-api` `sunset/api-to-www`, `firedown-website`
-      `sunset/api-vhost-note`).
-
-Gate: 2.6 all green.
+- [ ] **2.1** On the cloud VPS: stop `firedown-api`, `pg_dump firedown`,
+      tar `<DataDir>/mappings`, copy `/etc/firedown/api.env`.
+- [ ] **2.2** On www: seed `api.env` from the copy BEFORE provisioning (so
+      `keep()` carries the crash token, the ntfy URLs, the TURN secret and
+      `MAX_ACCOUNTS`), run `sync-api-provision.sh` with `FIREDOWN_PROXY=nginx`
+      and the origin-certificate paths, `pg_restore`, untar the mappings.
+- [ ] **2.3** Flip the `api.firedown.app` DNS record to www (proxied), verify
+      through the edge: `/v1/health` reports the commit just deployed; a
+      crash send, a feedback send, a bookmark sync and a P2P share from a
+      phone all land; the mapping PUT from a release build is accepted.
+- [ ] **2.4** `firedown-website`: the vhost note on `sunset/api-vhost-note`
+      (README + the nginx server block that returns 404 under `/ops/` is
+      unaffected; the API block is its own server name).
 
 ## Phase 3 — destroy the cloud VPS (and the TURN box)
 
-- [ ] **3.1 Read-only at the server too** (belt for old APKs; release N no
-      longer writes): a Cloudflare rule blocking `POST`/`PUT` on
-      `storage.firedown.app/v1/*` — restores are `GET`.
-- [ ] **3.2 Mint**: 30 days after the last quote (the on-chain late window,
-      `OnchainPollPolicy.LATE_PAYMENT_WINDOW_MS`), stop `mint-api`, close the
-      phoenixd channel and sweep its balance to the cold wallet; bitcoind is
-      watch-only.
-- [ ] **3.3 Pairing + web client**: nothing to do server-side before 3.4; the
-      web client dies with storage.
-- [ ] **3.4 Delete at `DELETE_AT_MS`**: `storage-api --reap`, delete the R2
-      bucket and its token, drop the storage + mint databases, cancel OVH
-      Automated Backup, destroy the VPS. Keep the last off-site dump for the
-      retention period, then delete it.
-- [ ] **3.5 TURN**: remove `FIREDOWN_TURN_SECRET` (and `_URLS`) from
-      `/etc/firedown/api.env` on www, restart `firedown-api` (creds → 404,
-      shares degrade to direct + STUN), destroy the box, delete the DNS
-      record.
-- [ ] **3.6 The old-APK tail**: point `storage.firedown.app` and
-      `mint.firedown.app` at www and serve `410 Gone` for `/v1/*` for six
-      months (`StorageApiClient` maps a 4xx to a fatal error, so a pre-N
-      install fails once instead of retrying for hours). Then delete the
-      records and the Origin Certificate if nothing else uses it.
+Gate: Phase 2 verified AND release N has been out long enough that the
+update-ping share of the previous version is in the single digits (the
+`ops/stats` digest reports it) — after that an old APK talking to storage
+is a user who chose not to update.
 
-## Phase 4 — delete the code and the website copy (after 3.4)
+- [ ] **3.1 Cloudflare**: point `storage.firedown.app` and
+      `mint.firedown.app` at the www host and serve `410 Gone` for both
+      names (one nginx block, no backend); keep the DNS records so the names
+      resolve to the 410 rather than NXDOMAIN.
+- [ ] **3.2 Mint wind-down**: every keyset inactive (1.8), `--gc` run once
+      more, read `mint_issued_counts` against storage's spent set
+      (`storage-api --audit`) for the record, sweep the on-chain receipts to
+      the cold wallet (consolidate in a low-fee window; raise the sweeping
+      wallet's gap limit above what `--onchain-check` prints first), back
+      up the phoenixd seed OFF the box, close its channel.
+- [ ] **3.3 Storage wind-down**: `storage-api --reap` with the grace set to
+      0 is NOT the tool (it keys on `runout_at`); run `--purge-account` per
+      remaining account after a final `pg_dump` for the record, then empty
+      the R2 bucket and delete it, delete the Cloudflare R2 token.
+- [ ] **3.4 Databases**: final `pg_dump` of `firedown_storage` and
+      `firedown_mint` to cold storage (the mint dump is the ability to
+      mint — `firedown-backup` refuses a plaintext one without an age
+      recipient; keep it that way), then destroy the VPS.
+- [ ] **3.5 TURN**: delete `FIREDOWN_TURN_SECRET` from www's `api.env`
+      (`/v1/relay/creds` then answers 404 and the client degrades to
+      direct + STUN), destroy the coturn box. Or keep it on purpose — it is
+      independent and cheap; decide, don't drift.
+- [ ] **3.6** Remove the `storage.firedown.app` / `mint.firedown.app` DNS
+      records and the 410 block once the previous version's update-ping
+      share reads zero for a month.
 
-- [ ] **4.1 `firedown`** — release N+1, verified at deletion time from today's
-      inventory: `sync/CloudSunset` (its job is done), `StorageApiClient`,
-      `MintClient`, `CreditPurchase`, `PendingPurchase`, `CreditSettleWorker`,
-      `CreditSettlement`, `OnchainPollPolicy`, `PaymentRequests`,
-      `PurchaseError`, `PairClient`, `crypto/PairSeal`,
-      `crypto/BlindSignature`, `VaultEngine`, `VaultObjectReader`,
-      `VaultObjectInputStream`, `VaultDataSource`, `VaultBackupWorker`,
-      `VaultRestoreWorker`, `CloudWatchWorker`,
-      `CloudBackupNotificationReceiver`, `VaultSmokeTest`, `CloudBackupManager`
-      and the Cloud screens (`SyncSettingsFragment` keeps the recovery code +
-      bookmarks switch; `CloudBackupListFragment`, the item sheet,
-      `CloudBackupStreamActivity`, `VaultObjectModelLoader`,
-      `BuyCreditFragment` + view model, `BuyBitcoinSheetDialogFragment`,
-      `PairApprovalViewModel` + dialog, `CloudStatusPreference`,
-      `CloudBuyButtonPreference`, `CloudDeleteFragment`'s backups row go);
-      the Downloads banner's cloud stages, the Storage screen's two cards,
-      the review list's cloud marks, `EXTRA_RESTORE_ALL`; the
-      `Preferences.CLOUD_*`, `STORAGE_DEFAULT_BACKEND`, mint/pair URL
-      constants; the payment JVM tests; every `cloud_*`, `buy_credit_*`,
-      `pair_*` string in 16 locales; the Cloud Backup sections of
-      `CLAUDE.md`. KEEP: `crypto/Pow` (crash and feedback), `SyncIdentity`,
-      `VaultCrypto`, `BookmarkBlob`, `Merge`, `VaultManifest` (the folder
-      backup reuses the format), `AnonymousPost`, `CrashUploader`,
-      `FeedbackFragment`, bookmark sync.
-- [ ] **4.2 `firedown-api`**: delete `cmd/storage-api`, `cmd/mint-api`,
-      `internal/storage`, `internal/mint`, `internal/shared/blind`,
-      `deploy/storage-provision.sh`, `deploy/mint-provision.sh`,
-      `deploy/turn-provision.sh`, the two landing pages,
-      `docs/cloud-storage-spec.md`, `docs/cloud-mint-spec.md`,
-      `docs/web-client-cors.md`, the storage vectors; narrow
-      `deploy/cloudflare-waf-setup.sh` to `api.firedown.app`; the `/v1/pair`
-      and relay routes; runbook §§2–9 become history.
-- [ ] **4.3 `firedown-website`**: delete `backup/` and the `tools/fd-*.mjs`
-      web-client tests, `SYNC_AND_STORAGE_WEBSITE_TASK.md`; rewrite the Cloud
-      Backup part of `security.html` (+18 locales); scrub "cloud backup" /
-      "storage credit" from `features.html`, `install.html`, `privacy.html`
-      and the 18 `*/index.html`; `sitemap.xml` and `robots.txt` lose
-      `/backup`.
+## Phase 4 — delete the server code and the website copy (after 3.4)
 
-## Later — the folder backup (its own plan, when wanted)
+The app's part is done in release N. What remains:
 
-The canvas sketches (https://claude.ai/artifact/8Mv2onybPc3UfidGjwjVgJ) and
-the design notes stand: SAF folder, encrypted objects in the existing
-format, per-object sidecar as the commit marker, index as a rebuildable
-cache, bookmarks as per-device blobs merged by `Merge`. It needs no server
-and no migration; it backs up from the phone.
+- [ ] **4.1 `firedown-api`**: delete `cmd/storage-api`, `cmd/mint-api`,
+      `internal/storage`, `internal/mint`, `internal/shared/blind`, the
+      storage/mint provisioners and their systemd units, the pairing
+      routes (`/v1/pair/*`) and the storage CORS middleware's only consumer;
+      keep `internal/shared/*` the bookmark binary still uses. `make
+      vectors` stays idempotent; `go test ./...` green.
+- [ ] **4.2 `firedown-website`**: delete `backup/` (the web client) and its
+      `tools/` tests (`fd-pair-test.mjs`, `pair-seal.json`, `fd-api-
+      integration.mjs`, `fd-crypto-selftest.mjs`), the footer's Backup link
+      in all 19 copies (footer sweeps ENUMERATE the pages), the "Open it in
+      this browser" link in `features.html`, and rewrite `/security` (19
+      copies: no pairing SAS panel, no storage/mint hosts, the §08 table
+      matches the app's `SECURITY.md`) and `/privacy` §03 (no storage
+      service). `fd-links-test.mjs` asserts the absence.
+- [ ] **4.3** Remove the `firedown-api` CORS allow-list for the web client
+      (`FIREDOWN_STORAGE_CORS_ORIGINS` and its middleware), the R2 bucket
+      policy having gone with the bucket.
 
 ## Status log
 
-- 2026-10-12 — plan written, then RE-CUT (maintainer): the app update goes
-  first, and the folder backup is decoupled from the shutdown. Phase 1.1
-  implemented on `ccr-4d141886-ro0eii` (uncompiled here — 1.3 is the build
-  + device pass). Phase 2.1 done on `firedown-api` `sunset/api-to-www`; on
-  the way the provisioner's `keep()` turned out never to have preserved a
-  re-run's operator values (truncate-before-read), fixed and pinned by a
-  seeded-file test.
-- 2026-10-12 — Phase 1, app side, taken as far as this sandbox goes: the
-  version bump + CHANGELOG entry (1.4's code half) committed; the sunset
-  strings re-verified in the 16 locales (every key once, `%1$s` in step
-  with English, nothing unescaped) and every Java call the new code makes
-  checked against its target's signature. A compile is still impossible
-  here (no SDK — `dl.google.com` is unreachable from the sandbox — and no
-  GeckoView AAR), so 1.3 is the maintainer's build. Open: 1.2 (the date).
+- 2026-10-12 — plan re-cut to one release (this file); Phase 1 code
+  complete on `ccr-4d141886-ro0eii` pending the maintainer's build + device
+  pass; Phase 2 code complete on `firedown-api` `sunset/api-to-www` and
+  `firedown-website` `sunset/api-vhost-note`, host move pending.
