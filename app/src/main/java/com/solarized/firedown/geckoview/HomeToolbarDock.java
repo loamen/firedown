@@ -44,9 +44,12 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
  * take that long path"). The first version slid a mid-screen pill ~300dp
  * in 240 ms while the IME resize re-centred the mark under it, so the slide
  * re-targeted mid-flight, and the suggestions overlay rode up at full
- * opacity like a second bar. Now: the mark group is anchored near the top
- * of the content ({@code home_mark_top}), so the trip is about half and the
- * slot does not move when the keyboard resizes the page; the duration and
+ * opacity like a second bar. Now: the slot is a top-anchored SIBLING of
+ * the centred mark group, parked just under the raised position
+ * ({@code home_field_rest}: an 80dp trip, canvas frame P1 — the
+ * top-anchored stack it replaced read as a splash screen with nothing
+ * under it), so the slot does not move when the keyboard resizes the
+ * page; the duration and
  * curve are Chrome's omnibox-focus ones (225 ms, the standard
  * fast-out-slow-in) and the pill's own colour/corner animation runs on the
  * SAME clock ({@link GeckoToolbar#FOCUS_ANIMATION_MS} — it was 150 ms, so
