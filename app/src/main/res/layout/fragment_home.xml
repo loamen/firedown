@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     THE HOME IS THE MARK OVER THE FIELD (home v6). Top-down: the flame, the
-    wordmark, and the search pill right under them, all centred — the Google /
-    DuckDuckGo start-page shape, with Firedown's own mark as the subject. There
+    wordmark, and the search pill right under them, centred horizontally and
+    anchored in the UPPER part of the screen — the Google / DuckDuckGo
+    start-page shape, with Firedown's own mark as the subject. There
     is deliberately NO stat line, no top sites, no recent history, no download
     rows and no chip row: top sites and recents are what Chrome and Brave do,
     download status overlaps the Downloads screen, and the one-line counters
@@ -17,10 +18,10 @@
     THE PILL IS THE REAL GeckoToolbar. It is a direct child of this
     CoordinatorLayout laid out at the TOP (the exact rect the browser's
     toolbar occupies), and HomeToolbarDock translates it DOWN over the
-    home_search_slot Space the content reserves; on focus it is back at the
-    top — a cut, not a tween — and the suggestions open under it
-    (AutoCompleteViewBehavior follows the toolbar's translation, as in the
-    browser). Three things this layout must keep for that to work:
+    home_search_slot Space the content reserves; on focus it rises back to the
+    top (Chrome's fakebox tween, see HomeToolbarDock) and the suggestions fade
+    in under it (AutoCompleteViewBehavior follows the toolbar's translation, as
+    in the browser). Three things this layout must keep for that to work:
       - the toolbar is NOT inside an AppBarLayout (a LinearLayout clips a
         translated child to its own bounds, so the docked pill would vanish),
         and it is declared AFTER the scroll view so it draws above the content
@@ -51,7 +52,7 @@
     <!-- The content. Top padding = the status inset and bottom padding = the
          nav inset (HomeFragment's insets listener); the bottom margin reserves
          the bottom bar. fillViewport stretches the FrameLayout to the
-         viewport so the mark centres in it. -->
+         viewport. -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/home_scroll"
         android:layout_width="match_parent"
@@ -69,18 +70,23 @@
             android:paddingBottom="8dp">
 
 
-            <!-- The brand mark + the field's slot, as ONE group centred in the
-                 viewport (match_parent, centred by gravity, not width). The
-                 bottom margin is the OPTICAL LIFT: FrameLayout
-                 centres the box including margins, so the group sits that much
-                 above the true centre (a start page's field sits above the
-                 middle, not on it; values-land shrinks it). -->
+            <!-- The brand mark + the field's slot, as ONE group ANCHORED TO THE
+                 TOP of the viewport (home_mark_top below the status strip;
+                 values-land shrinks it), centred horizontally. Anchored, not
+                 centred vertically, for two reasons that are both the tween's:
+                 a start page's field sits in the upper third (Chrome's fakebox
+                 is ~150dp down), so the pill's trip to the toolbar is short,
+                 and a top-anchored slot does NOT move when the keyboard resizes
+                 the page (adjustResize), where a centred one re-centred under
+                 the rising pill and made the slide re-target mid-flight. It
+                 shipped first centred with an "optical lift" bottom margin;
+                 the maintainer measured it against Chrome on-device. -->
             <LinearLayout
                 android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_marginBottom="@dimen/home_mark_lift"
+                android:layout_gravity="top"
+                android:layout_marginTop="@dimen/home_mark_top"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:gravity="center_horizontal"
@@ -136,14 +142,14 @@
                     android:textStyle="bold" />
 
                 <!-- Where the pill rests. Exactly the pill's 48dp; the toolbar
-                     is drawn over it (see the file comment). 28dp under the
+                     is drawn over it (see the file comment). 24dp under the
                      wordmark: the docked toolbar box starts 8dp above this
-                     slot, which leaves 20dp of clear canvas under the text. -->
+                     slot, which leaves 16dp of clear canvas under the text. -->
                 <Space
                     android:id="@+id/home_search_slot"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_marginTop="28dp" />
+                    android:layout_marginTop="24dp" />
 
             </LinearLayout>
 

@@ -3498,10 +3498,10 @@ nothing to take down — Firedown stays not-a-host.
 ### Home — the mark over the field (home v6): the pill IS the toolbar, docked
 
 Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
-composition: the mark (the 48dp flame + the 22sp wordmark; the privacy
+composition: the mark (the 48dp flame + the 22sp wordmark; the 128dp privacy
 illustration + "Private Browsing" in incognito), the search pill right under
-it, centred
-with an optical lift (`home_mark_lift`, shrunk in `values-land`), and nothing
+it, centred horizontally and ANCHORED NEAR THE TOP (`home_mark_top`, shrunk
+in `values-land` — see the tween bullet for why not centred), and nothing
 else at rest except the ember behind the flame while a download runs — the
 cloud transfer chip and deadline card went too (see "The home carries NO
 cloud state" under Cloud Backup). The Google / DuckDuckGo
@@ -3558,33 +3558,52 @@ sheet's "Manage protection" button, its only sender.
   fragment's insets listener, never padding (a self-padded box carries the
   whole status strip down with it and paints, opaque, over the wordmark;
   with a margin the box is a plain 64dp bar whose pill lands 8dp inside it).
-  The slot is exactly the pill's 48dp, 28dp under the wordmark (24dp under
-  the incognito title), the last thing in the group — the docked box extends
+  The slot is exactly the pill's 48dp, 24dp under the wordmark and under
+  the incognito title, the last thing in the group — the docked box extends
   8dp past the slot both ways and its holder is an opaque surface. The
   content's `NestedScrollView` pads top AND bottom insets itself. The
   overlay's behavior is `AutoCompleteViewBehavior` installed in code (as in
   the browser), which now positions off the toolbar's laid-out BOTTOM
   (`top + translationY + height − child.top`): docked, the GONE overlay sits
-  under the mid-screen pill, and on focus it rides up with it; in the browser
+  under the docked pill, and on focus it rides up with it; in the browser
   both tops are the root padding, so it reduces to the old sum.
 - **The rest position is resolved from WINDOW coordinates, live.** Slot top
   minus the pill's untranslated top (`getLocationInWindow` includes the
   scroll offset and the toolbar's own translation, which is subtracted back
   out), re-solved on every layout of the slot, the scroll view and the
-  toolbar, and on scroll: `adjustResize` moves the centred mark while the
-  IME opens and closes, and rotation re-lays out in place (`configChanges`).
-- **The move is a CUT, not a tween (maintainer, 2026-10-12: "is the
-  animation really necessary … it feels weak").** It shipped first as a
-  240 ms FastOutSlowIn slide driven by a 0→1 fraction, with the mark group
-  fading under it, and read as a wobble: a lone short slide of one bar while
-  the keyboard animates on its own clock and the suggestions panel simply
-  appears. Making it read as a transition would have meant choreographing
-  the panel and the IME (Chrome's fakebox does) for a quarter second nobody
-  waits for; Firefox for Android cuts straight to its search screen instead,
-  and so does this. `setRaised` applies translation 0 or the rest value on
-  the spot; the fade went with the tween (the overlay covers the mark the
-  moment it opens), so the fragments no longer hand the dock the mark group.
-  Don't re-add a tween without the choreography.
+  toolbar, and on scroll: rotation re-lays out in place (`configChanges`),
+  and a scrolled content (a short landscape viewport) moves the slot. The
+  IME's `adjustResize` no longer moves it — the group is top-anchored (see
+  the tween bullet) — but the re-solve stays, because the live re-solve is
+  what keeps a docked toolbar on its slot through anything else.
+- **The tween, second iteration (maintainer, 2026-10-12, against Chrome
+  on the device: "their animation is way smoother, also their bar is not at
+  the middle, is way upper but not at the top, so the animation does not
+  take that long path").** The first tween (240 ms, from a vertically
+  CENTRED mark) read as weak and was cut to a snap for one commit; the
+  maintainer then compared with Chrome and asked to iterate instead. What
+  made it weak, each now fixed: (1) the TRIP — a mid-screen pill travelled
+  ~300dp; the mark group is now anchored near the top (`home_mark_top`, a
+  top margin under the status strip, `layout_gravity="top"`), so the pill
+  sits ~175dp down and the trip is about half (Chrome's fakebox is ~150dp
+  down); (2) the slot MOVED during the slide — `adjustResize` shrinks the
+  scroll view as the keyboard opens, and a centred group re-centred under
+  the rising pill, so the live re-solve re-targeted mid-flight; a
+  top-anchored slot does not move; (3) the overlay rode up OPAQUE like a
+  second bar — it now FADES IN with the fraction under the moving pill (the
+  fragments call `setRaised` before `updateVisibility(true)`, so it appears
+  at the fraction's alpha), on a hardware layer for the fade's duration
+  (alpha on a deep ViewGroup is an offscreen pass per frame otherwise); (4)
+  the curve — Chrome's 225 ms fast-out-slow-in, and the pill's own
+  colour/corner animation runs on the SAME clock
+  (`GeckoToolbar.FOCUS_ANIMATION_MS`, read by the dock — it was a separate
+  150 ms, so the pill finished changing shape before it arrived); the mark
+  still fades out with the fraction. A reversal continues from the current
+  fraction; the
+  incognito illustration shrank 168→128dp so its slot lands near the
+  regular home's. Don't re-centre the group "for balance": the empty lower
+  two thirds are Chrome's shape (its tiles would be there), and centring
+  brings back (1) and (2).
 - **What stays a cut, deliberately:** returning from the browser pops to a
   home whose view is recreated, so the toolbar appears already docked; a
   dock-down animation on first layout is cheap if ever wanted. Not built: a
@@ -3593,7 +3612,9 @@ sheet's "Manage protection" button, its only sender.
   8dp (344dp on a 360dp phone) — the canvas frames drew 16dp; the toolbar's
   own inset was kept so the move is purely vertical. The slot is the LAST
   thing in the mark group now; anything ever placed under it needs ≥16dp of
-  clearance (the docked box extends 8dp past the slot).
+  clearance (the docked box extends 8dp past the slot). A width tween
+  (Chrome's fakebox is narrower than its omnibox) is the next knob if the
+  rise still reads flat — it needs margins animated per frame, not a scale.
 - **Sizes are MEASURED, not picked (maintainer, 2026-10-12: "is the logo
   too big and the text?").** It shipped at a 56dp flame over a 26sp
   wordmark; measured against the 48dp pill in the device screenshot, the
@@ -3604,7 +3625,8 @@ sheet's "Manage protection" button, its only sender.
   it was when a stat line shared the block), the name is a label. Don't
   grow either without re-measuring the block against the pill.
 - **Verified on-device** (2026-10-12): the composition, the docked pill
-  taking the tap and the cut to the top. Not yet: the landscape lift.
+  taking the tap and the first tween. Not yet: this iteration of the tween,
+  the top-anchored position, landscape.
 
 ### Empty-focus "most visited" — the existing list, filled (not a new widget)
 

@@ -40,22 +40,23 @@
         android:overScrollMode="never">
 
         <!-- The FrameLayout (stretched to the viewport by fillViewport)
-             centres the mark group via layout_gravity and pins the disclaimer
-             to the bottom. -->
+             anchors the mark group at the top via layout_gravity and pins the
+             disclaimer to the bottom. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="8dp">
 
-            <!-- The mark group: illustration, title, the field's slot. Centred
-                 with the same optical lift as the regular home (the bottom
-                 margin, see fragment_home.xml). -->
+            <!-- The mark group: illustration, title, the field's slot.
+                 Anchored to the top of the viewport like the regular home's
+                 (home_mark_top; see fragment_home.xml for why it is not
+                 centred). -->
             <LinearLayout
                 android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_marginBottom="@dimen/home_mark_lift"
+                android:layout_gravity="top"
+                android:layout_marginTop="@dimen/home_mark_top"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
                 android:paddingHorizontal="@dimen/address_bar_inset">
@@ -64,9 +65,11 @@
                      incognito purple/coral palette) is the mark here, in place
                      of the regular home's flame — richer and clearly
                      private-mode, no recolouring needed. adjustViewBounds keeps
-                     its 6:5 aspect at a fixed width. -->
+                     its 6:5 aspect at a fixed width; 128dp (it was 168dp) so
+                     the pill's slot lands about where the regular home's does
+                     and the rise to the toolbar is just as short. -->
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="168dp"
+                    android:layout_width="128dp"
                     android:layout_height="wrap_content"
                     android:adjustViewBounds="true"
                     android:contentDescription="@string/incognito_home_title"

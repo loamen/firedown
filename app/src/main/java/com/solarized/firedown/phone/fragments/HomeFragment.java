@@ -84,7 +84,8 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private BottomNavigationBar mBottomNavigationBar;
     private View mHomeScroll;
     // The home is the mark over the field (home v6): the flame, the wordmark
-    // and the search pill, centred — nothing else at rest. The pill is the
+    // and the search pill, anchored in the upper part of the screen —
+    // nothing else at rest. The pill is the
     // REAL GeckoToolbar, docked over a slot in the content by HomeToolbarDock
     // and raised to the top on focus; see the dock's class doc and the layout
     // file comment. The one-line pair of counters that used to sit under the
@@ -92,6 +93,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     // two rows on 360dp phones in the long locales, and a figure is not what
     // the home is for. Everything else (tabs, downloads badge, vault) lives in
     // the bottom bar / menu — no dashboard.
+    private View mBrandMark;
     private HomeToolbarDock mToolbarDock;
 
     // No cloud state on the home (maintainer, 2026-10-12: "we don't need all
@@ -180,7 +182,9 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mBottomNavigationBar = v.findViewById(R.id.bottom_app_bar);
 
 
-        // The ember glow behind the flame.
+        // The mark group (faded as the pill rises) and the ember glow behind
+        // the flame.
+        mBrandMark = v.findViewById(R.id.home_brand_mark);
         mBrandGlow = v.findViewById(R.id.home_brand_glow);
 
         mBottomNavigationBar.setListener(this);
@@ -195,18 +199,19 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
         // The suggestions overlay follows the toolbar's translation + height
         // (the browser's behavior, installed in code because it needs the
-        // view reference): docked, it sits under the mid-screen pill; raised,
+        // view reference): docked, it sits under the docked pill; raised,
         // it rides up with the pill and opens under it at the top.
         CoordinatorLayout.LayoutParams overlayParams =
                 (CoordinatorLayout.LayoutParams) mAutoCompleteView.getLayoutParams();
         overlayParams.setBehavior(new AutoCompleteViewBehavior(
                 mAutoCompleteView.getContext(), null, mAutoCompleteView));
 
-        // The pill IS the toolbar: docked over home_search_slot at rest, at
-        // the browser's toolbar rect on focus — a cut, not a tween (see
-        // HomeToolbarDock).
+        // The pill IS the toolbar: docked over home_search_slot at rest, raised
+        // to the browser's toolbar rect on focus, with the mark fading out and
+        // the overlay fading in under it (see HomeToolbarDock).
         mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
-                v.findViewById(R.id.home_search_slot), mHomeScroll);
+                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark,
+                mAutoCompleteView);
 
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
@@ -358,8 +363,8 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             // Top AND bottom insets as padding: no AppBarLayout reserves the
             // top any more (the toolbar floats over the content, see the
-            // layout comment), so the content centres itself between the
-            // status strip and the bottom bar.
+            // layout comment), so the content lays out between the status
+            // strip and the bottom bar.
             v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
@@ -367,7 +372,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         ViewCompat.setOnApplyWindowInsetsListener(mGeckoToolbar, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             // The status inset is a top MARGIN here, never padding. The
-            // toolbar is docked mid-screen at rest (HomeToolbarDock): a
+            // toolbar is docked over the content at rest (HomeToolbarDock): a
             // self-padded box would carry the whole status strip down with
             // it and paint, opaque, over the wordmark. With a margin the box
             // is a plain 64dp bar laid out at y = inset — the browser's exact
@@ -508,6 +513,7 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             mToolbarDock.release();
             mToolbarDock = null;
         }
+        mBrandMark = null;
         mBrandGlow = null;
         mHomeScroll = null;
         mAutoCompleteView = null;
@@ -570,9 +576,11 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
-        // The pill goes to the top of the screen on focus and back over the
-        // slot on blur — every blur path (back, outside tap, commit) ends
-        // here, so this is the one hook the dock needs.
+        // The pill rises to the top of the screen on focus and docks back over
+        // the slot on blur — every blur path (back, outside tap, commit) ends
+        // here, so this is the one hook the dock needs. Called BEFORE the
+        // overlay is shown below, so the overlay appears at the fraction's
+        // alpha and fades in from there.
         if (mToolbarDock != null) {
             mToolbarDock.setRaised(hasFocus);
         }

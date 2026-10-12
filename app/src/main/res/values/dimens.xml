@@ -17,12 +17,14 @@
          browser's -6dp, so the text begins after the home search glyph's caret
          instead of under it. Browser keeps -6dp (the shield needs no extra room). -->
     <dimen name="address_bar_home_text_inset">8dp</dimen>
-    <!-- Home: how far ABOVE the viewport's true centre the mark group (flame,
-         wordmark, search slot) sits — a start page's field sits above the
-         middle, not on it. Applied as the group's bottom margin inside a
-         centring FrameLayout, which shifts it up by the full value. Landscape
-         overrides it down (values-land) so the group fits a short viewport. -->
-    <dimen name="home_mark_lift">64dp</dimen>
+    <!-- Home: the mark group's (flame, wordmark, search slot) top margin below
+         the status strip. Anchored near the top, not centred — the field of a
+         start page sits in the upper third (Chrome's fakebox lands ~150dp
+         down), which keeps the pill's rise to the toolbar short and keeps the
+         slot still while the keyboard resizes the page. With a 48dp flame and
+         a 22sp wordmark the pill sits ~175dp down. Landscape overrides it
+         down (values-land) so the group fits a short viewport. -->
+    <dimen name="home_mark_top">64dp</dimen>
     <dimen name="app_bar_fab_elevation">12dp</dimen>
     <dimen name="app_bar_fab_margin">16dp</dimen>
     <dimen name="autocomplete_elevation">20dp</dimen>

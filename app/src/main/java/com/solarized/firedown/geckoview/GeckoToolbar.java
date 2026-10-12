@@ -36,7 +36,14 @@ public class GeckoToolbar extends FrameLayout implements View.OnClickListener, V
 
     private static final String TAG = GeckoToolbar.class.getName();
 
-    private static final int DURATION = 150;
+    /**
+     * The focus animation's duration — the pill's colour lift + corner
+     * change here, AND the home's rise to the top ({@link HomeToolbarDock}
+     * reads it), so the pill never finishes changing shape before it
+     * arrives. Chrome's URL-focus duration; it was 150 ms here while the
+     * dock ran its own 225, two clocks on one pill.
+     */
+    public static final int FOCUS_ANIMATION_MS = 225;
 
     private boolean mSearchMode;
 
@@ -455,7 +462,7 @@ public class GeckoToolbar extends FrameLayout implements View.OnClickListener, V
                     gradientDrawable.setColor((int) va.getAnimatedValue()));
             radiusAnimator.addUpdateListener(va ->
                     gradientDrawable.setCornerRadius((float) va.getAnimatedValue()));
-            animatorSet.setDuration(DURATION);
+            animatorSet.setDuration(FOCUS_ANIMATION_MS);
             animatorSet.start();
         } else {
             gradientDrawable.setColor(mAnimColorFrom);
