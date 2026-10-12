@@ -3,8 +3,9 @@
     The incognito home is the regular home's composition (fragment_home.xml —
     read its file comment first) with the mode's own mark: the privacy-bandit
     illustration in place of the flame, the "Private Browsing" title in place
-    of the wordmark, and the SAME real GeckoToolbar docked over a slot under
-    them, put at the top on focus by HomeToolbarDock. One composition in
+    of the wordmark, and the SAME real GeckoToolbar docked over a slot a
+    little under its raised place, with the mark centred below it (frame P1),
+    raised the last 80dp on focus by HomeToolbarDock. One composition in
     both modes is what makes the shape recognisable in either. The one
     addition private mode genuinely needs is the faint, bottom-anchored
     disclaimer that private browsing isn't anonymity. No stats, no counters:
@@ -40,23 +41,40 @@
         android:overScrollMode="never">
 
         <!-- The FrameLayout (stretched to the viewport by fillViewport)
-             anchors the mark group at the top via layout_gravity and pins the
-             disclaimer to the bottom. -->
+             anchors the field's slot at the top, centres the mark group and
+             pins the disclaimer to the bottom. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="8dp">
 
-            <!-- The mark group: illustration, title, the field's slot.
-                 Anchored to the top of the viewport like the regular home's
-                 (home_mark_top; see fragment_home.xml for why it is not
-                 centred). -->
+            <!-- Where the pill rests: a little UNDER its raised place, not on
+                 it. Exactly the pill's 48dp, top-anchored at home_field_rest
+                 below the status strip; the raised pill's top is inset + 8dp
+                 (8dp inside the 64dp toolbar bar), so the rise on focus is
+                 home_field_rest minus 8dp — 80dp in portrait, Chrome's nudge.
+                 A SIBLING of the mark group, never its last child (see
+                 fragment_home.xml): the slot
+                 must not move while the keyboard resizes the page (a moving
+                 target re-aims the slide mid-flight), and the group is
+                 centred. The toolbar is drawn over it (see the file
+                 comment). -->
+            <Space
+                android:id="@+id/home_search_slot"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_gravity="top"
+                android:layout_marginTop="@dimen/home_field_rest" />
+
+            <!-- The mark group: illustration + title, centred in the viewport
+                 like the regular home's (home_mark_offset: 0 in portrait, the
+                 field's bottom edge in landscape — see fragment_home.xml). -->
             <LinearLayout
                 android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="top"
-                android:layout_marginTop="@dimen/home_mark_top"
+                android:layout_gravity="center"
+                android:layout_marginTop="@dimen/home_mark_offset"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
                 android:paddingHorizontal="@dimen/address_bar_inset">
@@ -65,9 +83,10 @@
                      incognito purple/coral palette) is the mark here, in place
                      of the regular home's flame — richer and clearly
                      private-mode, no recolouring needed. adjustViewBounds keeps
-                     its 6:5 aspect at a fixed width; 128dp (it was 168dp) so
-                     the pill's slot lands about where the regular home's does
-                     and the rise to the toolbar is just as short. -->
+                     its 6:5 aspect at a fixed width; 128dp (it was 168dp):
+                     the mark centres in the space UNDER the field, ~180dp
+                     tall in landscape, where 168dp plus the title does not
+                     fit. -->
                 <androidx.appcompat.widget.AppCompatImageView
                     android:layout_width="128dp"
                     android:layout_height="wrap_content"
@@ -87,15 +106,6 @@
                     android:textColor="@color/incognito_on_surface"
                     android:textSize="22sp"
                     android:textStyle="bold" />
-
-                <!-- Where the pill rests — exactly the pill's 48dp, 24dp under
-                     the title (the docked toolbar box starts 8dp above the
-                     slot, leaving 16dp of clear canvas under the text). -->
-                <Space
-                    android:id="@+id/home_search_slot"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="24dp" />
 
             </LinearLayout>
 

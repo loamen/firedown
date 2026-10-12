@@ -83,12 +83,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private GeckoToolbar mGeckoToolbar;
     private BottomNavigationBar mBottomNavigationBar;
     private View mHomeScroll;
-    // The home is the mark over the field (home v6): the flame, the wordmark
-    // and the search pill, anchored in the upper part of the screen —
-    // nothing else at rest. The pill is the
-    // REAL GeckoToolbar, docked over a slot in the content by HomeToolbarDock
-    // and raised to the top on focus; see the dock's class doc and the layout
-    // file comment. The one-line pair of counters that used to sit under the
+    // The home is the field high and the mark centred (home v6, frame P1):
+    // the search pill a little under the address bar's place, the flame and
+    // the wordmark centred below it — nothing else at rest. The pill is the
+    // REAL GeckoToolbar, docked over a top-anchored slot in the content by
+    // HomeToolbarDock and raised the last 80dp on focus; see the dock's class
+    // doc and the layout file comment. The one-line pair of counters that used to sit under the
     // wordmark (trackers blocked · bytes saved) went with it: it wrapped onto
     // two rows on 360dp phones in the long locales, and a figure is not what
     // the home is for. Everything else (tabs, downloads badge, vault) lives in

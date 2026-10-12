@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    THE HOME IS THE MARK OVER THE FIELD (home v6). Top-down: the flame, the
-    wordmark, and the search pill right under them, centred horizontally and
-    anchored in the UPPER part of the screen — the Google / DuckDuckGo
-    start-page shape, with Firedown's own mark as the subject. There
+    THE HOME IS THE FIELD HIGH AND THE MARK CENTRED (home v6, frame P1).
+    Top-down: the search pill a little under the address bar's place
+    (home_field_rest below the status strip, an 80dp rise on focus), then the
+    flame and the wordmark centred in the viewport, decoupled from the field
+    — Firefox's and Samsung Internet's shape (bar high, brand in the middle),
+    the maintainer's pick (2026-10-12, canvas frames P0–P4) over the
+    mark-over-field stack, which pinned near the top read as a splash screen
+    with nothing under it and centred made the pill's rise ~350dp. Firedown's
+    own mark is the subject. There
     is deliberately NO stat line, no top sites, no recent history, no download
     rows and no chip row: top sites and recents are what Chrome and Brave do,
     download status overlaps the Downloads screen, and the one-line counters
@@ -31,10 +36,11 @@
         pill lands 8dp inside it, and the docked box's top edge sits 8dp above
         the slot rather than a whole status inset above it (which would paint
         over the wordmark);
-      - the slot is exactly the pill's height and the last thing in the group,
-        because the docked box extends 8dp past the slot on both sides and its
-        holder is an opaque surface — anything placed under the slot needs
-        ≥16dp of clearance.
+      - the slot is exactly the pill's height and a direct, top-anchored
+        child of the content — NOT inside the mark group, which is centred and
+        fades; the slot must not move — and the docked box extends 8dp past
+        the slot on both sides on an opaque holder, so nothing may sit within
+        16dp of it.
     The AutoCompleteView has no XML behavior: HomeFragment installs
     AutoCompleteViewBehavior in code (it needs the view reference), the same
     way the browser does.
@@ -70,23 +76,41 @@
             android:paddingBottom="8dp">
 
 
-            <!-- The brand mark + the field's slot, as ONE group ANCHORED TO THE
-                 TOP of the viewport (home_mark_top below the status strip;
-                 values-land shrinks it), centred horizontally. Anchored, not
-                 centred vertically, for two reasons that are both the tween's:
-                 a start page's field sits in the upper third (Chrome's fakebox
-                 is ~150dp down), so the pill's trip to the toolbar is short,
-                 and a top-anchored slot does NOT move when the keyboard resizes
-                 the page (adjustResize), where a centred one re-centred under
-                 the rising pill and made the slide re-target mid-flight. It
-                 shipped first centred with an "optical lift" bottom margin;
-                 the maintainer measured it against Chrome on-device. -->
+            <!-- Where the pill rests: a little UNDER its raised place, not on
+                 it. Exactly the pill's 48dp, top-anchored at home_field_rest
+                 below the status strip; the raised pill's top is inset + 8dp
+                 (8dp inside the 64dp toolbar bar), so the rise on focus is
+                 home_field_rest minus 8dp — 80dp in portrait, Chrome's nudge.
+                 A SIBLING of the mark group, never its last child: the slot
+                 must not move while the keyboard resizes the page (a moving
+                 target re-aims the slide mid-flight), and the group is
+                 centred. The toolbar is drawn over it (see the file
+                 comment). -->
+            <Space
+                android:id="@+id/home_search_slot"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_gravity="top"
+                android:layout_marginTop="@dimen/home_field_rest" />
+
+            <!-- The brand mark — flame over wordmark — CENTRED in the viewport,
+                 decoupled from the field above. It fades out as the pill
+                 rises (HomeToolbarDock), so adjustResize re-centring it under
+                 the keyboard is invisible; the thing that must not move is
+                 the slot, which is why the slot is a sibling above rather
+                 than this group's last child. home_mark_offset is 0 in
+                 portrait (the true centre, the frame as drawn) and in
+                 landscape the field's bottom edge, which centres the group in
+                 the space UNDER the field: a FrameLayout centres the box
+                 margins included, so a margin of F puts the content's centre
+                 at (F + H)/2 — at the true centre of a ~280dp landscape
+                 viewport the mark overlapped the field. -->
             <LinearLayout
                 android:id="@+id/home_brand_mark"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="top"
-                android:layout_marginTop="@dimen/home_mark_top"
+                android:layout_gravity="center"
+                android:layout_marginTop="@dimen/home_mark_offset"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:gravity="center_horizontal"
@@ -140,16 +164,6 @@
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="22sp"
                     android:textStyle="bold" />
-
-                <!-- Where the pill rests. Exactly the pill's 48dp; the toolbar
-                     is drawn over it (see the file comment). 24dp under the
-                     wordmark: the docked toolbar box starts 8dp above this
-                     slot, which leaves 16dp of clear canvas under the text. -->
-                <Space
-                    android:id="@+id/home_search_slot"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="24dp" />
 
             </LinearLayout>
 

@@ -3,7 +3,7 @@
 - Updated the GeckoView browser engine to 157.0.20261005135250
 - Tabs: long-press and drag to reorder in the tab switcher; settings and menus use grouped cards
 - Menus: the empty band under the drag handle is gone from every sheet, and the first and last rows of a group are no longer taller or indented than the rest; the long-press context menu uses the same grouped cards and no longer touches the screen edges (issue #306)
-- Home: the flame, the name and the search field sit together in the upper part of the screen, and the field rises into the address bar when tapped — in private browsing too. The "blocked · saved" counters, which stacked onto two lines on some phones, and the cloud backup chip and card are gone from the home
+- Home: the search field sits just under the address bar's place and slides up into it when tapped; the flame and the name sit centred below it — in private browsing too. The "blocked · saved" counters, which stacked onto two lines on some phones, and the cloud backup chip and card are gone from the home
 - Settings → Privacy → "Trackers and ads blocked": what the built-in ad blocker has done — blocked since install, estimated data saved, blocked today, by type, and today's top trackers (moved from the home)
 
 ## [1.1.99] - 2026-10-01

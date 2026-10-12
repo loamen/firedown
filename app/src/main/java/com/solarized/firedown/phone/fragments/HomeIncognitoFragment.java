@@ -90,8 +90,8 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
     private BottomNavigationBar mBottomNavigationBar;
     private View mNewTabView;
     private View mHomeScroll;
-    /** The mark group (illustration + title + the field's slot), faded as the
-     *  pill rises — the regular home's shape, see HomeFragment. */
+    /** The mark group (illustration + title), centred under the field and
+     *  faded as the pill rises — the regular home's shape, see HomeFragment. */
     private View mBrandMark;
     private HomeToolbarDock mToolbarDock;
 

@@ -3498,10 +3498,11 @@ nothing to take down — Firedown stays not-a-host.
 ### Home — the mark over the field (home v6): the pill IS the toolbar, docked
 
 Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
-composition: the mark (the 48dp flame + the 22sp wordmark; the 128dp privacy
-illustration + "Private Browsing" in incognito), the search pill right under
-it, centred horizontally and ANCHORED NEAR THE TOP (`home_mark_top`, shrunk
-in `values-land` — see the tween bullet for why not centred), and nothing
+composition: the search pill a little UNDER the address bar's place
+(`home_field_rest`, 88dp below the status strip — an 80dp rise on focus),
+the mark CENTRED in the viewport below it (the 48dp flame + the 22sp
+wordmark; the 128dp privacy illustration + "Private Browsing" in incognito),
+decoupled from the field (see the P1 bullet), and nothing
 else at rest except the ember behind the flame while a download runs — the
 cloud transfer chip and deadline card went too (see "The home carries NO
 cloud state" under Cloud Backup). The Google / DuckDuckGo
@@ -3558,9 +3559,11 @@ sheet's "Manage protection" button, its only sender.
   fragment's insets listener, never padding (a self-padded box carries the
   whole status strip down with it and paints, opaque, over the wordmark;
   with a margin the box is a plain 64dp bar whose pill lands 8dp inside it).
-  The slot is exactly the pill's 48dp, 24dp under the wordmark and under
-  the incognito title, the last thing in the group — the docked box extends
-  8dp past the slot both ways and its holder is an opaque surface. The
+  The slot is exactly the pill's 48dp, a direct child of the content's
+  FrameLayout anchored to the top at `home_field_rest` — NOT inside the mark
+  group (the group is centred and fades; the slot must not move) — and the
+  docked box extends 8dp past it both ways on an opaque holder, so nothing
+  may sit within 16dp of it. The
   content's `NestedScrollView` pads top AND bottom insets itself. The
   overlay's behavior is `AutoCompleteViewBehavior` installed in code (as in
   the browser), which now positions off the toolbar's laid-out BOTTOM
@@ -3573,9 +3576,10 @@ sheet's "Manage protection" button, its only sender.
   out), re-solved on every layout of the slot, the scroll view and the
   toolbar, and on scroll: rotation re-lays out in place (`configChanges`),
   and a scrolled content (a short landscape viewport) moves the slot. The
-  IME's `adjustResize` no longer moves it — the group is top-anchored (see
-  the tween bullet) — but the re-solve stays, because the live re-solve is
-  what keeps a docked toolbar on its slot through anything else.
+  IME's `adjustResize` no longer moves it — the slot is top-anchored (see
+  the tween bullet; the centred MARK does re-centre under the keyboard, but
+  it is fading out, so that is invisible) — and the re-solve stays, because
+  it is what keeps a docked toolbar on its slot through anything else.
 - **The tween, second iteration (maintainer, 2026-10-12, against Chrome
   on the device: "their animation is way smoother, also their bar is not at
   the middle, is way upper but not at the top, so the animation does not
@@ -3583,10 +3587,10 @@ sheet's "Manage protection" button, its only sender.
   CENTRED mark) read as weak and was cut to a snap for one commit; the
   maintainer then compared with Chrome and asked to iterate instead. What
   made it weak, each now fixed: (1) the TRIP — a mid-screen pill travelled
-  ~300dp; the mark group is now anchored near the top (`home_mark_top`, a
-  top margin under the status strip, `layout_gravity="top"`), so the pill
-  sits ~175dp down and the trip is about half (Chrome's fakebox is ~150dp
-  down); (2) the slot MOVED during the slide — `adjustResize` shrinks the
+  ~350dp; it was first cut to ~170dp by anchoring the whole mark-over-field
+  stack near the top, then to 80dp by the P1 composition (next bullet),
+  which parks the field alone just under its raised place; (2) the slot
+  MOVED during the slide — `adjustResize` shrinks the
   scroll view as the keyboard opens, and a centred group re-centred under
   the rising pill, so the live re-solve re-targeted mid-flight; a
   top-anchored slot does not move; (3) the overlay rode up OPAQUE like a
@@ -3599,11 +3603,36 @@ sheet's "Manage protection" button, its only sender.
   (`GeckoToolbar.FOCUS_ANIMATION_MS`, read by the dock — it was a separate
   150 ms, so the pill finished changing shape before it arrived); the mark
   still fades out with the fraction. A reversal continues from the current
-  fraction; the
-  incognito illustration shrank 168→128dp so its slot lands near the
-  regular home's. Don't re-centre the group "for balance": the empty lower
-  two thirds are Chrome's shape (its tiles would be there), and centring
-  brings back (1) and (2).
+  fraction.
+- **P1 — the field high, the mark centred (maintainer, 2026-10-12: "why
+  not keep the logo at the center and the bar … a little lower from the
+  top, and when pressed it does the animation to move to the top").** The
+  top-anchored stack shipped for one build and read "weird" on-device;
+  measured from the screenshot (1.875 px/dp) the pill rested 208dp down,
+  the mark spanned 93–256dp and 485 of 853dp were empty under it — a
+  splash-screen stack (mark over name over field) pinned to the top with
+  nothing holding the lower two thirds, where Chrome's fakebox at that
+  height has tiles under it and a one-line logo over it. Five frames went
+  on the design canvas (P0 as built, P1 this, P2 a horizontal masthead
+  lockup over the field, P3 the stack lowered to the upper third, P4 P1
+  without the wordmark) and the maintainer picked P1. The layout:
+  `home_search_slot` is a SIBLING of the mark group, a direct child of the
+  content FrameLayout anchored to the top at `home_field_rest` (88dp under
+  the status strip; the raised pill's top is inset + 8dp, so the rise is
+  80dp — Chrome's nudge), and the mark group is `layout_gravity="center"`
+  with a `home_mark_offset` top margin: 0 in portrait (the true centre, the
+  frame as drawn), and in landscape the field's bottom edge
+  (`home_field_rest` + 48dp), which centres the group in the space UNDER
+  the field — a FrameLayout centres the box margins included, so a margin
+  of F puts the content's centre at (F + H)/2 — because at the true centre
+  of a ~280dp landscape viewport the mark overlapped the field. The
+  incognito illustration stays 128dp (it was 168dp) for the same reason:
+  that space is ~180dp tall in landscape. Firefox's and Samsung Internet's
+  shape: bar high, brand in the middle. The resting field sits where a user
+  expects the browser's bar, so it must read as AT REST: the home toolbar
+  carries no hairline (`toolbar_divider` is keyed on `!mHomeEnabled`) and
+  the 80dp gap is what says "not the toolbar yet" — don't shrink
+  `home_field_rest` to where the rest and raised positions blur.
 - **What stays a cut, deliberately:** returning from the browser pops to a
   home whose view is recreated, so the toolbar appears already docked; a
   dock-down animation on first layout is cheap if ever wanted. Not built: a
@@ -3624,9 +3653,9 @@ sheet's "Manage protection" button, its only sender.
   wordmark): the flame stays the subject (40dp reads as an app icon, which
   it was when a stat line shared the block), the name is a label. Don't
   grow either without re-measuring the block against the pill.
-- **Verified on-device** (2026-10-12): the composition, the docked pill
-  taking the tap and the first tween. Not yet: this iteration of the tween,
-  the top-anchored position, landscape.
+- **Verified on-device** (2026-10-12): the docked pill taking the tap, the
+  first tween, and the top-anchored stack (which read weird — see P1). Not
+  yet: P1 itself, the tween on its 80dp trip, landscape.
 
 ### Empty-focus "most visited" — the existing list, filled (not a new widget)
 
