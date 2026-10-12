@@ -7829,7 +7829,21 @@ maintainer call after sketches on the design canvas:
   and the view is clickable only under touch exploration, where TalkBack
   activates the focused node whatever its size. Every sheet's content
   moved 12dp closer to the pill with that one edit; don't give a sheet
-  its own handle spacing back. **And a sheet's FIRST content adds no top
+  its own handle spacing back. **The 24dp band is a DECIDED value
+  (maintainer, 2026-10-12, against the big players), not a first guess
+  to tune.** The industry splits in two: Google's spec band (Compose
+  `ModalBottomSheet`: 22dp above and below the pill, 48dp in all) is a
+  TAP TARGET — the handle toggles expand/collapse there and is a
+  screen-reader node — while every browser treats the pill as a HINT
+  and starts content one row gap under it: Chrome/Brave/Edge's shared
+  Chromium sheet (thin bar near the edge, header right under), Firefox
+  for Android's 2024 menu (tight handle, then grouped card groups — the
+  closest relative of this app's sheets), Samsung Internet (pill ~10dp
+  down, title right under) and iOS (36×5pt grabber 5pt from the top).
+  A browser's sheet drags from anywhere, so the target argument does
+  not apply; the band stays in the browser camp. If it is ever revised,
+  the one knob is the include's bottom padding, moved for every sheet
+  at once and kept under ~16dp — never back to 22. **And a sheet's FIRST content adds no top
   spacing of its own — the include's 10dp under the pill IS the gap**:
   an identity row, a header row or a label sits at 10dp, a card at 12dp
   (its own 2dp row gap), on every sheet. The follow-up round (2026-10-11,
