@@ -46,7 +46,6 @@ import com.bumptech.glide.util.FixedPreloadSizeProvider;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.GlideHelper;
-import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.R;
@@ -503,12 +502,6 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
             }
         }
         if (targets.isEmpty()) {
-            return;
-        }
-        if (CloudSunset.ACTIVE) {
-            // SUNSET: the doors are hidden; this is the belt for any path that
-            // still reaches the batch (a stale menu, a restored action mode).
-            showErrorSnackbar(R.string.cloud_sunset_backup_off);
             return;
         }
         if (mCloudBackup.hasAccount()) {

@@ -23,7 +23,6 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.solarized.firedown.R;
-import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.data.di.Qualifiers;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.repository.DownloadDataRepository;
@@ -387,9 +386,7 @@ public class StorageReviewFragment extends BaseFocusFragment {
         String size = Formatter.formatShortFileSize(context, freed);
         StringBuilder message = new StringBuilder(
                 getString(R.string.storage_review_confirm_message, size));
-        // SUNSET: the reassurance below is false once the service deletes,
-        // so it is not made at all while it closes.
-        if (backed > 0 && !CloudSunset.ACTIVE) {
+        if (backed > 0) {
             // The one reassurance worth a sentence: a copy survives in the
             // cloud backup. Counted, not implied — a mixed selection must not
             // read as if every file were safe.

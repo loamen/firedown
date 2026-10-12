@@ -35,7 +35,6 @@ import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.BuildConfig;
-import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.data.Download;
@@ -352,11 +351,6 @@ public class DownloadFragment extends BaseDownloadFragment implements
             public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
                 if (mActionModeEnabled) {
                     inflater.inflate(mOperationActive ? R.menu.menu_action_empty : R.menu.menu_action_download, menu);
-                    // SUNSET: no batch backup while the service closes.
-                    MenuItem backup = menu.findItem(R.id.action_cloud_backup_selected);
-                    if (backup != null && CloudSunset.ACTIVE) {
-                        backup.setVisible(false);
-                    }
                 } else {
                     inflater.inflate(R.menu.menu_download, menu);
                     if (isSearchActive()) {
@@ -840,22 +834,6 @@ public class DownloadFragment extends BaseDownloadFragment implements
         if (mCloudBannerAdapter == null) {
             return;
         }
-        if (CloudSunset.ACTIVE) {
-            // SUNSET: the two promo stages are moot. The same banner carries
-            // the ONE message left — restore by the date — for an account
-            // that may hold files (set up), retired by its own dismissal key
-            // so a promo dismissed months ago cannot swallow it. A device
-            // that never set Cloud Backup up has nothing to bring home and
-            // sees no banner at all.
-            boolean show = mCloudBackup.isSetUp() && mHasRows && !isSunsetBannerDismissed();
-            if (show) {
-                mCloudBannerAdapter.setCopy(getString(R.string.cloud_sunset_title),
-                        getString(R.string.cloud_sunset_banner_subtitle,
-                                CloudSunset.deleteDate(requireContext())));
-            }
-            mCloudBannerAdapter.setVisible(show);
-            return;
-        }
         if (!mCloudBackup.isSetUp()) {
             // Stage 1 — DISCOVERY: no cloud setup yet, pitch the feature.
             mCloudBannerAdapter.setCopy(
@@ -924,15 +902,6 @@ public class DownloadFragment extends BaseDownloadFragment implements
         return mSharedPreferences.getBoolean(Preferences.CLOUD_BACKUP_BANNER_DISMISSED, false);
     }
 
-    private boolean isSunsetBannerDismissed() {
-        return mSharedPreferences.getBoolean(Preferences.CLOUD_SUNSET_BANNER_DISMISSED, false);
-    }
-
-    private void setSunsetBannerDismissed(boolean dismissed) {
-        mSharedPreferences.edit()
-                .putBoolean(Preferences.CLOUD_SUNSET_BANNER_DISMISSED, dismissed).apply();
-    }
-
     private void setCloudBannerDismissed(boolean dismissed) {
         mSharedPreferences.edit()
                 .putBoolean(Preferences.CLOUD_BACKUP_BANNER_DISMISSED, dismissed).apply();
@@ -944,11 +913,7 @@ public class DownloadFragment extends BaseDownloadFragment implements
         // there, and setting Cloud Backup up starts with a code. popUpTo is
         // handled by SettingsActivity so Back returns here, not into settings.
         Intent cloudIntent = new Intent(requireContext(), SettingsActivity.class);
-        // SUNSET: the banner says "restore your files", so it opens the
-        // Backups list, where Restore lives — not the Cloud screen.
-        cloudIntent.putExtra(CloudSunset.ACTIVE
-                ? SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP_FILES
-                : SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP, true);
+        cloudIntent.putExtra(SettingsActivity.EXTRA_OPEN_CLOUD_BACKUP, true);
         startActivity(cloudIntent);
     }
 
@@ -957,9 +922,7 @@ public class DownloadFragment extends BaseDownloadFragment implements
         // Dismiss the stage that is actually showing — the two retire
         // independently (a pre-setup dismissal must not consume the
         // activation nudge the user has never seen, and vice versa).
-        if (CloudSunset.ACTIVE) {
-            setSunsetBannerDismissed(true);
-        } else if (mCloudBackup.isSetUp()) {
+        if (mCloudBackup.isSetUp()) {
             setActivateBannerDismissed(true);
         } else {
             setCloudBannerDismissed(true);

@@ -426,15 +426,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Os seus ficheiros guardados serão removidos no fim do período de tolerância. Carregue crédito ou restaure-os para este telemóvel.</string>
     <string name="cloud_reap_notif_title">Ficheiros guardados prestes a ser removidos</string>
-    <string name="cloud_sunset_title">O backup na nuvem vai encerrar</string>
-    <string name="cloud_sunset_body">Novos backups estão desativados. Os seus ficheiros guardados podem ser restaurados neste telemóvel até %1$s. Depois disso são eliminados.</string>
-    <string name="cloud_sunset_body_empty">Novos backups estão desativados e o serviço encerra a %1$s. Não há nada seu guardado lá.</string>
-    <string name="cloud_sunset_header">Encerra a %1$s · restaure os ficheiros que quer manter</string>
-    <string name="cloud_sunset_banner_subtitle">Restaure neste telemóvel os ficheiros que quer manter antes de %1$s.</string>
-    <string name="cloud_sunset_notif_title">O backup na nuvem encerra a %1$s</string>
-    <string name="cloud_sunset_notif_text">Restaure neste telemóvel os ficheiros que quer manter. Depois dessa data são eliminados.</string>
-    <string name="cloud_sunset_backup_off">O backup na nuvem vai encerrar — novos backups estão desativados.</string>
-    <string name="cloud_backup_transfer_closed">Não enviado: o backup na nuvem vai encerrar</string>
     <string name="most_visited">Mais visitados</string>
     <string name="most_visited_remove_title">Remover de Mais visitados?</string>
     <string name="most_visited_remove">Remover</string>

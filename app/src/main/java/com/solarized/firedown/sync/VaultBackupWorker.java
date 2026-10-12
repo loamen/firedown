@@ -103,9 +103,6 @@ public class VaultBackupWorker extends Worker {
      * room). Absent for the retryable/unknown failures, which stay generic.
      */
     public static final String KEY_ERROR_SLUG = "error_slug";
-    /** The SUNSET slug: the service is closing, nothing is uploaded (not a
-     *  server slug — minted here, named by the Backups list like the others). */
-    public static final String SLUG_CLOSED = "closed";
 
     /** Progress-data keys the backed-up-files list reads to render a per-item
      *  determinate bar (KEY_NAME/KEY_MIME above identify the file). */
@@ -237,13 +234,6 @@ public class VaultBackupWorker extends Worker {
         String origin = getInputData().getString(KEY_ORIGIN);
         long downloadedAt = getInputData().getLong(KEY_DOWNLOADED_AT, 0L);
         long frameUs = getInputData().getLong(KEY_FRAME_US, 0L);
-        if (CloudSunset.ACTIVE) {
-            // SUNSET: every door that enqueues this worker is closed, but a job
-            // queued by the previous version survives the update in
-            // WorkManager's store. It fails here, named, instead of uploading
-            // to a service that is about to delete the file.
-            return failure(SLUG_CLOSED);
-        }
         if (path == null) {
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "backup failed: no path in input data");

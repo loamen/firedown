@@ -83,9 +83,7 @@ public class CloudBackupNotificationReceiver extends BroadcastReceiver {
         // since the notification was posted, and cloud backup may have been
         // erased. The vault gate is a contract, not a convenience — vault
         // content never leaves the device.
-        // SUNSET first: a notification posted by the previous version can
-        // still carry the action after the update, and must do nothing.
-        if (CloudSunset.ACTIVE || !mCloudBackup.isSetUp()) {
+        if (!mCloudBackup.isSetUp()) {
             return;
         }
         DownloadEntity entity = mRepository.findByIdSync(downloadId);

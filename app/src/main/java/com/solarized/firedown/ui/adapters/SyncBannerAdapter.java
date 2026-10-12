@@ -51,8 +51,6 @@ public class SyncBannerAdapter extends RecyclerView.Adapter<SyncBannerAdapter.Ba
     private int mTitleRes;
     @StringRes
     private int mSubtitleRes;
-    @Nullable private CharSequence mTitleText;
-    @Nullable private CharSequence mSubtitleText;
     @DrawableRes
     private final int mIconRes;
 
@@ -80,31 +78,11 @@ public class SyncBannerAdapter extends RecyclerView.Adapter<SyncBannerAdapter.Ba
      * visible card rebinds so the new copy paints immediately.
      */
     public void setCopy(@StringRes int titleRes, @StringRes int subtitleRes) {
-        if (titleRes == mTitleRes && subtitleRes == mSubtitleRes
-                && mTitleText == null && mSubtitleText == null) {
+        if (titleRes == mTitleRes && subtitleRes == mSubtitleRes) {
             return;
         }
         mTitleRes = titleRes;
         mSubtitleRes = subtitleRes;
-        mTitleText = null;
-        mSubtitleText = null;
-        if (mVisible) {
-            notifyItemChanged(0);
-        }
-    }
-
-    /**
-     * The same stage mechanism for copy that carries a runtime value (the
-     * Cloud Backup sunset banner names its deletion DATE, formatted for the
-     * locale — no resource id can). Formatted text wins over the ids until the
-     * next {@link #setCopy(int, int)} clears it.
-     */
-    public void setCopy(@NonNull CharSequence title, @NonNull CharSequence subtitle) {
-        if (title.equals(mTitleText) && subtitle.equals(mSubtitleText)) {
-            return;
-        }
-        mTitleText = title;
-        mSubtitleText = subtitle;
         if (mVisible) {
             notifyItemChanged(0);
         }
@@ -145,7 +123,7 @@ public class SyncBannerAdapter extends RecyclerView.Adapter<SyncBannerAdapter.Ba
 
     @Override
     public void onBindViewHolder(@NonNull BannerViewHolder holder, int position) {
-        holder.bind(mListener, mTitleRes, mSubtitleRes, mTitleText, mSubtitleText, mIconRes);
+        holder.bind(mListener, mTitleRes, mSubtitleRes, mIconRes);
     }
 
     public static class BannerViewHolder extends RecyclerView.ViewHolder {
@@ -164,18 +142,9 @@ public class SyncBannerAdapter extends RecyclerView.Adapter<SyncBannerAdapter.Ba
         }
 
         void bind(@Nullable OnBannerListener listener, @StringRes int titleRes,
-                  @StringRes int subtitleRes, @Nullable CharSequence titleText,
-                  @Nullable CharSequence subtitleText, @DrawableRes int iconRes) {
-            if (titleText != null) {
-                mTitle.setText(titleText);
-            } else {
-                mTitle.setText(titleRes);
-            }
-            if (subtitleText != null) {
-                mSubtitle.setText(subtitleText);
-            } else {
-                mSubtitle.setText(subtitleRes);
-            }
+                  @StringRes int subtitleRes, @DrawableRes int iconRes) {
+            mTitle.setText(titleRes);
+            mSubtitle.setText(subtitleRes);
             mIcon.setImageResource(iconRes);
             if (listener == null) {
                 itemView.setOnClickListener(null);

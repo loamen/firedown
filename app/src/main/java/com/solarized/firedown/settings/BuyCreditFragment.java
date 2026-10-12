@@ -35,7 +35,6 @@ import com.google.android.material.snackbar.Snackbar;
 import android.text.format.Formatter;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.solarized.firedown.R;
-import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.data.models.BuyCreditViewModel;
 import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.utils.QrCodes;
@@ -136,17 +135,6 @@ public class BuyCreditFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mNavController = NavHostFragment.findNavController(this);
-        if (CloudSunset.ACTIVE) {
-            // SUNSET: nothing is sold any more. Every door to this screen is
-            // hidden; a notification or deep link from the previous version
-            // can still land here, and leaves at once.
-            view.post(() -> {
-                if (isAdded()) {
-                    mNavController.navigateUp();
-                }
-            });
-            return;
-        }
         mViewModel = new ViewModelProvider(this).get(BuyCreditViewModel.class);
 
         mStepLoading = view.findViewById(R.id.buy_step_loading);

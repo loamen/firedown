@@ -393,15 +393,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">Varmuuskopioidut tiedostosi poistetaan, kun lisäaika päättyy. Lataa saldoa tai palauta ne tähän puhelimeen.</string>
     <string name="cloud_reap_notif_title">Varmuuskopioidut tiedostot poistetaan pian</string>
-    <string name="cloud_sunset_title">Pilvivarmuuskopiointi lopetetaan</string>
-    <string name="cloud_sunset_body">Uudet varmuuskopiot on poistettu käytöstä. Varmuuskopioidut tiedostosi voi palauttaa tähän puhelimeen %1$s asti. Sen jälkeen ne poistetaan.</string>
-    <string name="cloud_sunset_body_empty">Uudet varmuuskopiot on poistettu käytöstä, ja palvelu suljetaan %1$s. Sinne ei ole tallennettu mitään sinun tiedostojasi.</string>
-    <string name="cloud_sunset_header">Suljetaan %1$s · palauta tiedostot, jotka haluat säilyttää</string>
-    <string name="cloud_sunset_banner_subtitle">Palauta tiedostot, jotka haluat säilyttää, tähän puhelimeen ennen %1$s.</string>
-    <string name="cloud_sunset_notif_title">Pilvivarmuuskopiointi lopetetaan %1$s</string>
-    <string name="cloud_sunset_notif_text">Palauta tiedostot, jotka haluat säilyttää, tähän puhelimeen. Sen päivän jälkeen ne poistetaan.</string>
-    <string name="cloud_sunset_backup_off">Pilvivarmuuskopiointi lopetetaan — uudet varmuuskopiot on poistettu käytöstä.</string>
-    <string name="cloud_backup_transfer_closed">Ei lähetetty: pilvivarmuuskopiointi lopetetaan</string>
     <string name="most_visited">Useimmin vieraillut</string>
     <string name="most_visited_remove_title">Poistetaanko useimmin vierailluista?</string>
     <string name="most_visited_remove">Poista</string>

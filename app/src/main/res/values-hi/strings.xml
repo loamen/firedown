@@ -360,15 +360,6 @@
     </plurals>
     <string name="cloud_grace_notif_text_nodate">ग्रेस अवधि समाप्त होने पर आपकी बैकअप की गई फ़ाइलें हटा दी जाएँगी। टॉप-अप करें या उन्हें इस फ़ोन पर रीस्टोर करें।</string>
     <string name="cloud_reap_notif_title">बैकअप की गई फ़ाइलें जल्द हटा दी जाएँगी</string>
-    <string name="cloud_sunset_title">क्लाउड बैकअप बंद हो रहा है</string>
-    <string name="cloud_sunset_body">नए बैकअप बंद हैं। आपकी बैकअप की गई फ़ाइलें %1$s तक इस फ़ोन पर वापस लाई जा सकती हैं। उसके बाद वे हटा दी जाएँगी।</string>
-    <string name="cloud_sunset_body_empty">नए बैकअप बंद हैं, और यह सेवा %1$s को बंद हो जाएगी। वहाँ आपका कुछ भी सहेजा हुआ नहीं है।</string>
-    <string name="cloud_sunset_header">%1$s को बंद · जो फ़ाइलें रखनी हैं उन्हें वापस लाएँ</string>
-    <string name="cloud_sunset_banner_subtitle">जो फ़ाइलें रखनी हैं उन्हें %1$s से पहले इस फ़ोन पर वापस लाएँ।</string>
-    <string name="cloud_sunset_notif_title">क्लाउड बैकअप %1$s को बंद हो रहा है</string>
-    <string name="cloud_sunset_notif_text">जो फ़ाइलें रखनी हैं उन्हें इस फ़ोन पर वापस लाएँ। उस तारीख़ के बाद वे हटा दी जाएँगी।</string>
-    <string name="cloud_sunset_backup_off">क्लाउड बैकअप बंद हो रहा है — नए बैकअप बंद हैं।</string>
-    <string name="cloud_backup_transfer_closed">अपलोड नहीं हुआ: क्लाउड बैकअप बंद हो रहा है</string>
     <string name="most_visited">सबसे ज़्यादा देखे गए</string>
     <string name="most_visited_remove_title">सबसे ज़्यादा देखे गए से हटाएँ?</string>
     <string name="most_visited_remove">हटाएँ</string>

@@ -21,7 +21,6 @@ import androidx.preference.PreferenceViewHolder;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.solarized.firedown.R;
-import com.solarized.firedown.sync.CloudSunset;
 import com.solarized.firedown.settings.ui.FlatPreference;
 import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.sync.StorageApiClient;
@@ -158,10 +157,6 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         if (hero == null || empty == null) {
             return;
         }
-        if (CloudSunset.ACTIVE) {
-            bindSunset(ctx, holder, hero, empty);
-            return;
-        }
         if (!mSetUp) {
             hero.setVisibility(View.GONE);
             empty.setVisibility(View.VISIBLE);
@@ -229,63 +224,6 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         caption.setText(captionText(ctx, metered, capBytes));
 
         bindMeter(ctx, alert, meter, meterBar, meterLabel, creditDelta, metered, grace, ink);
-    }
-
-    /**
-     * The SUNSET face ({@link CloudSunset#ACTIVE}): the service is closing,
-     * and the hero's only job is the date. A set-up account keeps its
-     * headline (how much is there to bring home) over the closing notice in
-     * the alert slot; the chip, the usage bar, the credit meter and the
-     * receipt chip are hidden — there is no credit to show and no runway to
-     * project. A not-set-up device gets the empty block with the roadmap
-     * replaced by one sentence: new backups are off, nothing of yours is
-     * there. Every view is set in BOTH branches (the holder recycles).
-     */
-    private void bindSunset(Context ctx, PreferenceViewHolder holder, View hero, View empty) {
-        String date = CloudSunset.deleteDate(ctx);
-        if (!mSetUp) {
-            hero.setVisibility(View.GONE);
-            empty.setVisibility(View.VISIBLE);
-            TextView title = (TextView) holder.findViewById(R.id.cb_empty_title);
-            TextView first = (TextView) holder.findViewById(R.id.cb_step_code);
-            View credit = holder.findViewById(R.id.cb_step_credit);
-            View backup = holder.findViewById(R.id.cb_step_backup);
-            if (title != null) {
-                title.setText(R.string.cloud_sunset_title);
-            }
-            if (first != null) {
-                first.setText(ctx.getString(R.string.cloud_sunset_body_empty, date));
-                first.setTextColor(MaterialColors.getColor(first,
-                        com.google.android.material.R.attr.colorOnSurface));
-                first.setVisibility(View.VISIBLE);
-            }
-            if (credit != null) {
-                credit.setVisibility(View.GONE);
-            }
-            if (backup != null) {
-                backup.setVisibility(View.GONE);
-            }
-            return;
-        }
-        hero.setVisibility(View.VISIBLE);
-        empty.setVisibility(View.GONE);
-        TextView big = (TextView) holder.findViewById(R.id.cb_big);
-        TextView bigUnit = (TextView) holder.findViewById(R.id.cb_big_unit);
-        TextView chip = (TextView) holder.findViewById(R.id.cb_chip);
-        View bar = holder.findViewById(R.id.cb_bar);
-        TextView caption = (TextView) holder.findViewById(R.id.cb_caption);
-        TextView alert = (TextView) holder.findViewById(R.id.cb_alert);
-        View meter = holder.findViewById(R.id.cb_meter);
-        View creditDelta = holder.findViewById(R.id.cb_credit_delta);
-        big.setText(mTotalBytes >= 0 ? Formatter.formatShortFileSize(ctx, mTotalBytes) : "—");
-        bigUnit.setText(R.string.cloud_status_backed_up);
-        chip.setVisibility(View.GONE);
-        bar.setVisibility(View.GONE);
-        caption.setText(R.string.cloud_sunset_title);
-        alert.setText(ctx.getString(R.string.cloud_sunset_body, date));
-        alert.setVisibility(View.VISIBLE);
-        meter.setVisibility(View.GONE);
-        creditDelta.setVisibility(View.GONE);
     }
 
     /** The accent-on-neutral-track styling shared by the unmetered usage bar and
