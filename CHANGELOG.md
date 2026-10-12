@@ -1,3 +1,7 @@
+## [1.2.01] - 2026-10-12
+
+- Cloud Backup is closing on 31 December 2026: new backups are off, restore everything you want to keep to this phone before then — after that date the backed-up files are deleted
+
 ## [1.2.00] - 2026-10-08
 
 - Updated the GeckoView browser engine to 157.0.20261005135250

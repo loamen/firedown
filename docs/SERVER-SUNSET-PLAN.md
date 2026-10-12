@@ -64,7 +64,10 @@ here so they are not re-derived.
       16 locales. CLAUDE.md carries the section.
 - [ ] **1.2 Set the date** — `CloudSunset.DELETE_AT_MS` to the real deletion
       instant (UTC midnight), the same one the operator reaps on in 3.4. Pick
-      it ≥ 6 weeks after the release date.
+      it ≥ 6 weeks after the release date. The code carries
+      `2026-12-31T00:00:00Z` (`1_798_675_200_000L`) and the CHANGELOG bullet
+      says "31 December 2026" — change BOTH together, or keep both if that is
+      the date (it is 11 weeks out from the bump, so it satisfies the rule).
 - [ ] **1.3 Build + device pass** — a debug build (the sandbox cannot compile:
       no Android SDK / GeckoView AAR here, so 1.1 is reviewed, not compiled).
       Check: the ⋮ row and the multi-select icon are gone; the finished
@@ -74,12 +77,15 @@ here so they are not re-derived.
       date for a set-up account and dismisses; the Storage screen has neither
       card; a queued backup from the previous build fails as "Not uploaded:
       Cloud Backup is closing"; the watch notification appears once.
-- [ ] **1.4 Release** — `./gradlew bumpVersion`, the CHANGELOG bullet ("Cloud
-      Backup is closing on <date>: new backups are off, restore everything
-      you want to keep to this phone before then"), `assembleRelease` (the
-      mapping upload goes to the api — still on the cloud VPS at this
-      point, fine), `releaseStatus`, publish the APK, commit `status.json` on
-      the website.
+- [ ] **1.4 Release** — the bump and the CHANGELOG entry are DONE on the
+      branch (versionCode 1201, versionName `1.2.01` — the two-digit patch
+      convention of 1.2.00, i.e. what `./gradlew bumpVersion
+      -Pfiredown.versionName=1.2.01` writes; a bare `bumpVersion` would have
+      named it 1.2.1 — and the `## [1.2.01] - 2026-10-12` entry with the
+      closing bullet). So do NOT run `bumpVersion` again for this release.
+      Left: `assembleRelease` (the mapping upload goes to the api — still on
+      the cloud VPS at this point, fine), `releaseStatus`, publish the APK,
+      commit `status.json` on the website.
 - [ ] **1.5 Server, the same day** — stop selling:
       `UPDATE mint_keysets SET active = false;` on the mint DB. Issue/redeem
       stay up for the on-chain late window (3.2).
@@ -195,3 +201,10 @@ and no migration; it backs up from the phone.
   the way the provisioner's `keep()` turned out never to have preserved a
   re-run's operator values (truncate-before-read), fixed and pinned by a
   seeded-file test.
+- 2026-10-12 — Phase 1, app side, taken as far as this sandbox goes: the
+  version bump + CHANGELOG entry (1.4's code half) committed; the sunset
+  strings re-verified in the 16 locales (every key once, `%1$s` in step
+  with English, nothing unescaped) and every Java call the new code makes
+  checked against its target's signature. A compile is still impossible
+  here (no SDK — `dl.google.com` is unreachable from the sandbox — and no
+  GeckoView AAR), so 1.3 is the maintainer's build. Open: 1.2 (the date).
