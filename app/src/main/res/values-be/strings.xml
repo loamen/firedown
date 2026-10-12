@@ -261,21 +261,6 @@
     <string name="crash_sheet_dismiss">Закрыць</string>
     <string name="crash_sheet_copied">Справаздача аб збоі скапіявана ў буфер абмену</string>
     <string name="crash_sheet_open_failed">Не атрымалася адкрыць браўзер. Справаздача ў буферы абмену. Устаўце яе ў новы запыт GitHub.</string>
-    <string name="home_trackers_title">Трэкеры і рэклама заблакіраваны</string>
-    <string name="home_trackers_subtitle_idle">Абарона ўключана</string>
-    <string name="trackers_info_count_label">трэкераў і рэкламы заблакіравана</string>
-    <string name="trackers_info_saved">~%1$s трафіку зэканомлена</string>
-    <string name="trackers_info_categories">Трэкеры · Рэклама · Адбіткі · Cookie</string>
-    <string name="trackers_info_breakdown_frames">Убудаваныя фрэймы</string>
-    <string name="trackers_info_breakdown_other">Аналітыка і тэлеметрыя</string>
-    <string name="trackers_info_breakdown_pixels">Адсочваючыя пікселі і маякі</string>
-    <string name="trackers_info_breakdown_scripts">Рэклама</string>
-    <string name="trackers_info_section_breakdown">Заблакіравана па тыпе</string>
-    <string name="trackers_info_section_top_trackers">Найбольш частыя трэкеры</string>
-    <string name="trackers_info_stat_blocked">Заблакіравана</string>
-    <string name="trackers_info_stat_saved">Зэканомлена</string>
-    <string name="trackers_info_action">Кіраваць абаронай</string>
-    <string name="trackers_info_today">%1$s заблакіравана сёння</string>
 
 
 

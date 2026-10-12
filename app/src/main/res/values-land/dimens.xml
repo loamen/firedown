@@ -8,4 +8,7 @@
     <!-- Landscape height is already small enough that capping further
          leaves a tiny sheet; portrait sets a real cap, here we opt out. -->
     <dimen name="bottom_sheet_max_height">0dp</dimen>
+    <!-- The home mark group's optical lift, shrunk for a short viewport
+         (see values/dimens.xml). -->
+    <dimen name="home_mark_lift">16dp</dimen>
 </resources>

@@ -480,21 +480,6 @@
     <string name="crash_sheet_sent">Bericht gesendet</string>
     <string name="crash_sheet_send_failed">Senden fehlgeschlagen. Verbindung prüfen oder Kopieren / Melden verwenden.</string>
     <string name="crash_sheet_send_note">Wird anonym an den Firedown-Server gesendet. Nur der Bericht oben, keine Kennungen.</string>
-    <string name="home_trackers_title">Tracker und Werbung blockiert</string>
-    <string name="home_trackers_subtitle_idle">Schutz aktiv</string>
-    <string name="trackers_info_count_label">Tracker und Werbung blockiert</string>
-    <string name="trackers_info_saved">~%1$s Bandbreite gespart</string>
-    <string name="trackers_info_categories">Tracker · Werbung · Fingerprinting · Cookie-Banner</string>
-    <string name="trackers_info_breakdown_frames">Eingebettete Frames</string>
-    <string name="trackers_info_breakdown_other">Analytik &amp; Telemetrie</string>
-    <string name="trackers_info_breakdown_pixels">Tracking-Pixel und Beacons</string>
-    <string name="trackers_info_breakdown_scripts">Werbung</string>
-    <string name="trackers_info_section_breakdown">Blockiert nach Typ</string>
-    <string name="trackers_info_section_top_trackers">Häufigste Tracker</string>
-    <string name="trackers_info_stat_blocked">Blockiert</string>
-    <string name="trackers_info_stat_saved">Daten gespart</string>
-    <string name="trackers_info_action">Schutz verwalten</string>
-    <string name="trackers_info_today">%1$s heute blockiert</string>
 
 
 
@@ -527,8 +512,6 @@
     <string name="capture_help_banner_title">Video nicht aufgeführt?</string>
     <string name="capture_help_banner">Manche eingebetteten Medien müssen erst abgespielt werden. Tippen, um mehr zu erfahren.</string>
     <string name="tabs_more_options">Weitere Optionen</string>
-    <string name="home_subtitle_blocked">%1$s blockiert</string>
-    <string name="home_subtitle_saved">%1$s gespeichert</string>
     <string name="cloud_grace_notif_title">Sicherung pausiert</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Noch %d Tag, bis deine gesicherten Dateien entfernt werden. Lade auf oder stelle sie auf diesem Telefon wieder her.</item>

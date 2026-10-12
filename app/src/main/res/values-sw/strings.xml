@@ -211,13 +211,6 @@
     <string name="crash_sheet_dismiss">Funga</string>
     <string name="crash_sheet_copied">Ripoti ya hitilafu imenakiliwa kwenye ubao wa kunakili</string>
     <string name="crash_sheet_open_failed">Imeshindwa kufungua kivinjari. Ripoti iko kwenye ubao wa kunakili. Bandika kwenye issue mpya ya GitHub.</string>
-    <string name="home_trackers_title">Vifuatiliaji na matangazo vimezuiwa</string>
-    <string name="home_trackers_subtitle_idle">Ulinzi unafanya kazi</string>
-    <string name="trackers_info_count_label">vifuatiliaji na matangazo vimezuiwa</string>
-    <string name="trackers_info_saved">~%1$s ya bandwidth imehifadhiwa</string>
-    <string name="trackers_info_categories">Vifuatiliaji · Matangazo · Alama za kidole · Vidakuzi</string>
-    <string name="trackers_info_action">Simamia ulinzi</string>
-    <string name="trackers_info_today">%1$s zimezuiwa leo</string>
     <string name="bookmark_export">Hamisha alamisho</string>
     <string name="bookmark_export_done">Imehamisha alamisho %1$d hadi Download/Firedown/backup</string>
     <string name="bookmark_import">Leta alamisho</string>

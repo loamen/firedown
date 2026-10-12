@@ -273,21 +273,6 @@
     <string name="crash_sheet_dismiss">Παράβλεψη</string>
     <string name="crash_sheet_copied">Η αναφορά κατάρρευσης αντιγράφηκε στο πρόχειρο</string>
     <string name="crash_sheet_open_failed">Δεν ήταν δυνατό το άνοιγμα του προγράμματος περιήγησης. Η αναφορά είναι στο πρόχειρό σας. Επικολλήστε την σε ένα νέο GitHub issue.</string>
-    <string name="home_trackers_title">Παρακολουθητές και διαφημίσεις αποκλείστηκαν</string>
-    <string name="home_trackers_subtitle_idle">Η προστασία είναι ενεργή</string>
-    <string name="trackers_info_count_label">παρακολουθητές και διαφημίσεις αποκλείστηκαν</string>
-    <string name="trackers_info_saved">~%1$s εύρους ζώνης εξοικονομήθηκε</string>
-    <string name="trackers_info_categories">Παρακολούθηση · Διαφημίσεις · Δακτυλικό αποτύπωμα · Cookies</string>
-    <string name="trackers_info_breakdown_frames">Ενσωματωμένα πλαίσια</string>
-    <string name="trackers_info_breakdown_other">Αναλυτικά στοιχεία και τηλεμετρία</string>
-    <string name="trackers_info_breakdown_pixels">Pixel παρακολούθησης και beacons</string>
-    <string name="trackers_info_breakdown_scripts">Διαφημίσεις</string>
-    <string name="trackers_info_section_breakdown">Αποκλεισμός κατά τύπο</string>
-    <string name="trackers_info_section_top_trackers">Κορυφαίοι ιχνηλάτες</string>
-    <string name="trackers_info_stat_blocked">Αποκλεισμένα</string>
-    <string name="trackers_info_stat_saved">Δεδομένα που εξοικονομήθηκαν</string>
-    <string name="trackers_info_action">Διαχείριση προστασίας</string>
-    <string name="trackers_info_today">%1$s αποκλείστηκαν σήμερα</string>
 
 
 

@@ -377,21 +377,6 @@
     <string name="crash_sheet_sent">Raport wysłany</string>
     <string name="crash_sheet_send_failed">Nie udało się wysłać. Sprawdź połączenie lub użyj Kopiuj / Zgłoś.</string>
     <string name="crash_sheet_send_note">Wysyłany anonimowo na serwer Firedown. Tylko powyższy raport, bez identyfikatorów.</string>
-    <string name="home_trackers_title">Trackery i reklamy zablokowane</string>
-    <string name="home_trackers_subtitle_idle">Ochrona aktywna</string>
-    <string name="trackers_info_count_label">trackerów i reklam zablokowanych</string>
-    <string name="trackers_info_saved">~%1$s zaoszczędzonego transferu</string>
-    <string name="trackers_info_categories">Trackery · Reklamy · Odciski · Ciasteczka</string>
-    <string name="trackers_info_breakdown_frames">Osadzone ramki</string>
-    <string name="trackers_info_breakdown_other">Analityka i telemetria</string>
-    <string name="trackers_info_breakdown_pixels">Piksele śledzące i sygnalizatory</string>
-    <string name="trackers_info_breakdown_scripts">Reklamy</string>
-    <string name="trackers_info_section_breakdown">Zablokowane według typu</string>
-    <string name="trackers_info_section_top_trackers">Najczęstsze trackery</string>
-    <string name="trackers_info_stat_blocked">Zablokowane</string>
-    <string name="trackers_info_stat_saved">Zaoszczędzone dane</string>
-    <string name="trackers_info_action">Zarządzaj ochroną</string>
-    <string name="trackers_info_today">%1$s zablokowanych dzisiaj</string>
 
 
 
@@ -427,8 +412,6 @@
     <string name="capture_help_banner_title">Nie ma filmu na liście?</string>
     <string name="capture_help_banner">Niektóre osadzone multimedia trzeba najpierw odtworzyć. Dotknij, aby dowiedzieć się jak.</string>
     <string name="tabs_more_options">Więcej opcji</string>
-    <string name="home_subtitle_blocked">%1$s zablokowano</string>
-    <string name="home_subtitle_saved">%1$s zapisano</string>
     <string name="cloud_grace_notif_title">Kopia zapasowa wstrzymana</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Pozostał %d dzień do usunięcia Twoich zarchiwizowanych plików. Doładuj albo przywróć je na ten telefon.</item>

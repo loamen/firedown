@@ -209,13 +209,6 @@
     <string name="crash_sheet_dismiss">Ignorer</string>
     <string name="crash_sheet_copied">Rapport de plantage copié dans le presse-papiers</string>
     <string name="crash_sheet_open_failed">Impossible d\'ouvrir le navigateur. Le rapport est dans le presse-papiers. Collez-le dans un nouveau ticket GitHub.</string>
-    <string name="home_trackers_title">Traqueurs et pubs bloqués</string>
-    <string name="home_trackers_subtitle_idle">Protection active</string>
-    <string name="trackers_info_count_label">traqueurs et pubs bloqués</string>
-    <string name="trackers_info_saved">~%1$s de bande passante économisée</string>
-    <string name="trackers_info_categories">Traqueurs · Pubs · Empreinte · Cookies</string>
-    <string name="trackers_info_action">Gérer la protection</string>
-    <string name="trackers_info_today">%1$s bloqués aujourd\'hui</string>
     <string name="bookmark_export">Exporter les favoris</string>
     <string name="bookmark_export_done">%1$d favoris exportés vers Download/Firedown/backup</string>
     <string name="bookmark_import">Importer des favoris</string>

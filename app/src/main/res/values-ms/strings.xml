@@ -211,13 +211,6 @@
     <string name="crash_sheet_dismiss">Tutup</string>
     <string name="crash_sheet_copied">Laporan ranap disalin ke papan keratan</string>
     <string name="crash_sheet_open_failed">Tidak dapat membuka pelayar. Laporan ada di papan keratan. Tampal ke issue GitHub baharu.</string>
-    <string name="home_trackers_title">Penjejak dan iklan disekat</string>
-    <string name="home_trackers_subtitle_idle">Perlindungan aktif</string>
-    <string name="trackers_info_count_label">penjejak dan iklan disekat</string>
-    <string name="trackers_info_saved">~%1$s lebar jalur dijimatkan</string>
-    <string name="trackers_info_categories">Penjejak · Iklan · Cap jari · Kuki</string>
-    <string name="trackers_info_action">Urus perlindungan</string>
-    <string name="trackers_info_today">%1$s disekat hari ini</string>
     <string name="bookmark_export">Eksport penanda halaman</string>
     <string name="bookmark_export_done">%1$d penanda halaman dieksport ke Download/Firedown/backup</string>
     <string name="bookmark_import">Import penanda halaman</string>

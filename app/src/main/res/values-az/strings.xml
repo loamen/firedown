@@ -234,13 +234,6 @@
     <string name="crash_sheet_dismiss">Bağla</string>
     <string name="crash_sheet_copied">Çökmə hesabatı mübadilə yaddaşına kopyalandı</string>
     <string name="crash_sheet_open_failed">Brauzer açıla bilmədi. Hesabat mübadilə yaddaşındadır. Yeni GitHub məsələsinə yapışdırın.</string>
-    <string name="home_trackers_title">İzləyicilər və reklamlar bloklandı</string>
-    <string name="home_trackers_subtitle_idle">Mühafizə aktivdir</string>
-    <string name="trackers_info_count_label">izləyici və reklam bloklandı</string>
-    <string name="trackers_info_saved">~%1$s zolaq genişliyi qənaət edildi</string>
-    <string name="trackers_info_categories">İzləyicilər · Reklamlar · Barmaq izi · Kukilər</string>
-    <string name="trackers_info_action">Mühafizəni idarə et</string>
-    <string name="trackers_info_today">%1$s bu gün bloklandı</string>
 
 
 

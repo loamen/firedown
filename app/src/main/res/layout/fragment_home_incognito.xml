@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The incognito home is the regular home's composition (fragment_home.xml —
+    read its file comment first) with the mode's own mark: the privacy-bandit
+    illustration in place of the flame, the "Private Browsing" title in place
+    of the wordmark, and the SAME real GeckoToolbar docked over a slot under
+    them, raised to the top on focus by HomeToolbarDock. One composition in
+    both modes is what makes the shape recognisable in either. The one
+    addition private mode genuinely needs is the faint, bottom-anchored
+    disclaimer that private browsing isn't anonymity. No stats, no counters:
+    a figure here would itself leak activity.
+
+    Structural rules shared with fragment_home.xml: no AppBarLayout (it would
+    clip the docked toolbar), the toolbar declared AFTER the scroll view (it
+    draws above the content and takes the tap), a top MARGIN for the status
+    inset instead of self-padding, the slot exactly the pill's height, and
+    AutoCompleteViewBehavior installed in code.
+-->
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/coordinator_root"
@@ -8,25 +25,11 @@
     android:descendantFocusability="beforeDescendants"
     android:focusableInTouchMode="true">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appbar_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/incognito_surface"
-        app:liftOnScroll="false">
-
-        <com.solarized.firedown.geckoview.GeckoToolbar
-            android:id="@+id/toolbar_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            app:enableHome="true" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <!-- Scrollable content area. The bottom margin reserves the bottom-nav's
-         height so the disclaimer never hides behind it in landscape, and
-         remains scrollable into view — mirrors HomeFragment. -->
+    <!-- Scrollable content area. Top padding = the status inset, bottom
+         padding = the nav inset (HomeIncognitoFragment's insets listener); the
+         bottom margin reserves the bottom-nav's height so the disclaimer never
+         hides behind it in landscape, and remains scrollable into view —
+         mirrors HomeFragment. -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/home_scroll"
         android:layout_width="match_parent"
@@ -34,34 +37,33 @@
         android:layout_marginBottom="@dimen/app_bar_size"
         android:clipToPadding="false"
         android:fillViewport="true"
-        android:overScrollMode="never"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+        android:overScrollMode="never">
 
-        <!-- The incognito home mirrors the regular home's single calm, centred
-             brand mark — the incognito mask + "Private Browsing" wordmark —
-             with the one addition private mode genuinely needs: a faint,
-             bottom-anchored disclaimer that private browsing isn't anonymity.
-             No fact chips, shortcuts, or stats (the regular home's live stats
-             would themselves leak activity, so incognito stays bare). The
-             FrameLayout (stretched to the viewport by fillViewport) centres
-             the mark via layout_gravity and pins the disclaimer to the
-             bottom. -->
+        <!-- The FrameLayout (stretched to the viewport by fillViewport)
+             centres the mark group via layout_gravity and pins the disclaimer
+             to the bottom. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="8dp">
 
+            <!-- The mark group: illustration, title, the field's slot. Centred
+                 with the same optical lift as the regular home (the bottom
+                 margin, see fragment_home.xml); faded by HomeToolbarDock while
+                 the pill is raised. -->
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:id="@+id/home_brand_mark"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_gravity="center_vertical"
+                android:layout_marginBottom="@dimen/home_mark_lift"
                 android:gravity="center_horizontal"
                 android:orientation="vertical"
-                android:paddingHorizontal="32dp">
+                android:paddingHorizontal="@dimen/address_bar_inset">
 
                 <!-- The "privacy bandit" illustration (already drawn in the
                      incognito purple/coral palette) is the mark here, in place
-                     of the regular home's small flame icon — richer and clearly
+                     of the regular home's flame — richer and clearly
                      private-mode, no recolouring needed. adjustViewBounds keeps
                      its 6:5 aspect at a fixed width. -->
                 <androidx.appcompat.widget.AppCompatImageView
@@ -71,6 +73,8 @@
                     android:contentDescription="@string/incognito_home_title"
                     android:src="@drawable/ill_privacy_purple" />
 
+                <!-- Set at the regular wordmark's size and weight so the two
+                     homes read as one composition. -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -78,8 +82,17 @@
                     android:letterSpacing="-0.02"
                     android:text="@string/incognito_home_title"
                     android:textColor="@color/incognito_on_surface"
-                    android:textSize="22sp"
+                    android:textSize="26sp"
                     android:textStyle="bold" />
+
+                <!-- Where the pill rests — exactly the pill's 48dp, 24dp under
+                     the title (the docked toolbar box starts 8dp above the
+                     slot, leaving 16dp of clear canvas under the text). -->
+                <Space
+                    android:id="@+id/home_search_slot"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="24dp" />
 
             </LinearLayout>
 
@@ -104,6 +117,15 @@
 
     </androidx.core.widget.NestedScrollView>
 
+    <!-- The URL bar — declared AFTER the content so it draws above it and
+         takes the tap while docked over the slot (same as HomeFragment). -->
+    <com.solarized.firedown.geckoview.GeckoToolbar
+        android:id="@+id/toolbar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        app:enableHome="true" />
+
     <!-- Autocomplete overlay (same as HomeFragment) -->
     <com.solarized.firedown.autocomplete.AutoCompleteView
         android:id="@+id/auto_complete_view"
@@ -111,8 +133,7 @@
         android:layout_height="match_parent"
         android:clickable="true"
         android:elevation="@dimen/autocomplete_elevation"
-        android:focusable="true"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
+        android:focusable="true" />
 
     <!-- New tab flash overlay (same as HomeFragment) -->
     <FrameLayout

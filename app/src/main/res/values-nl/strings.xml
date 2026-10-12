@@ -379,21 +379,6 @@
     <string name="crash_sheet_sent">Rapport verzonden</string>
     <string name="crash_sheet_send_failed">Verzenden mislukt. Controleer de verbinding of gebruik Kopiëren / Rapporteren.</string>
     <string name="crash_sheet_send_note">Wordt anoniem naar de Firedown-server gestuurd. Alleen het rapport hierboven, geen identifiers.</string>
-    <string name="home_trackers_title">Trackers en advertenties geblokkeerd</string>
-    <string name="home_trackers_subtitle_idle">Bescherming actief</string>
-    <string name="trackers_info_count_label">trackers en advertenties geblokkeerd</string>
-    <string name="trackers_info_saved">~%1$s aan bandbreedte bespaard</string>
-    <string name="trackers_info_categories">Trackers · Advertenties · Fingerprinting · Cookies</string>
-    <string name="trackers_info_breakdown_frames">Ingesloten frames</string>
-    <string name="trackers_info_breakdown_other">Analytics &amp; telemetrie</string>
-    <string name="trackers_info_breakdown_pixels">Trackingpixels en bakens</string>
-    <string name="trackers_info_breakdown_scripts">Advertenties</string>
-    <string name="trackers_info_section_breakdown">Geblokkeerd per type</string>
-    <string name="trackers_info_section_top_trackers">Voornaamste trackers</string>
-    <string name="trackers_info_stat_blocked">Geblokkeerd</string>
-    <string name="trackers_info_stat_saved">Bespaarde data</string>
-    <string name="trackers_info_action">Bescherming beheren</string>
-    <string name="trackers_info_today">%1$s vandaag geblokkeerd</string>
 
 
 
@@ -427,8 +412,6 @@
     <string name="capture_help_banner_title">Video niet in de lijst?</string>
     <string name="capture_help_banner">Sommige ingesloten media moeten eerst worden afgespeeld. Tik voor meer info.</string>
     <string name="tabs_more_options">Meer opties</string>
-    <string name="home_subtitle_blocked">%1$s geblokkeerd</string>
-    <string name="home_subtitle_saved">%1$s opgeslagen</string>
     <string name="cloud_grace_notif_title">Back-up gepauzeerd</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Nog %d dag voordat je geback-upte bestanden worden verwijderd. Waardeer op of herstel ze naar deze telefoon.</item>

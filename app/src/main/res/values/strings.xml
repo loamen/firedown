@@ -1016,19 +1016,12 @@
          Folder' becomes 'Carpeta segura' in es, 'Sicherer Ordner' in
          de, etc. -->
     <string name="home_vault_button">Safe Folder</string>
-    <!-- Home subtitle line: two tappable live counters under the wordmark, one
-         shared grammar (figure + short predicate): "10.5K blocked · 9.5 GB
-         saved". %1$s is a preformatted, locale-aware figure (a compact count
-         like "10.5K" / a readable size like "9.5 GB"). -->
-    <string name="home_subtitle_blocked">%1$s blocked</string>
-    <string name="home_subtitle_saved">%1$s saved</string>
     <!-- The home backup pill's four states. RESTING first — the lifetime total
          a set-up account sees when nothing is happening ("6.6 GB backed up",
          %1$s is a formatted size) — then the transient ones: a running
          transfer, an enqueued-but-not-started one, and the attention state
          when credit ran out. All kept SHORT; the screen each opens does the
-         explaining. These belong to the pill, NOT the subtitle line above — a
-         third subtitle counter was built and reverted. -->
+         explaining. -->
     <!-- Display-only toggle on the Cloud screen: whether the home screen may
          show the backup pill/card. NOT a disable switch — the summary says so
          explicitly, because "turn this off" is easy to read as "turn cloud
@@ -1052,56 +1045,6 @@
         <item quantity="other">%d days left before your files are removed</item>
     </plurals>
     <string name="home_cloud_waiting">Waiting to back up</string>
-    <!-- Subtitle shown on the Home Safe Folder card when the vault
-         is empty. Populated state uses the home_vault_item_count
-         plural ('12 items saved') instead. Keeps the card on two
-         lines so its height matches the Downloads and Trackers
-         shelves, and gives a first-time user a one-line explainer
-         for what the card stores. -->
-    <!-- Home page 'Trackers and ads blocked' card. Subtitle reads
-         '12,345 · ~580 MB saved'. %1$s is the formatted count (via
-         NumberFormat with locale grouping), %2$s is the estimated
-         bytes saved (count * 50KB average per blocked request,
-         matching Brave's published methodology). The '~' prefix
-         flags it as an estimate, not measured. -->
-    <string name="home_trackers_title">Trackers and ads blocked</string>
-    <!-- Trackers info bottom sheet — spawned from the Home Trackers
-         card. Shows the cumulative count big, an estimated bytes-
-         saved line, a short categories caption, and a CTA into
-         Privacy settings. trackers_info_saved %1$s is the formatted
-         bytes string. -->
-    <string name="trackers_info_count_label">trackers and ads blocked</string>
-    <string name="trackers_info_saved">~%1$s of bandwidth saved</string>
-    <string name="trackers_info_today">%1$s blocked today</string>
-    <string name="trackers_info_categories">Trackers · Ads · Fingerprinting · Cookie banners</string>
-    <!-- Top-row stat-card labels. Short single-noun phrases — the
-         number above carries the story, the label just titles it. -->
-    <string name="trackers_info_stat_blocked">Blocked</string>
-    <string name="trackers_info_stat_saved">Data saved</string>
-    <!-- Section headers — small uppercase labels that group the
-         stat cards and the per-type breakdown into two distinct
-         sections of the sheet. -->
-    <string name="trackers_info_section_breakdown">Blocked by type</string>
-    <!-- Top-trackers section: list of the third-party hosts that have
-         been blocked most often today. Recording is on by default and
-         gated per-tab on incognito (incognito blocks never enter the
-         map). The list rebuilds at local-time midnight, same window as
-         the per-type breakdown above it. -->
-    <string name="trackers_info_section_top_trackers">Top trackers</string>
-    <!-- Per-category breakdown rows under the hero number. Counts are
-         pushed from firedown.js' itype-bucketed map. Label text is a
-         short noun phrase that describes the resource class; the count
-         appears in a second TextView to its right. The 'scripts' bucket
-         counts SCRIPT and INLINE_SCRIPT itype blocks — in practice these
-         are almost entirely ad-tech, tracker libraries and analytics
-         payloads, so it's labelled 'Ads' for the user-facing mental
-         model. The string key keeps the 'scripts' suffix because the
-         data wire format and Java enum still call it scripts. -->
-    <string name="trackers_info_breakdown_scripts">Ads</string>
-    <string name="trackers_info_breakdown_pixels">Tracking pixels and beacons</string>
-    <string name="trackers_info_breakdown_frames">Embedded frames</string>
-    <string name="trackers_info_breakdown_other">Analytics &amp; telemetry</string>
-    <string name="trackers_info_action">Manage protection</string>
     <!-- Gecko Enhanced Tracking Protection count (persisted ETP database,
          unlocked by the GeckoView 153 bump). Shown as ONE quiet line at the
          top of the ETP settings screen — what the protection has done, above
@@ -1109,11 +1052,6 @@
          filter-list stats, deliberately not shown beside them. -->
     <string name="tracking_status_blocked">%1$s trackers blocked</string>
     <string name="tracking_status_since">Recording since %1$s</string>
-    <!-- Subtitle placeholder for the initial state — uBlock hasn't
-         pushed its cumulative count yet, or the count is genuinely
-         zero (fresh install, no browsing). Avoids the cosmetic
-         '0 · ~0 saved' that would otherwise appear. -->
-    <string name="home_trackers_subtitle_idle">Protection active</string>
     <string name="tabs_more_options">More options</string>
 
     <!-- P2P direct share (WebRTC) — sender, receiver, scanner, errors -->

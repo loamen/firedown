@@ -38,8 +38,17 @@ public class AutoCompleteViewBehavior extends CoordinatorLayout.Behavior<View> {
             // with the edge-to-edge browser the toolbar self-pads by the
             // status inset AFTER this behavior is built, so a constructor
             // snapshot would park the suggestions panel under the toolbar.
-            float newToolbarTranslationY = dependency.getTranslationY();
-            mAutoCompleteView.setTranslationY(newToolbarTranslationY + (float) dependency.getHeight());
+            //
+            // Positioned off the toolbar's laid-out BOTTOM, not its height
+            // alone: on the home the toolbar is laid out at a top margin (the
+            // status inset) while the overlay is laid out at 0, so the
+            // overlay must start at the toolbar's bottom edge, wherever that
+            // is. In the browser both are laid out at the root's padding
+            // top, so the two tops cancel and this reduces to the old
+            // translation + height.
+            float toolbarBottom = dependency.getTop() + dependency.getTranslationY()
+                    + dependency.getHeight();
+            mAutoCompleteView.setTranslationY(toolbarBottom - child.getTop());
         }
         return true;
     }

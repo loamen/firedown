@@ -76,8 +76,8 @@ public class GeckoUblockHelper {
      *  a per-host counter map (rebuilt at local-time midnight along
      *  with the category breakdown), evicts at 500 entries, gates on
      *  per-tab incognito state, and pushes the sorted top 10 over the
-     *  native port. The TrackersInfoSheet renders these as a list
-     *  under the per-type breakdown. */
+     *  native port. (The trackers sheet that listed them went with the
+     *  home counters, home v6; the data is kept for the bridge.) */
     public static final class HostCount {
         public final String host;
         public final long count;
@@ -204,8 +204,8 @@ public class GeckoUblockHelper {
      * a fresh cumulative-blocked count. Just relays — uBlock owns the
      * source of truth, including legitimate resets when the user
      * clears the request-stats counter. Caches to SharedPreferences
-     * so the Home card has something to show on the next cold start
-     * before the extension finishes loading.
+     * so a reader has the last value on the next cold start before
+     * the extension finishes loading.
      */
     public void onCumulativeBlocked(long blocked) {
         if (blocked < 0) return;

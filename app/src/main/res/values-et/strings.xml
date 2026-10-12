@@ -312,13 +312,6 @@
     <string name="crash_sheet_sent">Raport saadetud</string>
     <string name="crash_sheet_send_failed">Saatmine ebaõnnestus. Kontrolli ühendust või kasuta Kopeeri / Teata.</string>
     <string name="crash_sheet_send_note">Saadetakse anonüümselt Firedowni serverisse. Ainult ülal olev raport, ilma identifikaatoriteta.</string>
-    <string name="home_trackers_title">Jälitajad ja reklaamid blokeeritud</string>
-    <string name="home_trackers_subtitle_idle">Kaitse aktiivne</string>
-    <string name="trackers_info_count_label">jälitajat ja reklaami blokeeritud</string>
-    <string name="trackers_info_saved">~%1$s ribalaiust säästetud</string>
-    <string name="trackers_info_categories">Jälitajad · Reklaamid · Sõrmejälg · Küpsised</string>
-    <string name="trackers_info_action">Halda kaitset</string>
-    <string name="trackers_info_today">%1$s täna blokeeritud</string>
 
 
 
@@ -326,8 +319,6 @@
 
     <string name="media_tools">Meediatööriistad</string>
     <string name="tabs_more_options">Rohkem valikuid</string>
-    <string name="home_subtitle_blocked">%1$s blokeeritud</string>
-    <string name="home_subtitle_saved">%1$s salvestatud</string>
     <string name="cloud_grace_notif_title">Varundus peatatud</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Su varundatud failide eemaldamiseni on jäänud %d päev. Täienda krediiti või taasta need sellesse telefoni.</item>

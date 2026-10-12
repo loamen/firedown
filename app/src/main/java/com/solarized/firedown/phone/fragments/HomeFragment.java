@@ -5,7 +5,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
-import android.icu.text.CompactDecimalFormat;
 import android.os.Bundle;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.text.Editable;
@@ -21,6 +20,7 @@ import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -42,10 +42,9 @@ import com.solarized.firedown.data.models.BrowserDialogViewModel;
 import com.solarized.firedown.data.models.BrowserURIViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.data.models.IncognitoStateViewModel;
-import com.solarized.firedown.data.models.RecentDownloadsViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.GeckoToolbar;
-import com.solarized.firedown.geckoview.GeckoUblockHelper;
+import com.solarized.firedown.geckoview.HomeToolbarDock;
 import com.solarized.firedown.manager.DownloadRequest;
 
 import com.solarized.firedown.phone.DownloadsActivity;
@@ -60,19 +59,17 @@ import androidx.work.WorkManager;
 import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.autocomplete.AutoCompleteEditText;
 import com.solarized.firedown.autocomplete.AutoCompleteView;
+import com.solarized.firedown.autocomplete.AutoCompleteViewBehavior;
 import com.solarized.firedown.geckoview.toolbar.BottomNavigationBar;
-import com.solarized.firedown.phone.dialogs.TrackersInfoSheet;
 import com.solarized.firedown.ui.OnItemClickListener;
 import com.solarized.firedown.ui.adapters.SearchAutocompleteAdapter;
 import com.solarized.firedown.ui.diffs.SearchDiffCallback;
 import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.utils.NavigationUtils;
-import com.solarized.firedown.utils.Utils;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Locale;
 
 import javax.inject.Inject;
 
@@ -97,23 +94,17 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private GeckoToolbar mGeckoToolbar;
     private BottomNavigationBar mBottomNavigationBar;
     private View mHomeScroll;
-    // The home is a calm minimalist landing — the centred brand mark plus ONE
-    // quiet subtitle line of two independently-tappable live figures: trackers
-    // blocked (→ trackers info sheet) and total downloaded (→ Downloads). Each
-    // half hides at 0 and the divider hides unless both show, so a fresh install
-    // reads just the wordmark. Everything else (tabs, downloads badge, vault)
-    // lives in the bottom bar / menu — no dashboard.
-    private RecentDownloadsViewModel mRecentDownloadsViewModel;
-    private View mSubtitle;
-    // The two figures are MaterialCardView pills (own the tap target + ripple +
-    // visibility); each holds a 16dp leading glyph (static XML, same grey ink
-    // as the text — see the layout comment) and its text in the inner *_text
-    // TextView.
-    private View mSubtitleBlocked;
-    private TextView mSubtitleBlockedText;
-    private View mSubtitleSep;
-    private View mSubtitleSaved;
-    private TextView mSubtitleSavedText;
+    // The home is the mark over the field (home v6): the flame, the wordmark
+    // and the search pill, centred — nothing else at rest. The pill is the
+    // REAL GeckoToolbar, docked over a slot in the content by HomeToolbarDock
+    // and raised to the top on focus; see the dock's class doc and the layout
+    // file comment. The one-line pair of counters that used to sit under the
+    // wordmark (trackers blocked · bytes saved) went with it: it wrapped onto
+    // two rows on 360dp phones in the long locales, and a figure is not what
+    // the home is for. Everything else (tabs, downloads badge, vault) lives in
+    // the bottom bar / menu — no dashboard.
+    private View mBrandMark;
+    private HomeToolbarDock mToolbarDock;
 
     // Cloud Backup chip/card (home v5): ALL cloud state on home lives HERE —
     // never as a third subtitle counter (that was built and reverted; see the
@@ -156,8 +147,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
     private View mBrandGlow;
     private Animator mBrandGlowAnimator;
     @Inject
-    GeckoUblockHelper mGeckoUblockHelper;
-    @Inject
     CloudBackupManager mCloudBackup;
 
 
@@ -166,7 +155,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         super.onCreate(savedInstanceState);
 
         mAutoCompleteViewModel = new ViewModelProvider(this).get(AutoCompleteViewModel.class);
-        mRecentDownloadsViewModel = new ViewModelProvider(this).get(RecentDownloadsViewModel.class);
         mGeckoStateViewModel = new ViewModelProvider(mActivity).get(GeckoStateViewModel.class);
         mIncognitoStateViewModel = new ViewModelProvider(mActivity).get(IncognitoStateViewModel.class);
         mBrowserURIViewModel = new ViewModelProvider(mActivity).get(BrowserURIViewModel.class);
@@ -235,45 +223,10 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mBottomNavigationBar = v.findViewById(R.id.bottom_app_bar);
 
 
-        // Brand mark + the two-figure subtitle. Each half is its own tap target:
-        // blocked → the trackers info sheet, saved → Downloads. (VaultActivity /
-        // DownloadsActivity own their own auth/result handling.)
+        // The brand mark group (faded while the pill is raised) and the ember
+        // glow behind the flame.
+        mBrandMark = v.findViewById(R.id.home_brand_mark);
         mBrandGlow = v.findViewById(R.id.home_brand_glow);
-        mSubtitle = v.findViewById(R.id.home_subtitle);
-        mSubtitleBlocked = v.findViewById(R.id.home_subtitle_blocked);
-        mSubtitleBlockedText = v.findViewById(R.id.home_subtitle_blocked_text);
-        mSubtitleSep = v.findViewById(R.id.home_subtitle_sep);
-        mSubtitleSaved = v.findViewById(R.id.home_subtitle_saved);
-        mSubtitleSavedText = v.findViewById(R.id.home_subtitle_saved_text);
-        // Within-segment graceful wrap, the level the Flow can't cover: a SINGLE
-        // translated segment (es "Creando copia de seguridad…") plus font scale
-        // 2.0 on a narrow screen can be wider than the whole line by itself — the
-        // Flow would give it its own row, but the row itself would clip at the
-        // screen edge. Cap each counter's text to the line's real width so the
-        // extreme case wraps INSIDE its chip (two centred lines) instead.
-        if (mSubtitle != null) {
-            mSubtitle.addOnLayoutChangeListener(
-                    (view, l, t, r, b, oldL, oldT, oldR, oldB) -> {
-                        // 12dp padding each side + the 16dp leading glyph +
-                        // its 6dp gap (fragment_home.xml) — the text's own
-                        // room inside the chip, not the chip's width.
-                        int chipChrome = Math.round(
-                                46 * getResources().getDisplayMetrics().density);
-                        int cap = (r - l) - chipChrome;
-                        if (cap > 0) {
-                            applyTextWidthCap(mSubtitleBlockedText, cap);
-                            applyTextWidthCap(mSubtitleSavedText, cap);
-                        }
-                    });
-        }
-        if (mSubtitleBlocked != null) {
-            mSubtitleBlocked.setOnClickListener(view ->
-                    TrackersInfoSheet.show(getChildFragmentManager()));
-        }
-        if (mSubtitleSaved != null) {
-            mSubtitleSaved.setOnClickListener(view ->
-                    mStartForResult.launch(new Intent(mActivity, DownloadsActivity.class)));
-        }
 
         // Cloud Backup chip/card — see applyBackupPill for the state machine.
         // Tap routes by the state CURRENTLY SHOWN (mPillToFiles is set at
@@ -364,6 +317,20 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         mGeckoToolbar = v.findViewById(R.id.toolbar_layout);
         mGeckoToolbar.setListener(this);
 
+        // The suggestions overlay follows the toolbar's translation + height
+        // (the browser's behavior, installed in code because it needs the
+        // view reference): docked, it sits under the mid-screen pill; raised,
+        // it rides up with the pill and opens under it at the top.
+        CoordinatorLayout.LayoutParams overlayParams =
+                (CoordinatorLayout.LayoutParams) mAutoCompleteView.getLayoutParams();
+        overlayParams.setBehavior(new AutoCompleteViewBehavior(
+                mAutoCompleteView.getContext(), null, mAutoCompleteView));
+
+        // The pill IS the toolbar: docked over home_search_slot at rest, raised
+        // to the browser's toolbar rect on focus (see HomeToolbarDock).
+        mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
+                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark);
+
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
         mAutoCompleteEditText.setOnCommitListener(this);
@@ -429,38 +396,6 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
         // the list yet - the current tab is still at least tab 1).
         mGeckoStateViewModel.getTabsCount().observe(getViewLifecycleOwner(), count
                 -> mBottomNavigationBar.onTabsCount(count == null ? 1 : Math.max(1, count)));
-
-        // Subtitle, left half — lifetime trackers blocked (uBlock cumulative,
-        // pushed by firedown.js). Compact + locale-aware ("10.5K"); hidden at 0.
-        mGeckoUblockHelper.getCumulativeBlockedLive().observe(getViewLifecycleOwner(), blocked -> {
-            if (mSubtitleBlocked == null || mSubtitleBlockedText == null) return;
-            long n = blocked == null ? 0L : blocked;
-            if (n > 0) {
-                CompactDecimalFormat fmt = CompactDecimalFormat.getInstance(
-                        Locale.getDefault(), CompactDecimalFormat.CompactStyle.SHORT);
-                fmt.setMaximumFractionDigits(1);
-                mSubtitleBlockedText.setText(getString(R.string.home_subtitle_blocked, fmt.format(n)));
-                mSubtitleBlocked.setVisibility(View.VISIBLE);
-            } else {
-                mSubtitleBlocked.setVisibility(View.GONE);
-            }
-            updateSubtitleVisibility();
-        });
-
-        // Subtitle, right half — total bytes of finished regular downloads,
-        // locale-formatted ("9.5 GB"); hidden at 0.
-        mRecentDownloadsViewModel.getFinishedSize().observe(getViewLifecycleOwner(), size -> {
-            if (mSubtitleSaved == null || mSubtitleSavedText == null) return;
-            long bytes = size == null ? 0L : size;
-            if (bytes > 0) {
-                mSubtitleSavedText.setText(getString(R.string.home_subtitle_saved,
-                        Utils.readableFileSize(bytes)));
-                mSubtitleSaved.setVisibility(View.VISIBLE);
-            } else {
-                mSubtitleSaved.setVisibility(View.GONE);
-            }
-            updateSubtitleVisibility();
-        });
 
         mAutoCompleteViewModel.setIncognito(false);
 
@@ -544,25 +479,29 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
         ViewCompat.setOnApplyWindowInsetsListener(mHomeScroll, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            // Apply the insets as padding to the view. Here, set all the dimensions
-            // as appropriate to your layout. You can also update the view's margin if
-            // more appropriate.
-            v.setPadding(insets.left, 0, insets.right, insets.bottom);
-
-            // Return CONSUMED if you don't want the window insets to keep passing down
-            // to descendant views.
+            // Top AND bottom insets as padding: no AppBarLayout reserves the
+            // top any more (the toolbar floats over the content, see the
+            // layout comment), so the content centres itself between the
+            // status strip and the bottom bar.
+            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
 
         ViewCompat.setOnApplyWindowInsetsListener(mGeckoToolbar, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            // Apply the insets as padding to the view. Here, set all the dimensions
-            // as appropriate to your layout. You can also update the view's margin if
-            // more appropriate.
-            v.setPadding(insets.left, insets.top, insets.right, 0);
-
-            // Return CONSUMED if you don't want the window insets to keep passing down
-            // to descendant views.
+            // The status inset is a top MARGIN here, never padding. The
+            // toolbar is docked mid-screen at rest (HomeToolbarDock): a
+            // self-padded box would carry the whole status strip down with
+            // it and paint, opaque, over the wordmark. With a margin the box
+            // is a plain 64dp bar laid out at y = inset — the browser's exact
+            // toolbar rect, which is what makes the commit hand-off seamless.
+            ViewGroup.MarginLayoutParams params =
+                    (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            if (params.topMargin != insets.top) {
+                params.topMargin = insets.top;
+                v.setLayoutParams(params);
+            }
+            v.setPadding(insets.left, 0, insets.right, 0);
             return WindowInsetsCompat.CONSUMED;
         });
 
@@ -688,55 +627,22 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
             mBrandGlowAnimator.cancel();
             mBrandGlowAnimator = null;
         }
+        if (mToolbarDock != null) {
+            mToolbarDock.release();
+            mToolbarDock = null;
+        }
+        mBrandMark = null;
         mBrandGlow = null;
         mHomeScroll = null;
         mAutoCompleteView = null;
         mGeckoToolbar = null;
         mNewTabView = null;
         mBottomNavigationBar = null;
-        mSubtitle = null;
-        mSubtitleBlocked = null;
-        mSubtitleBlockedText = null;
-        mSubtitleSep = null;
-        mSubtitleSaved = null;
-        mSubtitleSavedText = null;
         mBackupPill = null;
         mBackupPillText = null;
         mBackupCard = null;
         mBackupCardTitle = null;
         mBackupCardDetail = null;
-    }
-
-    /** Guarded setter — setMaxWidth always requestLayout()s, so an unguarded
-     *  call from the layout-change listener would loop the layout pass. */
-    private static void applyTextWidthCap(TextView text, int cap) {
-        if (text != null && text.getMaxWidth() != cap) {
-            text.setMaxWidth(cap);
-        }
-    }
-
-    /**
-     * Shows the subtitle row only when at least one counter has a value, and
-     * the middle-dot divider only between visible neighbours. So a fresh
-     * install shows just the wordmark; any subset composes cleanly:
-     * "10.5K blocked · 9.5 GB saved". Called by both counters' bindings (they
-     * update on independent cadences). Cloud Backup state deliberately does
-     * NOT live here — it's the bottom pill (see the field doc), which is
-     * state-only and transient.
-     */
-    private void updateSubtitleVisibility() {
-        if (mSubtitle == null) return;
-        boolean blocked = mSubtitleBlocked != null && mSubtitleBlocked.getVisibility() == View.VISIBLE;
-        boolean saved = mSubtitleSaved != null && mSubtitleSaved.getVisibility() == View.VISIBLE;
-        // The dot shows only BETWEEN two visible counters. With exactly two
-        // segments that is just "both visible" — a third one made this an
-        // "anything to my left?" test, and its separator was what ended up
-        // orphaned at the end of a wrapped row. Two segments cannot wrap at
-        // real values, so the line stays one row.
-        if (mSubtitleSep != null) {
-            mSubtitleSep.setVisibility(blocked && saved ? View.VISIBLE : View.GONE);
-        }
-        mSubtitle.setVisibility(blocked || saved ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -959,6 +865,12 @@ public class HomeFragment extends BaseBrowserFragment implements BottomNavigatio
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
+        // The pill rises to the top of the screen on focus and docks back over
+        // the slot on blur — every blur path (back, outside tap, commit) ends
+        // here, so this is the one hook the dock needs.
+        if (mToolbarDock != null) {
+            mToolbarDock.setRaised(hasFocus);
+        }
         mGeckoToolbar.updateViewVisibility(hasFocus);
         mGeckoToolbar.setAutoCompleteVisible(hasFocus);
         mGeckoToolbar.startAnimation(hasFocus);

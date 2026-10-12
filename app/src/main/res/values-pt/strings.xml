@@ -307,13 +307,6 @@
     <string name="crash_sheet_sent">Relatório enviado</string>
     <string name="crash_sheet_send_failed">Não foi possível enviar. Verifique a ligação ou use Copiar / Reportar.</string>
     <string name="crash_sheet_send_note">Enviado anonimamente para o servidor do Firedown. Apenas o relatório acima, sem identificadores.</string>
-    <string name="home_trackers_title">Rastreadores e anúncios bloqueados</string>
-    <string name="home_trackers_subtitle_idle">Proteção ativa</string>
-    <string name="trackers_info_count_label">rastreadores e anúncios bloqueados</string>
-    <string name="trackers_info_saved">~%1$s de largura de banda economizados</string>
-    <string name="trackers_info_categories">Rastreadores · Anúncios · Impressão digital · Cookies</string>
-    <string name="trackers_info_action">Gerenciar proteção</string>
-    <string name="trackers_info_today">%1$s bloqueados hoje</string>
 
 
 
@@ -399,14 +392,6 @@
     <string name="spoof_timezone_summary">Ao ativar, a proteção contra fingerprinting fica melhor</string>
     <string name="switch_to_tab_description">Mudar para a aba</string>
     <string name="bookmark_name">Nome</string>
-    <string name="trackers_info_breakdown_frames">Quadros incorporados</string>
-    <string name="trackers_info_breakdown_other">Análise e telemetria</string>
-    <string name="trackers_info_breakdown_pixels">Pixels e beacons de rastreamento</string>
-    <string name="trackers_info_breakdown_scripts">Anúncios</string>
-    <string name="trackers_info_section_breakdown">Bloqueado por tipo</string>
-    <string name="trackers_info_section_top_trackers">Principais rastreadores</string>
-    <string name="trackers_info_stat_blocked">Bloqueados</string>
-    <string name="trackers_info_stat_saved">Dados economizados</string>
     <string name="compress">Comprimir</string>
     <string name="media_tools">Ferramentas multimédia</string>
     <string name="download_saving_compress">A comprimir, aguarde…</string>
@@ -427,8 +412,6 @@
     <string name="capture_help_banner_title">Vídeo não listado?</string>
     <string name="capture_help_banner">Algumas mídias incorporadas precisam ser reproduzidas primeiro. Toque para saber como.</string>
     <string name="tabs_more_options">Mais opções</string>
-    <string name="home_subtitle_blocked">%1$s bloqueados</string>
-    <string name="home_subtitle_saved">%1$s salvos</string>
     <string name="cloud_grace_notif_title">Cópia de segurança em pausa</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Falta %d dia para os seus ficheiros guardados serem removidos. Carregue crédito ou restaure-os para este telemóvel.</item>

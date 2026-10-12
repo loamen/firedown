@@ -283,13 +283,6 @@
     <string name="crash_sheet_sent">रिपोर्ट भेज दी गई</string>
     <string name="crash_sheet_send_failed">भेजा नहीं जा सका। कनेक्शन जाँचें या कॉपी / रिपोर्ट का उपयोग करें।</string>
     <string name="crash_sheet_send_note">Firedown सर्वर को गुमनाम रूप से भेजी जाती है। केवल ऊपर दी गई रिपोर्ट, कोई पहचानकर्ता नहीं।</string>
-    <string name="home_trackers_title">ट्रैकर और विज्ञापन ब्लॉक किए गए</string>
-    <string name="home_trackers_subtitle_idle">सुरक्षा सक्रिय</string>
-    <string name="trackers_info_count_label">ट्रैकर और विज्ञापन ब्लॉक</string>
-    <string name="trackers_info_saved">~%1$s बैंडविड्थ बची</string>
-    <string name="trackers_info_categories">ट्रैकर · विज्ञापन · फ़िंगरप्रिंटिंग · कुकीज़</string>
-    <string name="trackers_info_action">सुरक्षा प्रबंधित करें</string>
-    <string name="trackers_info_today">%1$s आज ब्लॉक</string>
 
 
 
@@ -361,8 +354,6 @@
     <string name="capture_help_banner_title">वीडियो सूची में नहीं है?</string>
     <string name="capture_help_banner">कुछ एम्बेड किए गए मीडिया को पहले चलाना ज़रूरी है. जानने के लिए टैप करें.</string>
     <string name="tabs_more_options">अधिक विकल्प</string>
-    <string name="home_subtitle_blocked">%1$s ब्लॉक किए गए</string>
-    <string name="home_subtitle_saved">%1$s सहेजे गए</string>
     <string name="cloud_grace_notif_title">बैकअप रुका हुआ है</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">आपकी बैकअप की गई फ़ाइलें हटने में %d दिन बचा है। टॉप-अप करें या उन्हें इस फ़ोन पर रीस्टोर करें।</item>

@@ -348,21 +348,6 @@
     <string name="crash_sheet_sent">Hlášení odesláno</string>
     <string name="crash_sheet_send_failed">Odeslání se nezdařilo. Zkontrolujte připojení nebo použijte Kopírovat / Nahlásit.</string>
     <string name="crash_sheet_send_note">Odesílá se anonymně na server Firedown. Pouze hlášení výše, žádné identifikátory.</string>
-    <string name="home_trackers_title">Sledovače a reklamy zablokovány</string>
-    <string name="home_trackers_subtitle_idle">Ochrana aktivní</string>
-    <string name="trackers_info_count_label">sledovačů a reklam zablokováno</string>
-    <string name="trackers_info_saved">~%1$s šířky pásma ušetřeno</string>
-    <string name="trackers_info_categories">Sledovače · Reklamy · Otisky · Cookies</string>
-    <string name="trackers_info_breakdown_frames">Vložené rámce</string>
-    <string name="trackers_info_breakdown_other">Analytika a telemetrie</string>
-    <string name="trackers_info_breakdown_pixels">Sledovací pixely a majáčky</string>
-    <string name="trackers_info_breakdown_scripts">Reklamy</string>
-    <string name="trackers_info_section_breakdown">Blokováno podle typu</string>
-    <string name="trackers_info_section_top_trackers">Hlavní sledovače</string>
-    <string name="trackers_info_stat_blocked">Blokováno</string>
-    <string name="trackers_info_stat_saved">Uložená data</string>
-    <string name="trackers_info_action">Spravovat ochranu</string>
-    <string name="trackers_info_today">%1$s zablokováno dnes</string>
 
 
 
@@ -397,8 +382,6 @@
     <string name="capture_help_banner_title">Video není v seznamu?</string>
     <string name="capture_help_banner">Některá vložená média je nutné nejdřív přehrát. Klepnutím zjistíte jak.</string>
     <string name="tabs_more_options">Další možnosti</string>
-    <string name="home_subtitle_blocked">%1$s blokováno</string>
-    <string name="home_subtitle_saved">%1$s uloženo</string>
     <string name="cloud_grace_notif_title">Záloha pozastavena</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Zbývá %d den, než budou vaše zálohované soubory odstraněny. Dobijte kredit nebo je obnovte do tohoto telefonu.</item>

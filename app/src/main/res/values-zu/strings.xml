@@ -209,13 +209,6 @@
     <string name="crash_sheet_dismiss">Vala</string>
     <string name="crash_sheet_copied">Umbiko wokubhajwa ukopishelwe ebhodini lokukopisha</string>
     <string name="crash_sheet_open_failed">Akukwazanga ukuvulwa kwesiphequluli. Umbiko usebhodini lokukopisha. Unamathisele endabeni entsha ye-GitHub.</string>
-    <string name="home_trackers_title">Abalandeli nezikhangiso zivinjelwe</string>
-    <string name="home_trackers_subtitle_idle">Ukuvikela kuyasebenza</string>
-    <string name="trackers_info_count_label">abalandeli nezikhangiso zivinjelwe</string>
-    <string name="trackers_info_saved">~%1$s ye-bandwidth konga</string>
-    <string name="trackers_info_categories">Abalandeli · Izikhangiso · Izigxivizo zeminwe · Amakhukhi</string>
-    <string name="trackers_info_action">Phatha ukuvikela</string>
-    <string name="trackers_info_today">%1$s evinjelwe namuhla</string>
     <string name="bookmark_export">Thumbela amabhukumaka</string>
     <string name="bookmark_export_done">Kuthunyelwe amabhukumaka angu-%1$d ku-Download/Firedown/backup</string>
     <string name="bookmark_import">Ngenisa amabhukumaka</string>

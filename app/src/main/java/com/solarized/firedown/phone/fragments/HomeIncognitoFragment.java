@@ -15,6 +15,7 @@ import android.view.Window;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -30,6 +31,7 @@ import com.solarized.firedown.Keys;
 import com.solarized.firedown.R;
 import com.solarized.firedown.autocomplete.AutoCompleteEditText;
 import com.solarized.firedown.autocomplete.AutoCompleteView;
+import com.solarized.firedown.autocomplete.AutoCompleteViewBehavior;
 import com.solarized.firedown.autocomplete.AutoCompleteViewModel;
 import com.solarized.firedown.data.entity.AutoCompleteEntity;
 import com.solarized.firedown.data.entity.GeckoStateEntity;
@@ -39,6 +41,7 @@ import com.solarized.firedown.data.models.IncognitoStateViewModel;
 import com.solarized.firedown.data.models.GeckoStateViewModel;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.GeckoToolbar;
+import com.solarized.firedown.geckoview.HomeToolbarDock;
 import com.solarized.firedown.geckoview.toolbar.BottomNavigationBar;
 import com.solarized.firedown.manager.DownloadRequest;
 import com.solarized.firedown.phone.DownloadsActivity;
@@ -87,6 +90,10 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
     private BottomNavigationBar mBottomNavigationBar;
     private View mNewTabView;
     private View mHomeScroll;
+    /** The mark group (illustration + title + the field's slot), faded while
+     *  the pill is raised — the regular home's shape, see HomeFragment. */
+    private View mBrandMark;
+    private HomeToolbarDock mToolbarDock;
 
 
     @Override
@@ -151,6 +158,17 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
 
         mGeckoToolbar = v.findViewById(R.id.toolbar_layout);
         mGeckoToolbar.setListener(this);
+
+        // Same two pieces as HomeFragment: the overlay follows the toolbar
+        // (AutoCompleteViewBehavior, installed in code), and the pill IS the
+        // toolbar — docked over home_search_slot at rest, raised on focus.
+        CoordinatorLayout.LayoutParams overlayParams =
+                (CoordinatorLayout.LayoutParams) mAutoCompleteView.getLayoutParams();
+        overlayParams.setBehavior(new AutoCompleteViewBehavior(
+                mAutoCompleteView.getContext(), null, mAutoCompleteView));
+        mBrandMark = v.findViewById(R.id.home_brand_mark);
+        mToolbarDock = new HomeToolbarDock(mGeckoToolbar,
+                v.findViewById(R.id.home_search_slot), mHomeScroll, mBrandMark);
 
         mAutoCompleteEditText = mGeckoToolbar.getAutoCompleteEditText();
         mAutoCompleteEditText.setOnTextChangedListener(this);
@@ -228,21 +246,25 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
 
         ViewCompat.setOnApplyWindowInsetsListener(mHomeScroll, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            // Apply the insets as padding to the view. Here, set all the dimensions
-            // as appropriate to your layout. You can also update the view's margin if
-            // more appropriate.
-            v.setPadding(insets.left, 0, insets.right, insets.bottom);
-
-            // Return CONSUMED if you don't want the window insets to keep passing down
-            // to descendant views.
+            // Top AND bottom insets as padding — the toolbar floats over the
+            // content, nothing reserves the top (see HomeFragment).
+            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
 
-        // Window insets for toolbar
+        // Window insets for the toolbar: the status inset as a top MARGIN,
+        // never padding — the docked box must be a plain 64dp bar, see the
+        // matching listener in HomeFragment for the why.
         ViewCompat.setOnApplyWindowInsetsListener(mGeckoToolbar, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(insets.left, insets.top, insets.right, 0);
+            ViewGroup.MarginLayoutParams params =
+                    (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            if (params.topMargin != insets.top) {
+                params.topMargin = insets.top;
+                v.setLayoutParams(params);
+            }
+            v.setPadding(insets.left, 0, insets.right, 0);
             return WindowInsetsCompat.CONSUMED;
         });
 
@@ -331,6 +353,11 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (mToolbarDock != null) {
+            mToolbarDock.release();
+            mToolbarDock = null;
+        }
+        mBrandMark = null;
         mHomeScroll = null;
         mNewTabView = null;
         mAutoCompleteView = null;
@@ -399,6 +426,11 @@ public class HomeIncognitoFragment extends BaseBrowserFragment implements
 
     @Override
     public void onFocusChanged(boolean hasFocus) {
+        // Raise the pill to the top on focus, dock it back on blur (the one
+        // hook the dock needs — every blur path ends here).
+        if (mToolbarDock != null) {
+            mToolbarDock.setRaised(hasFocus);
+        }
         mGeckoToolbar.updateViewVisibility(hasFocus);
         mGeckoToolbar.setAutoCompleteVisible(hasFocus);
         mGeckoToolbar.startAnimation(hasFocus);

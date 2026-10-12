@@ -727,14 +727,16 @@ public class GeckoRuntimeHelper {
                 mGeckoUblockHelper.onAdsCount(count, isIncognito);
             }
 
-            // Cumulative blocked-request count from µb.requestStats —
-            // drives the Home 'trackers blocked' card.
+            // Cumulative blocked-request count from µb.requestStats. Lands
+            // on GeckoUblockHelper; the home counter that read it went with
+            // the home v6 redesign, so no surface shows it today.
             if (json.has("cumulativeBlocked")) {
                 mGeckoUblockHelper.onCumulativeBlocked(json.optLong("cumulativeBlocked", 0));
             }
 
-            // Per-category blocked breakdown — drives the bucketed rows
-            // under the hero number in TrackersInfoSheet. firedown.js
+            // Per-category blocked breakdown (the trackers sheet that
+            // listed it went with the home counters, home v6; the data is
+            // kept on GeckoUblockHelper for the bridge). firedown.js
             // bucketises by fctxt.itype (uBlock can't honestly bucket
             // by source list; see the comment in firedown.js).
             if (json.has("categoryBlocked")) {

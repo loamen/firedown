@@ -333,21 +333,6 @@
     <string name="crash_sheet_sent">Звіт надіслано</string>
     <string name="crash_sheet_send_failed">Не вдалося надіслати. Перевірте з\'єднання або скористайтеся Копіювати / Повідомити.</string>
     <string name="crash_sheet_send_note">Надсилається анонімно на сервер Firedown. Лише звіт вище, без ідентифікаторів.</string>
-    <string name="home_trackers_title">Трекери та реклама заблоковані</string>
-    <string name="home_trackers_subtitle_idle">Захист увімкнено</string>
-    <string name="trackers_info_count_label">трекерів та реклами заблоковано</string>
-    <string name="trackers_info_saved">~%1$s трафіку заощаджено</string>
-    <string name="trackers_info_categories">Трекери · Реклама · Відбитки · Cookie</string>
-    <string name="trackers_info_breakdown_frames">Вбудовані фрейми</string>
-    <string name="trackers_info_breakdown_other">Аналітика та телеметрія</string>
-    <string name="trackers_info_breakdown_pixels">Стеження за пікселями та маяки</string>
-    <string name="trackers_info_breakdown_scripts">Реклама</string>
-    <string name="trackers_info_section_breakdown">Заблоковано за типом</string>
-    <string name="trackers_info_section_top_trackers">Найчастіші стежники</string>
-    <string name="trackers_info_stat_blocked">Заблоковано</string>
-    <string name="trackers_info_stat_saved">Заощаджено</string>
-    <string name="trackers_info_action">Налаштувати захист</string>
-    <string name="trackers_info_today">%1$s заблоковано сьогодні</string>
 
 
 
@@ -360,8 +345,6 @@
     <string name="capture_help_banner">Деякі вбудовані медіа потрібно спочатку відтворити. Торкніться, щоб дізнатися як.</string>
     <string name="media_tools">Медіаінструменти</string>
     <string name="tabs_more_options">Більше параметрів</string>
-    <string name="home_subtitle_blocked">%1$s заблоковано</string>
-    <string name="home_subtitle_saved">%1$s збережено</string>
     <string name="cloud_grace_notif_title">Резервне копіювання призупинено</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Залишився %d день до видалення ваших резервних копій. Поповніть рахунок або відновіть їх на цей телефон.</item>

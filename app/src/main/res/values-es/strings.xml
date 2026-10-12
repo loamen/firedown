@@ -480,21 +480,6 @@
     <string name="crash_sheet_sent">Informe enviado</string>
     <string name="crash_sheet_send_failed">No se pudo enviar. Comprueba la conexión o usa Copiar / Informar.</string>
     <string name="crash_sheet_send_note">Se envía de forma anónima al servidor de Firedown. Solo el informe de arriba, sin identificadores.</string>
-    <string name="home_trackers_title">Rastreadores y anuncios bloqueados</string>
-    <string name="home_trackers_subtitle_idle">Protección activa</string>
-    <string name="trackers_info_count_label">rastreadores y anuncios bloqueados</string>
-    <string name="trackers_info_saved">~%1$s de ancho de banda ahorrados</string>
-    <string name="trackers_info_categories">Rastreadores · Anuncios · Huella digital · Cookies</string>
-    <string name="trackers_info_breakdown_frames">Marcos incrustados</string>
-    <string name="trackers_info_breakdown_other">Analítica y telemetría</string>
-    <string name="trackers_info_breakdown_pixels">Píxeles y balizas de rastreo</string>
-    <string name="trackers_info_breakdown_scripts">Anuncios</string>
-    <string name="trackers_info_section_breakdown">Bloqueado por tipo</string>
-    <string name="trackers_info_section_top_trackers">Principales rastreadores</string>
-    <string name="trackers_info_stat_blocked">Bloqueado</string>
-    <string name="trackers_info_stat_saved">Datos ahorrados</string>
-    <string name="trackers_info_action">Gestionar protección</string>
-    <string name="trackers_info_today">%1$s bloqueados hoy</string>
 
 
 
@@ -527,8 +512,6 @@
     <string name="capture_help_banner_title">¿No aparece el vídeo?</string>
     <string name="capture_help_banner">Algunos medios incrustados deben reproducirse primero. Toca para saber cómo.</string>
     <string name="tabs_more_options">Más opciones</string>
-    <string name="home_subtitle_blocked">%1$s bloqueados</string>
-    <string name="home_subtitle_saved">%1$s guardados</string>
     <string name="cloud_grace_notif_title">Copia de seguridad en pausa</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">Queda %d día antes de que se eliminen tus archivos respaldados. Recarga o restáuralos en este teléfono.</item>

@@ -204,13 +204,6 @@
     <string name="crash_sheet_dismiss">Փակել</string>
     <string name="crash_sheet_copied">Խափանման հաշվետվությունը պատճենվեց փոխանակման բուֆեր</string>
     <string name="crash_sheet_open_failed">Չհաջողվեց բացել զննարկիչը։ Հաշվետվությունը փոխանակման բուֆերում է։ Տեղադրեք այն նոր GitHub հարցում։</string>
-    <string name="home_trackers_title">Հետևորդները և գովազդները արգելափակվել են</string>
-    <string name="home_trackers_subtitle_idle">Պաշտպանությունը միացված է</string>
-    <string name="trackers_info_count_label">հետևորդ և գովազդ արգելափակվել է</string>
-    <string name="trackers_info_saved">~%1$s թողունակություն խնայվել է</string>
-    <string name="trackers_info_categories">Հետևորդներ · Գովազդներ · Մատնահետք · Cookie</string>
-    <string name="trackers_info_action">Կառավարել պաշտպանությունը</string>
-    <string name="trackers_info_today">%1$s այսօր արգելափակվել է</string>
 
 
 
@@ -273,14 +266,6 @@
     <string name="snackbar_tab_closed">Ներդիրը փակվեց</string>
     <string name="switch_to_tab_description">Անցնել ներդիրին</string>
     <string name="bookmark_name">Անուն</string>
-    <string name="trackers_info_breakdown_frames">Ներդրված շրջանակներ</string>
-    <string name="trackers_info_breakdown_other">Վերլուծություն և հեռաչափություն</string>
-    <string name="trackers_info_breakdown_pixels">Հետևման փիքսելներ և մայակներ</string>
-    <string name="trackers_info_breakdown_scripts">Գովազդներ</string>
-    <string name="trackers_info_section_breakdown">Արգելափակված ըստ տիպի</string>
-    <string name="trackers_info_section_top_trackers">Հիմնական հետևորդներ</string>
-    <string name="trackers_info_stat_blocked">Արգելափակված</string>
-    <string name="trackers_info_stat_saved">Խնայված տվյալներ</string>
     <string name="bookmark_export">Արտահանել էջանիշերը</string>
     <string name="bookmark_export_done">%1$d էջանիշ արտահանվեց Download/Firedown/backup</string>
     <string name="bookmark_import">Ներմուծել էջանիշերը</string>

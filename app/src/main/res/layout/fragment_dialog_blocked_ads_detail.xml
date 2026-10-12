@@ -86,9 +86,8 @@
          every sheet uses — see the parent security sheet), inset 16dp.
          The CARD is what the fragment shows/hides against the empty state
          (detail_list_card), so an empty list never paints a bare surface.
-         Reuses BlockedTrackerDetailAdapter + item_blocked_tracker_host since
-         the (host, count) row shape is identical to the TrackersInfoSheet's
-         Top trackers list. -->
+         Reuses BlockedTrackerDetailAdapter + item_blocked_tracker_host, the
+         (host, count) row shape every blocked-host list in the app uses. -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/detail_list_card"
         style="@style/Firedown.Widget.SheetRowCard"

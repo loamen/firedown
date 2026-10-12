@@ -209,13 +209,6 @@
     <string name="crash_sheet_dismiss">Descartar</string>
     <string name="crash_sheet_copied">Informe de fallo copiado al portapapeles</string>
     <string name="crash_sheet_open_failed">No se pudo abrir el navegador. El informe está en tu portapapeles. Pégalo en una nueva incidencia de GitHub.</string>
-    <string name="home_trackers_title">Rastreadores y anuncios bloqueados</string>
-    <string name="home_trackers_subtitle_idle">Protección activa</string>
-    <string name="trackers_info_count_label">rastreadores y anuncios bloqueados</string>
-    <string name="trackers_info_saved">~%1$s de ancho de banda ahorrados</string>
-    <string name="trackers_info_categories">Rastreadores · Anuncios · Huella digital · Cookies</string>
-    <string name="trackers_info_action">Gestionar protección</string>
-    <string name="trackers_info_today">%1$s bloqueados hoy</string>
     <string name="bookmark_export">Exportar marcadores</string>
     <string name="bookmark_export_done">Se exportaron %1$d marcadores a Download/Firedown/backup</string>
     <string name="bookmark_import">Importar marcadores</string>

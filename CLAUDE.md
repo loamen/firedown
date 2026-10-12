@@ -3495,6 +3495,89 @@ nothing to take down — Firedown stays not-a-host.
   that delivers them puts bytes on a public URL and brings the whole abuse desk
   with it. Accept the loss explicitly rather than reopening it.
 
+### Home — the mark over the field (home v6): the pill IS the toolbar, docked
+
+Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
+composition: the mark (the 56dp flame + wordmark; the privacy illustration +
+"Private Browsing" in incognito), the search pill right under it, centred
+with an optical lift (`home_mark_lift`, shrunk in `values-land`), and nothing
+else at rest except the ember behind the flame while a download runs and
+the cloud chip / deadline card below the field. The Google / DuckDuckGo
+start-page shape with Firedown's own mark as the subject — chosen (maintainer,
+2026-10-12, from the design-canvas frames H1–H5) over a stat line, and the
+brief it answers: a calm identity surface, not a dashboard — no top sites or
+recents (Chrome's and Brave's shape), no download status (the Downloads
+screen's job), no figures. **The one-line counters that sat under the
+wordmark (trackers blocked · bytes saved) are GONE**, and the lifetime
+trackers sheet went with them as its only door (`TrackersInfoSheet`,
+`TopTrackersAdapter`, `TopTrackerDiffCallback`, `MaxHeightRecyclerView`,
+`RecentDownloadsViewModel`, their two layouts, the `TrackersInfo*` styles,
+the `MaxHeightView` attr and 17 strings in every locale): on a 360dp phone at
+normal font scale in Spanish the two chips plus the dot needed 304dp of a
+296dp line and wrapped onto two rows (reported as "blocked and download
+stack on top of each other on some devices"), and no inset or glyph trim
+buys the long locales enough. `GeckoUblockHelper` keeps relaying the uBlock
+tallies (cumulative, per-category, top trackers) — bridge data, with no
+consumer on the home now; the per-PAGE count stays on the security sheet.
+
+- **The pill is the REAL `GeckoToolbar`, translated — never a second fake
+  field.** `HomeToolbarDock` (`geckoview/`) docks the toolbar over a 48dp
+  `Space` (`home_search_slot`) in the content at rest and raises it to the
+  top on focus: Chrome's fakebox model, the omnibox drawn over the NTP
+  placeholder. Because it is the real `AutoCompleteEditText`, a tap opens
+  the IME natively (no `showSoftInput`), each home's `onFocusChanged` is the
+  only hook (true → raise, false → dock; every blur path — back, outside
+  tap, commit — ends there, and the dock is idempotent per state because the
+  back-press dismissal clears focus after the field already reported it),
+  the pill's colour lift and the home's search-engine glyph are untouched,
+  and no second accessibility node exists. The hand-off to the browser costs
+  nothing: `openUri` navigates only once the field is focused, i.e. with the
+  toolbar at translation 0, laid out at a top MARGIN of the status inset —
+  the same rect the browser's root-padded toolbar occupies — so the fragment
+  swap is the same seamless cut it was before the dock existed.
+- **Layout rules the dock depends on, in both homes.** The toolbar is a
+  DIRECT child of the `CoordinatorLayout` (the `AppBarLayout` is gone: a
+  LinearLayout clips a translated child to its own bounds, so the docked
+  pill vanished below the bar slot), declared AFTER the scroll view (equal
+  elevation → child order decides z, and the `NestedScrollView` would
+  otherwise take the tap). The status inset is a top MARGIN set in the
+  fragment's insets listener, never padding (a self-padded box carries the
+  whole status strip down with it and paints, opaque, over the wordmark;
+  with a margin the box is a plain 64dp bar whose pill lands 8dp inside it).
+  The slot is exactly the pill's 48dp, 28dp under the wordmark (24dp under
+  the incognito title), with ≥16dp clearance below — the docked box extends
+  8dp past the slot both ways and its holder is an opaque surface. The
+  content's `NestedScrollView` pads top AND bottom insets itself. The
+  overlay's behavior is `AutoCompleteViewBehavior` installed in code (as in
+  the browser), which now positions off the toolbar's laid-out BOTTOM
+  (`top + translationY + height − child.top`): docked, the GONE overlay sits
+  under the mid-screen pill, and on focus it rides up with it; in the browser
+  both tops are the root padding, so it reduces to the old sum.
+- **The rest position is resolved from WINDOW coordinates, live.** Slot top
+  minus the pill's untranslated top (`getLocationInWindow` includes the
+  scroll offset and the toolbar's own translation, which is subtracted back
+  out), re-solved on every layout of the slot, the scroll view and the
+  toolbar, and on scroll: `adjustResize` moves the centred mark while the
+  IME opens and closes, and rotation re-lays out in place (`configChanges`).
+  Raising is a 0→1 fraction (240 ms, FastOutSlowIn) with the translation
+  computed from the CURRENT rest on every frame, so a mid-flight re-solve
+  re-targets instead of fighting the animator; the mark group fades with
+  1 − fraction because the toolbar's holder is an opaque surface that would
+  otherwise wipe across the wordmark and flame (Chrome fades its NTP content
+  the same way). A reversal continues from the current fraction.
+- **What stays a cut, deliberately:** returning from the browser pops to a
+  home whose view is recreated, so the toolbar appears already docked; a
+  dock-down animation on first layout is cheap if ever wanted. Not built: a
+  dedicated fakebox, a cross-fragment shared element (none is needed), any
+  change to `GeckoToolbarBehavior` (browser only). The real pill is inset
+  8dp (344dp on a 360dp phone) — the canvas frames drew 16dp; the toolbar's
+  own inset was kept so the move is purely vertical.
+- **Unverified on-device at write time** (no SDK in the sandbox; the dock
+  class is stub-compiled only): the landscape lift, the IME-resize
+  re-solve, and the z-order on a device that gives the toolbar a non-zero
+  default elevation. If the docked pill does not take the tap, that is the
+  first thing to check.
+
 ### Empty-focus "most visited" — the existing list, filled (not a new widget)
 
 When the address bar is focused and EMPTY, a **most-visited strip** is shown
@@ -4435,22 +4518,15 @@ opaque chunks + an opaque manifest blob.
     in 17 locales. A set-up account's standing doors to Backups are the
     Downloads overflow and the Cloud screen; home is bare at rest for
     everyone, as it is for a fresh install.
-  - **The two counters LEAD with a 16dp glyph in their own grey ink, and
-    carry NO tonal fill.** Blocked wears the address bar's `ic_shield_24`,
-    saved the bottom bar's `download_24`, both `colorOnSurfaceVariant` like
-    the text (static XML in `fragment_home.xml`; the runtime text-width cap
-    in `HomeFragment` subtracts the glyph + gap). The block under the
-    wordmark is one glyph-led grammar top-down — grey line (facts about the
-    past) → filled transfer chip (live work) → full-width paused card (a
-    deadline) — and the counters were the one line without a glyph, so the
-    chip read as a different family. Rank still comes from fill and width,
-    never colour: a fill here is earned by WORK, and tinted counters (the
-    Opus home sketch of 2026-10, reusing the removed shelf tints) would stack
-    up to four tonal blocks against the card that must stay loudest. A
-    first-run hint line in the counters' slot (both at zero, no cloud
-    surface up; self-retiring) was sketched and SKIPPED — the bare first
-    screen was judged fine; if it is ever added it needs that gate so it
-    never renders above a paused card.
+  - **The counters that used to lead this block are GONE (home v6)** — the
+    home is the mark over the search field now, see the "Home — the mark
+    over the field (home v6)" section. What remains under the field is the
+    glyph-led pair this rule
+    was written for: the filled transfer chip (live work) and the full-width
+    paused card (a deadline), both 24dp under the docked pill. Rank still
+    comes from fill and width, never colour: a fill here is earned by WORK.
+    A first-run hint line in the old counters' slot was sketched and
+    SKIPPED; if it is ever added it must never render above a paused card.
   - **There is still no user-facing OFF switch for Cloud Backup itself, and
     that is intended** (it's action-driven — see "Shared identity, no on/off
     switch"). The surface is derived state, so it clears by having nothing to
@@ -4502,8 +4578,7 @@ opaque chunks + an opaque manifest blob.
     `backup_warning_container`/`_on_container` were deleted.
   - **The PILL has NO action label; the CARD keeps "TOP UP".** The pill's read
     "VIEW" on every state, so it conveyed only "tappable" — which the chip
-    shape, the ripple, and the two subtitle counters right above it (both tap
-    targets, neither with a verb or a chevron) already convey. It also cost
+    shape and the ripple already convey. It also cost
     ~50dp on a `wrap_content` pill that must fit "Waiting to back up" in every
     locale. It had already been trimmed once: hardcoded `?attr/colorPrimary`
     measured **1.68:1** light / **3.76:1** dark — the one word telling you the

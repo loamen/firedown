@@ -481,21 +481,6 @@
     <string name="crash_sheet_sent">レポートを送信しました</string>
     <string name="crash_sheet_send_failed">送信できませんでした。接続を確認するか、コピー / 報告をご利用ください。</string>
     <string name="crash_sheet_send_note">Firedown サーバーへ匿名で送信されます。上記のレポートのみで、識別子は含まれません。</string>
-    <string name="home_trackers_title">トラッカーと広告をブロック</string>
-    <string name="home_trackers_subtitle_idle">保護機能は有効です</string>
-    <string name="trackers_info_count_label">件のトラッカーと広告をブロック</string>
-    <string name="trackers_info_saved">約 %1$s の帯域幅を節約</string>
-    <string name="trackers_info_categories">トラッカー · 広告 · フィンガープリント · Cookie バナー</string>
-    <string name="trackers_info_breakdown_frames">埋め込みフレーム</string>
-    <string name="trackers_info_breakdown_other">分析とテレメトリ</string>
-    <string name="trackers_info_breakdown_pixels">トラッキングピクセルとビーコン</string>
-    <string name="trackers_info_breakdown_scripts">広告</string>
-    <string name="trackers_info_section_breakdown">種類別ブロック</string>
-    <string name="trackers_info_section_top_trackers">主なトラッカー</string>
-    <string name="trackers_info_stat_blocked">ブロック</string>
-    <string name="trackers_info_stat_saved">節約データ</string>
-    <string name="trackers_info_action">保護機能を管理</string>
-    <string name="trackers_info_today">%1$s 件を本日ブロック</string>
 
 
 
@@ -527,8 +512,6 @@
     <string name="capture_help_banner_title">動画が見つかりませんか？</string>
     <string name="capture_help_banner">一部の埋め込みメディアは先に再生する必要があります。タップして詳細をご覧ください。</string>
     <string name="tabs_more_options">その他のオプション</string>
-    <string name="home_subtitle_blocked">%1$s ブロック</string>
-    <string name="home_subtitle_saved">%1$s 保存</string>
     <string name="cloud_grace_notif_title">バックアップ停止中</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="other">バックアップしたファイルが削除されるまで残り %d 日です。チャージするか、この端末に復元してください。</item>

@@ -330,6 +330,12 @@ public class GeckoToolbar extends FrameLayout implements View.OnClickListener, V
         return mEditText;
     }
 
+    /** The pill (the rounded address-bar background) — what
+     *  {@link HomeToolbarDock} lands on the home's search slot. */
+    public View getAddressBarBackground() {
+        return mBackground;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Security / Shield icon
     // ─────────────────────────────────────────────────────────────────────────

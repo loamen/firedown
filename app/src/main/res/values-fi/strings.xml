@@ -346,21 +346,6 @@
     <string name="crash_sheet_sent">Raportti lähetetty</string>
     <string name="crash_sheet_send_failed">Lähetys epäonnistui. Tarkista yhteys tai käytä Kopioi / Ilmoita.</string>
     <string name="crash_sheet_send_note">Lähetetään nimettömänä Firedownin palvelimelle. Vain yllä oleva raportti, ei tunnisteita.</string>
-    <string name="home_trackers_title">Seurantaohjelmat ja mainokset estetty</string>
-    <string name="home_trackers_subtitle_idle">Suojaus käytössä</string>
-    <string name="trackers_info_count_label">seurantaohjelmaa ja mainosta estetty</string>
-    <string name="trackers_info_saved">~%1$s kaistaa säästetty</string>
-    <string name="trackers_info_categories">Seuranta · Mainokset · Sormenjälki · Evästeet</string>
-    <string name="trackers_info_breakdown_frames">Upotetut kehykset</string>
-    <string name="trackers_info_breakdown_other">Analytiikka ja telemetria</string>
-    <string name="trackers_info_breakdown_pixels">Seurantapikselit ja majakat</string>
-    <string name="trackers_info_breakdown_scripts">Mainokset</string>
-    <string name="trackers_info_section_breakdown">Estetty tyypin mukaan</string>
-    <string name="trackers_info_section_top_trackers">Yleisimmät seurantatekniikat</string>
-    <string name="trackers_info_stat_blocked">Estetty</string>
-    <string name="trackers_info_stat_saved">Säästetty tietoa</string>
-    <string name="trackers_info_action">Hallitse suojausta</string>
-    <string name="trackers_info_today">%1$s estetty tänään</string>
 
 
 
@@ -394,8 +379,6 @@
     <string name="capture_help_banner_title">Eikö videota näy?</string>
     <string name="capture_help_banner">Jotkin upotetut mediat on toistettava ensin. Napauta nähdäksesi ohjeet.</string>
     <string name="tabs_more_options">Lisää vaihtoehtoja</string>
-    <string name="home_subtitle_blocked">%1$s estetty</string>
-    <string name="home_subtitle_saved">%1$s tallennettu</string>
     <string name="cloud_grace_notif_title">Varmuuskopiointi keskeytetty</string>
     <plurals name="cloud_grace_notif_text">
         <item quantity="one">%d päivä jäljellä, ennen kuin varmuuskopioidut tiedostosi poistetaan. Lataa saldoa tai palauta ne tähän puhelimeen.</item>
