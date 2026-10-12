@@ -73,7 +73,8 @@
                     android:src="@drawable/ill_privacy_purple" />
 
                 <!-- Set at the regular wordmark's size and weight so the two
-                     homes read as one composition. -->
+                     homes read as one composition (22sp, a label under the
+                     mark — see fragment_home.xml). -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -81,7 +82,7 @@
                     android:letterSpacing="-0.02"
                     android:text="@string/incognito_home_title"
                     android:textColor="@color/incognito_on_surface"
-                    android:textSize="26sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <!-- Where the pill rests — exactly the pill's 48dp, 24dp under

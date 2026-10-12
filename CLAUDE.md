@@ -3498,8 +3498,9 @@ nothing to take down — Firedown stays not-a-host.
 ### Home — the mark over the field (home v6): the pill IS the toolbar, docked
 
 Both homes (`fragment_home.xml`, `fragment_home_incognito.xml`) are ONE
-composition: the mark (the 56dp flame + wordmark; the privacy illustration +
-"Private Browsing" in incognito), the search pill right under it, centred
+composition: the mark (the 48dp flame + the 22sp wordmark; the privacy
+illustration + "Private Browsing" in incognito), the search pill right under
+it, centred
 with an optical lift (`home_mark_lift`, shrunk in `values-land`), and nothing
 else at rest except the ember behind the flame while a download runs — the
 cloud transfer chip and deadline card went too (see "The home carries NO
@@ -3593,11 +3594,17 @@ sheet's "Manage protection" button, its only sender.
   own inset was kept so the move is purely vertical. The slot is the LAST
   thing in the mark group now; anything ever placed under it needs ≥16dp of
   clearance (the docked box extends 8dp past the slot).
-- **Unverified on-device at write time** (no SDK in the sandbox; the dock
-  class is stub-compiled only): the landscape lift, the IME-resize
-  re-solve, and the z-order on a device that gives the toolbar a non-zero
-  default elevation. If the docked pill does not take the tap, that is the
-  first thing to check.
+- **Sizes are MEASURED, not picked (maintainer, 2026-10-12: "is the logo
+  too big and the text?").** It shipped at a 56dp flame over a 26sp
+  wordmark; measured against the 48dp pill in the device screenshot, the
+  stacked pair was ~100dp of mark over the field — about twice Chrome's
+  logo-to-fakebox ratio — and the NAME led the eye before the field. Now
+  48dp + 22sp (the glow is the flame's size; the incognito title follows the
+  wordmark): the flame stays the subject (40dp reads as an app icon, which
+  it was when a stat line shared the block), the name is a label. Don't
+  grow either without re-measuring the block against the pill.
+- **Verified on-device** (2026-10-12): the composition, the docked pill
+  taking the tap and the cut to the top. Not yet: the landscape lift.
 
 ### Empty-focus "most visited" — the existing list, filled (not a new widget)
 

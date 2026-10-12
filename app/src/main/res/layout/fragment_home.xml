@@ -87,9 +87,13 @@
                 android:orientation="vertical"
                 android:paddingHorizontal="@dimen/address_bar_inset">
 
-                <!-- Flame + the breathing ember glow behind it. 56dp — the
-                     subject of the screen, not an app icon (it was 40dp when a
-                     stat line shared the block). The glow is the flame's size
+                <!-- Flame + the breathing ember glow behind it. 48dp — the
+                     subject of the screen, not an app icon (40dp reads as one,
+                     which it was when a stat line shared the block), but not
+                     bigger: it shipped at 56dp over a 26sp wordmark and the
+                     stacked pair measured ~100dp of mark over the 48dp field,
+                     twice Chrome's logo-to-fakebox ratio, so the name led the
+                     eye before the field. The glow is the flame's size
                      and only becomes a halo via the animator's SCALE
                      transform, drawn beyond the box because this and the
                      ancestors set clipChildren="false". The glow is GONE/alpha
@@ -103,22 +107,24 @@
 
                     <View
                         android:id="@+id/home_brand_glow"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_gravity="center"
                         android:alpha="0"
                         android:background="@drawable/home_ember_glow"
                         android:visibility="gone" />
 
                     <androidx.appcompat.widget.AppCompatImageView
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:layout_gravity="center"
                         android:contentDescription="@string/app_name"
                         android:src="@drawable/ic_firedown_logo" />
 
                 </FrameLayout>
 
+                <!-- The name is a LABEL under the mark, not a second mark:
+                     22sp (it shipped at 26sp — see the flame comment). -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -126,7 +132,7 @@
                     android:letterSpacing="-0.02"
                     android:text="@string/app_name"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="26sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
                 <!-- Where the pill rests. Exactly the pill's 48dp; the toolbar
