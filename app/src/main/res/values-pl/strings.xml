@@ -555,6 +555,7 @@
     <string name="cloud_backup_transfer_uploading">Tworzenie kopii zapasowej…</string>
     <string name="cloud_backup_transfer_failed">Kopia zapasowa nie powiodła się</string>
     <string name="cloud_backup_transfer_cancelled">Anulowano tworzenie kopii zapasowej</string>
+    <string name="cloud_backup_cancel_action">Anuluj tworzenie kopii zapasowej</string>
     <string name="cloud_backup_view">Wyświetl</string>
     <string name="cloud_backup_delete_title">Usunąć z kopii zapasowej?</string>
     <string name="cloud_backup_delete_message">Usuwa wybrane pliki z folderu kopii zapasowej. Pobrane pliki na tym urządzeniu pozostają.</string>

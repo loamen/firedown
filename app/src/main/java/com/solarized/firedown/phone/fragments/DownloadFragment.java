@@ -522,6 +522,7 @@ public class DownloadFragment extends BaseDownloadFragment implements
                 Bundle b = new Bundle();
                 b.putParcelable(Keys.ITEM_ID, entity);
                 b.putInt(Keys.ITEM_POSITION, position);
+                b.putBoolean(Keys.BACKUP_IN_FLIGHT, mAdapter.isBackupInFlight(entity));
                 NavigationUtils.navigateSafe(mNavController, R.id.dialog_download_options, R.id.downloads, b);
             }
         }

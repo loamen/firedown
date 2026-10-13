@@ -35,6 +35,7 @@ import com.solarized.firedown.data.Download;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.entity.DownloadSeparatorEntity;
 import com.solarized.firedown.sync.CloudBackupManager;
+import com.solarized.firedown.sync.VaultBackupWorker;
 import com.solarized.firedown.ui.CloudMark;
 import com.solarized.firedown.ui.FallbackInks;
 import com.solarized.firedown.ui.OnItemClickListener;
@@ -177,6 +178,16 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
      *  ({@link #setBackedUpKeys}). */
     @NonNull private Set<String> mBackedUpKeys = Collections.emptySet();
 
+    /** Backups IN FLIGHT, keyed by {@link VaultBackupWorker#progressKey} (the
+     *  truncated-name content key both sides share) → whole percent, or -1
+     *  while the work is enqueued / before its first byte. A FINISHED row with
+     *  a key here shows the dimmed mark + "Backing up… · N%" in place of its
+     *  facts, the in-progress form of the mark it gets on success (the
+     *  Drive / Photos pattern: progress on the item, never a bar that owns
+     *  the screen). Set per WorkManager emission by the fragment
+     *  ({@link #setBackupProgress}); empty when nothing is running. */
+    @NonNull private Map<String, Integer> mBackupProgress = Collections.emptyMap();
+
     /** Per-category aggregates used to fill the header subtitle
      *  ("N files · X MB"). Empty until the ViewModel's aggregator emits. */
     @NonNull private Map<Integer, GroupAggregate> mAggregates = Collections.emptyMap();
@@ -288,6 +299,13 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
     /** Per-group aggregates changed — only header subtitles need to
      *  re-render. Items ignore this payload entirely. */
     private static final Object PAYLOAD_AGGREGATES = new Object();
+
+    /** One row's backup progress ticked (see {@link #setBackupProgress}):
+     *  a row still in flight repaints only its facts line; a row whose
+     *  backup just ENDED falls through to the full bind, so every
+     *  presentation rule (mime label, size/date drops, the solid mark)
+     *  re-applies from the one place that owns them. */
+    private static final Object PAYLOAD_BACKUP = new Object();
 
     public void setActionMode(boolean value) {
         mActionMode = value;
@@ -479,6 +497,53 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         }
         mBackedUpKeys = keys;
         notifyDataSetChanged();
+    }
+
+    /**
+     * Sets the in-flight backups (progress key → whole percent, -1 = not
+     * started). Rebinds ONLY the rows whose entry appeared, moved or vanished,
+     * with {@link #PAYLOAD_BACKUP} — a percent tick is one row's facts line,
+     * never a list-wide rebind, and a backup runs to ~100 ticks. No-op on an
+     * unchanged map (every WorkManager emission that carries no backup).
+     */
+    public void setBackupProgress(@NonNull Map<String, Integer> progress) {
+        if (mBackupProgress.equals(progress)) {
+            return;
+        }
+        Set<String> changed = new HashSet<>();
+        for (Map.Entry<String, Integer> e : progress.entrySet()) {
+            if (!e.getValue().equals(mBackupProgress.get(e.getKey()))) {
+                changed.add(e.getKey());
+            }
+        }
+        for (String key : mBackupProgress.keySet()) {
+            if (!progress.containsKey(key)) {
+                changed.add(key);
+            }
+        }
+        mBackupProgress = progress;
+        if (changed.isEmpty()) {
+            return;
+        }
+        for (int i = 0; i < getItemCount(); i++) {
+            Object item = peek(i);
+            if (item instanceof DownloadEntity entity && changed.contains(backupKey(entity))) {
+                notifyItemChanged(i, PAYLOAD_BACKUP);
+            }
+        }
+    }
+
+    /** Whether this file's backup is enqueued or running (the row shows the
+     *  in-flight state; the sheet's backup row reads "Cancel backup"). */
+    public boolean isBackupInFlight(@Nullable DownloadEntity entity) {
+        if (entity == null || mBackupProgress.isEmpty() || entity.isFileSafe()) {
+            return false;
+        }
+        return mBackupProgress.containsKey(backupKey(entity));
+    }
+
+    private static String backupKey(DownloadEntity entity) {
+        return VaultBackupWorker.progressKey(entity.getFileName(), entity.getFileSize());
     }
 
     /** Whether this FINISHED, non-safe file is in the backup folder (its
@@ -686,6 +751,25 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                     }
                     return;
                 } finally { Tracing.end(); }
+            }
+
+            // Backup-progress payload: a FINISHED row still in flight repaints
+            // its facts line only. A row whose backup just ended (no entry
+            // any more) deliberately falls through to the full bind below.
+            if (!payloads.isEmpty()
+                    && Collections.frequency(payloads, PAYLOAD_BACKUP) == payloads.size()
+                    && viewHolder instanceof DownloadViewHolder holder) {
+                Object item = peek(position);
+                int viewType = getItemViewType(position);
+                if (item instanceof DownloadEntity entity
+                        && getStatus(viewType) == Download.FINISHED
+                        && isBackupInFlight(entity)) {
+                    Tracing.begin("bind:backupProgressOnly");
+                    try {
+                        bindBackupInFlight(holder, entity, isGridType(viewType));
+                    } finally { Tracing.end(); }
+                    return;
+                }
             }
 
             // Aggregates-only payload: header subtitle text. Items ignore.
@@ -1154,7 +1238,9 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
                 // dropped (SORT_SIZE under an active chip) — a backed-up file
                 // never loses its state to a display rule. gapBefore is off
                 // only when nothing at all precedes the glyph in the row.
-                if (isBackedUp(entity)) {
+                if (isBackupInFlight(entity)) {
+                    bindBackupInFlight(holder, entity, true);
+                } else if (isBackedUp(entity)) {
                     holder.mimeDuration.setVisibility(View.VISIBLE);
                     holder.mimeDuration.setText(mCloudMark.trailing(
                             holder.mimeDuration, shown, !shown.isEmpty() || mimeShown));
@@ -1200,7 +1286,9 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
             // No status check: bindFinishedInner is only reached from
             // 'case Download.FINISHED ->', so the row is finished by
             // construction (an in-flight or failed download isn't backed up).
-            if (isBackedUp(entity)) {
+            if (isBackupInFlight(entity)) {
+                bindBackupInFlight(holder, entity, false);
+            } else if (isBackedUp(entity)) {
                 holder.statusText.setText(mCloudMark.leading(holder.statusText, facts));
                 // The span is invisible to TalkBack; say the state out loud.
                 holder.statusText.setContentDescription(
@@ -1215,6 +1303,49 @@ public class DownloadItemAdapter extends PagingDataAdapter<Object, RecyclerView.
         Tracing.begin("Glide.load(finished)");
         try { GlideHelper.load(entity, mRequestOptions, holder.image); }
         finally { Tracing.end(); }
+    }
+
+    /**
+     * The in-flight form of the cloud mark: the dimmed glyph beside
+     * "Backing up… · 32%" (or "Backing up…" before the first byte), IN PLACE
+     * of the row's facts for the duration — the state is the one fact that
+     * matters about the row right now, and the facts come back with the full
+     * rebind the moment the work ends (see {@link #PAYLOAD_BACKUP}). Reached
+     * from the full bind (a row scrolled in mid-backup) and from the progress
+     * payload (a tick on a row already on screen), so both paint identically.
+     *
+     * <p>Grid: the meta row becomes the progress alone, the mime label hidden
+     * for the duration — "VIDEO · Backing up… · 32% [cloud]" overran the tile
+     * in the longer locales ("VÍDEO · Haciendo copia… · 32%"), and the mark
+     * trails, so an overrun clipped the mark first. List: the facts line
+     * leads with the dimmed mark like the solid one does.
+     */
+    private void bindBackupInFlight(DownloadViewHolder holder, DownloadEntity entity,
+                                    boolean isGrid) {
+        Integer pct = mBackupProgress.get(backupKey(entity));
+        String label = mContext.getString(R.string.cloud_backup_transfer_uploading);
+        if (pct != null && pct >= 0) {
+            label = label + " · " + String.format(Locale.US, "%d%%", pct);
+        }
+        if (isGrid) {
+            if (holder.mimeDuration == null) {
+                return; // the dense tile shows no text at all
+            }
+            if (holder.mimeText != null) {
+                holder.mimeText.setVisibility(View.GONE);
+            }
+            holder.mimeDuration.setVisibility(View.VISIBLE);
+            holder.mimeDuration.setText(mCloudMark.trailing(
+                    holder.mimeDuration, label, true, true));
+            holder.mimeDuration.setContentDescription(label);
+        } else if (holder.statusText != null) {
+            holder.statusText.setTextColor(MaterialColors.getColor(
+                    holder.statusText,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant));
+            holder.statusText.setText(mCloudMark.leading(holder.statusText, label, true));
+            holder.statusText.setContentDescription(label);
+            holder.statusText.setVisibility(View.VISIBLE);
+        }
     }
 
 

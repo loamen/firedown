@@ -489,6 +489,7 @@
     <string name="cloud_backup_transfer_uploading">बैकअप लिया जा रहा है…</string>
     <string name="cloud_backup_transfer_failed">बैकअप विफल रहा</string>
     <string name="cloud_backup_transfer_cancelled">बैकअप रद्द किया गया</string>
+    <string name="cloud_backup_cancel_action">बैकअप रद्द करें</string>
     <string name="cloud_backup_view">देखें</string>
     <string name="cloud_backup_delete_title">बैकअप से हटाएँ?</string>
     <string name="cloud_backup_delete_message">चुनी हुई फ़ाइलों को आपके बैकअप फ़ोल्डर से हटाता है। इस डिवाइस के डाउनलोड रखे जाते हैं।</string>

@@ -71,7 +71,20 @@ public final class CloudMark {
      * resource lookup degrades instead of handing ImageSpan a null.
      */
     public CharSequence leading(@NonNull TextView view, @NonNull String facts) {
-        Tag tag = tagFor(view);
+        return leading(view, facts, false);
+    }
+
+    /**
+     * {@link #leading(TextView, String)} with {@code pending} true for a backup
+     * still in flight: the SAME silhouette at {@link #PENDING_ALPHA}, a ghost of
+     * the mark the row gets when the transfer lands. Same glyph on purpose — a
+     * second shape (an arrow cut out of the cloud, an outline) smudges at text
+     * size, and the state is carried by the words beside it ("Backing up… ·
+     * 32%"); the dimmed mark only has to read as "not yet".
+     */
+    public CharSequence leading(@NonNull TextView view, @NonNull String facts,
+                                boolean pending) {
+        Tag tag = tagFor(view, pending);
         if (tag == null) {
             return facts;
         }
@@ -93,7 +106,14 @@ public final class CloudMark {
      */
     public CharSequence trailing(@NonNull TextView view, @NonNull String facts,
                                  boolean gapBefore) {
-        Tag tag = tagFor(view);
+        return trailing(view, facts, gapBefore, false);
+    }
+
+    /** {@link #trailing(TextView, String, boolean)} with the in-flight
+     *  (dimmed) mark — see {@link #leading(TextView, String, boolean)}. */
+    public CharSequence trailing(@NonNull TextView view, @NonNull String facts,
+                                 boolean gapBefore, boolean pending) {
+        Tag tag = tagFor(view, pending);
         if (tag == null) {
             return facts;
         }
@@ -106,24 +126,40 @@ public final class CloudMark {
         return text;
     }
 
+    /** Alpha of the in-flight mark (0–255): dim enough to read as "not yet"
+     *  beside the solid mark on the next row, solid enough to still read as
+     *  the cloud at text size. */
+    private static final int PENDING_ALPHA = 115;
+
     @Nullable
-    private Tag tagFor(TextView view) {
+    private Tag tagFor(TextView view, boolean pending) {
+        // The text size takes the high word, the ink the low word; the pending
+        // bit rides the sign of the size's float bits, which a positive text
+        // size never sets — so the two states of one surface cache apart.
         long key = ((long) Float.floatToIntBits(view.getTextSize()) << 32)
                 | (view.getCurrentTextColor() & 0xFFFFFFFFL);
+        if (pending) {
+            key |= Long.MIN_VALUE;
+        }
         Tag tag = mTags.get(key);
         if (tag == null && !mTags.containsKey(key)) {
-            tag = build(view);
+            tag = build(view, pending);
             mTags.put(key, tag);
         }
         return tag;
     }
 
     @Nullable
-    private Tag build(TextView view) {
+    private Tag build(TextView view, boolean pending) {
+        // tintDrawableColor wraps + mutates, so the alpha below is this tag's
+        // own and never dims the solid mark cached beside it.
         Drawable glyph = Utils.tintDrawableColor(mContext, R.drawable.cloud_24,
                 view.getCurrentTextColor());
         if (glyph == null) {
             return null;
+        }
+        if (pending) {
+            glyph.setAlpha(PENDING_ALPHA);
         }
         // The cloud stands 16 of its 24 units tall, so 0.9x the text size
         // lands between the x-height and the caps — about the ink of a

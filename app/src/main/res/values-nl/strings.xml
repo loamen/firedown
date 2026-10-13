@@ -553,6 +553,7 @@
     <string name="cloud_backup_transfer_uploading">Back-up bezig…</string>
     <string name="cloud_backup_transfer_failed">Back-up mislukt</string>
     <string name="cloud_backup_transfer_cancelled">Back-up geannuleerd</string>
+    <string name="cloud_backup_cancel_action">Back-up annuleren</string>
     <string name="cloud_backup_view">Bekijken</string>
     <string name="cloud_backup_delete_title">Uit back-up verwijderen?</string>
     <string name="cloud_backup_delete_message">Verwijdert de geselecteerde bestanden uit je back-upmap. Downloads op dit apparaat blijven staan.</string>

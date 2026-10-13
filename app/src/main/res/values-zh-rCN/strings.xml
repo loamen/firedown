@@ -651,6 +651,7 @@
     <string name="cloud_backup_transfer_uploading">正在备份…</string>
     <string name="cloud_backup_transfer_failed">备份失败</string>
     <string name="cloud_backup_transfer_cancelled">已取消备份</string>
+    <string name="cloud_backup_cancel_action">取消备份</string>
     <string name="cloud_backup_view">查看</string>
     <string name="cloud_backup_delete_title">从备份中移除？</string>
     <string name="cloud_backup_delete_message">从备份文件夹中移除所选文件。此设备上的下载内容会保留。</string>

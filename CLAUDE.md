@@ -4680,6 +4680,44 @@ children — the card edges do the grouping).
   action, NO success snackbar** — the list is the confirmation; only a
   FAILED transfer surfaces an error snackbar, naming the cause through the
   worker's one slug mapping (see `VaultBackupWorker` above).
+- **A backup in flight shows ON ITS ROW, never as the Safe Folder's bottom
+  bar.** That bar (`handleTaskStart`) dims and freezes the whole list with a
+  Cancel until a LOCAL task ends — right for encrypt-into-vault, audio,
+  GIF, compress, where the rows are changing under the user and it is
+  seconds. A backup is a COPY that leaves the list untouched, runs in a
+  foreground worker for seconds to minutes and survives leaving the
+  screen; owning the screen for it is the P2P "sit on the share screen"
+  mistake. Files by Google draws the same line (a blocking dialog for its
+  Safe Folder move, per-item progress for Drive uploads). The gap it
+  closes: after the "Backing up…" snackbar faded, Downloads said nothing
+  until the solid mark landed on success, and the notification is the
+  only other surface — muted on the maintainer's own phone. So the row's
+  cloud mark has an IN-FLIGHT form: the same silhouette at
+  `CloudMark.PENDING_ALPHA` (a ghost of the mark it becomes; a second
+  glyph smudges at text size and the words carry the state) beside
+  "Backing up… · 32%" (`cloud_backup_transfer_uploading` + the app's
+  `%d%%`), IN PLACE of the facts for the duration — list: leading, grid:
+  the meta row alone with the mime label hidden (the full row overran the
+  tile in long locales and clipped the trailing mark). Plumbing:
+  `BaseDownloadFragment.observeBackupCompletions` maps every WORK_TAG
+  emission's unfinished backup work to `VaultBackupWorker.progressKey` →
+  percent (-1 before the first byte) and hands it to
+  `DownloadItemAdapter.setBackupProgress`, which rebinds ONLY the rows
+  whose entry changed with `PAYLOAD_BACKUP` (a tick is one facts line; a
+  row whose backup ENDED falls through to the full bind so every
+  presentation rule re-applies from its one owner). **The key is the
+  TRUNCATED-name content key on both sides**: a queued work's only
+  identity is its `bname:` tag (capped at 120 chars), progress data
+  carries the full name only once the worker runs, and the row has the
+  full name — `progressKey` truncates all three the same way, or a long
+  filename would silently never show progress. Two doors to cancel ride
+  the same state: the sheet's backup row reads "Cancel backup"
+  (`Keys.BACKUP_IN_FLIGHT`, handed over at open; the tap re-checks the
+  live state), and the worker's foreground notification — DETERMINATE
+  now, re-posted per whole percent through `publishProgress`'s throttle,
+  with WorkManager's own cancel intent as its action — covers a user who
+  left the app. The notification is not optional: a foreground service
+  must post one, and this transfer is the kind the user walks away from.
 - **The Downloads banner is ONE stage** (`SyncBannerAdapter`, parameterized
   by copy + glyph, never forked; prepended through the same `ConcatAdapter`
   as the Safe Folder row, below it): shown while NOT set up, the list has

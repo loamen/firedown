@@ -453,6 +453,7 @@
     <string name="cloud_backup_transfer_uploading">Varundamine…</string>
     <string name="cloud_backup_transfer_failed">Varundamine ebaõnnestus</string>
     <string name="cloud_backup_transfer_cancelled">Varundamine tühistatud</string>
+    <string name="cloud_backup_cancel_action">Tühista varundamine</string>
     <string name="cloud_backup_view">Vaata</string>
     <string name="cloud_backup_delete_title">Eemaldada varundusest?</string>
     <string name="cloud_backup_delete_message">Eemaldab valitud failid sinu varunduskaustast. Selle seadme allalaadimised jäävad alles.</string>

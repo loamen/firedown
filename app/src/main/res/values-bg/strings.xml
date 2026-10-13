@@ -476,6 +476,7 @@
     <string name="cloud_backup_transfer_uploading">Архивиране…</string>
     <string name="cloud_backup_transfer_failed">Неуспешно архивиране</string>
     <string name="cloud_backup_transfer_cancelled">Архивирането е отменено</string>
+    <string name="cloud_backup_cancel_action">Отмяна на архивирането</string>
     <string name="cloud_backup_view">Преглед</string>
     <string name="cloud_backup_delete_title">Премахване от архива?</string>
     <string name="cloud_backup_delete_message">Премахва избраните файлове от папката за архивиране. Изтеглянията на това устройство се запазват.</string>

@@ -553,6 +553,7 @@
     <string name="cloud_backup_transfer_uploading">Fazendo backup…</string>
     <string name="cloud_backup_transfer_failed">Falha na cópia de segurança</string>
     <string name="cloud_backup_transfer_cancelled">Backup cancelado</string>
+    <string name="cloud_backup_cancel_action">Cancelar backup</string>
     <string name="cloud_backup_view">Ver</string>
     <string name="cloud_backup_delete_title">Remover do backup?</string>
     <string name="cloud_backup_delete_message">Remove os arquivos selecionados da sua pasta de backup. Os downloads neste dispositivo são mantidos.</string>

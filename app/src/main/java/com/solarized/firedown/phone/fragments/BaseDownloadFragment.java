@@ -70,8 +70,10 @@ import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -237,18 +239,67 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
                         mSeenBackupSuccesses = new HashSet<>();
                     }
                     boolean newSuccess = false;
+                    // The in-flight rows: every emission (the seed included —
+                    // a backup running when the screen opens is in flight NOW)
+                    // hands the adapter the current map; it rebinds only the
+                    // rows whose entry changed.
+                    Map<String, Integer> inFlight = new HashMap<>();
                     for (WorkInfo info : infos) {
-                        if (info.getState() != WorkInfo.State.SUCCEEDED || !isBackupWork(info)) {
+                        if (!isBackupWork(info)) {
                             continue;
                         }
-                        if (mSeenBackupSuccesses.add(info.getId()) && !seeding) {
-                            newSuccess = true;
+                        WorkInfo.State state = info.getState();
+                        if (state == WorkInfo.State.SUCCEEDED) {
+                            if (mSeenBackupSuccesses.add(info.getId()) && !seeding) {
+                                newSuccess = true;
+                            }
+                        } else if (!state.isFinished()) {
+                            inFlight.put(backupProgressKey(info), backupPercent(info));
                         }
+                    }
+                    if (mAdapter != null) {
+                        mAdapter.setBackupProgress(inFlight);
                     }
                     if (newSuccess) {
                         refreshCloudBadges();
                     }
                 });
+    }
+
+    /**
+     * The row key of an in-flight backup: the full name from the progress
+     * data once the worker runs, else the (truncated) {@code bname:} tag while
+     * it is only enqueued — both through {@link VaultBackupWorker#progressKey},
+     * which truncates the same way, so the two states of one backup key alike
+     * and alike with the row.
+     */
+    private static String backupProgressKey(WorkInfo info) {
+        String name = info.getProgress().getString(VaultBackupWorker.KEY_NAME);
+        long size = 0;
+        for (String tag : info.getTags()) {
+            if (name == null && tag.startsWith(VaultBackupWorker.TAG_NAME)) {
+                name = tag.substring(VaultBackupWorker.TAG_NAME.length());
+            } else if (tag.startsWith(VaultBackupWorker.TAG_SIZE)) {
+                try {
+                    size = Long.parseLong(tag.substring(VaultBackupWorker.TAG_SIZE.length()));
+                } catch (NumberFormatException ignored) {
+                    // a foreign tag shape — the key then matches no row, which
+                    // is the honest outcome
+                }
+            }
+        }
+        return VaultBackupWorker.progressKey(name, size);
+    }
+
+    /** Whole percent of an in-flight backup, -1 before its first progress
+     *  (enqueued, or running but not yet past the thumbnail step). */
+    private static int backupPercent(WorkInfo info) {
+        long total = info.getProgress().getLong(VaultBackupWorker.KEY_PROGRESS_TOTAL, 0);
+        if (total <= 0) {
+            return -1;
+        }
+        long done = info.getProgress().getLong(VaultBackupWorker.KEY_PROGRESS_DONE, 0);
+        return (int) Math.min(100, Math.max(0, done * 100 / total));
     }
 
     /** Whether this WORK_TAG-tagged work is a BACKUP (carries the bname:
@@ -435,7 +486,17 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
             // "Back up to <folder>" — encrypt + copy this finished download
             // into the backup folder. Action-driven: sets up the (shared)
             // recovery code and the folder on demand if either is missing.
-            startCloudBackup(entity);
+            // While THIS file's backup is in flight the same row reads
+            // "Cancel backup" (the sheet was opened with BACKUP_IN_FLIGHT),
+            // and the tap cancels instead: the row's in-flight state is what
+            // tells the user a backup is running, so the way to stop it has
+            // to be right there too, not only in the Backups list.
+            if (mAdapter != null && mAdapter.isBackupInFlight(entity)) {
+                VaultBackupWorker.cancel(requireContext(), entity);
+                showErrorSnackbar(R.string.cloud_backup_transfer_cancelled);
+            } else {
+                startCloudBackup(entity);
+            }
         } else if (iconId == R.drawable.ic_edit_24) {
             NavigationUtils.navigateSafe(mNavController, R.id.dialog_rename, bundle);
         } else if (iconId == R.id.action_delete || iconId == R.drawable.ic_baseline_delete_24) {

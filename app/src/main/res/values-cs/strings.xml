@@ -526,6 +526,7 @@
     <string name="cloud_backup_transfer_uploading">Zálohování…</string>
     <string name="cloud_backup_transfer_failed">Zálohování selhalo</string>
     <string name="cloud_backup_transfer_cancelled">Zálohování zrušeno</string>
+    <string name="cloud_backup_cancel_action">Zrušit zálohování</string>
     <string name="cloud_backup_view">Zobrazit</string>
     <string name="cloud_backup_delete_title">Odebrat ze zálohy?</string>
     <string name="cloud_backup_delete_message">Odebere vybrané soubory ze složky zálohy. Stažené soubory na tomto zařízení zůstanou.</string>

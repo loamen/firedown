@@ -140,6 +140,11 @@ public class VaultBackupWorker extends Worker {
     private final SharedPreferences mPrefs;
     /** The most recent setProgressAsync future, drained before returning a Result. */
     private ListenableFuture<Void> mLastProgress;
+    /** The most recent foreground-notification update (the determinate bar),
+     *  drained with the progress for the same reason: WorkManager fails a
+     *  setForegroundAsync that lands after the Result, and the failure must
+     *  not be left to surface as a stray error after the work is done. */
+    private ListenableFuture<Void> mLastForeground;
     /** Last published whole-percent, to throttle per-chunk progress writes. */
     private int mLastPct = -1;
     /** The in-flight engine, so {@link #onStopped()} can stop it at the next
@@ -182,10 +187,40 @@ public class VaultBackupWorker extends Worker {
                 .addTag(TAG_MIME + truncateTag(entity.getFileMimeType()))
                 .addTag(TAG_SIZE + entity.getFileSize())
                 .build();
-        String uniqueName = "cloud_backup:" + entity.getFileName() + ":" + entity.getFileSize();
         WorkManager.getInstance(context.getApplicationContext())
-                .enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request);
+                .enqueueUniqueWork(uniqueName(entity), ExistingWorkPolicy.REPLACE, request);
         return request;
+    }
+
+    /** The unique-work name of this download's backup (content-keyed, see
+     *  {@link #enqueue}); what {@link #cancel} cancels. */
+    public static String uniqueName(DownloadEntity entity) {
+        return "cloud_backup:" + entity.getFileName() + ":" + entity.getFileSize();
+    }
+
+    /**
+     * Cancels this download's in-flight backup (the Downloads row's "Cancel
+     * backup", the twin of the Backups list's per-row cancel and the
+     * notification's action). A no-op when nothing is enqueued or running for
+     * it; a cancelled worker frees its partial object through
+     * {@link #onStopped()}.
+     */
+    public static void cancel(Context context, DownloadEntity entity) {
+        WorkManager.getInstance(context.getApplicationContext())
+                .cancelUniqueWork(uniqueName(entity));
+    }
+
+    /**
+     * The key under which the Downloads list matches a row to this file's
+     * in-flight backup — the content key ({@link CloudBackupManager#contentKey})
+     * built from the TRUNCATED name, because the only identity a queued work
+     * carries is its {@code bname:} tag (progress data exists only once the
+     * worker runs). Both sides (the fragment reading the work, the adapter
+     * reading the row) go through this, so a filename past the tag cap still
+     * matches instead of silently never showing its progress.
+     */
+    public static String progressKey(String name, long size) {
+        return CloudBackupManager.contentKey(truncateTag(name), size);
     }
 
     /** Caps a tag payload (a null value becomes ""; a huge filename is trimmed —
@@ -422,16 +457,35 @@ public class VaultBackupWorker extends Worker {
             b.putString(KEY_MIME, mime);
         }
         mLastProgress = setProgressAsync(b.build());
+        // The foreground notification rides the same whole-percent throttle:
+        // a determinate bar outside the app for a transfer the user can leave
+        // the screen for. Best-effort — a refused update changes nothing about
+        // the backup (and the Downloads row carries the same percent).
+        if (total > 0) {
+            try {
+                mLastForeground = setForegroundAsync(foregroundInfo(name, pct));
+            } catch (RuntimeException ignored) {
+                // Not foreground (the OS refused at start) — the bar stays
+                // wherever it was.
+            }
+        }
     }
 
     /** Blocks until the most recent progress update has been persisted — required
      *  before returning a Result (see the doWork comment). Best-effort. */
     private void awaitLastProgress() {
-        ListenableFuture<Void> f = mLastProgress;
+        ListenableFuture<Void> progress = mLastProgress;
+        ListenableFuture<Void> foreground = mLastForeground;
+        mLastProgress = null;
+        mLastForeground = null;
+        drain(progress);
+        drain(foreground);
+    }
+
+    private static void drain(ListenableFuture<Void> f) {
         if (f == null) {
             return;
         }
-        mLastProgress = null;
         try {
             f.get();
         } catch (Exception ignored) {
@@ -440,11 +494,26 @@ public class VaultBackupWorker extends Worker {
     }
 
     private ForegroundInfo foregroundInfo(String name) {
-        // Short and branded: the action is the title, the file name is the body
-        // (ellipsized by the system). Tapping opens the Backups list (the live
-        // per-item progress), like a download notification opens Downloads.
+        return foregroundInfo(name, -1);
+    }
+
+    /**
+     * The in-progress foreground notification. Short and branded: the action
+     * is the title, the file name is the body (ellipsized by the system).
+     * Tapping opens the Backups list (the live per-item progress), like a
+     * download notification opens Downloads. {@code pct} below 0 is the
+     * pre-first-byte state (indeterminate); from the first chunk on the bar is
+     * determinate and re-posted per whole percent by {@link #publishProgress}.
+     * Carries a Cancel action, because this notification is the only surface
+     * a user who left the app has for a transfer that may run for minutes —
+     * the same cancel the Backups list's transfer row and the Downloads
+     * row's sheet offer, through WorkManager's own cancel intent.
+     */
+    private ForegroundInfo foregroundInfo(String name, int pct) {
         String title = mContext.getString(R.string.cloud_backup_notification_title);
-        Notification notification = new NotificationCompat.Builder(
+        PendingIntent cancel = WorkManager.getInstance(mContext)
+                .createCancelPendingIntent(getId());
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(
                 mContext, App.DOWNLOADS_NOTIFICATION_ID)
                 .setSmallIcon(R.drawable.cloud_upload_24)
                 .setLargeIcon(BitmapFactory.decodeResource(
@@ -453,9 +522,15 @@ public class VaultBackupWorker extends Worker {
                 .setContentText(name != null ? name : title)
                 .setContentIntent(cloudBackupFilesIntent(mContext))
                 .setOngoing(true)
-                .setProgress(0, 0, true) // indeterminate
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .build();
+                .setOnlyAlertOnce(true)
+                .addAction(0, mContext.getString(android.R.string.cancel), cancel)
+                .setPriority(NotificationCompat.PRIORITY_LOW);
+        if (pct < 0) {
+            builder.setProgress(0, 0, true); // indeterminate
+        } else {
+            builder.setProgress(100, pct, false);
+        }
+        Notification notification = builder.build();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return new ForegroundInfo(NOTIFICATION_ID, notification,
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);

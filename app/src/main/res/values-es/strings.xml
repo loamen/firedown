@@ -653,6 +653,7 @@
     <string name="cloud_backup_transfer_uploading">Haciendo copia…</string>
     <string name="cloud_backup_transfer_failed">Error en la copia de seguridad</string>
     <string name="cloud_backup_transfer_cancelled">Copia cancelada</string>
+    <string name="cloud_backup_cancel_action">Cancelar copia de seguridad</string>
     <string name="cloud_backup_view">Ver</string>
     <string name="cloud_backup_delete_title">¿Quitar de la copia de seguridad?</string>
     <string name="cloud_backup_delete_message">Quita los archivos seleccionados de tu carpeta de copia de seguridad. Las descargas de este dispositivo se conservan.</string>

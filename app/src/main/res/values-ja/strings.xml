@@ -651,6 +651,7 @@
     <string name="cloud_backup_transfer_uploading">バックアップ中…</string>
     <string name="cloud_backup_transfer_failed">バックアップに失敗しました</string>
     <string name="cloud_backup_transfer_cancelled">バックアップをキャンセルしました</string>
+    <string name="cloud_backup_cancel_action">バックアップをキャンセル</string>
     <string name="cloud_backup_view">表示</string>
     <string name="cloud_backup_delete_title">バックアップから削除しますか？</string>
     <string name="cloud_backup_delete_message">選択したファイルをバックアップフォルダーから削除します。この端末のダウンロードは残ります。</string>

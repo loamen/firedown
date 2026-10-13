@@ -18,6 +18,10 @@ public class Keys {
     public static final String BLOCK_STORE_REDIRECT = "com.solarized.firedown.BLOCK_STORE_REDIRECT";
     public static final String ITEM_IS_HOME = "com.solarized.firedown.ITEM_IS_HOME";
     public static final String ITEM_POSITION = "com.solarized.firedown.ITEM_POSITION";
+    /** The download sheet's row is "Cancel backup" rather than "Back up to…"
+     *  while this file's backup is enqueued or running (the Downloads list's
+     *  in-flight state, handed over at open so the sheet needs no work query). */
+    public static final String BACKUP_IN_FLIGHT = "com.solarized.firedown.BACKUP_IN_FLIGHT";
     public static final String ITEM_CONTAINS = "com.solarized.firedown.ITEM_CONTAINS";
     public static final String ITEM_LIST_ID = "com.solarized.firedown.ITEM_LIST_ID";
     public static final String INTENT_ACTION = "com.solarized.firedown.INTENT_ACTION";

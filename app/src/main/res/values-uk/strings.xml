@@ -489,6 +489,7 @@
     <string name="cloud_backup_transfer_uploading">Збереження…</string>
     <string name="cloud_backup_transfer_failed">Не вдалося створити резервну копію</string>
     <string name="cloud_backup_transfer_cancelled">Резервне копіювання скасовано</string>
+    <string name="cloud_backup_cancel_action">Скасувати резервне копіювання</string>
     <string name="cloud_backup_view">Переглянути</string>
     <string name="cloud_backup_delete_title">Видалити з резервної копії?</string>
     <string name="cloud_backup_delete_message">Видаляє вибрані файли з теки резервної копії. Завантаження на цьому пристрої залишаються.</string>

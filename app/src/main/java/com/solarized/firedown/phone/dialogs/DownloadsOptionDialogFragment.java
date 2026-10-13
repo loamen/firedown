@@ -49,6 +49,11 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
 
     private int mPosition;
 
+    /** This file's backup is enqueued or running (Keys.BACKUP_IN_FLIGHT, the
+     *  Downloads list's own state handed over at open): the backup row reads
+     *  "Cancel backup" and the fragment cancels on the tap. */
+    private boolean mBackupInFlight;
+
     private RecyclerView mRecyclerView;
     private View mQuickRow;
     private List<OptionItem> mRootItems;
@@ -68,6 +73,7 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
         mDownloadEntity = FragmentArgs.parcelable(this, Keys.ITEM_ID, DownloadEntity.class);
         Bundle bundle = getArguments();
         mPosition = bundle != null ? bundle.getInt(Keys.ITEM_POSITION) : 0;
+        mBackupInFlight = bundle != null && bundle.getBoolean(Keys.BACKUP_IN_FLIGHT, false);
         // Null on restore is handled by onCreateDialog / onCreateView.
     }
 
@@ -206,6 +212,13 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
      * when the provider has no name the system can give us.
      */
     private String backupLabel(String arrayLabel) {
+        if (mBackupInFlight) {
+            // The row keeps its icon (the fragment routes the tap by icon id)
+            // and only its verb flips; the fragment re-checks the live state
+            // before cancelling, so a backup that ended while the sheet was
+            // open just starts a new one, as the label would have promised.
+            return getString(R.string.cloud_backup_cancel_action);
+        }
         if (mCloudBackup == null) {
             return arrayLabel;
         }

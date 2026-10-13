@@ -653,6 +653,7 @@
     <string name="cloud_backup_transfer_uploading">Sauvegarde…</string>
     <string name="cloud_backup_transfer_failed">Échec de la sauvegarde</string>
     <string name="cloud_backup_transfer_cancelled">Sauvegarde annulée</string>
+    <string name="cloud_backup_cancel_action">Annuler la sauvegarde</string>
     <string name="cloud_backup_view">Voir</string>
     <string name="cloud_backup_delete_title">Retirer de la sauvegarde ?</string>
     <string name="cloud_backup_delete_message">Retire les fichiers sélectionnés de votre dossier de sauvegarde. Les téléchargements sur cet appareil sont conservés.</string>

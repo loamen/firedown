@@ -521,6 +521,7 @@
     <string name="cloud_backup_transfer_uploading">Varmuuskopioidaan…</string>
     <string name="cloud_backup_transfer_failed">Varmuuskopiointi epäonnistui</string>
     <string name="cloud_backup_transfer_cancelled">Varmuuskopiointi peruutettu</string>
+    <string name="cloud_backup_cancel_action">Peruuta varmuuskopiointi</string>
     <string name="cloud_backup_view">Näytä</string>
     <string name="cloud_backup_delete_title">Poistetaanko varmuuskopiosta?</string>
     <string name="cloud_backup_delete_message">Poistaa valitut tiedostot varmuuskopiokansiosta. Tämän laitteen lataukset säilyvät.</string>

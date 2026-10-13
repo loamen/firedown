@@ -363,6 +363,7 @@
     <string name="cloud_backup_transfer_uploading">Backing up…</string>
     <string name="cloud_backup_transfer_failed">Backup failed</string>
     <string name="cloud_backup_transfer_cancelled">Backup canceled</string>
+    <string name="cloud_backup_cancel_action">Cancel backup</string>
     <string name="cloud_backup_view">View</string>
     <string name="cloud_backup_delete_title">Remove from backup?</string>
     <string name="cloud_backup_delete_message">Removes the selected files from your backup folder. Downloads on this device are kept.</string>

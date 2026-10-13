@@ -653,6 +653,7 @@
     <string name="cloud_backup_transfer_uploading">Wird gesichert…</string>
     <string name="cloud_backup_transfer_failed">Sicherung fehlgeschlagen</string>
     <string name="cloud_backup_transfer_cancelled">Backup abgebrochen</string>
+    <string name="cloud_backup_cancel_action">Backup abbrechen</string>
     <string name="cloud_backup_view">Ansehen</string>
     <string name="cloud_backup_delete_title">Aus dem Backup entfernen?</string>
     <string name="cloud_backup_delete_message">Entfernt die ausgewählten Dateien aus deinem Backup-Ordner. Die Downloads auf diesem Gerät bleiben erhalten.</string>

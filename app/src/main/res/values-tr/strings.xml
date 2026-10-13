@@ -553,6 +553,7 @@
     <string name="cloud_backup_transfer_uploading">Yedekleniyor…</string>
     <string name="cloud_backup_transfer_failed">Yedekleme başarısız oldu</string>
     <string name="cloud_backup_transfer_cancelled">Yedekleme iptal edildi</string>
+    <string name="cloud_backup_cancel_action">Yedeklemeyi iptal et</string>
     <string name="cloud_backup_view">Görüntüle</string>
     <string name="cloud_backup_delete_title">Yedekten kaldırılsın mı?</string>
     <string name="cloud_backup_delete_message">Seçili dosyaları yedekleme klasörünüzden kaldırır. Bu cihazdaki indirmeler korunur.</string>
