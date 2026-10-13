@@ -49,4 +49,24 @@ final class RelayCredsPolicy {
     static boolean stillValid(long nowMs, long expiryMs) {
         return expiryMs > nowMs;
     }
+
+    /**
+     * Whether the network is worth trying the relay-credential fetch on.
+     * Skips ONLY when the answer is certain: no active network at all, or a
+     * captive portal (a login page answers every request). It used to also
+     * require NET_CAPABILITY_VALIDATED, which a network shown as "connected,
+     * no internet" never gets even when it does reach the internet (blocked
+     * probe servers, partial connectivity, some VPNs and firewalls), so those
+     * shares lost the relay for good. Unknown capabilities read as "try".
+     */
+    static boolean networkAllowsFetch(boolean hasNetwork, boolean capabilitiesKnown,
+                                      boolean internet, boolean captivePortal) {
+        if (!hasNetwork) {
+            return false;
+        }
+        if (!capabilitiesKnown) {
+            return true;
+        }
+        return internet && !captivePortal;
+    }
 }

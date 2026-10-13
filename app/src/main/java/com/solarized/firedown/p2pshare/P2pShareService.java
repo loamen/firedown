@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.text.format.Formatter;
 
 import androidx.annotation.NonNull;
@@ -70,11 +71,26 @@ public class P2pShareService extends Service {
     private ShareState.Stage mShownStage;
     private int mShownPercent = -1;
     private String mShownPeer;
+    private long mShownAt;
 
-    /** Start (or re-poke) the service for the controller's current session. */
+    /** Bytes and speed in the text go stale between whole-percent steps; refresh this often. */
+    private static final long PROGRESS_REFRESH_MS = 1000;
+
+    /**
+     * Start (or re-poke) the service for the controller's current session.
+     * Never throws: Android 12+ refuses a foreground-service start from the
+     * background (ForegroundServiceStartNotAllowedException), and the callers
+     * run after async hops (the accept's disk task, a relay fetch). The share
+     * then runs on without the service for as long as its screen keeps the
+     * process alive — the pre-service behaviour — instead of crashing.
+     */
     public static void start(@NonNull Context context) {
         Intent intent = new Intent(context, P2pShareService.class).setAction(ACTION_START);
-        ContextCompat.startForegroundService(context, intent);
+        try {
+            ContextCompat.startForegroundService(context, intent);
+        } catch (RuntimeException e) {
+            DebugLog.d(TAG, "startForegroundService refused: " + e);
+        }
     }
 
     @Nullable
@@ -145,15 +161,19 @@ public class P2pShareService extends Service {
             return;
         }
         int percent = state.total > 0 ? (int) (state.done * 100 / state.total) : -1;
+        long now = SystemClock.elapsedRealtime();
         boolean changed = state.stage != mShownStage || percent != mShownPercent
                 || (state.peerDevice == null ? mShownPeer != null
-                : !state.peerDevice.equals(mShownPeer));
+                : !state.peerDevice.equals(mShownPeer))
+                || (state.stage == ShareState.Stage.TRANSFERRING
+                && now - mShownAt >= PROGRESS_REFRESH_MS);
         if (!changed) {
             return;
         }
         mShownStage = state.stage;
         mShownPercent = percent;
         mShownPeer = state.peerDevice;
+        mShownAt = now;
         // startForeground again rather than notify(): it updates in place and
         // is exempt from the POST_NOTIFICATIONS runtime grant a plain notify
         // needs on 33+.

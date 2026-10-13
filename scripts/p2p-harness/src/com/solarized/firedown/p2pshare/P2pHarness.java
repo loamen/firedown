@@ -1,19 +1,27 @@
 package com.solarized.firedown.p2pshare;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Drives the REAL {@link P2pHttp}, {@link P2pLanServer} and
- * {@link RelayCredsPolicy} (copied from app/src by run.sh) on a plain JVM.
+ * Drives the REAL {@link P2pHttp}, {@link P2pLanServer}, {@link RelayCredsPolicy},
+ * {@link P2pFileNames} and {@link P2pSessionPolicy} (copied from app/src by
+ * run.sh) on a plain JVM.
  * Lives in the production package because the request-head parser and the
  * server's loopback door are package-private on purpose.
  */
@@ -44,7 +52,12 @@ public final class P2pHarness {
             httpHead();
             httpBody();
             relayPolicy();
+            networkGate();
+            fileNames();
+            sessionPolicy();
+            reachableHosts();
             lanServer();
+            lanDeadlineAndPool();
         } catch (Throwable t) {
             failures++;
             System.out.println("FAIL  harness threw " + t);
@@ -192,10 +205,213 @@ public final class P2pHarness {
                 RelayCredsPolicy.stillValid(now, now + 1));
         check("policy: an expired credential is never valid",
                 !RelayCredsPolicy.stillValid(now, now) && !RelayCredsPolicy.stillValid(now, now - 1));
-        check("policy: reusable implies stillValid",
-                !RelayCredsPolicy.reusable(now, now + 1000) || RelayCredsPolicy.stillValid(now, now + 1000));
+        // Over expiries on BOTH sides of every boundary — the old single
+        // case (1 s left) was never reusable, so it held vacuously.
+        long[] expiries = {now - 1, now, now + 1, now + 1000,
+                now + RelayCredsPolicy.MIN_REMAINING_MS - 1, now + RelayCredsPolicy.MIN_REMAINING_MS,
+                now + RelayCredsPolicy.MIN_REMAINING_MS + 1, hour};
+        boolean implies = true;
+        int reusableSeen = 0;
+        for (long expiry : expiries) {
+            if (RelayCredsPolicy.reusable(now, expiry)) {
+                reusableSeen++;
+                implies &= RelayCredsPolicy.stillValid(now, expiry);
+            }
+        }
+        check("policy: reusable implies stillValid (non-vacuous: " + reusableSeen + " reusable cases)",
+                implies && reusableSeen >= 3);
         check("policy: MIN_REMAINING covers the 15-minute offer window with room for a transfer",
                 RelayCredsPolicy.MIN_REMAINING_MS >= 2L * 15 * 60 * 1000);
+    }
+
+    /* ── RelayCredsPolicy.networkAllowsFetch ────────────────────────────── */
+
+    private static void networkGate() {
+        check("gate: no active network skips the relay fetch",
+                !RelayCredsPolicy.networkAllowsFetch(false, false, false, false));
+        check("gate: unknown capabilities still try",
+                RelayCredsPolicy.networkAllowsFetch(true, false, false, false));
+        // The shipped bug: the gate also wanted VALIDATED, so a network shown
+        // as "connected, no internet" (probe servers blocked, some VPNs)
+        // never fetched relay credentials even when it reached the internet.
+        check("gate: internet without validation is tried",
+                RelayCredsPolicy.networkAllowsFetch(true, true, true, false));
+        check("gate: a captive portal skips",
+                !RelayCredsPolicy.networkAllowsFetch(true, true, true, true));
+        check("gate: a network without the internet capability skips",
+                !RelayCredsPolicy.networkAllowsFetch(true, true, false, false));
+    }
+
+    /* ── P2pFileNames ───────────────────────────────────────────────────── */
+
+    /** A Taken over a fixed set of names, counting how often it is asked. */
+    private static final class Names implements P2pFileNames.Taken {
+        final Set<String> taken = new HashSet<>();
+        int asked;
+
+        Names(String... names) {
+            taken.addAll(Arrays.asList(names));
+        }
+
+        @Override
+        public boolean test(File candidate) {
+            asked++;
+            return taken.contains(candidate.getName());
+        }
+    }
+
+    private static String pick(String name, String... taken) {
+        return P2pFileNames.uniquify(new File("/dl"), name, new Names(taken)).getName();
+    }
+
+    private static void fileNames() {
+        check("names: a free name is kept", "clip.mp4".equals(pick("clip.mp4")));
+        check("names: taken → number before the extension",
+                "clip(1).mp4".equals(pick("clip.mp4", "clip.mp4")));
+        check("names: counts past every taken number",
+                "clip(3).mp4".equals(pick("clip.mp4", "clip.mp4", "clip(1).mp4", "clip(2).mp4")));
+        check("names: a numbered name continues its own count",
+                "clip(4).mp4".equals(pick("clip(3).mp4", "clip(3).mp4")));
+        // THE shipped bug: no extension → the old helper returned the same
+        // path forever, spinning the shared disk executor.
+        check("names: no extension → number at the end",
+                "notes(1)".equals(pick("notes", "notes")));
+        check("names: a dot-file has no extension",
+                ".bashrc(1)".equals(pick(".bashrc", ".bashrc")));
+        check("names: only the last extension is kept apart",
+                "archive.tar(1).gz".equals(pick("archive.tar.gz", "archive.tar.gz")));
+        check("names: a 'dot' followed by words is not an extension",
+                "Mr. Smith goes(1)".equals(pick("Mr. Smith goes", "Mr. Smith goes")));
+        check("names: an over-long tail is not an extension",
+                "data.verylongtail(1)".equals(pick("data.verylongtail", "data.verylongtail")));
+        check("names: a trailing dot is not an extension",
+                "end.(1)".equals(pick("end.", "end.")));
+        // The other half of the bug: an EMPTY name resolved to the download
+        // directory itself, which always "exists".
+        check("names: null falls back to a real name",
+                P2pFileNames.FALLBACK_NAME.equals(pick(null)));
+        check("names: blank falls back to a real name",
+                P2pFileNames.FALLBACK_NAME.equals(pick("   ")));
+        check("names: the fallback is uniquified too",
+                (P2pFileNames.FALLBACK_NAME + "(1)").equals(pick("", P2pFileNames.FALLBACK_NAME)));
+
+        // Everything taken: it must still return, after a bounded number of
+        // questions, never loop.
+        P2pFileNames.Taken all = new P2pFileNames.Taken() {
+            int n;
+
+            @Override
+            public boolean test(File candidate) {
+                n++;
+                if (n > 1 + P2pFileNames.MAX_NUMBERED + 16) {
+                    throw new IllegalStateException("unbounded");
+                }
+                return true;
+            }
+        };
+        boolean returned;
+        try {
+            returned = P2pFileNames.uniquify(new File("/dl"), "x.bin", all) != null;
+        } catch (IllegalStateException e) {
+            returned = false;
+        }
+        check("names: a directory where everything is taken still returns (bounded)", returned);
+
+        // Numbered names exhausted, a random suffix is free.
+        // Bounded like `all` above, so a regression to an unbounded count
+        // FAILS here instead of hanging the harness.
+        P2pFileNames.Taken numberedTaken = new P2pFileNames.Taken() {
+            int n;
+
+            @Override
+            public boolean test(File candidate) {
+                n++;
+                if (n > 1 + P2pFileNames.MAX_NUMBERED + 16) {
+                    throw new IllegalStateException("unbounded");
+                }
+                return !candidate.getName().matches("x-[0-9a-f]{8}\\.bin");
+            }
+        };
+        String random;
+        try {
+            random = P2pFileNames.uniquify(new File("/dl"), "x.bin", numberedTaken).getName();
+        } catch (IllegalStateException e) {
+            random = "unbounded";
+        }
+        check("names: past the numbered range a random suffix is used",
+                random.matches("x-[0-9a-f]{8}\\.bin"), random);
+        Names counted = new Names("x.bin");
+        P2pFileNames.uniquify(new File("/dl"), "x.bin", counted);
+        check("names: a free numbered name is found on the first try", counted.asked == 2);
+        check("names: the file stays in the directory it was asked for",
+                "/dl".equals(P2pFileNames.uniquify(new File("/dl"), "a.txt", new Names()).getParent()));
+    }
+
+    /* ── P2pSessionPolicy ───────────────────────────────────────────────── */
+
+    private static void sessionPolicy() {
+        P2pSessionPolicy.SendEntry e;
+        // (hasState, isSend, live, inTransfer, statePath, argPath, restored)
+        e = P2pSessionPolicy.sendEntry(false, false, false, false, null, "/a", false);
+        check("policy: no session + a file → START", e == P2pSessionPolicy.SendEntry.START, e.name());
+        e = P2pSessionPolicy.sendEntry(false, false, false, false, null, null, false);
+        check("policy: no session, no file → NOTHING", e == P2pSessionPolicy.SendEntry.NOTHING, e.name());
+        e = P2pSessionPolicy.sendEntry(true, true, true, false, "/a", "/a", false);
+        check("policy: same file, waiting for an accept → ATTACH", e == P2pSessionPolicy.SendEntry.ATTACH, e.name());
+        e = P2pSessionPolicy.sendEntry(true, true, true, true, "/a", "/a", false);
+        check("policy: same file, transferring → ATTACH", e == P2pSessionPolicy.SendEntry.ATTACH, e.name());
+        // Shipped bug 1: the finished-share notification opens the screen
+        // with no file, and a rotation restores it — both used to START a
+        // brand-new share of the same file instead of showing the outcome.
+        e = P2pSessionPolicy.sendEntry(true, true, false, false, "/a", null, false);
+        check("policy: outcome + notification tap (no file) → ATTACH", e == P2pSessionPolicy.SendEntry.ATTACH, e.name());
+        e = P2pSessionPolicy.sendEntry(true, true, false, false, "/a", "/a", true);
+        check("policy: outcome + rotation → ATTACH, never a new share", e == P2pSessionPolicy.SendEntry.ATTACH, e.name());
+        e = P2pSessionPolicy.sendEntry(false, false, false, false, null, "/a", true);
+        check("policy: restored with no session (process death) → NOTHING, never a new share",
+                e == P2pSessionPolicy.SendEntry.NOTHING, e.name());
+        // Sharing the same file again from Downloads after it finished: new.
+        e = P2pSessionPolicy.sendEntry(true, true, false, false, "/a", "/a", false);
+        check("policy: outcome shown, same file picked again → START", e == P2pSessionPolicy.SendEntry.START, e.name());
+        // Shipped bug 2: a new share silently killed a running transfer.
+        e = P2pSessionPolicy.sendEntry(true, true, true, true, "/a", "/b", false);
+        check("policy: another file while one transfers → BUSY", e == P2pSessionPolicy.SendEntry.BUSY, e.name());
+        e = P2pSessionPolicy.sendEntry(true, false, true, true, null, "/b", false);
+        check("policy: a file while a RECEIVE transfers → BUSY", e == P2pSessionPolicy.SendEntry.BUSY, e.name());
+        e = P2pSessionPolicy.sendEntry(true, true, true, false, "/a", "/b", false);
+        check("policy: another file while one only waits → START (newest wins)",
+                e == P2pSessionPolicy.SendEntry.START, e.name());
+        e = P2pSessionPolicy.sendEntry(true, false, true, false, null, "/b", false);
+        check("policy: a file while a receive previews → START", e == P2pSessionPolicy.SendEntry.START, e.name());
+        e = P2pSessionPolicy.sendEntry(true, false, true, true, null, null, false);
+        check("policy: no file + a receive session → NOTHING (the send screen has nothing to show)",
+                e == P2pSessionPolicy.SendEntry.NOTHING, e.name());
+
+        check("busy: only a live session in transfer blocks",
+                P2pSessionPolicy.blocksNewSession(true, true, true)
+                        && !P2pSessionPolicy.blocksNewSession(true, true, false)
+                        && !P2pSessionPolicy.blocksNewSession(true, false, true)
+                        && !P2pSessionPolicy.blocksNewSession(false, false, false));
+    }
+
+    /* ── P2pLanServer.reachableHost (what NSD resolved → a URL host) ────── */
+
+    private static void reachableHosts() throws IOException {
+        InetAddress v4 = InetAddress.getByAddress(new byte[]{(byte) 192, (byte) 168, 1, 23});
+        byte[] ll = new byte[16];
+        ll[0] = (byte) 0xfe;
+        ll[1] = (byte) 0x80;
+        ll[15] = 1;
+        InetAddress v6 = Inet6Address.getByAddress(null, ll, 3); // fe80::1%3
+        check("hosts: the IPv4 wins over a link-local IPv6 listed first",
+                "192.168.1.23".equals(P2pLanServer.reachableHost(Arrays.asList(v6, v4))));
+        // THE shipped bug: a pre-34 device reports a single host; a scoped
+        // IPv6 made the request builder throw on the main thread.
+        check("hosts: IPv6 only → null (the device is not listed)",
+                P2pLanServer.reachableHost(Collections.singletonList(v6)) == null);
+        check("hosts: nothing resolved → null",
+                P2pLanServer.reachableHost(null) == null
+                        && P2pLanServer.reachableHost(Collections.emptyList()) == null);
     }
 
     /* ── P2pLanServer ───────────────────────────────────────────────────── */
@@ -368,6 +584,158 @@ public final class P2pHarness {
         check("lan: offerUrl leaves IPv4 and bracketed hosts alone",
                 "http://192.168.0.9:5/offer?t=t".equals(P2pLanServer.offerUrl("192.168.0.9", 5, "t"))
                         && "http://[::1]:5/offer?t=t".equals(P2pLanServer.offerUrl("[::1]", 5, "t")));
+    }
+
+    /* ── P2pLanServer: one deadline per connection, a bounded worker pool ── */
+
+    /** Opens a connection and trickles a request head that never ends. */
+    private static Socket trickler(int port) throws IOException {
+        Socket socket = new Socket(InetAddress.getLoopbackAddress(), port);
+        socket.setSoTimeout(5000);
+        Thread feeder = new Thread(() -> {
+            try {
+                OutputStream out = socket.getOutputStream();
+                byte[] head = "POST /offer?t=".getBytes(StandardCharsets.US_ASCII);
+                for (int i = 0; ; i++) {
+                    out.write(head[i % head.length]);
+                    out.flush();
+                    Thread.sleep(40);
+                }
+            } catch (Exception e) {
+                // The server hung up — expected.
+            }
+        }, "trickler");
+        feeder.setDaemon(true);
+        feeder.start();
+        return socket;
+    }
+
+    /** Milliseconds until the server ends the connection (read sees EOF or a reset). */
+    private static long msUntilClosed(Socket socket) {
+        long start = System.currentTimeMillis();
+        try {
+            InputStream in = socket.getInputStream();
+            while (in.read() != -1) {
+                // drain whatever status line came back
+            }
+        } catch (IOException e) {
+            // reset or our own timeout — either way, measured below
+        }
+        return System.currentTimeMillis() - start;
+    }
+
+    private static void lanDeadlineAndPool() throws Exception {
+        RecordingHandler handler = new RecordingHandler();
+        P2pLanServer server = new P2pLanServer(handler, false, true);
+        server.mDeadlineMs = 600;
+        check("deadline: binds", server.start(InetAddress.getLoopbackAddress()));
+        int port = server.getPort();
+        String token = server.getToken();
+
+        // A byte every 40 ms resets any per-read timeout forever; the shipped
+        // server held its ONE thread for as long as the client liked.
+        Socket slow = trickler(port);
+        long held = msUntilClosed(slow);
+        slow.close();
+        check("deadline: a trickling client is cut at the connection deadline",
+                held >= 400 && held < 2500, held + " ms");
+
+        // While one client trickles, another is served at once.
+        Socket hog = trickler(port);
+        Thread.sleep(50);
+        long t0 = System.currentTimeMillis();
+        Reply served = send(port, post("/offer?t=" + token, "FDS1.while-busy"));
+        long took = System.currentTimeMillis() - t0;
+        check("pool: a second client is served while the first trickles",
+                served.status == 204 && took < 400, served.status + " in " + took + " ms");
+        hog.close();
+        Thread.sleep(700); // let the hog's worker hit its deadline
+
+        // Fill every worker, then one more: dropped at once, never queued
+        // behind the hogs.
+        server.stop();
+        awaitAcceptThreadGone();
+        P2pLanServer pooled = new P2pLanServer(handler, false, true);
+        pooled.mDeadlineMs = 3000;
+        check("pool: binds", pooled.start(InetAddress.getLoopbackAddress()));
+        int pport = pooled.getPort();
+        List<Socket> hogs = new ArrayList<>();
+        for (int i = 0; i < P2pLanServer.MAX_CONCURRENT; i++) {
+            hogs.add(trickler(pport));
+        }
+        Thread.sleep(200); // every hog accepted and handed to a worker
+        Socket extra = new Socket(InetAddress.getLoopbackAddress(), pport);
+        extra.setSoTimeout(5000);
+        long dropped = msUntilClosed(extra);
+        extra.close();
+        check("pool: a connection beyond MAX_CONCURRENT is closed at once",
+                dropped < 1000, dropped + " ms");
+        for (Socket h : hogs) {
+            h.close();
+        }
+        Thread.sleep(3300); // the hogs' workers time out and free up
+        Reply after = send(pport, post("/offer?t=" + pooled.getToken(), "FDS1.after"));
+        check("pool: the server serves again once the hogs are gone", after.status == 204);
+
+        // The token compare: exact bytes only (constant time, length-checked).
+        String t = pooled.getToken();
+        check("token: a prefix of the token → 403",
+                send(pport, post("/offer?t=" + t.substring(0, t.length() - 1), "FDS1.x")).status == 403);
+        check("token: the token plus a byte → 403",
+                send(pport, post("/offer?t=" + t + "0", "FDS1.x")).status == 403);
+        check("token: the token in upper case → 403",
+                send(pport, post("/offer?t=" + t.toUpperCase(), "FDS1.x")).status == 403
+                        || t.equals(t.toUpperCase()));
+        pooled.stop();
+
+        // Many offers at once on a fresh server: the handler is called from
+        // several workers, and the one that wins is the only 204.
+        AtomicBoolean busy = new AtomicBoolean(false);
+        AtomicInteger delivered = new AtomicInteger();
+        P2pLanServer racing = new P2pLanServer(new P2pLanServer.Handler() {
+            @Override
+            public boolean onAnswer(String body) {
+                return false;
+            }
+
+            @Override
+            public boolean onOffer(String body) {
+                if (!busy.compareAndSet(false, true)) {
+                    return false;
+                }
+                delivered.incrementAndGet();
+                return true;
+            }
+        }, false, true);
+        check("race: binds", racing.start(InetAddress.getLoopbackAddress()));
+        int rp = racing.getPort();
+        String rt = racing.getToken();
+        List<Thread> senders = new ArrayList<>();
+        AtomicInteger ok = new AtomicInteger();
+        AtomicInteger conflict = new AtomicInteger();
+        for (int i = 0; i < 6; i++) {
+            final int n = i;
+            Thread th = new Thread(() -> {
+                try {
+                    int status = send(rp, post("/offer?t=" + rt, "FDS1.r" + n)).status;
+                    if (status == 204) {
+                        ok.incrementAndGet();
+                    } else if (status == 409) {
+                        conflict.incrementAndGet();
+                    }
+                } catch (IOException e) {
+                    // a connection dropped by a full pool counts as neither
+                }
+            });
+            senders.add(th);
+            th.start();
+        }
+        for (Thread th : senders) {
+            th.join(5000);
+        }
+        check("race: exactly one of several simultaneous offers is taken",
+                ok.get() == 1 && delivered.get() == 1, ok.get() + " taken, " + conflict.get() + " refused");
+        racing.stop();
     }
 
     private static void awaitAcceptThreadGone() throws InterruptedException {

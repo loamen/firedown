@@ -981,8 +981,9 @@
     <!-- The transfer runs in a foreground service once it starts. -->
     <string name="p2p_background_note">You can leave this screen. The transfer continues in the background.</string>
     <string name="p2p_error_timeout">No one accepted the file in time.</string>
-    <string name="p2p_error_stalled">The transfer stopped making progress. Re-share the same file to continue where it left off.</string>
-    <string name="p2p_error_lost">The connection was lost. Re-share the same file to continue where it left off.</string>
+    <string name="p2p_error_stalled">The transfer stopped making progress. Sharing the same file again may pick up where it stopped.</string>
+    <string name="p2p_error_lost">The connection was lost. Sharing the same file again may pick up where it stopped.</string>
+    <string name="p2p_busy_other_transfer">Another transfer is in progress. Finish or cancel it first.</string>
     <string name="p2p_error_no_path_norelay">Couldn\'t reach the other device, and the relay server couldn\'t be reached either. Try again when both phones are online.</string>
     <string name="p2p_notif_sending">Sending %1$s</string>
     <string name="p2p_notif_receiving">Receiving %1$s</string>

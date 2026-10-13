@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -15,6 +16,7 @@ import androidx.annotation.Nullable;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.GlideHelper;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.R;
@@ -22,6 +24,7 @@ import com.solarized.firedown.StoragePaths;
 import com.solarized.firedown.data.RestoredFileAccess;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.p2pshare.P2pNearbyDiscovery;
+import com.solarized.firedown.p2pshare.P2pSessionPolicy;
 import com.solarized.firedown.p2pshare.P2pShareController;
 import com.solarized.firedown.p2pshare.ShareState;
 import com.solarized.firedown.utils.ClipboardHelper;
@@ -61,6 +64,8 @@ public class P2pSendFragment extends P2pShareBaseFragment {
     private P2pNearbyDiscovery mDiscovery;
     private List<P2pNearbyDiscovery.Device> mDevices = Collections.emptyList();
     private ShareState mLast;
+    // Decided in onCreateView (P2pSessionPolicy), acted on in onViewCreated.
+    private boolean mStartOnCreate;
 
     /** Clipboard auto-pickup runs on WINDOW FOCUS gain, not onResume: since
      *  API 29 getPrimaryClip() returns null unless the app currently holds
@@ -87,14 +92,36 @@ public class P2pSendFragment extends P2pShareBaseFragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
+        // Attach to the send session that exists (live, or its outcome when
+        // the finished notification was tapped or the screen rotated), start
+        // a share of the file the screen was opened for, or refuse while
+        // another transfer moves bytes — never silently replace it.
         ShareState live = mP2pController.peekState();
-        if (mDownloadEntity == null && live != null && live.role == ShareState.Role.SEND) {
-            mDownloadEntity = live.entity;
+        String argPath = mDownloadEntity == null ? null : mDownloadEntity.getFilePath();
+        P2pSessionPolicy.SendEntry entry = P2pSessionPolicy.sendEntry(
+                live != null,
+                live != null && live.role == ShareState.Role.SEND,
+                live != null && live.isLive(),
+                live != null && live.isInTransfer(),
+                live != null && live.entity != null ? live.entity.getFilePath() : null,
+                argPath,
+                savedInstanceState != null);
+        switch (entry) {
+            case ATTACH -> mDownloadEntity = live.entity;
+            case START -> mStartOnCreate = true;
+            case BUSY -> {
+                Snackbar.make(requireActivity().findViewById(Window.ID_ANDROID_CONTENT),
+                        R.string.p2p_busy_other_transfer, Snackbar.LENGTH_LONG).show();
+                mDownloadEntity = null;
+            }
+            case NOTHING -> mDownloadEntity = null;
         }
         // Defensive: vault entries must never be shareable, and a screen with
-        // nothing to send (no arg, no live session) has nothing to show.
+        // nothing to send (no arg, no session, or another transfer busy) has
+        // nothing to show.
         if (mDownloadEntity == null || mDownloadEntity.isFileSafe()
                 || mDownloadEntity.getFilePath() == null) {
+            mStartOnCreate = false;
             if (mNavController != null) {
                 mNavController.popBackStack();
             }
@@ -146,14 +173,9 @@ public class P2pSendFragment extends P2pShareBaseFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        // ATTACH to a running session for this same file (notification tap,
-        // rotation) instead of restarting it; anything else — no session, a
-        // finished one, another file's — starts fresh.
-        ShareState live = mP2pController.peekState();
-        boolean attach = live != null && live.role == ShareState.Role.SEND && live.isLive()
-                && live.entity != null && mDownloadEntity.getFilePath() != null
-                && mDownloadEntity.getFilePath().equals(live.entity.getFilePath());
-        if (!attach) {
+        // Decided in onCreateView: attach, or start a share for this file.
+        if (mStartOnCreate) {
+            mStartOnCreate = false;
             mP2pController.startSend(mDownloadEntity);
         }
         // The nearby list lives with the view: discovery costs nothing to run
@@ -255,6 +277,13 @@ public class P2pSendFragment extends P2pShareBaseFragment {
     private void maybePickupReplyFromClipboard() {
         if (mView == null || mLast == null || !mLast.linkShared
                 || mLast.stage != ShareState.Stage.READY) {
+            return;
+        }
+        // A clip copied before this share started is a reply to an EARLIER
+        // offer; feeding it in would only draw a "not valid" message (the
+        // engine refuses another offer's answer).
+        long copiedAt = ClipboardHelper.primaryClipCopiedAt(getContext());
+        if (copiedAt > 0 && copiedAt < mLast.startedAt) {
             return;
         }
         String code = P2pShareController.stripDeepLink(

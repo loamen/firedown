@@ -13,10 +13,10 @@ import androidx.annotation.Nullable;
 
 import com.solarized.firedown.BuildConfig;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -227,27 +227,20 @@ public final class P2pNearbyDiscovery {
     }
 
     /**
-     * The address to reach the service on. API 34 resolves to a LIST and an
-     * IPv4 is picked from it; before that a single host is reported and is
-     * used as-is (the system resolver reports the IPv4 when one exists).
+     * The address to reach the service on: an IPv4, or null (the device is
+     * then not listed). API 34 resolves to a LIST; before that a single host
+     * is reported, and it is used only when it is IPv4 — the receiver binds
+     * IPv4 only, and a scoped IPv6 ({@code fe80::…%wlan0}) is not even a
+     * valid URL host, which made building the request throw on the main
+     * thread.
      */
     @Nullable
     private static String preferredHost(NsdServiceInfo info) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            List<InetAddress> addresses = info.getHostAddresses();
-            InetAddress any = null;
-            for (InetAddress address : addresses) {
-                if (address instanceof Inet4Address) {
-                    return address.getHostAddress();
-                }
-                if (any == null) {
-                    any = address;
-                }
-            }
-            return any == null ? null : any.getHostAddress();
+            return P2pLanServer.reachableHost(info.getHostAddresses());
         }
         InetAddress host = info.getHost();
-        return host == null ? null : host.getHostAddress();
+        return host == null ? null : P2pLanServer.reachableHost(Collections.singletonList(host));
     }
 
     private void publish() {

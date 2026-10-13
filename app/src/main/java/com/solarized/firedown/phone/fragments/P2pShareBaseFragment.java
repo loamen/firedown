@@ -95,6 +95,9 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
         if (state != null && state.notice != null && state.noticeSeq != mShownNoticeSeq) {
             mShownNoticeSeq = state.noticeSeq;
             showNotice(state);
+            // Shown: drop it from the state so a screen that attaches later
+            // (rotation, the notification) does not show it again.
+            mP2pController.consumeNotice(state.noticeSeq);
         }
         render(state);
     }

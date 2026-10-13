@@ -8,8 +8,18 @@
 #     (403), method/route gate (404, and the route the owner does not serve),
 #     body cap (400), handler verdicts (204 vs 409), the declined body, and
 #     that a 409'd client can retry with a different route.
+#     Plus the connection deadline (a trickling client is cut, not served
+#     forever), the bounded worker pool (others served meanwhile; one past
+#     the pool dropped at once), the exact-bytes token compare, and one
+#     winner among simultaneous offers.
 #   - RelayCredsPolicy: a cached TURN credential is reused only with enough
-#     life for the offer window + a transfer, and the still-valid fallback.
+#     life for the offer window + a transfer, and the still-valid fallback;
+#     the network gate (no network / captive portal skip, "no internet"
+#     still tries).
+#   - P2pFileNames: a received file's name, bounded and correct without an
+#     extension (the old loop spun forever on the shared disk executor).
+#   - P2pSessionPolicy: attach / start / busy when a share screen opens.
+#   - P2pLanServer.reachableHost: nearby lists IPv4 only.
 #
 #   sh scripts/p2p-harness/run.sh
 #
@@ -21,7 +31,7 @@ ROOT=$(cd "$HERE/../.." && pwd)
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 mkdir -p "$OUT/src/com/solarized/firedown/p2pshare"
-for f in P2pHttp P2pLanServer RelayCredsPolicy; do
+for f in P2pHttp P2pLanServer RelayCredsPolicy P2pFileNames P2pSessionPolicy; do
   cp "$ROOT/app/src/main/java/com/solarized/firedown/p2pshare/$f.java" "$OUT/src/com/solarized/firedown/p2pshare/"
 done
 javac -nowarn -d "$OUT/classes" -cp "$HERE/stub" \

@@ -3062,8 +3062,12 @@ and the in-person path was a QR to aim across a table. Now:
   set (Wi-Fi Aware/Direct are) — a device check still owed on Android 13+.
   The Send screen's `P2pNearbyDiscovery` lists found services (resolves
   SERIALISED — a second concurrent `resolveService` fails with
-  `FAILURE_ALREADY_ACTIVE`; IPv4 preferred, the receiver binds site-local
-  v4) in first-seen order; a tap `sendOfferToNearby` POSTs the whole
+  `FAILURE_ALREADY_ACTIVE`) in first-seen order, and lists a service only
+  when it resolved to an IPv4 (`P2pLanServer.reachableHost`): the receiver
+  binds site-local v4 only, and before API 34 NSD reports ONE host — a
+  scoped link-local IPv6 (`fe80::…%wlan0`) there is not even a valid URL
+  host, and building the request threw on the main thread (the request is
+  now also built inside a try). A tap `sendOfferToNearby` POSTs the whole
   `FDS1.` code to `http://<host>:<port>/offer?t=<token>` and the state
   names the device ("Sent · waiting"). The receiver previews it exactly
   like a scanned code (`arrivedNearby`) and its Accept returns over the
@@ -3075,8 +3079,27 @@ and the in-person path was a QR to aim across a table. Now:
   the sender goes back to choosing instead of waiting out the lifetime;
   leaving the Receive screen with a request pending declines it. Nothing is
   ever advertised without the screen saying so, and visibility stops
-  (`setNearbyListening(false)`) the moment a session is live — a phone in
-  a transfer vanishes from senders' lists rather than answering 409.
+  (`setNearbyListening(false)`) the moment a session is live IN EITHER
+  ROLE — a phone in a transfer vanishes from senders' lists rather than
+  answering 409 (a live SEND used to keep it visible). Visibility follows
+  the screen being SEEN: `onStart` decides, `onStop` withdraws — Home keeps
+  the view (onStop, not onDestroyView), and a phone used to advertise its
+  name for hours from the background. **Nearby has NO authentication, by
+  design, and the copy must never imply one:** anyone on the same network
+  who sees the name can POST an offer, and what protects the user is that
+  an offer is only a PREVIEW until they tap Accept (name, size and the
+  sender's device name are shown first; nothing connects or downloads
+  before). The `/offer` token in the TXT record is a capability against
+  blind scanning, not proof of who sent it, and the "From <device>" line is
+  whatever the sender's phone claims. The LAN server handles connections on
+  a pool of `MAX_CONCURRENT` (4) workers with ONE deadline per connection
+  (`CONNECTION_DEADLINE_MS`, 10 s, `DeadlineInputStream` — a per-read
+  timeout alone resets on every byte, and a client trickling a byte every
+  few seconds used to hold the server's only thread for hours, so no one
+  else on the network could offer or answer); a connection beyond the pool
+  is closed at once, the token compare is `MessageDigest.isEqual`, and the
+  handler decides atomically (`mNearbyBusy`/`mAnswerTaken` are
+  `AtomicBoolean`s, several workers can ask at once).
 - **Screens:** Send = the file card, NEARBY (the device rows, inflated
   from `item_p2p_device.xml`, with the empty line "No one yet. On the other
   phone, open Downloads → Receive a file"), then ANYWHERE (Send link,
@@ -3386,13 +3409,22 @@ hides host ICE candidates behind mDNS `.local` names
 (`media.peerconnection.ice.obfuscate_host_addresses`); Android peers
 generally can't resolve those (no MulticastLock), so with obfuscation on a
 same-LAN pair finds NO host pair and ICE fails outright ("add a TURN
-server" — observed on-device). `P2pShareController.applyWebRtcPrefs` flips
-it OFF before the engine page opens (chained after the `setWebRTC(true)`
-belt, both awaited) and `restoreWebRtcPrefs` turns it back ON in
-`stopSession` — browsing keeps the privacy feature; the LAN IP travels only
-inside the code the user hands over or the LAN POST to a phone they tapped.
-It used to be the SCREEN's flip and restore; with the session outliving the
-screen it had to become the session's. Don't remove the flip or the restore.
+server" — observed on-device). So it is switched OFF, but only for the
+ICE-GATHERING windows (`P2pShareController.setObfuscation`): Gecko reads the
+pref when a peer connection starts gathering, so the sender turns it off
+before its engine page opens (`applyWebRtcPrefs(true, …)`, chained after the
+`setWebRTC(true)` belt, both awaited) and back on the moment its offer is
+minted (`onOfferReady` — the code carries every candidate); the receiver
+leaves the engine alone at open and turns it off only around Accept
+(`recv-accept` waits for the write) and back on when its answer is minted.
+`stopSession` restores it whatever happened. It used to stay off for the
+whole SESSION — up to 15 minutes waiting for an accept plus the transfer,
+usually while the user browsed in other tabs, and any page that created an
+RTCPeerConnection in that time got raw LAN IPs. The pref is a saved USER pref,
+so a process death inside a window would leave browsing without it:
+`GeckoRuntimeHelper.restoreWebRtcObfuscation` puts it back at boot (no share
+runs then). Don't remove the flip, the restore, or the boot restore, and
+don't widen the window back to the session.
 
 **WebRTC is ALWAYS ON — the user toggle was REMOVED** (maintainer decision):
 the off-default broke real sites (Meet/Discord/WhatsApp calls) and forced the
@@ -3495,15 +3527,25 @@ says no-path one, a dropped backlog cap one):
 On the Java side of the same pass: `GeckoSession.setPriorityHint(PRIORITY_HIGH)`
 on the hidden engine session (with the screen gone its content process was
 the first thing Android trimmed under pressure — "engine disconnected" at
-some percent) and a `WifiManager.WifiLock` (`WIFI_MODE_FULL_HIGH_PERF`,
-held from `startLoopback` to `stopSession`; Wi-Fi power save with the
-screen off is what turned a background transfer into a crawl). The LAN
+some percent) and the TRANSFER LOCKS (`acquireTransferLocks`): a PARTIAL
+wake lock (the foreground service keeps the process alive, not the CPU — a
+suspended CPU stops sending and the watchdog then calls it "stalled"), timed
+at the dataSync 6-hour cap so a leak can't outlive it, plus a
+`WifiManager.WifiLock` (`WIFI_MODE_FULL_HIGH_PERF`; Wi-Fi power save with
+the screen off turned background transfers into a crawl — deprecated in API
+34 and possibly inert there, kept for the releases where it works, the wake
+lock carries the rest). Held only while bytes can MOVE — from the sender's
+engine applying an answer / the receiver's Accept to `stopSession` — never
+through the up-to-15-minute wait for an accept or a preview, where holding
+them was pure battery (they used to be held from `startLoopback`). The LAN
 plumbing has its own JDK harness, **`sh scripts/p2p-harness/run.sh`** (the
 REAL `P2pHttp` request-head parser shared by both tiny servers, `P2pLanServer`
 bound on the loopback through its package-private `start(InetAddress)` door
 — token/method/route gates, the 16 KB body cap, first-answer-wins, the
-`declined` body, a busy receiver's 409, exact body bytes, a slow client —
-and `RelayCredsPolicy`'s boundaries; 66 checks, seconds). Known residual:
+`declined` body, a busy receiver's 409, exact body bytes, a slow client, the
+connection deadline, the worker pool and the exact-bytes token compare —
+`RelayCredsPolicy`'s boundaries and network gate, `P2pFileNames`,
+`P2pSessionPolicy` and `reachableHost`; 116 checks, ~15 s). Known residual:
 non-trickle ICE means a receiver that accepts a 10-minute-old link answers
 candidates minted 10 minutes ago; a NAT binding that expired meanwhile
 shows as `no-path` on an otherwise fine network — the relay candidate is
@@ -3569,6 +3611,85 @@ every old↔new APK pairing keeps working:
   bump (3.0). The wire-protocol delta (`res`/`off`/`tail`/`begin`) must be
   mirrored in any future browser-recipient receive page — it is part of the
   shared wire format the "SECOND IMPLEMENTATION" warning below records.
+
+**The 2026-10 review of the redo (`5ca54f3` + `2fe6759`) — invariants, each
+closing a bug that review found in shipped code.** Pinned where they can run
+off-device: the JDK harness above and `node scripts/p2pshare-smoke.mjs`
+(the oid binding and the early-failure classification), teeth proven by
+mutation (each reintroduced bug fails at least one check). The rest lives in
+the controller and needs a device.
+- **Every async callback is pinned to its SESSION by a generation**
+  (`mSessionGen`, bumped by every `stopSession`; callbacks capture it and
+  act only while `isCurrent(gen)`). The relay-creds fetch, the rendezvous
+  and relay polls, the offer upload, the nearby POST, the answer POSTs and
+  their fallbacks, the disk hops and the pref writes all used to check only
+  "a session of this role exists" — so a cancel followed by a new share
+  within a slow callback's window let the OLD session's answer, short link
+  or error land in the NEW one. A new async path takes a `gen`.
+- **The sender closes its answer paths only once the engine APPLIED an
+  answer** (`onAnswerApplied`, on the engine's `connecting` event, posted
+  right after `setRemoteDescription`). `provideAnswer` used to tear down the
+  LAN listener, the offer lifetime and the polls the moment ANY code was
+  handed in, and move to CONNECTING — so an unreadable or wrong answer (a
+  truncated paste, a link a messenger cut) left the sender on "Connecting"
+  with no paste or scan button, no lifetime timer and the service held
+  until Cancel. A soft refusal now REOPENS what consumed it
+  (`onSenderBadCode`: the LAN listener takes the next answer instead of
+  409ing it, a rendezvous poll that returned it polls again).
+- **An answer names its offer (`oid`, optional, versioned by presence).**
+  Each offer carries 9 random bytes; a receiver of this build echoes them;
+  the sender refuses, SOFTLY, an answer carrying another offer's id ("answer
+  is for another share"). A reply left in the clipboard from an earlier
+  share used to be applied and die in ICE 30 s later as `no-path`. An answer
+  without `oid` (an older receiver) is accepted as before. The sender's
+  clipboard auto-pickup also ignores a clip copied before this share
+  started (`ShareState.startedAt` vs `ClipDescription.getTimestamp`).
+  Part of the shared wire format the browser-recipient note below warns
+  about.
+- **A new share never silently kills a running transfer.**
+  `P2pSessionPolicy` decides what a share screen does with the session
+  already there: the Send screen ATTACHES to its own send session (live, or
+  its outcome — the finished notification opens the screen with no file,
+  and both that and a rotation used to START a brand-new share of the same
+  file, a fresh 15-minute offer, instead of showing "Sent"), STARTS for a
+  new file, and refuses with `p2p_busy_other_transfer` while another session
+  is CONNECTING/CONNECTED/TRANSFERRING (`blocksNewSession`); the Receive
+  screen's paste/scan/link entries check `isBusyWithTransfer()` the same
+  way, and the controller re-checks in `startSend`/`beginReceiveSession`. A
+  share still waiting for an accept, or a finished one, is replaced as
+  before — the newest wins. A screen recreated after process death starts
+  nothing (`restored` → NOTHING).
+- **A notice is shown ONCE.** `noticeSeq` comes from a controller counter
+  that is never reset (a per-state counter restarted at 1 in each session
+  and collided with what a screen had already shown), and a screen that
+  shows one calls `consumeNotice(seq)`, so a screen attaching later
+  (rotation, the notification) doesn't show it again.
+- **A preview nobody answers is declined after `OFFER_LIFETIME_MS`**
+  (`mPreviewTimeout`): a pushed nearby offer to a screen in the background
+  held the session, the service and the busy flag indefinitely.
+- **The relay fetch is skipped only when certain to fail** —
+  `RelayCredsPolicy.networkAllowsFetch`: no active network, or a captive
+  portal. It used to require `NET_CAPABILITY_VALIDATED`, which a network
+  shown as "connected, no internet" never gets even when it does reach the
+  internet (probe servers blocked, some VPNs, firewalls), so those shares
+  lost the relay every time.
+- **A received file's name is bounded and correct without an extension**
+  (`P2pFileNames`): the old loop over `UrlParser.parseFilePath` could only
+  put `(n)` before a dot, so a taken extensionless name (or an empty one,
+  which resolved to the download directory itself) returned the same path
+  forever — on the shared disk executor, stopping every Room write in the
+  app. Now `base(n).ext` with a plausible extension (1–8 alphanumerics, not
+  a dot-file), continuing a trailing `(k)`, 9 999 numbered tries, then a
+  random suffix; an empty name becomes `received-file`.
+- **Only the hidden engine session's page may drive a share**
+  (`onPortConnected` checks `port.sender.session`): the bridge content
+  script matches `http://127.0.0.1/*`, so any other tab that loaded a
+  loopback page would otherwise hand over a port. The loopback server's
+  write target is an `AtomicReference`, so closing it never waits on a
+  write in flight.
+- **The share notification refreshes at most once a second** (a monotonic
+  clock, `SystemClock.elapsedRealtime`) and `P2pShareService.start` is
+  guarded like the rest of the app's FGS starts.
 
 **Scanner is a full-screen `DialogFragment` (`<dialog>` destination), NOT a
 `<fragment>`.** History: a `<fragment>` scanner destination destroyed the

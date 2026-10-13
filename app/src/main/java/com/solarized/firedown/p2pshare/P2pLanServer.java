@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 
 import com.solarized.firedown.BuildConfig;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,11 +16,17 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The ONE thing Firedown ever listens for on a LAN interface, and it is
@@ -45,10 +52,19 @@ import java.util.Locale;
  *       scanned code and the answer returns over {@code /answer} above.</li>
  * </ul>
  *
- * <p>The {@link Handler} decides on the server's accept thread and answers
- * synchronously — {@code true} = 204 (taken), {@code false} = 409 (a second
- * answer after the first was applied; an offer while another transfer is
- * live). Only the route its owner serves is wired; the other returns 404.
+ * <p>The {@link Handler} decides synchronously — {@code true} = 204 (taken),
+ * {@code false} = 409 (a second answer after the first was applied; an offer
+ * while another transfer is live). Only the route its owner serves is wired;
+ * the other returns 404. Connections are handled on a small worker pool
+ * ({@link #MAX_CONCURRENT}), so the handler can be called from several
+ * threads at once and must decide atomically.
+ *
+ * <p><b>Every connection has an overall deadline</b> ({@link #CONNECTION_DEADLINE_MS})
+ * on top of the per-read timeout: the head is read a byte at a time, so a
+ * client trickling one byte every few seconds used to hold the one handling
+ * thread for hours, blocking the receiver's {@code /offer} and the sender's
+ * answer return for everyone else on the network. Connections beyond the
+ * pool are closed at once.
  *
  * <p>Interface pick: prefers a wlan* site-local IPv4 so an active VPN's tun
  * address (unreachable by the peer) isn't advertised.
@@ -62,6 +78,12 @@ public class P2pLanServer {
 
     /** The receiver's decline, POSTed to the sender's {@code /answer}. */
     public static final String DECLINED_BODY = "declined";
+
+    /** Whole-connection budget: head + a 16 KB body from a phone on the LAN. */
+    static final long CONNECTION_DEADLINE_MS = 10_000;
+
+    /** Connections handled at once; more are closed (a phone or two is the real load). */
+    static final int MAX_CONCURRENT = 4;
 
     /** Route decisions, on the accept thread. A null handler = route not served. */
     public interface Handler {
@@ -77,10 +99,15 @@ public class P2pLanServer {
     private final boolean mServeOffer;
     private final String mToken;
 
+    private final byte[] mTokenBytes;
+
     private volatile ServerSocket mServerSocket;
     private volatile boolean mRunning;
+    private ThreadPoolExecutor mWorkers;
     private String mBaseUrl;
     private int mPort;
+    // The harness shortens it to test the deadline in milliseconds.
+    long mDeadlineMs = CONNECTION_DEADLINE_MS;
 
     /**
      * @param serveAnswer wire {@code /answer} (the sender's side)
@@ -97,6 +124,7 @@ public class P2pLanServer {
             token.append(String.format(Locale.US, "%02x", b));
         }
         mToken = token.toString();
+        mTokenBytes = mToken.getBytes(StandardCharsets.US_ASCII);
     }
 
     /**
@@ -126,6 +154,12 @@ public class P2pLanServer {
         }
         mPort = mServerSocket.getLocalPort();
         mBaseUrl = "http://" + lanAddress.getHostAddress() + ":" + mPort;
+        mWorkers = new ThreadPoolExecutor(0, MAX_CONCURRENT, 30, TimeUnit.SECONDS,
+                new SynchronousQueue<>(), runnable -> {
+                    Thread thread = new Thread(runnable, "P2pLanWorker");
+                    thread.setDaemon(true);
+                    return thread;
+                });
         mRunning = true;
         Thread acceptThread = new Thread(this::acceptLoop, "P2pLan");
         acceptThread.start();
@@ -148,6 +182,26 @@ public class P2pLanServer {
         return mPort;
     }
 
+    /**
+     * The address to reach a nearby receiver on, from what NSD resolved: the
+     * first IPv4, else null. The receiver binds a site-local IPv4 only, so an
+     * IPv6-only result can never connect (and a scoped link-local one, with
+     * its {@code %wlan0} zone, is not even a valid URL host); the device is
+     * then not listed rather than shown as a row that cannot work.
+     */
+    @Nullable
+    public static String reachableHost(@Nullable Iterable<InetAddress> addresses) {
+        if (addresses == null) {
+            return null;
+        }
+        for (InetAddress address : addresses) {
+            if (address instanceof Inet4Address) {
+                return address.getHostAddress();
+            }
+        }
+        return null;
+    }
+
     /** Build a peer's {@code /offer} URL from what NSD resolved. */
     @NonNull
     public static String offerUrl(@NonNull String host, int port, @NonNull String token) {
@@ -157,6 +211,10 @@ public class P2pLanServer {
 
     public void stop() {
         mRunning = false;
+        ThreadPoolExecutor workers = mWorkers;
+        if (workers != null) {
+            workers.shutdownNow();
+        }
         ServerSocket socket = mServerSocket;
         mServerSocket = null;
         if (socket != null) {
@@ -181,22 +239,29 @@ public class P2pLanServer {
                 // Closed by stop(), or a teardown race — never crash the thread.
                 return;
             }
-            // Handled inline on this thread: bodies are ~1-2 KB and the
-            // legitimate clients are one or two phones, so no handler pool.
+            final Socket accepted = client;
             try {
-                handleConnection(client);
-            } catch (Exception e) {
-                if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "lan connection: " + e.getMessage());
-                }
+                mWorkers.execute(() -> {
+                    try {
+                        handleConnection(accepted);
+                    } catch (Exception e) {
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "lan connection: " + e.getMessage());
+                        }
+                    }
+                });
+            } catch (RejectedExecutionException e) {
+                // Pool full (or stopping): drop it rather than queue behind
+                // whatever is holding the workers.
+                closeQuietly(accepted);
             }
         }
     }
 
     private void handleConnection(Socket client) throws IOException {
         try {
-            client.setSoTimeout(10000);
-            InputStream in = client.getInputStream();
+            long deadline = System.currentTimeMillis() + mDeadlineMs;
+            InputStream in = new DeadlineInputStream(client, deadline);
             OutputStream out = client.getOutputStream();
 
             P2pHttp.RequestHead head = P2pHttp.readHead(in);
@@ -204,7 +269,7 @@ public class P2pLanServer {
                 P2pHttp.sendStatus(out, 400, "Bad Request");
                 return;
             }
-            if (!mToken.equals(head.query.get("t"))) {
+            if (!tokenMatches(head.query.get("t"))) {
                 P2pHttp.sendStatus(out, 403, "Forbidden");
                 return;
             }
@@ -228,11 +293,59 @@ public class P2pLanServer {
             }
             out.flush();
         } finally {
-            try {
-                client.close();
-            } catch (IOException e) {
-                // Best-effort.
+            closeQuietly(client);
+        }
+    }
+
+    /** Constant-time compare (the token travels in TXT records and offers, but still). */
+    private boolean tokenMatches(@Nullable String presented) {
+        if (presented == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(mTokenBytes, presented.getBytes(StandardCharsets.US_ASCII));
+    }
+
+    private static void closeQuietly(Socket socket) {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            // Best-effort.
+        }
+    }
+
+    /**
+     * Input stream with ONE deadline for the whole connection: before every
+     * read the socket timeout is set to the time left, and a read past the
+     * deadline fails. A per-read timeout alone resets on every byte.
+     */
+    static final class DeadlineInputStream extends FilterInputStream {
+        private final Socket mSocket;
+        private final long mDeadline;
+
+        DeadlineInputStream(@NonNull Socket socket, long deadline) throws IOException {
+            super(socket.getInputStream());
+            mSocket = socket;
+            mDeadline = deadline;
+        }
+
+        private void arm() throws IOException {
+            long left = mDeadline - System.currentTimeMillis();
+            if (left <= 0) {
+                throw new SocketTimeoutException("connection deadline");
             }
+            mSocket.setSoTimeout((int) Math.min(left, Integer.MAX_VALUE));
+        }
+
+        @Override
+        public int read() throws IOException {
+            arm();
+            return super.read();
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            arm();
+            return super.read(buffer, offset, length);
         }
     }
 

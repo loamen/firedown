@@ -654,8 +654,9 @@
     <string name="p2p_got_code">Kodunuz veya bağlantınız mı var?</string>
     <string name="p2p_background_note">Bu ekrandan çıkabilirsiniz. Aktarım arka planda devam eder.</string>
     <string name="p2p_error_timeout">Kimse dosyayı zamanında kabul etmedi.</string>
-    <string name="p2p_error_stalled">Aktarım ilerlemeyi durdurdu. Kaldığı yerden devam etmek için aynı dosyayı yeniden paylaşın.</string>
-    <string name="p2p_error_lost">Bağlantı kesildi. Kaldığı yerden devam etmek için aynı dosyayı yeniden paylaşın.</string>
+    <string name="p2p_error_stalled">Aktarım ilerlemeyi durdurdu. Aynı dosya yeniden paylaşılırsa kaldığı yerden devam edebilir.</string>
+    <string name="p2p_error_lost">Bağlantı kesildi. Aynı dosya yeniden paylaşılırsa aktarım kaldığı yerden devam edebilir.</string>
+    <string name="p2p_busy_other_transfer">Başka bir aktarım sürüyor. Önce onu bitirin veya iptal edin.</string>
     <string name="p2p_error_no_path_norelay">Diğer cihaza ulaşılamadı, aktarma sunucusuna da ulaşılamadı. İki telefon da çevrimiçi olduğunda yeniden deneyin.</string>
     <string name="p2p_notif_sending">%1$s gönderiliyor</string>
     <string name="p2p_notif_receiving">%1$s alınıyor</string>

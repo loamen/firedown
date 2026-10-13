@@ -52,6 +52,13 @@
  *   message; an old sender never sees off/tail it would ignore, because the
  *   receiver only requests when the offer carried res. The ordered channel
  *   guarantees begin precedes every chunk.
+ *
+ * OFFER BINDING (optional field, same versioning by presence):
+ *   The offer carries oid (9 random bytes, base64url); a receiver of this
+ *   build copies it into its answer. The sender refuses, SOFTLY, an answer
+ *   whose oid is another offer's (a reply left in the clipboard from an
+ *   earlier share used to be applied and then die in ICE as "no-path"). An
+ *   answer without oid (older receiver) is accepted as before.
  */
 
 "use strict";
@@ -145,6 +152,19 @@ let session = null;
  * deflate-raw keeps an SDP-bearing offer at ~1-2 KB so it fits a scannable
  * QR. CompressionStream is available in this GeckoView; if it ever isn't,
  * "n" (none) codes fall back to plain UTF-8 — bigger QR, same protocol. */
+
+// 9 random bytes, base64url: unique per offer, short enough to cost nothing
+// in a QR. Falls back to Math.random only where crypto is missing (it never
+// is in a content document, but the id only has to tell offers apart).
+function newOfferId() {
+  const bytes = new Uint8Array(9);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) { bytes[i] = Math.floor(Math.random() * 256); }
+  }
+  return bytesToBase64Url(bytes);
+}
 
 function bytesToBase64Url(bytes) {
   let bin = "";
@@ -352,7 +372,7 @@ function watchConnection(s) {
       // A path that carried bytes and then died is a LOST connection (the
       // network changed under a long transfer), not a no-path — the copy
       // differs: re-share the same file to resume, not "try the same Wi-Fi".
-      fail(s, s.flowStarted ? "lost" : "no-path", "connection failed");
+      fail(s, flowMoved(s) ? "lost" : "no-path", "connection failed");
     } else if (pc.connectionState === "disconnected") {
       if (!s.disconnectedSince) { s.disconnectedSince = Date.now(); }
       // Transient (NOT terminal — "failed" is): ICE consent checks are missing
@@ -475,8 +495,18 @@ function flowMark(s) {
 // Started when the DataChannel opens (both roles), cleared by closeSession.
 // Before that the connect timer bounds the ICE phase and Java's offer
 // lifetime bounds the wait for an accept — this covers the TRANSFER only.
+// Whether bytes moved since the channel opened. The watchdog flips
+// flowStarted only on its 5 s tick; an ICE failure inside the first tick of a
+// flowing transfer used to read as "no-path" (try the same Wi-Fi) instead of
+// "lost" (share again to resume).
+function flowMoved(s) {
+  if (s.flowStarted) { return true; }
+  return s.flowAtOpen !== undefined && flowMark(s) > s.flowAtOpen;
+}
+
 function startWatchdog(s) {
   if (s.watchTimer) { return; }
+  s.flowAtOpen = flowMark(s);
   s.lastFlow = flowMark(s);
   s.lastFlowAt = Date.now();
   s.flowStarted = false;
@@ -608,6 +638,11 @@ async function startSend(msg) {
     progress: makeProgress(msg.size),
     stopped: false,
     acked: false,
+    // This offer's id; a receiver of this build echoes it in its answer, so an
+    // answer meant for ANOTHER offer (a reply left in the clipboard from an
+    // earlier share) is refused softly instead of being applied and failing
+    // ICE 30 s later as "no-path".
+    oid: newOfferId(),
   };
   session = s;
   try {
@@ -657,6 +692,7 @@ async function startSend(msg) {
     const payload = {
       v: 1,
       res: 1,
+      oid: s.oid,
       sdp: s.pc.localDescription.sdp,
       name: msg.name,
       size: msg.size,
@@ -741,6 +777,14 @@ async function acceptAnswer(msg) {
     return;
   }
   if (s !== session || s.stopped) { return; }
+  // Field presence versions it: an answer from an older receiver carries no
+  // oid and is accepted as before; one carrying ANOTHER offer's id is soft.
+  if (typeof payload.oid === "string" && payload.oid !== s.oid) {
+    log("answer is for another offer");
+    s.answering = false;
+    softError("answer is for another share");
+    return;
+  }
   // Resume request: decide the begin offset BEFORE setRemoteDescription — the
   // datachannel can open (and pumpFile run) any time after SRD, and the
   // decision must already be made by then.
@@ -916,6 +960,9 @@ async function acceptReceive(msg) {
     await waitIceComplete(s.pc, s.wantRelay);
     if (s !== session || s.stopped) { return; }
     const payload = { v: 1, sdp: s.pc.localDescription.sdp };
+    if (typeof s.offer.oid === "string" && s.offer.oid.length > 0) {
+      payload.oid = s.offer.oid;
+    }
     if (resume) {
       payload.off = resume.off;
       payload.tail = resume.tail;

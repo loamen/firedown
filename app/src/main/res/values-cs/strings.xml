@@ -627,8 +627,9 @@
     <string name="p2p_got_code">Máte kód nebo odkaz?</string>
     <string name="p2p_background_note">Tuto obrazovku můžete opustit. Přenos pokračuje na pozadí.</string>
     <string name="p2p_error_timeout">Nikdo soubor včas nepřijal.</string>
-    <string name="p2p_error_stalled">Přenos se zastavil. Sdílejte stejný soubor znovu a bude pokračovat tam, kde skončil.</string>
-    <string name="p2p_error_lost">Spojení bylo přerušeno. Sdílejte stejný soubor znovu a bude pokračovat tam, kde skončil.</string>
+    <string name="p2p_error_stalled">Přenos se přestal posouvat. Když stejný soubor sdílíte znovu, může pokračovat tam, kde se zastavil.</string>
+    <string name="p2p_error_lost">Spojení bylo přerušeno. Když stejný soubor sdílíte znovu, přenos může pokračovat tam, kde se zastavil.</string>
+    <string name="p2p_busy_other_transfer">Probíhá jiný přenos. Nejprve ho dokončete nebo zrušte.</string>
     <string name="p2p_error_no_path_norelay">Druhé zařízení nebylo dostupné a nepodařilo se spojit ani s přenosovým serverem. Zkuste to znovu, až budou oba telefony online.</string>
     <string name="p2p_notif_sending">Odesílá se %1$s</string>
     <string name="p2p_notif_receiving">Přijímá se %1$s</string>

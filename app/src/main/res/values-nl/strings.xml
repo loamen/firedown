@@ -654,8 +654,9 @@
     <string name="p2p_got_code">Een code of link gekregen?</string>
     <string name="p2p_background_note">Je kunt dit scherm verlaten. De overdracht gaat op de achtergrond door.</string>
     <string name="p2p_error_timeout">Niemand heeft het bestand op tijd geaccepteerd.</string>
-    <string name="p2p_error_stalled">De overdracht kwam niet meer vooruit. Deel hetzelfde bestand opnieuw om verder te gaan waar het gebleven was.</string>
-    <string name="p2p_error_lost">De verbinding is verbroken. Deel hetzelfde bestand opnieuw om verder te gaan waar het gebleven was.</string>
+    <string name="p2p_error_stalled">De overdracht kwam niet meer verder. Als hetzelfde bestand opnieuw wordt gedeeld, kan ze verdergaan waar ze gebleven was.</string>
+    <string name="p2p_error_lost">De verbinding is verbroken. Als hetzelfde bestand opnieuw wordt gedeeld, kan de overdracht verdergaan waar ze gebleven was.</string>
+    <string name="p2p_busy_other_transfer">Er loopt al een andere overdracht. Rond die eerst af of annuleer ze.</string>
     <string name="p2p_error_no_path_norelay">Het andere apparaat was niet bereikbaar, en de relayserver ook niet. Probeer het opnieuw als beide telefoons online zijn.</string>
     <string name="p2p_notif_sending">%1$s wordt verstuurd</string>
     <string name="p2p_notif_receiving">%1$s wordt ontvangen</string>

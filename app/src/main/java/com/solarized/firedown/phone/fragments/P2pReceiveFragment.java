@@ -77,7 +77,7 @@ public class P2pReceiveFragment extends P2pShareBaseFragment {
                 navigateToScanner(P2pShareController.OFFER_PREFIX, false));
         mView.findViewById(R.id.p2p_paste_code).setOnClickListener(v -> {
             String code = readCodeFromClipboard(P2pShareController.OFFER_PREFIX);
-            if (code != null) {
+            if (code != null && !refuseWhileBusy()) {
                 // Pasted from a messenger = phones apart.
                 mP2pController.startReceive(code, true);
             }
@@ -127,6 +127,12 @@ public class P2pReceiveFragment extends P2pShareBaseFragment {
         String id = args.getString(ARG_SIGNALING_ID);
         String offerRef = args.getString(ARG_OFFER_REF);
         String offer = args.getString(ARG_OFFER_CODE);
+        boolean arrival = (base != null && !base.isEmpty() && id != null && !id.isEmpty())
+                || (offerRef != null && !offerRef.isEmpty())
+                || (offer != null && !offer.isEmpty());
+        if (arrival && refuseWhileBusy()) {
+            return; // a link tapped mid-transfer must not kill the transfer
+        }
         if (base != null && !base.isEmpty() && id != null && !id.isEmpty()) {
             mP2pController.startReceiveFromRelay(base, id);
         } else if (offerRef != null && !offerRef.isEmpty()) {
@@ -134,6 +140,43 @@ public class P2pReceiveFragment extends P2pShareBaseFragment {
         } else if (offer != null && !offer.isEmpty()) {
             mP2pController.startReceive(offer, true); // tapped link = phones (likely) apart
         }
+    }
+
+    /**
+     * Visibility follows the screen being SEEN, not merely existing: Home
+     * keeps the view (onStop, not onDestroyView), and a phone advertising its
+     * name for hours from the background is the opposite of "ready to
+     * receive". LiveData does not redeliver an unchanged value on restart, so
+     * onStart decides explicitly.
+     */
+    @Override
+    public void onStart() {
+        super.onStart();
+        mP2pController.setNearbyListening(shouldBeVisible(mP2pController.peekState()));
+    }
+
+    @Override
+    public void onStop() {
+        mP2pController.setNearbyListening(false);
+        super.onStop();
+    }
+
+    /**
+     * Visible to nearby senders exactly while nothing is in flight on THIS
+     * phone, in either role: idle, or showing an outcome. (A live SEND used
+     * to keep it visible, answering every nearby sender 409.)
+     */
+    private static boolean shouldBeVisible(@Nullable ShareState state) {
+        return state == null || !state.isLive();
+    }
+
+    /** A transfer is moving bytes: say so and start nothing (true = refused). */
+    private boolean refuseWhileBusy() {
+        if (mP2pController.isBusyWithTransfer()) {
+            makeSnack(R.string.p2p_busy_other_transfer);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -164,7 +207,9 @@ public class P2pReceiveFragment extends P2pShareBaseFragment {
 
     @Override
     protected void onCodeScanned(@NonNull String code) {
-        mP2pController.startReceive(code, false); // scanned in person = phones adjacent
+        if (!refuseWhileBusy()) {
+            mP2pController.startReceive(code, false); // scanned in person = phones adjacent
+        }
     }
 
     private void onStopTapped() {
@@ -192,9 +237,9 @@ public class P2pReceiveFragment extends P2pShareBaseFragment {
             return;
         }
         boolean mine = state != null && state.role == ShareState.Role.RECEIVE;
-        // Visible to nearby senders exactly while there is nothing of ours in
-        // flight: idle, or showing an outcome.
-        mP2pController.setNearbyListening(!mine || !state.isLive());
+        // render only runs while the screen is started (LiveData), so this
+        // never re-advertises a phone in the background.
+        mP2pController.setNearbyListening(shouldBeVisible(state));
         if (!mine) {
             mLast = null;
             showStage(R.id.p2p_idle_group);

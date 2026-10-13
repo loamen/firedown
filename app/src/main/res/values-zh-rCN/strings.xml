@@ -752,8 +752,9 @@
     <string name="p2p_got_code">有代码或链接？</string>
     <string name="p2p_background_note">你可以离开此屏幕。传输会在后台继续。</string>
     <string name="p2p_error_timeout">没有人及时接受文件。</string>
-    <string name="p2p_error_stalled">传输没有进展。重新分享同一个文件即可从中断处继续。</string>
-    <string name="p2p_error_lost">连接已断开。重新分享同一个文件即可从中断处继续。</string>
+    <string name="p2p_error_stalled">传输已停止推进。重新分享同一个文件可能会从中断处继续。</string>
+    <string name="p2p_error_lost">连接已断开。重新分享同一个文件可能会从中断处继续。</string>
+    <string name="p2p_busy_other_transfer">另一个传输正在进行。请先完成或取消它。</string>
     <string name="p2p_error_no_path_norelay">无法连接到另一台设备，也无法连接到中继服务器。请在两部手机都联网时重试。</string>
     <string name="p2p_notif_sending">正在发送 %1$s</string>
     <string name="p2p_notif_receiving">正在接收 %1$s</string>

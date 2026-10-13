@@ -490,6 +490,170 @@ check("data before begin fails the transfer",
       relay.turn && relay.turns && relay.upper && !relay.stun && !relay.none && !relay.junk);
 }
 
+// ── a failure inside the first watchdog tick of a flowing transfer is LOST ──
+// flowStarted flips only on the 5 s tick, so an ICE failure right after the
+// first bytes moved used to read as no-path ("try the same Wi-Fi") instead of
+// lost ("share again to resume").
+{
+  const listeners = {};
+  context.__pc = { connectionState: "new",
+      addEventListener(type, fn) { listeners[type] = fn; }, close() {} };
+  context.__dc = { bufferedAmount: 0, close() {}, addEventListener() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 1000, progress: makeProgress(1000), stopped: false,
+        pc: __pc, dc: __dc };
+    watchConnection(session);
+    startWatchdog(session);   // channel open: flowAtOpen = 0
+    session.progress.done = 300; // bytes left before the first tick
+  `, context);
+  postedEvents.length = 0;
+  context.__pc.connectionState = "failed";
+  listeners.connectionstatechange();
+  check("failed before the first tick, after bytes moved → lost",
+      postedEvents.some((e) => e.type === "error" && e.code === "lost")
+      && !postedEvents.some((e) => e.code === "no-path"));
+  // Bytes still in OUR buffer never left: that is not flow.
+  const listeners2 = {};
+  context.__pc = { connectionState: "new",
+      addEventListener(type, fn) { listeners2[type] = fn; }, close() {} };
+  context.__dc = { bufferedAmount: 300, close() {}, addEventListener() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 1000, progress: makeProgress(1000), stopped: false,
+        pc: __pc, dc: __dc };
+    watchConnection(session);
+    startWatchdog(session);
+    session.progress.done = 300;
+  `, context);
+  postedEvents.length = 0;
+  context.__pc.connectionState = "failed";
+  listeners2.connectionstatechange();
+  check("failed with every sent byte still buffered → no-path",
+      postedEvents.some((e) => e.type === "error" && e.code === "no-path"));
+}
+
+// ── offer binding: the answer must be for THIS offer (oid) ──────────────────
+// A fake RTCPeerConnection carries the sender and receiver through
+// createOffer/createAnswer/setRemoteDescription — no network, no ICE; what is
+// under test is the code each side mints and what the sender does with an
+// answer.
+{
+  class FakePC {
+    static async generateCertificate() { return {}; }
+    constructor() {
+      this.listeners = {};
+      this.signalingState = "stable";
+      this.iceGatheringState = "complete";
+      this.connectionState = "new";
+      this.localDescription = null;
+      this.remoteDescriptions = [];
+    }
+    addEventListener(type, fn) { (this.listeners[type] ||= []).push(fn); }
+    createDataChannel() { return { close() {}, addEventListener() {}, send() {}, bufferedAmount: 0 }; }
+    async createOffer() { return { type: "offer", sdp: "v=0\r\na=fake-offer\r\n" }; }
+    async createAnswer() { return { type: "answer", sdp: "v=0\r\na=fake-answer\r\n" }; }
+    async setLocalDescription(d) {
+      this.localDescription = d;
+      this.signalingState = d.type === "offer" ? "have-local-offer" : "stable";
+    }
+    async setRemoteDescription(d) {
+      this.remoteDescriptions.push(d);
+      this.signalingState = d.type === "offer" ? "have-remote-offer" : "stable";
+    }
+    close() {}
+  }
+  context.RTCPeerConnection = FakePC;
+
+  const decode = (prefix, code) =>
+      vm.runInContext(`decodeCode(${prefix}, ${JSON.stringify(code)})`, context);
+  const mintOffer = async () => {
+    postedEvents.length = 0;
+    sendCommand({ type: "send-start", readUrl: "http://x/read?t=1", size: 10,
+        name: "a.bin", mime: "application/octet-stream", device: "Test", iceServers: [] });
+    await sleep(60);
+    const ev = postedEvents.find((e) => e.type === "code" && e.role === "offer");
+    return ev ? ev.code : null;
+  };
+
+  const offerA = await mintOffer();
+  const payloadA = offerA ? await decode("OFFER_PREFIX", offerA) : null;
+  check("offer carries an oid (9 random bytes, base64url)",
+      payloadA && typeof payloadA.oid === "string" && /^[A-Za-z0-9_-]{12}$/.test(payloadA.oid),
+      payloadA && payloadA.oid);
+  const senderPcA = vm.runInContext("session && session.pc", context);
+
+  // The receiver of this build echoes the offer's oid in its answer.
+  postedEvents.length = 0;
+  sendCommand({ type: "recv-start", code: offerA, iceServers: [] });
+  await sleep(40);
+  sendCommand({ type: "recv-accept", writeUrl: "http://x/write?t=1" });
+  await sleep(60);
+  const answerEv = postedEvents.find((e) => e.type === "code" && e.role === "answer");
+  const answerPayload = answerEv ? await decode("ANSWER_PREFIX", answerEv.code) : null;
+  check("receiver echoes the offer's oid in its answer",
+      answerPayload && answerPayload.oid === payloadA.oid);
+  // An offer from an older sender has no oid: the answer carries none.
+  postedEvents.length = 0;
+  const legacyOffer = await vm.runInContext(`encodeCode(OFFER_PREFIX,
+      { v: 1, sdp: "v=0\\r\\n", name: "b.bin", size: 5, mime: "x/y", dev: "Old" })`, context);
+  sendCommand({ type: "recv-start", code: legacyOffer, iceServers: [] });
+  await sleep(40);
+  sendCommand({ type: "recv-accept", writeUrl: "http://x/write?t=1" });
+  await sleep(60);
+  const legacyAnswerEv = postedEvents.find((e) => e.type === "code" && e.role === "answer");
+  const legacyAnswer = legacyAnswerEv ? await decode("ANSWER_PREFIX", legacyAnswerEv.code) : null;
+  check("an answer to an oid-less offer carries no oid",
+      legacyAnswer && !("oid" in legacyAnswer));
+
+  // Back to a sender: a fresh offer B, then answers of every kind.
+  const offerB = await mintOffer();
+  const payloadB = offerB ? await decode("OFFER_PREFIX", offerB) : null;
+  check("each offer gets its own oid", payloadB && payloadB.oid !== payloadA.oid);
+  const senderPc = vm.runInContext("session && session.pc", context);
+  check("the sender session under test is a new one", senderPc && senderPc !== senderPcA);
+
+  // A reply to offer A (left in the clipboard) offered to offer B: soft.
+  postedEvents.length = 0;
+  sendCommand({ type: "send-answer", code: answerEv.code });
+  await sleep(40);
+  check("another offer's answer → soft bad-code, never applied",
+      postedEvents.length === 1 && postedEvents[0].type === "error"
+          && postedEvents[0].code === "bad-code" && /another share/.test(postedEvents[0].detail)
+          && senderPc.remoteDescriptions.length === 0
+          && !postedEvents.some((e) => e.type === "state" && e.state === "connecting"));
+  check("the session survives the refused answer",
+      vm.runInContext("session !== null && session.role === 'send' && session.answering === false", context));
+
+  // An older receiver's answer (no oid) is accepted as before.
+  postedEvents.length = 0;
+  const noOid = await vm.runInContext(`encodeCode(ANSWER_PREFIX, { v: 1, sdp: "v=0\\r\\na=old\\r\\n" })`, context);
+  sendCommand({ type: "send-answer", code: noOid });
+  await sleep(40);
+  check("an answer without oid is applied (older receiver)",
+      senderPc.remoteDescriptions.length === 1
+          && postedEvents.some((e) => e.type === "state" && e.state === "connecting"));
+
+  // And the matching one on a fresh offer C.
+  const offerC = await mintOffer();
+  const payloadC = await decode("OFFER_PREFIX", offerC);
+  const pcC = vm.runInContext("session && session.pc", context);
+  postedEvents.length = 0;
+  const matching = await vm.runInContext(`encodeCode(ANSWER_PREFIX,
+      { v: 1, sdp: "v=0\\r\\na=good\\r\\n", oid: ${JSON.stringify(payloadC.oid)} })`, context);
+  sendCommand({ type: "send-answer", code: matching });
+  await sleep(40);
+  check("the matching answer is applied and reported as connecting",
+      pcC.remoteDescriptions.length === 1 && pcC.remoteDescriptions[0].sdp.includes("a=good")
+          && postedEvents.some((e) => e.type === "state" && e.state === "connecting"));
+  // Once applied, a second answer is ignored quietly (not an error).
+  postedEvents.length = 0;
+  sendCommand({ type: "send-answer", code: matching });
+  await sleep(40);
+  check("a second answer after the first applied is a quiet no-op",
+      pcC.remoteDescriptions.length === 1 && postedEvents.length === 0);
+  vm.runInContext("closeSession(session)", context);
+  delete context.RTCPeerConnection;
+}
+
 // ── stop is safe with no session ────────────────────────────────────────────
 postedEvents.length = 0;
 sendCommand({ type: "stop" });

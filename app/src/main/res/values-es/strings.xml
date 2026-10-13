@@ -754,8 +754,9 @@
     <string name="p2p_got_code">¿Tienes un código o un enlace?</string>
     <string name="p2p_background_note">Puedes salir de esta pantalla. La transferencia continúa en segundo plano.</string>
     <string name="p2p_error_timeout">Nadie aceptó el archivo a tiempo.</string>
-    <string name="p2p_error_stalled">La transferencia dejó de avanzar. Vuelve a compartir el mismo archivo para continuar donde se quedó.</string>
-    <string name="p2p_error_lost">Se perdió la conexión. Vuelve a compartir el mismo archivo para continuar donde se quedó.</string>
+    <string name="p2p_error_stalled">La transferencia dejó de avanzar. Si se vuelve a compartir el mismo archivo, puede continuar donde se quedó.</string>
+    <string name="p2p_error_lost">Se perdió la conexión. Si se vuelve a compartir el mismo archivo, la transferencia puede continuar donde se quedó.</string>
+    <string name="p2p_busy_other_transfer">Hay otra transferencia en curso. Termínala o cancélala primero.</string>
     <string name="p2p_error_no_path_norelay">No se pudo contactar con el otro dispositivo, y tampoco con el servidor de retransmisión. Inténtalo de nuevo cuando ambos teléfonos estén en línea.</string>
     <string name="p2p_notif_sending">Enviando %1$s</string>
     <string name="p2p_notif_receiving">Recibiendo %1$s</string>

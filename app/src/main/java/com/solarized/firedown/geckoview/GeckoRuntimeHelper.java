@@ -213,6 +213,11 @@ public class GeckoRuntimeHelper {
         // WebRTC is ALWAYS on (the toggle was removed — stock-Firefox posture;
         // mDNS obfuscation covers the local-IP leak, see Preferences note).
         setWebRTC(true);
+        // A share switches obfuscation off for its ICE-gathering seconds and
+        // back on after (P2pShareController.setObfuscation). The pref is a
+        // saved user pref, so a process death inside that window would leave
+        // browsing without it; no share runs at boot, so put it back.
+        restoreWebRtcObfuscation();
         setWebAssembly(!sharedPreferences.getBoolean(Preferences.SETTINGS_DISABLE_WASM,
                 Preferences.DEFAULT_DISABLE_WASM));
         setJITCompiler(!sharedPreferences.getBoolean(Preferences.SETTINGS_DISABLE_JIT,
@@ -1193,6 +1198,12 @@ public class GeckoRuntimeHelper {
         if (port != null) {
             port.postMessage(message);
         }
+    }
+
+    @OptIn(markerClass = ExperimentalGeckoViewApi.class)
+    private void restoreWebRtcObfuscation() {
+        GeckoPreferenceController.setGeckoPref("media.peerconnection.ice.obfuscate_host_addresses",
+                true, GeckoPreferenceController.PREF_BRANCH_USER);
     }
 
     @OptIn(markerClass = ExperimentalGeckoViewApi.class)

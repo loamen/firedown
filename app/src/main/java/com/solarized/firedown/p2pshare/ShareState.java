@@ -123,9 +123,16 @@ public final class ShareState {
     /** The notice's argument (the device name for unreachable/busy). */
     @Nullable public String noticeArg;
     public int noticeSeq;
+    /**
+     * Wall-clock start of this session. The sender's clipboard auto-pickup
+     * ignores a clip copied before it, so a reply left over from an earlier
+     * share is never fed into this one.
+     */
+    public long startedAt;
 
     public ShareState(@NonNull Role role) {
         this.role = role;
+        this.startedAt = System.currentTimeMillis();
     }
 
     @NonNull
@@ -155,6 +162,7 @@ public final class ShareState {
         s.notice = notice;
         s.noticeArg = noticeArg;
         s.noticeSeq = noticeSeq;
+        s.startedAt = startedAt;
         return s;
     }
 
@@ -166,5 +174,16 @@ public final class ShareState {
     /** True once bytes are moving (a progress event fired, not yet done). */
     public boolean isTransferring() {
         return stage == Stage.TRANSFERRING;
+    }
+
+    /**
+     * True from the moment both sides committed (the sender's engine applied
+     * an answer, the receiver accepted) until the end: CONNECTING, CONNECTED
+     * or TRANSFERRING. A new session must not replace one in this phase
+     * ({@link P2pSessionPolicy#blocksNewSession}).
+     */
+    public boolean isInTransfer() {
+        return stage == Stage.CONNECTING || stage == Stage.CONNECTED
+                || stage == Stage.TRANSFERRING;
     }
 }

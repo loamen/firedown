@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Loopback byte bridge between the p2pshare WebRTC engine (a page script in a
@@ -76,11 +77,16 @@ public class P2pLoopbackServer {
     // SEND role — the file served on /read.
     private volatile String mReadPath;
 
-    // RECEIVE role — the .part file /write appends to. Guarded by mWriteLock:
-    // the engine's POSTs are sequential by contract, but stop() can race a
-    // late write and must not close the RAF under it.
+    // RECEIVE role — the .part file /write appends to. mWriteLock serializes
+    // the WRITES (offset check + append; the engine's POSTs are sequential by
+    // contract). Closing does NOT take it: closeWriteTarget runs on the main
+    // thread (teardown, finalize), and a write holds the lock while it reads
+    // its body off the socket — up to the read timeout on a stuck POST — so a
+    // locked close could block the UI for that long (ANR). It swaps the file
+    // out atomically and closes it; a write caught mid-body fails with an
+    // IOException, which only happens while the session is being torn down.
     private final Object mWriteLock = new Object();
-    private RandomAccessFile mWriteFile;
+    private final AtomicReference<RandomAccessFile> mWriteFile = new AtomicReference<>();
     private long mWritten;
 
     public P2pLoopbackServer(Context context) {
@@ -144,10 +150,16 @@ public class P2pLoopbackServer {
      */
     public void setWriteTarget(File partFile, long keepBytes) throws IOException {
         synchronized (mWriteLock) {
-            mWriteFile = new RandomAccessFile(partFile, "rw");
-            mWriteFile.setLength(keepBytes);
-            mWriteFile.seek(keepBytes);
+            RandomAccessFile file = new RandomAccessFile(partFile, "rw");
+            try {
+                file.setLength(keepBytes);
+                file.seek(keepBytes);
+            } catch (IOException e) {
+                closeQuietly(file);
+                throw e;
+            }
             mWritten = keepBytes;
+            closeQuietly(mWriteFile.getAndSet(file));
         }
     }
 
@@ -156,15 +168,17 @@ public class P2pLoopbackServer {
      * call twice (stop() calls it as a backstop).
      */
     public void closeWriteTarget() {
-        synchronized (mWriteLock) {
-            if (mWriteFile != null) {
-                try {
-                    mWriteFile.close();
-                } catch (IOException e) {
-                    Log.e(TAG, "closeWriteTarget", e);
-                }
-                mWriteFile = null;
-            }
+        closeQuietly(mWriteFile.getAndSet(null));
+    }
+
+    private static void closeQuietly(RandomAccessFile file) {
+        if (file == null) {
+            return;
+        }
+        try {
+            file.close();
+        } catch (IOException e) {
+            Log.e(TAG, "closeWriteTarget", e);
         }
     }
 
@@ -374,7 +388,8 @@ public class P2pLoopbackServer {
             return;
         }
         synchronized (mWriteLock) {
-            if (mWriteFile == null) {
+            RandomAccessFile file = mWriteFile.get();
+            if (file == null) {
                 P2pHttp.sendStatus(out, 409, "Conflict");
                 return;
             }
@@ -389,8 +404,8 @@ public class P2pLoopbackServer {
                     // Safe against the duplicate-request worry the strict rule
                     // guards: the engine's POSTs are chained on one promise and
                     // never retried, so a mid-transfer off=0 cannot recur.
-                    mWriteFile.setLength(0);
-                    mWriteFile.seek(0);
+                    file.setLength(0);
+                    file.seek(0);
                     mWritten = 0;
                 } else {
                     P2pHttp.sendStatus(out, 409, "Conflict");
@@ -405,7 +420,7 @@ public class P2pLoopbackServer {
                 if (read < 0) {
                     throw new IOException("body truncated");
                 }
-                mWriteFile.write(buffer, 0, read);
+                file.write(buffer, 0, read);
                 remaining -= read;
             }
             mWritten += declared;

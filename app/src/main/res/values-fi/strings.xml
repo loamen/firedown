@@ -622,8 +622,9 @@
     <string name="p2p_got_code">Onko sinulla koodi tai linkki?</string>
     <string name="p2p_background_note">Voit poistua tältä näytöltä. Siirto jatkuu taustalla.</string>
     <string name="p2p_error_timeout">Kukaan ei hyväksynyt tiedostoa ajoissa.</string>
-    <string name="p2p_error_stalled">Siirto ei edennyt enää. Jaa sama tiedosto uudelleen, niin se jatkuu siitä, mihin se jäi.</string>
-    <string name="p2p_error_lost">Yhteys katkesi. Jaa sama tiedosto uudelleen, niin se jatkuu siitä, mihin se jäi.</string>
+    <string name="p2p_error_stalled">Siirto lakkasi etenemästä. Jos sama tiedosto jaetaan uudelleen, se voi jatkua siitä, mihin se jäi.</string>
+    <string name="p2p_error_lost">Yhteys katkesi. Jos sama tiedosto jaetaan uudelleen, siirto voi jatkua siitä, mihin se jäi.</string>
+    <string name="p2p_busy_other_transfer">Toinen siirto on käynnissä. Viimeistele tai peruuta se ensin.</string>
     <string name="p2p_error_no_path_norelay">Toista laitetta ei tavoitettu, eikä välityspalvelimeen saatu yhteyttä. Yritä uudelleen, kun molemmat puhelimet ovat verkossa.</string>
     <string name="p2p_notif_sending">Lähetetään %1$s</string>
     <string name="p2p_notif_receiving">Vastaanotetaan %1$s</string>

@@ -752,8 +752,9 @@
     <string name="p2p_got_code">コードやリンクがありますか？</string>
     <string name="p2p_background_note">この画面を離れても大丈夫です。転送はバックグラウンドで続きます。</string>
     <string name="p2p_error_timeout">時間内に誰もファイルを受け取りませんでした。</string>
-    <string name="p2p_error_stalled">転送が進まなくなりました。同じファイルをもう一度共有すると、途中から再開できます。</string>
-    <string name="p2p_error_lost">接続が切れました。同じファイルをもう一度共有すると、途中から再開できます。</string>
+    <string name="p2p_error_stalled">転送が進まなくなりました。同じファイルをもう一度共有すると、途中から再開できる場合があります。</string>
+    <string name="p2p_error_lost">接続が切れました。同じファイルをもう一度共有すると、途中から再開できる場合があります。</string>
+    <string name="p2p_busy_other_transfer">別の転送が進行中です。先に完了するか、キャンセルしてください。</string>
     <string name="p2p_error_no_path_norelay">相手の端末に接続できず、中継サーバーにも接続できませんでした。両方の端末がオンラインのときにもう一度お試しください。</string>
     <string name="p2p_notif_sending">%1$s を送信中</string>
     <string name="p2p_notif_receiving">%1$s を受信中</string>

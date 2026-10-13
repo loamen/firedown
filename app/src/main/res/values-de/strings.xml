@@ -754,8 +754,9 @@
     <string name="p2p_got_code">Code oder Link erhalten?</string>
     <string name="p2p_background_note">Du kannst diesen Bildschirm verlassen. Die Übertragung läuft im Hintergrund weiter.</string>
     <string name="p2p_error_timeout">Niemand hat die Datei rechtzeitig angenommen.</string>
-    <string name="p2p_error_stalled">Die Übertragung kam nicht mehr voran. Teile dieselbe Datei erneut, um dort weiterzumachen, wo sie aufgehört hat.</string>
-    <string name="p2p_error_lost">Die Verbindung ist abgebrochen. Teile dieselbe Datei erneut, um dort weiterzumachen, wo sie aufgehört hat.</string>
+    <string name="p2p_error_stalled">Die Übertragung kam nicht mehr voran. Wird dieselbe Datei erneut geteilt, kann sie dort weitermachen, wo sie aufgehört hat.</string>
+    <string name="p2p_error_lost">Die Verbindung ist abgebrochen. Wird dieselbe Datei erneut geteilt, kann die Übertragung dort weitermachen, wo sie aufgehört hat.</string>
+    <string name="p2p_busy_other_transfer">Eine andere Übertragung läuft. Schließe sie zuerst ab oder brich sie ab.</string>
     <string name="p2p_error_no_path_norelay">Das andere Gerät war nicht erreichbar, und der Relay-Server auch nicht. Versuche es erneut, wenn beide Telefone online sind.</string>
     <string name="p2p_notif_sending">%1$s wird gesendet</string>
     <string name="p2p_notif_receiving">%1$s wird empfangen</string>

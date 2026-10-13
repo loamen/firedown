@@ -1,6 +1,7 @@
 package com.solarized.firedown.utils;
 
 import android.content.ClipData;
+import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.util.Log;
@@ -60,4 +61,30 @@ public final class ClipboardHelper {
         CharSequence raw = clip.getItemAt(0).coerceToText(context);
         return raw == null ? "" : raw.toString().trim();
     }
+
+    /**
+     * When the current primary clip was copied, in wall-clock milliseconds,
+     * or 0 when unknown (empty clipboard, unreadable, or a value that is not
+     * a wall-clock time). Reads only the clip's DESCRIPTION, which does not
+     * fire Android's paste toast.
+     */
+    public static long primaryClipCopiedAt(@Nullable Context context) {
+        if (context == null) {
+            return 0;
+        }
+        ClipboardManager clipboard =
+                (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        try {
+            ClipDescription description = clipboard == null ? null : clipboard.getPrimaryClipDescription();
+            long stamp = description == null ? 0 : description.getTimestamp();
+            // A wall-clock stamp is far past 2001; anything smaller is not
+            // one (an uptime-based value would make every clip look old).
+            return stamp > WALL_CLOCK_FLOOR_MS ? stamp : 0;
+        } catch (RuntimeException e) {
+            return 0;
+        }
+    }
+
+    /** 2001-09-09 — below this a timestamp is not a wall-clock time. */
+    private static final long WALL_CLOCK_FLOOR_MS = 1_000_000_000_000L;
 }
