@@ -18,6 +18,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.cert.X509Certificate;
@@ -27,12 +28,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 
+import okhttp3.Credentials;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Drives the REAL WebDAV backup code (WebDavClient / WebDavStore /
@@ -53,13 +59,22 @@ public final class WebDavHarness {
         work = new File(args[0]);
         String keystoreA = args[1];
         String keystoreB = args[2];
-        String wsgidav = args.length > 3 ? args[3] : "";
+        String davServerSource = args[3];
+        String wsgidav = args.length > 4 ? args[4] : "";
 
         run("units", WebDavHarness::units);
         run("check", WebDavHarness::checks);
         run("store", WebDavHarness::store);
         run("failures", WebDavHarness::failures);
         run("tls", () -> tls(keystoreA, keystoreB));
+        run("davserver", () -> davServer(davServerSource));
+        String litmus = System.getenv("LITMUS");
+        if (litmus != null && !litmus.isEmpty()) {
+            run("litmus", () -> litmus(litmus, davServerSource));
+        } else {
+            System.out.println("-- litmus: not installed, the server's conformance run skipped "
+                    + "(apt install litmus, or set LITMUS)");
+        }
         if (!wsgidav.isEmpty()) {
             run("wsgidav", () -> wsgidav(wsgidav));
         } else {
@@ -634,7 +649,7 @@ public final class WebDavHarness {
         }
     }
 
-    // ---- wsgidav ----
+    // ---- real servers ----
 
     private static int freePort() throws IOException {
         try (ServerSocket ss = new ServerSocket(0)) {
@@ -672,45 +687,278 @@ public final class WebDavHarness {
                 .start();
         try {
             waitForPort(port);
-            String base = "http://127.0.0.1:" + port + "/dav/alex";
-            WebDavCheck.Result bad = WebDavCheck.run(BASE, base, "alex", "nope", null);
-            check("wsgidav: wrong password is AUTH_FAILED", bad.kind == WebDavCheck.Kind.AUTH_FAILED, bad.kind + "");
-            WebDavCheck.Result r = WebDavCheck.run(BASE, base, "alex", "secret", null);
-            check("wsgidav: the check passes", r.kind == WebDavCheck.Kind.OK, r.kind + "");
-            check("wsgidav: the check made Firedown Backup on disk",
-                    new File(dav, "Firedown Backup").isDirectory());
-            WebDavStore store = new WebDavStore(r.config, BASE);
-            SyncIdentity id = identity(11);
-            VaultEngine engine = new VaultEngine(store, id);
-            int size = 17 * 1024 * 1024 + 5;
-            File src = randomFile("real.mp4", size, 11);
-            VaultEntry e = engine.backupFile(src, "video/mp4", null, null, null, 0);
-            File onDisk = new File(dav, "Firedown Backup/" + id.accountBase32() + "/objects/" + e.objectId + ".fdvc");
-            check("wsgidav: the object is on disk at the shared layout's path, exact length",
-                    onDisk.isFile() && onDisk.length() == VaultEngine.objectLength(size, 3),
-                    onDisk + " " + onDisk.length());
-            List<VaultEntry> list = engine.loadManifest();
-            check("wsgidav: listed", list.size() == 1 && list.get(0).size == size);
-            File back = new File(work, "real.out");
-            engine.restoreFile(list.get(0), back, null);
-            check("wsgidav: restore is byte-identical", sha256(back).equals(sha256(src)));
-            check("wsgidav: ranged reads match",
-                    rangesMatch(store, id, list.get(0), Files.readAllBytes(src.toPath())));
-            VaultEntry again = engine.backupFile(src, "video/mp4", null, null, null, 0);
-            check("wsgidav: a second backup of the same file is the same entry",
-                    again.objectId.equals(e.objectId));
-            VaultEntry small = engine.backupFile(randomFile("small.txt", 10, 12), "text/plain", null, null, null, 0);
-            engine.deleteEntry(small);
-            check("wsgidav: delete removes both files",
-                    !new File(onDisk.getParentFile(), small.objectId + ".fdvc").exists()
-                            && !new File(onDisk.getParentFile(), small.objectId + ".entry").exists());
-            engine.deleteAll();
-            check("wsgidav: delete-all removes the account directory",
-                    !new File(dav, "Firedown Backup/" + id.accountBase32()).exists());
-            check("wsgidav: reachable", store.isReachable());
+            roundTrip("wsgidav", "http://127.0.0.1:" + port + "/dav/alex", null, dav);
         } finally {
             p.destroy();
             p.waitFor(5, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * The whole life of a backup against a REAL server whose files are on
+     * this disk at {@code dir}: the check (a wrong password first), backup,
+     * the bytes on disk at the layout's path, list, restore, streaming reads,
+     * dedup, delete, delete-all.
+     */
+    private static WebDavStore roundTrip(String label, String base, String pin, File dir)
+            throws Exception {
+        WebDavCheck.Result bad = WebDavCheck.run(BASE, base, "alex", "nope", pin);
+        check(label + ": wrong password is AUTH_FAILED", bad.kind == WebDavCheck.Kind.AUTH_FAILED, bad.kind + "");
+        WebDavCheck.Result r = WebDavCheck.run(BASE, base, "alex", "secret", pin);
+        check(label + ": the check passes", r.kind == WebDavCheck.Kind.OK, r.kind + "");
+        check(label + ": the check made Firedown Backup on disk",
+                new File(dir, "Firedown Backup").isDirectory());
+        WebDavStore store = new WebDavStore(r.config, BASE);
+        SyncIdentity id = identity(11);
+        VaultEngine engine = new VaultEngine(store, id);
+        int size = 17 * 1024 * 1024 + 5;
+        File src = randomFile(label + "-real.mp4", size, 11);
+        VaultEntry e = engine.backupFile(src, "video/mp4", null, null, null, 0);
+        File objects = new File(dir, "Firedown Backup/" + id.accountBase32() + "/objects");
+        File onDisk = new File(objects, e.objectId + ".fdvc");
+        check(label + ": the object is on disk at the shared layout's path, exact length",
+                onDisk.isFile() && onDisk.length() == VaultEngine.objectLength(size, 3),
+                onDisk + " " + onDisk.length());
+        check(label + ": the sidecar is on disk", new File(objects, e.objectId + ".entry").isFile());
+        List<VaultEntry> list = engine.loadManifest();
+        check(label + ": listed", list.size() == 1 && list.get(0).size == size);
+        File back = new File(work, label + "-real.out");
+        engine.restoreFile(list.get(0), back, null);
+        check(label + ": restore is byte-identical", sha256(back).equals(sha256(src)));
+        check(label + ": ranged reads match",
+                rangesMatch(store, id, list.get(0), Files.readAllBytes(src.toPath())));
+        VaultEntry again = engine.backupFile(src, "video/mp4", null, null, null, 0);
+        check(label + ": a second backup of the same file is the same entry",
+                again.objectId.equals(e.objectId));
+        File emptySrc = new File(work, label + "-empty.txt");
+        Files.write(emptySrc.toPath(), new byte[0]);
+        VaultEntry empty = engine.backupFile(emptySrc, "text/plain", null, null, null, 0);
+        File emptyBack = new File(work, label + "-empty.out");
+        engine.restoreFile(empty, emptyBack, null);
+        check(label + ": an empty file backs up and restores", emptyBack.isFile() && emptyBack.length() == 0
+                && new File(objects, empty.objectId + ".fdvc").length() == VaultEngine.CHUNK_OVERHEAD);
+        VaultEntry small = engine.backupFile(randomFile(label + "-small.txt", 10, 12), "text/plain", null, null, null, 0);
+        engine.deleteEntry(small);
+        check(label + ": delete removes both files",
+                !new File(objects, small.objectId + ".fdvc").exists()
+                        && !new File(objects, small.objectId + ".entry").exists());
+        check(label + ": reachable", store.isReachable());
+        engine.deleteAll();
+        check(label + ": delete-all removes the account directory",
+                !new File(dir, "Firedown Backup/" + id.accountBase32()).exists());
+        return store;
+    }
+
+    // ---- DavServer (scripts/webdav-server), the server a phone is pointed at ----
+
+    private static final class DavServerProcess implements AutoCloseable {
+        final Process process;
+        final int port;
+        final String fingerprint;
+        final File log;
+
+        DavServerProcess(Process process, int port, String fingerprint, File log) {
+            this.process = process;
+            this.port = port;
+            this.fingerprint = fingerprint;
+            this.log = log;
+        }
+
+        @Override
+        public void close() throws InterruptedException {
+            process.destroy();
+            process.waitFor(5, TimeUnit.SECONDS);
+        }
+    }
+
+    private static int davServers;
+
+    /** Starts DavServer.java from source the way a person would, on an
+     *  ephemeral port, and waits for its LISTENING line. */
+    private static DavServerProcess startDavServer(String source, File root, String... extra)
+            throws Exception {
+        List<String> cmd = new ArrayList<>();
+        cmd.add(new File(System.getProperty("java.home"), "bin/java").getPath());
+        cmd.add(source);
+        cmd.add("--root");
+        cmd.add(root.getPath());
+        cmd.add("--host");
+        cmd.add("127.0.0.1");
+        cmd.add("--port");
+        cmd.add("0");
+        cmd.addAll(Arrays.asList(extra));
+        File log = new File(work, "davserver-" + (++davServers) + ".log");
+        ProcessBuilder pb = new ProcessBuilder(cmd).redirectErrorStream(true).redirectOutput(log);
+        pb.environment().put("LC_ALL", "C.UTF-8");
+        Process p = pb.start();
+        long deadline = System.currentTimeMillis() + 60000;
+        while (System.currentTimeMillis() < deadline) {
+            String out = new String(Files.readAllBytes(log.toPath()), StandardCharsets.UTF_8);
+            int at = out.indexOf("LISTENING ");
+            if (at >= 0 && out.indexOf('\n', at) > 0) {
+                int port = Integer.parseInt(out.substring(at + 10, out.indexOf('\n', at)).trim());
+                String fp = null;
+                int f = out.indexOf("FINGERPRINT ");
+                if (f >= 0) {
+                    fp = out.substring(f + 12, out.indexOf('\n', f)).trim();
+                }
+                return new DavServerProcess(p, port, fp, log);
+            }
+            if (!p.isAlive()) {
+                throw new IOException("DavServer exited: " + out);
+            }
+            Thread.sleep(100);
+        }
+        p.destroy();
+        throw new IOException("DavServer did not start");
+    }
+
+    private static File freshDir(String name) throws IOException {
+        File d = new File(work, name);
+        if (!d.mkdirs()) {
+            throw new IOException("mkdir " + d);
+        }
+        return d;
+    }
+
+    private static boolean hasTempFiles(File dir) throws IOException {
+        try (Stream<Path> s = Files.walk(dir.toPath())) {
+            return s.anyMatch(p -> p.getFileName().toString().startsWith(".davput-"));
+        }
+    }
+
+    private static void davServer(String source) throws Exception {
+        File root = freshDir("davserver-plain");
+        try (DavServerProcess s = startDavServer(source, root)) {
+            String base = "http://127.0.0.1:" + s.port;
+            WebDavStore store = roundTrip("davserver", base, null, root);
+
+            // A PROPFIND with no body is allprop: every live prop, the way a
+            // desktop client asks (Firedown names its props, so only this
+            // asks it).
+            Files.write(new File(root, "allprop.txt").toPath(), new byte[5]);
+            Request allprop = new Request.Builder().url(base + "/")
+                    .method("PROPFIND", RequestBody.create(new byte[0], null))
+                    .header("Depth", "1")
+                    .header("Authorization", Credentials.basic("alex", "secret"))
+                    .build();
+            try (Response resp = BASE.newCall(allprop).execute()) {
+                List<WebDavClient.Resource> rs = WebDavClient.parseMultistatus(
+                        resp.body().bytes(), HttpUrl.get(base + "/"));
+                WebDavClient.Resource file = null;
+                for (WebDavClient.Resource r : rs) {
+                    if (r.name.equals("allprop.txt")) {
+                        file = r;
+                    }
+                }
+                check("davserver: allprop answers size, date and etag", resp.code() == 207
+                        && file != null && file.size == 5 && file.modified > 0 && file.etag != null);
+            }
+
+            SyncIdentity id = identity(21);
+            VaultEngine engine = new VaultEngine(store, id);
+            File big = randomFile("big64.bin", 64 * 1024 * 1024 + 99, 21);
+            VaultEntry e = engine.backupFile(big, "application/octet-stream", null, null, null, 0);
+            File back = new File(work, "big64.out");
+            engine.restoreFile(e, back, null);
+            check("davserver: a 64 MB file (9 chunks) round-trips byte-identical",
+                    e.chunkCount == 9 && sha256(back).equals(sha256(big)), e.chunkCount + "");
+
+            VaultEngine[] holder = {new VaultEngine(store, id)};
+            IOException cancelled = expectIo(() -> holder[0].backupFile(
+                    randomFile("cancel.bin", 30 * 1024 * 1024, 22), "application/octet-stream", null,
+                    (done, total) -> {
+                        if (done > 0) {
+                            holder[0].cancel();
+                        }
+                    }, null, 0));
+            Thread.sleep(500); // the server notices the cut connection
+            File objects = new File(root, "Firedown Backup/" + id.accountBase32() + "/objects");
+            String[] left = objects.list();
+            check("davserver: a cancelled upload leaves only the earlier backup on disk",
+                    cancelled != null && left != null && left.length == 2, Arrays.toString(left));
+            check("davserver: and no half-written temporary file", !hasTempFiles(root));
+        }
+
+        File nc = freshDir("davserver-nextcloud");
+        try (DavServerProcess s = startDavServer(source, nc, "--layout", "nextcloud")) {
+            WebDavCheck.Result r = WebDavCheck.run(BASE, "http://127.0.0.1:" + s.port, "alex", "secret", null);
+            check("davserver nextcloud: typing only host:port finds /remote.php/dav/files/alex/",
+                    r.kind == WebDavCheck.Kind.OK
+                            && r.config.url.equals("http://127.0.0.1:" + s.port + "/remote.php/dav/files/alex/"),
+                    r.kind + " " + (r.config == null ? "" : r.config.url));
+            check("davserver nextcloud: Firedown Backup made in the user's files",
+                    new File(nc, "Firedown Backup").isDirectory());
+        }
+
+        File ro = freshDir("davserver-readonly");
+        try (DavServerProcess s = startDavServer(source, ro, "--read-only")) {
+            WebDavCheck.Result r = WebDavCheck.run(BASE, "http://127.0.0.1:" + s.port, "alex", "secret", null);
+            check("davserver read-only: READ_ONLY", r.kind == WebDavCheck.Kind.READ_ONLY, r.kind + "");
+        }
+
+        File tiny = freshDir("davserver-tiny");
+        try (DavServerProcess s = startDavServer(source, tiny, "--quota", "10")) {
+            WebDavCheck.Result r = WebDavCheck.run(BASE, "http://127.0.0.1:" + s.port, "alex", "secret", null);
+            check("davserver quota: a full server is FULL at the check", r.kind == WebDavCheck.Kind.FULL, r.kind + "");
+        }
+
+        File quota = freshDir("davserver-quota");
+        try (DavServerProcess s = startDavServer(source, quota, "--quota", "4000000")) {
+            WebDavCheck.Result r = WebDavCheck.run(BASE, "http://127.0.0.1:" + s.port, "alex", "secret", null);
+            check("davserver quota: room for the check", r.kind == WebDavCheck.Kind.OK, r.kind + "");
+            VaultEngine engine = new VaultEngine(new WebDavStore(r.config, BASE), identity(23));
+            IOException full = expectIo(() -> engine.backupFile(randomFile("over.bin", 12 * 1024 * 1024, 23),
+                    "application/octet-stream", null, null, null, 0));
+            System.out.println("    (a backup past the quota failed with: " + full + ")");
+            check("davserver quota: a backup past the quota is a retryable failure, not UNREACHABLE",
+                    full != null && !(full instanceof BackupStore.UnreachableException), String.valueOf(full));
+            check("davserver quota: and stores nothing", !hasTempFiles(quota)
+                    && engine.loadManifest().isEmpty());
+        }
+
+        File tls = freshDir("davserver-tls");
+        File keystore = new File(work, "davserver-tls.p12");
+        try (DavServerProcess s = startDavServer(source, tls, "--tls", "--keystore", keystore.getPath())) {
+            String base = "https://127.0.0.1:" + s.port;
+            WebDavCheck.Result first = WebDavCheck.run(BASE, base, "alex", "secret", null);
+            check("davserver tls: its self-made certificate is UNTRUSTED_CERT",
+                    first.kind == WebDavCheck.Kind.UNTRUSTED_CERT, first.kind + "");
+            check("davserver tls: the fingerprint the check shows is the one the server printed",
+                    first.cert != null && first.cert.sha256.equals(s.fingerprint),
+                    (first.cert == null ? "none" : first.cert.sha256) + " vs " + s.fingerprint);
+            roundTrip("davserver tls", base, s.fingerprint, tls);
+        }
+        try (DavServerProcess s = startDavServer(source, tls, "--tls", "--keystore", keystore.getPath())) {
+            check("davserver tls: the certificate survives a restart (same keystore, same pin)",
+                    s.fingerprint != null && WebDavCheck.run(BASE, "https://127.0.0.1:" + s.port, "alex",
+                            "secret", s.fingerprint).kind == WebDavCheck.Kind.OK);
+        }
+    }
+
+    /** The server against litmus, the WebDAV conformance suite: the
+     *  class-1 suites it implements must pass whole. (props is left out:
+     *  it needs PROPPATCH, which the server does not do.) */
+    private static void litmus(String exe, String source) throws Exception {
+        File root = freshDir("davserver-litmus");
+        try (DavServerProcess s = startDavServer(source, root)) {
+            for (String suite : new String[]{"basic", "copymove", "http"}) {
+                ProcessBuilder pb = new ProcessBuilder(exe, "http://127.0.0.1:" + s.port + "/", "alex", "secret")
+                        .redirectErrorStream(true)
+                        .directory(work);
+                pb.environment().put("TESTS", suite);
+                Process p = pb.start();
+                String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                boolean done = p.waitFor(120, TimeUnit.SECONDS);
+                String summary = "";
+                for (String line : out.split("\n")) {
+                    if (line.contains("summary for")) {
+                        summary = line.trim();
+                    }
+                }
+                check("litmus " + suite + ": " + summary, done && p.exitValue() == 0
+                        && summary.contains(" 0 failed"), out.length() > 600 ? out.substring(out.length() - 600) : out);
+            }
         }
     }
 

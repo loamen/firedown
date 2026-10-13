@@ -4345,6 +4345,28 @@ recovery code, the password sealed under the same keystore key through
 - Not supported, by decision for now: Digest, resumable/chunked uploads,
   client certificates, Nextcloud Login Flow v2 (the user types an app
   password).
+- **A server to test against: `scripts/webdav-server/DavServer.java`.** One
+  file, JDK only (Android Studio's JBR runs it), no build:
+  `java scripts/webdav-server/DavServer.java --root ~/dav-test` serves a
+  directory on 0.0.0.0:8080 with Basic sign-in alex/secret and prints the
+  LAN addresses to type on the phone. `--layout nextcloud` serves it where
+  Nextcloud serves a user's files (`/remote.php/dav/files/<user>/` and
+  `/remote.php/webdav/`) with a site root that is not WebDAV, so typing
+  host:port exercises the discovery; `--tls` makes a self-signed EC
+  certificate on first use (kept in `--keystore`, so the pin survives a
+  restart) and prints its SHA-256 to compare with the phone's trust prompt;
+  `--read-only` and `--quota BYTES` produce READ_ONLY and FULL. It is WebDAV
+  class 1 minus PROPPATCH: PROPFIND (Depth 0/1, a named prop it lacks in a
+  404 propstat like Nextcloud, allprop for an empty body), GET/HEAD with a
+  single range, PUT to a hidden temporary file renamed into place (an
+  interrupted upload never leaves half a file), MKCOL, DELETE, COPY, MOVE;
+  traversal, encoded slashes, symlinks out of the root and fragments are
+  refused. litmus: basic 16/16, copymove 13/13, http 4/4; props 11/14, the
+  three failures being PROPPATCH, which Firedown never sends. Under a
+  non-UTF-8 locale the JVM cannot name non-ASCII files (it says so at
+  start); Firedown's own names are ASCII. It is a TEST server (one fixed
+  keystore password, no rate limits): never ship it, never expose it beyond
+  a home network.
 
 ### `VaultEngine` + the workers — same pipeline, a folder underneath
 
@@ -4991,7 +5013,15 @@ children — the card edges do the grouping).
   self-made certificates for the trust path), then — when wsgidav is
   installed (`pip install wsgidav cheroot`, or `WSGIDAV=`) — the same
   backup/list/restore/stream/delete round trip against a REAL WebDAV
-  server, checked on its disk. 86 checks with wsgidav, 75 without, ~1 min.
+  server, checked on its disk. It also starts `DavServer.java` from source
+  as a separate process (always: JDK only) and runs that round trip
+  against it plain and over TLS, plus a 64 MB file, an empty file, a
+  cancelled upload leaving no temporary file, allprop, the Nextcloud layout
+  found from host:port alone, read-only, a quota at the check and
+  mid-backup, and the pinned certificate surviving a restart; and, when
+  litmus is installed (`apt install litmus`), the server's basic, copymove
+  and http conformance suites. 131 checks with wsgidav and litmus, 115
+  without, ~2 min.
   Teeth proven by mutation: each of eight planted bugs fails it (a refused
   certificate not mapped to unreachable, a 401 treated as retryable, no
   sidecar cache, the 206 range unchecked, a vanished collection read as

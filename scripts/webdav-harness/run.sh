@@ -18,9 +18,18 @@
 #     the failure classes (a dropped upload, a full server, a 500 are
 #     retryable; a changed password, a vanished collection, a changed
 #     certificate need the user).
-#   - Against wsgidav, a real WebDAV server, when installed (pip install
-#     wsgidav cheroot, or WSGIDAV=/path/to/wsgidav): the same backup round
-#     trip, checked on the server's disk.
+#   - Against scripts/webdav-server/DavServer.java, the test server a phone
+#     is pointed at, started from source as a separate process: the backup
+#     round trip checked on its disk (17 MB, 64 MB, an empty file), a
+#     cancelled upload leaving no temporary file, the Nextcloud layout found
+#     from host:port alone, read-only, a quota (at the check and mid-backup),
+#     and TLS with its self-made certificate: the fingerprint the check shows
+#     is the one the server printed, pinned, and the same after a restart.
+#   - Against wsgidav, a second real WebDAV server, when installed (pip
+#     install wsgidav cheroot, or WSGIDAV=/path/to/wsgidav): the same round
+#     trip.
+#   - The server itself against litmus, the WebDAV conformance suite, when
+#     installed (apt install litmus): basic, copymove and http must pass.
 #
 #   sh scripts/webdav-harness/run.sh
 #
@@ -95,5 +104,7 @@ javac -nowarn -proc:none -d "$OUT/classes" -cp "$CP" \
       $(find "$HERE/stub" "$OUT/src" "$HERE/src" -name '*.java')
 
 WSGIDAV_BIN=${WSGIDAV:-$(command -v wsgidav || true)}
+LITMUS=${LITMUS:-$(command -v litmus || true)} \
 java -cp "$OUT/classes:$CP" com.solarized.firedown.sync.WebDavHarness \
-     "$OUT" "$OUT/dav-a.p12" "$OUT/dav-b.p12" "$WSGIDAV_BIN"
+     "$OUT" "$OUT/dav-a.p12" "$OUT/dav-b.p12" "$ROOT/scripts/webdav-server/DavServer.java" \
+     "$WSGIDAV_BIN"
