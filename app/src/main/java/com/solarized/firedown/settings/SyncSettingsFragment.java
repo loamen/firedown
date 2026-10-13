@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -68,7 +67,6 @@ import com.solarized.firedown.utils.QrCodes;
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 import javax.inject.Inject;
 
@@ -157,6 +155,11 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     @Nullable
     private CloudBackupManager.Status mLastLoaded;
 
+    /** "Checking the folder…" while a picked folder's write check runs;
+     *  dismissed by the check's answer. */
+    @Nullable
+    private Snackbar mCheckingSnackbar;
+
     /** Last bookmark-sync state seen, so the failure snackbar fires only on a
      *  fresh SYNCING -> ERROR transition (not on every entry with a stale
      *  error). Ported from the retired focused Bookmarks screen. */
@@ -169,12 +172,11 @@ public class SyncSettingsFragment extends BasePreferenceFragment
 
     /**
      * SAF "open document tree" — the backup folder picker. The user picks ANY
-     * folder the system offers (a Drive/Dropbox/Nextcloud account via its
-     * documents provider, the SD card, the phone); the app takes a persistable
-     * read+write grant on it and keeps everything under
+     * folder the system offers (a cloud account via its documents provider,
+     * the SD card, the phone); a write check runs on it, then the app takes a
+     * persistable read+write grant and keeps everything under
      * {@code <picked>/Firedown Backup/<account>/}. The same launcher serves
-     * first choice, change and re-choose-after-lost — the folder store adopts
-     * whatever comes back.
+     * first choice, change and re-choose-after-lost.
      */
     private final ActivityResultLauncher<Uri> mFolderPicker =
             registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(),
@@ -583,25 +585,24 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * "Where to back up" — the chooser that replaced a two-paragraph dialog
-     * ("the Android file picker opens next, tap ☰ in its top corner…" +
-     * "Open picker"). It is built from what the phone HAS ({@link
-     * BackupPlaces}): one row per installed cloud app KNOWN to take a folder
-     * pick, with its own icon, the mounted SD card / USB drive, and "Somewhere
-     * else" (the plain picker, where every other provider still is).
-     * Nothing here can open the picker INSIDE a cloud app (roots are behind a
-     * system permission — see BackupPlaces), so a cloud row's subtitle says
-     * what to tap in the picker and the same line is toasted OVER the picker
-     * as it opens: the one moment the instruction is needed, on a screen that
-     * is not ours. The volume row opens the picker right on the card. No cloud
-     * app at all is finally a statable fact — the note says so and the card /
-     * plain-picker rows remain — where the paragraph could only list apps the
-     * phone might not have. Detection alone listed Termux, System Tracing and
-     * Proton Drive as backup places; the allowlist is why it no longer does.
+     * "Where to back up". With no SD card / USB drive in, there is nothing to
+     * choose between: the system picker opens straight away, with the one
+     * instruction it never gives (cloud apps are under its ☰) toasted over
+     * it. With a card in, a two-row chooser offers the card (its own picker
+     * intent opens right on it) or "Somewhere else", with the same hint as a
+     * note. There are deliberately no per-app cloud rows: an app cannot tell
+     * which installed providers take a folder pick, and a row could only
+     * open the same picker anyway (see {@link BackupPlaces}). It replaced a
+     * two-paragraph dialog that described all this in words.
      */
     private void showPlaceChooser() {
         Context context = getContext();
         if (context == null) {
+            return;
+        }
+        BackupPlaces.Volume volume = BackupPlaces.removable(context);
+        if (volume == null) {
+            launchPicker(null, getString(R.string.folder_backup_hint_drawer));
             return;
         }
         View content = LayoutInflater.from(context)
@@ -609,36 +610,22 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         LinearLayout list = content.findViewById(R.id.places_list);
         TextView note = content.findViewById(R.id.places_note);
         AlertDialog[] shown = new AlertDialog[1];
-        List<BackupPlaces.Place> clouds = BackupPlaces.cloudApps(context);
-        for (BackupPlaces.Place place : clouds) {
-            addPlaceRow(list, place.icon, R.drawable.folder_24, place.label,
-                    getString(R.string.folder_backup_place_cloud_sub, place.label), v -> {
-                        dismissChooser(shown);
-                        Toast.makeText(context,
-                                getString(R.string.folder_backup_hint_drawer, place.label),
-                                Toast.LENGTH_LONG).show();
-                        launchPicker(null);
-                    });
-        }
-        BackupPlaces.Place removable = BackupPlaces.removable(context);
-        if (removable != null) {
-            String sub = removable.intent != null
-                    ? getString(R.string.folder_backup_place_removable_sub)
-                    : getString(R.string.folder_backup_place_cloud_sub, removable.label);
-            addPlaceRow(list, null, R.drawable.sd_card_24, removable.label, sub, v -> {
-                dismissChooser(shown);
-                launchPicker(removable.intent);
-            });
-        }
-        addPlaceRow(list, null, R.drawable.folder_24,
+        String volumeLabel = TextUtils.isEmpty(volume.label)
+                ? getString(R.string.folder_backup_provider_sd) : volume.label;
+        String volumeHint = getString(R.string.folder_backup_place_volume_sub, volumeLabel);
+        String volumeSub = volume.intent != null
+                ? getString(R.string.folder_backup_place_removable_sub) : volumeHint;
+        addPlaceRow(list, R.drawable.sd_card_24, volumeLabel, volumeSub, v -> {
+            dismissChooser(shown);
+            launchPicker(volume.intent, volume.intent != null ? null : volumeHint);
+        });
+        addPlaceRow(list, R.drawable.folder_24,
                 getString(R.string.folder_backup_place_other),
                 getString(R.string.folder_backup_place_other_sub), v -> {
                     dismissChooser(shown);
-                    launchPicker(null);
+                    launchPicker(null, getString(R.string.folder_backup_hint_drawer));
                 });
-        note.setText(clouds.isEmpty()
-                ? R.string.folder_backup_place_none
-                : R.string.folder_backup_place_signin);
+        note.setText(R.string.folder_backup_place_signin);
         shown[0] = new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.folder_backup_pick_title)
                 .setView(content)
@@ -652,22 +639,16 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         }
     }
 
-    /** One chooser row: an app's own icon (untinted) or the chooser's glyph
-     *  (onSurfaceVariant, like every settings row icon), the place, the one
-     *  instruction that goes with it. */
-    private void addPlaceRow(LinearLayout list, @Nullable Drawable appIcon, int glyphRes,
-                             String title, String subtitle, View.OnClickListener onTap) {
+    /** One chooser row: the glyph (onSurfaceVariant, like every settings row
+     *  icon), the place, the one instruction that goes with it. */
+    private void addPlaceRow(LinearLayout list, int glyphRes, String title, String subtitle,
+                             View.OnClickListener onTap) {
         View row = LayoutInflater.from(list.getContext())
                 .inflate(R.layout.item_backup_place, list, false);
         ImageView icon = row.findViewById(R.id.place_icon);
-        if (appIcon != null) {
-            icon.setImageTintList(null);
-            icon.setImageDrawable(appIcon);
-        } else {
-            icon.setImageResource(glyphRes);
-            icon.setImageTintList(ColorStateList.valueOf(MaterialColors.getColor(icon,
-                    com.google.android.material.R.attr.colorOnSurfaceVariant)));
-        }
+        icon.setImageResource(glyphRes);
+        icon.setImageTintList(ColorStateList.valueOf(MaterialColors.getColor(icon,
+                com.google.android.material.R.attr.colorOnSurfaceVariant)));
         ((TextView) row.findViewById(R.id.place_title)).setText(title);
         ((TextView) row.findViewById(R.id.place_sub)).setText(subtitle);
         row.setOnClickListener(onTap);
@@ -678,9 +659,10 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * Opens the system folder picker: a volume's own intent when the chooser
      * row carried one (the picker opens on the card), else the plain picker
      * pre-pointed at the current folder when there is one (a hint the picker
-     * is free to ignore).
+     * is free to ignore). {@code hint} is toasted as the picker opens: the
+     * one moment the instruction is needed, on a screen that is not ours.
      */
-    private void launchPicker(@Nullable Intent intent) {
+    private void launchPicker(@Nullable Intent intent, @Nullable String hint) {
         try {
             if (intent != null) {
                 mVolumePicker.launch(intent);
@@ -689,6 +671,11 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             }
         } catch (ActivityNotFoundException e) {
             snackbar(getString(R.string.folder_backup_pick_unavailable));
+            return;
+        }
+        Context context = getContext();
+        if (hint != null && context != null) {
+            Toast.makeText(context, hint, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -732,21 +719,57 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * Adopts a picked tree. The store takes the persistable grant and
-     * remembers the tree; the cached status is about the PREVIOUS folder, so
-     * this screen's own last answer is dropped before the re-read, and the
-     * hero rebinds from the fresh listing (a folder that already holds this
-     * account's backups — a reinstall pointed back at its Drive folder — lists
-     * them straight away).
+     * Adopts a picked tree once it passes the write check
+     * ({@link CloudBackupManager#checkAndAdoptFolder}): a folder the provider
+     * will not let us create, write and delete in is refused HERE, at the
+     * choice, instead of surfacing as the first backup failing later. On
+     * success the store takes the persistable grant and remembers the tree;
+     * the cached status is about the PREVIOUS folder, so this screen's own
+     * last answer is dropped before the re-read, and the hero rebinds from
+     * the fresh listing (a folder that already holds this account's backups,
+     * a reinstall pointed back at its Drive folder, lists them straight
+     * away). The adopt happens in the manager, so a pick still lands if the
+     * user left this screen while the check ran.
      */
     private void adoptPickedFolder(@NonNull Uri treeUri) {
-        mCloudBackup.adoptFolder(treeUri);
-        mLastLoaded = null;
-        updateState();
-        String provider = mCloudBackup.providerLabel();
-        if (!TextUtils.isEmpty(provider)) {
-            snackbar(getString(R.string.folder_backup_folder_set, provider));
+        View view = getView();
+        if (view != null) {
+            mCheckingSnackbar = Snackbar.make(view, R.string.folder_backup_checking,
+                    Snackbar.LENGTH_INDEFINITE);
+            mCheckingSnackbar.show();
         }
+        mCloudBackup.checkAndAdoptFolder(treeUri, adopted -> {
+            if (mCheckingSnackbar != null) {
+                mCheckingSnackbar.dismiss();
+                mCheckingSnackbar = null;
+            }
+            if (!isAdded()) {
+                return;
+            }
+            if (!adopted) {
+                showUnwritable(treeUri);
+                return;
+            }
+            mLastLoaded = null;
+            updateState();
+            String provider = mCloudBackup.providerLabel();
+            if (!TextUtils.isEmpty(provider)) {
+                snackbar(getString(R.string.folder_backup_folder_set, provider));
+            }
+        });
+    }
+
+    /** The write check refused the pick: say where, and offer the chooser
+     *  again. The current folder, if any, was left as it was. */
+    private void showUnwritable(@NonNull Uri treeUri) {
+        String where = mCloudBackup.folderStore().providerLabelOf(treeUri);
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.folder_backup_unwritable_title)
+                .setMessage(getString(R.string.folder_backup_unwritable_message, where))
+                .setPositiveButton(R.string.folder_backup_guard_choose_other,
+                        (dialog, which) -> showPlaceChooser())
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     /**

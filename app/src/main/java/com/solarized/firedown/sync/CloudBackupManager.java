@@ -23,6 +23,7 @@ import com.solarized.firedown.sync.model.VaultEntry;
 import com.solarized.firedown.utils.FileUriHelper;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -179,6 +180,37 @@ public class CloudBackupManager {
         markEnabled();
         forgetCachedStatus();
         storeTotals(-1, -1);
+    }
+
+    /**
+     * Checks a just-picked tree can hold backups ({@link FolderStore#checkWritable})
+     * and adopts it only if it can. Runs on the folder pool (a provider may go
+     * to the network); the answer lands on the main thread, true = adopted. A
+     * failed check adopts nothing, so the previous folder, its grant and its
+     * cached status all stay as they were. The adopt happens here rather than
+     * in the screen so a pick still lands when the user left the screen
+     * while the check ran.
+     */
+    public void checkAndAdoptFolder(@NonNull Uri treeUri, @NonNull Consumer<Boolean> onResult) {
+        folderExecutor.execute(() -> {
+            boolean writable;
+            try {
+                store.checkWritable(treeUri);
+                writable = true;
+            } catch (IOException | RuntimeException e) {
+                if (BuildConfig.DEBUG) {
+                    Log.w(TAG_LOG, "checkAndAdoptFolder: the picked folder failed the write check", e);
+                }
+                writable = false;
+            }
+            boolean adopt = writable;
+            main.post(() -> {
+                if (adopt) {
+                    adoptFolder(treeUri);
+                }
+                onResult.accept(adopt);
+            });
+        });
     }
 
     /** A human name for where the folder lives ("Google Drive", "SD card"),

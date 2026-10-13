@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The "Where to back up" chooser's content (a MaterialAlertDialog custom
-     view; the title is the dialog's): the rows SyncSettingsFragment inflates
-     from item_backup_place.xml, then ONE note — what the phone has (sign in
-     to a cloud app first) or hasn't (no cloud app with folder access). A
-     dialog can't carry a message AND a list, which is why the note is in
-     here. -->
+     view; the title is the dialog's), shown only while an SD card / USB
+     drive is in: the two rows SyncSettingsFragment inflates from
+     item_backup_place.xml (the card, "Somewhere else"), then ONE note, that a
+     cloud app appears under the picker's ☰ once signed in. A dialog can't
+     carry a message AND a list, which is why the note is in here. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">

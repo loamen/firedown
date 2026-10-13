@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -283,6 +284,81 @@ public final class FolderStore {
         }
     }
 
+    /** What the write check writes. Small: the check is about permission, not throughput. */
+    private static final byte[] WRITE_CHECK_BYTES =
+            "firedown write check".getBytes(StandardCharsets.US_ASCII);
+
+    /**
+     * Proves a JUST-PICKED tree can hold backups, BEFORE it is adopted: in the
+     * tree's {@link #ROOT_DIR} (created when missing) it creates a small file,
+     * writes it and deletes it, the operations a backup and a removal need
+     * (a failed backup cleans up after itself, and Remove deletes, so a
+     * provider that cannot delete is no backup folder either). It runs on the
+     * grant the picker's result carries, so a failure leaves the current
+     * folder and its persisted grant untouched, and nothing is adopted.
+     *
+     * <p>Why it exists: the system picker can offer a folder no backup can
+     * use, a provider that lists folders but refuses to create or write in
+     * them. Before this check that surfaced as the FIRST backup failing,
+     * minutes or days after the pick, as a folder error nobody could connect
+     * to the choice. It replaces any attempt to judge providers by name (see
+     * {@link BackupPlaces}): it tests the folder itself, so it needs no list.
+     *
+     * <p>Deliberately NOT a read-back: a provider that uploads on close may
+     * serve the old (empty) content for a moment, and a check that fails a
+     * working folder is worse than none. Reading is covered by the grant and
+     * by the first listing that follows the adopt. A {@link #ROOT_DIR} this
+     * call created is removed again on failure; on success it stays (the
+     * first backup would create it anyway). Off the main thread only: a cloud
+     * provider may go to the network, and SAF has no timeout to give it.
+     */
+    public void checkWritable(@NonNull Uri tree) throws IOException {
+        Uri root;
+        try {
+            root = rootDocument(tree);
+        } catch (RuntimeException e) {
+            throw new UnreachableException("not a folder tree", e);
+        }
+        if (!exists(root)) {
+            throw new UnreachableException("picked folder is gone");
+        }
+        Uri backupRoot = childDir(tree, root, ROOT_DIR, false);
+        boolean createdRoot = false;
+        if (backupRoot == null) {
+            backupRoot = childDir(tree, root, ROOT_DIR, true);
+            createdRoot = true;
+        }
+        Uri probe = null;
+        boolean passed = false;
+        try {
+            String name = "write-check-" + newObjectId().substring(0, 8) + ".tmp";
+            try {
+                probe = DocumentsContract.createDocument(resolver, backupRoot, OBJECT_MIME, name);
+            } catch (SecurityException e) {
+                throw new UnreachableException("cannot create in the picked folder", e);
+            } catch (RuntimeException e) {
+                throw new IOException("cannot create in the picked folder", e);
+            }
+            if (probe == null) {
+                throw new IOException("provider refused to create the check file");
+            }
+            try (OutputStream out = openWrite(probe)) {
+                out.write(WRITE_CHECK_BYTES);
+            }
+            Uri written = probe;
+            probe = null;
+            delete(written);
+            passed = true;
+        } finally {
+            if (probe != null) {
+                deleteQuietly(probe);
+            }
+            if (!passed && createdRoot) {
+                deleteQuietly(backupRoot);
+            }
+        }
+    }
+
     /** Forgets the folder and releases its grant. Nothing in it is touched. */
     public void forget() {
         Uri previous = treeUri();
@@ -396,6 +472,13 @@ public final class FolderStore {
         if (tree == null) {
             return "";
         }
+        return providerLabelOf(tree);
+    }
+
+    /** {@link #providerLabel()} for any tree, adopted or not (the write
+     *  check names a picked folder before it is adopted). */
+    @NonNull
+    public String providerLabelOf(@NonNull Uri tree) {
         String authority = tree.getAuthority();
         if (authority == null) {
             return "";
