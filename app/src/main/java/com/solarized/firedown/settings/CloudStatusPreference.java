@@ -159,7 +159,7 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         int onSurface = MaterialColors.getColor(title,
                 com.google.android.material.R.attr.colorOnSurface);
         int error = MaterialColors.getColor(title,
-                com.google.android.material.R.attr.colorError);
+                androidx.appcompat.R.attr.colorError);
         if (mReachable) {
             glyph.setImageResource(R.drawable.ic_folder_upload_24);
             title.setText(R.string.folder_backup_hero_title);
