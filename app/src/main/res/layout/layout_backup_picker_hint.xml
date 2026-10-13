@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A picture of the system folder picker's top bar under the Backup
-     chooser's "Cloud storage" row (SyncSettingsFragment.showPlaceChooser):
-     the ☰ ringed in brandInk, a title line, the search glyph. The picker
-     hides cloud apps behind that ☰ and never says so; the row's sentence
-     says it and this shows WHICH button, before the user is on a screen
-     that is not ours. Decorative: the sentence above carries it for a
-     screen reader. The title is a skeleton line, not a folder name, so it
-     needs no string and promises no folder. It fills the row's text column
-     (212dp on a 360dp phone, where a fixed 216dp bar overflowed by 4dp). -->
+<!-- A picture of the system folder picker's top bar under the "Cloud
+     storage" card of the Backup screen's "Where to back up" sheet
+     (fragment_dialog_backup_places): the ☰ ringed in brandInk, a title
+     line, the search glyph. The picker hides cloud apps behind that ☰ and
+     never says so; the card's sentence says it and this shows WHICH
+     button, before the user is on a screen that is not ours. Decorative:
+     the sentence above carries it for a screen reader. The title is a
+     skeleton line, not a folder name, so it needs no string and promises
+     no folder. It fills the card's text column (256dp on a 360dp phone;
+     a fixed width overflowed once, in the dialog this used to sit in). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"

@@ -376,7 +376,7 @@
     <string name="folder_backup_guard_message">Firedown already keeps your downloads in %1$s. A backup there is lost with the phone. Choose a folder on a cloud app or an SD card instead.</string>
     <string name="folder_backup_guard_choose_other">Choose another</string>
     <string name="folder_backup_guard_use_anyway">Use it anyway</string>
-    <string name="folder_backup_step_folder">Choose a backup folder on Drive, Dropbox or an SD card</string>
+    <string name="folder_backup_step_folder">Choose where to back up</string>
     <string name="folder_backup_rechoose_cta">Choose the folder again</string>
     <string name="folder_backup_folder_set">Backup folder: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup on %1$s</string>

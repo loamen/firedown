@@ -494,7 +494,7 @@
     <string name="folder_backup_guard_message">Firedown уже зберігає ваші завантаження в %1$s. Резервна копія там втрачається разом із телефоном. Натомість виберіть теку в хмарному застосунку або на SD-картці.</string>
     <string name="folder_backup_guard_choose_other">Вибрати іншу</string>
     <string name="folder_backup_guard_use_anyway">Усе одно використати</string>
-    <string name="folder_backup_step_folder">Виберіть теку для копії на Google Диску, у Dropbox або на SD-картці</string>
+    <string name="folder_backup_step_folder">Виберіть, куди зберігати копію</string>
     <string name="folder_backup_rechoose_cta">Вибрати теку знову</string>
     <string name="folder_backup_folder_set">Тека резервної копії: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup у %1$s</string>

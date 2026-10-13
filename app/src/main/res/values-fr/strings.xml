@@ -658,7 +658,7 @@
     <string name="folder_backup_guard_message">Firedown garde déjà vos téléchargements dans %1$s. Une sauvegarde à cet endroit est perdue avec le téléphone. Choisissez plutôt un dossier dans une appli cloud ou sur une carte SD.</string>
     <string name="folder_backup_guard_choose_other">En choisir un autre</string>
     <string name="folder_backup_guard_use_anyway">L\'utiliser quand même</string>
-    <string name="folder_backup_step_folder">Choisissez un dossier de sauvegarde sur Drive, Dropbox ou une carte SD</string>
+    <string name="folder_backup_step_folder">Choisissez où sauvegarder</string>
     <string name="folder_backup_rechoose_cta">Choisir à nouveau le dossier</string>
     <string name="folder_backup_folder_set">Dossier de sauvegarde : %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup sur %1$s</string>

@@ -560,7 +560,7 @@
     <string name="folder_backup_guard_message">Firedown już przechowuje pobrane pliki w %1$s. Kopia zapasowa tam przepada razem z telefonem. Wybierz zamiast tego folder w aplikacji chmurowej lub na karcie SD.</string>
     <string name="folder_backup_guard_choose_other">Wybierz inny</string>
     <string name="folder_backup_guard_use_anyway">Użyj mimo to</string>
-    <string name="folder_backup_step_folder">Wybierz folder kopii na Drive, Dropboksie lub karcie SD</string>
+    <string name="folder_backup_step_folder">Wybierz, gdzie zapisać kopię</string>
     <string name="folder_backup_rechoose_cta">Wybierz folder ponownie</string>
     <string name="folder_backup_folder_set">Folder kopii zapasowej: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup w %1$s</string>

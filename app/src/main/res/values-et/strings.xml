@@ -458,7 +458,7 @@
     <string name="folder_backup_guard_message">Firedown hoiab sinu allalaadimisi juba kaustas %1$s. Sealne varukoopia kaob koos telefoniga. Vali selle asemel kaust pilverakenduses või SD-kaardil.</string>
     <string name="folder_backup_guard_choose_other">Vali teine</string>
     <string name="folder_backup_guard_use_anyway">Kasuta siiski</string>
-    <string name="folder_backup_step_folder">Vali varukaust Drive\'is, Dropboxis või SD-kaardil</string>
+    <string name="folder_backup_step_folder">Vali, kuhu varundada</string>
     <string name="folder_backup_rechoose_cta">Vali kaust uuesti</string>
     <string name="folder_backup_folder_set">Varunduskaust: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup asukohas %1$s</string>

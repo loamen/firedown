@@ -558,7 +558,7 @@
     <string name="folder_backup_guard_message">Firedown bewaart je downloads al in %1$s. Een back-up daar gaat met de telefoon verloren. Kies in plaats daarvan een map in een cloud-app of op een SD-kaart.</string>
     <string name="folder_backup_guard_choose_other">Andere kiezen</string>
     <string name="folder_backup_guard_use_anyway">Toch gebruiken</string>
-    <string name="folder_backup_step_folder">Kies een back-upmap op Drive, Dropbox of een SD-kaart</string>
+    <string name="folder_backup_step_folder">Kies waar je een back-up maakt</string>
     <string name="folder_backup_rechoose_cta">Map opnieuw kiezen</string>
     <string name="folder_backup_folder_set">Back-upmap: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup op %1$s</string>

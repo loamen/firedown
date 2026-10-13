@@ -4716,7 +4716,14 @@ children — the card edges do the grouping).
   folder", the LAST SEEN totals, the body line saying what to do — the card
   states the fact, the CTA acts); not set up → the dashed ROADMAP ① Create
   recovery code → ② Choose backup folder → ③ Back up a finished download
-  from its ⋮ (done = "✓" + muted ink, the current step bold). There is no
+  from its ⋮ (done = "✓" + muted ink, the current step bold). Each step is
+  a HANGING row (`cb_step_*_mark` + `cb_step_*`): the marker in a column
+  under the header's 28dp glyph (a MINIMUM width, so a large font scale
+  widens it rather than clipping), the text in a column under the title,
+  so a wrapped line continues under its text. It was one TextView per
+  step with "2 ·  " typed in front, and step ②'s second line sat under
+  the number (reported on-device, 2026-10-13); the row carries the spoken
+  line, the two columns are hidden from TalkBack. There is no
   quota, meter or chip: the folder is the user's own storage, so the only
   facts the card can state are what is in it and whether it answers.
   `mReachable` defaults TRUE so a cold bind never flashes the lost state;
@@ -4767,26 +4774,40 @@ children — the card edges do the grouping).
   sees an app-made folder literally called backup and picks it, and the
   "backup" lands beside the originals on the same storage. Two answers, in
   `SyncSettingsFragment`: (1) `showPlaceChooser` — **"Where to back up"
-  is one row per KIND of place, always shown** (`dialog_backup_places` /
-  `item_backup_place`): "Cloud storage" first (`cloud_outline_24` in
+  is a BOTTOM SHEET with one card per KIND of place, always shown**
+  (`BackupPlacesSheetDialogFragment`, `fragment_dialog_backup_places`, a
+  `<dialog>` destination of `nav_graph_settings`; the multi-line card row
+  is `Firedown.Widget.SheetPlaceRow`/`Icon`/`Text`/`Title`/`Sub`): "Cloud
+  storage" first (`cloud_outline_24` in
   `brandInk`, "Google Drive, Nextcloud and other cloud apps. On the next
   screen, tap ☰ and pick yours.", and under it a PICTURE of the picker's
   top bar, `layout_backup_picker_hint`: the ☰ ringed in brandInk, a
   skeleton title line, the search glyph; decorative, the sentence carries
-  it for TalkBack), the SD card / USB drive only while one is mounted
+  it for TalkBack), a WebDAV server (→ the sign-in page), the SD card /
+  USB drive only while one is mounted
   (`sync/BackupPlaces.removable`:
   `StorageVolume.createOpenDocumentTreeIntent()` on API 29+ opens the
   picker right on it), then "Somewhere else", then the sign-in note (a
   cloud app appears in ☰ once signed in; Drive with no account lists
   nothing there, which was the maintainer's own "cloud is not showing").
-  The cloud row opens the plain picker with "Tap ☰ in the picker to find
+  The sheet only CHOOSES: the pickers are registered on
+  `SyncSettingsFragment`, so the pick (`RESULT`, a `PLACE_*` int) goes
+  back on settings_sync's own back-stack entry, set AFTER the sheet pops
+  (the WebDAV branch navigates with an action of settings_sync, which
+  only resolves once it is current again), consumed with `set(null)` and
+  handled on the next frame (`observePlaceResult` → `openPlace`, which
+  asks `BackupPlaces.removable` again, so a card pulled meanwhile falls
+  back to the plain picker). It was a centred `MaterialAlertDialog` with
+  a Cancel button until 2026-10-13, the one menu in the app not wearing
+  the sheet shape (reported beside the Downloads ⋮ sheet); swipe and tap
+  outside dismiss it now. The cloud row opens the plain picker with "Tap ☰ in the picker to find
   your cloud apps" (`folder_backup_hint_drawer`) TOASTED over it; "Somewhere
   else" opens it with no toast. History, all on 2026-10-13: a
   two-paragraph dialog that said all this in words; then per-app rows (see
   below); then NO dialog at all without a card (the picker straight away,
   the toast the only instruction), which the maintainer rejected as too
   much for someone who has never opened that drawer — a toast over a
-  screen that is not ours is easy to miss, and the dialog is the one place
+  screen that is not ours is easy to miss, and the chooser is the one place
   the instruction can sit beside a picture of the button. **A KIND row is
   not an app row**: it needs no detection and no list, names as examples
   only apps verified to take a folder pick (Drive, Nextcloud; never
@@ -4840,10 +4861,12 @@ children — the card edges do the grouping).
   after itself, and Remove deletes); a READ-BACK is deliberately not — a
   provider that uploads on close can serve stale bytes for a moment, and a
   check that fails a working folder is worse than none. The adopt runs in
-  the manager, so a pick lands even if the user left the screen mid-check. The setup copy and roadmap step ②
-  (`cloud_backup_setup_message`, `folder_backup_step_folder`) name the
-  kinds of places too, so the first pick is steered before the chooser
-  opens. The two folders stay as they are: list recovery for a same-phone
+  the manager, so a pick lands even if the user left the screen mid-check. The setup copy
+  (`cloud_backup_setup_message`) names the kinds of places too, so the
+  first pick is steered before the chooser opens; roadmap step ②
+  (`folder_backup_step_folder`) is "Choose where to back up", the sheet's
+  own title, with no examples (it named Dropbox, which the kind-row rule
+  above excludes, and wrapped on a phone). The two folders stay as they are: list recovery for a same-phone
   reinstall vs file copies elsewhere are different jobs, and renaming the
   mirror's folder buys nothing the guard doesn't.
 - **The folder picker lists ONLY providers that declare
@@ -7551,6 +7574,8 @@ maintainer call after sketches on the design canvas:
   shared ground has no other cue where one target ends, whereas the
   Browser popup's two stacked rows read as a grid and carry none), the
   Backups item sheet (Open is revealed late → `refreshActionCorners`),
+  the Backup screen's "Where to back up" places sheet (multi-line cards,
+  the removable-volume card hides → `applyCorners`),
   the Translate sheet's switch rows (the card toggles the switch), the
   Sort-by and search-engine radio sheets (label + TRAILING non-clickable
   radio; the card is the touch, the fragment/adapter checks the radio —

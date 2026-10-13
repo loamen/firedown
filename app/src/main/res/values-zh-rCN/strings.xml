@@ -656,7 +656,7 @@
     <string name="folder_backup_guard_message">Firedown 已经把你的下载保存在 %1$s。备份到那里会随手机一起丢失。请改为选择云应用或 SD 卡中的文件夹。</string>
     <string name="folder_backup_guard_choose_other">另选一个</string>
     <string name="folder_backup_guard_use_anyway">仍然使用</string>
-    <string name="folder_backup_step_folder">在云端硬盘、Dropbox 或 SD 卡上选择备份文件夹</string>
+    <string name="folder_backup_step_folder">选择备份到哪里</string>
     <string name="folder_backup_rechoose_cta">重新选择文件夹</string>
     <string name="folder_backup_folder_set">备份文件夹：%1$s</string>
     <string name="folder_backup_header_on">%1$s 上的 Firedown Backup</string>

@@ -558,7 +558,7 @@
     <string name="folder_backup_guard_message">O Firedown já guarda seus downloads em %1$s. Um backup ali se perde junto com o celular. Escolha em vez disso uma pasta em um app de nuvem ou em um cartão SD.</string>
     <string name="folder_backup_guard_choose_other">Escolher outra</string>
     <string name="folder_backup_guard_use_anyway">Usar mesmo assim</string>
-    <string name="folder_backup_step_folder">Escolha uma pasta de backup no Drive, Dropbox ou cartão SD</string>
+    <string name="folder_backup_step_folder">Escolha onde fazer o backup</string>
     <string name="folder_backup_rechoose_cta">Escolher a pasta novamente</string>
     <string name="folder_backup_folder_set">Pasta de backup: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup em %1$s</string>

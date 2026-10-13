@@ -481,7 +481,7 @@
     <string name="folder_backup_guard_message">Firedown вече пази изтеглянията ви в %1$s. Архив там се губи заедно с телефона. Вместо това изберете папка в облачно приложение или на SD карта.</string>
     <string name="folder_backup_guard_choose_other">Избери друга</string>
     <string name="folder_backup_guard_use_anyway">Използвай я все пак</string>
-    <string name="folder_backup_step_folder">Изберете папка за архив в Drive, Dropbox или на SD карта</string>
+    <string name="folder_backup_step_folder">Изберете къде да се архивира</string>
     <string name="folder_backup_rechoose_cta">Изберете папката отново</string>
     <string name="folder_backup_folder_set">Папка за архивиране: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup в %1$s</string>

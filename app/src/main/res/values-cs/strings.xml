@@ -531,7 +531,7 @@
     <string name="folder_backup_guard_message">Firedown už ukládá vaše stažené soubory do %1$s. Záloha tam se ztratí spolu s telefonem. Zvolte místo toho složku v cloudové aplikaci nebo na SD kartě.</string>
     <string name="folder_backup_guard_choose_other">Zvolit jinou</string>
     <string name="folder_backup_guard_use_anyway">Přesto použít</string>
-    <string name="folder_backup_step_folder">Zvolte složku zálohy na Drive, Dropboxu nebo SD kartě</string>
+    <string name="folder_backup_step_folder">Zvolte, kam zálohovat</string>
     <string name="folder_backup_rechoose_cta">Vybrat složku znovu</string>
     <string name="folder_backup_folder_set">Složka zálohy: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup v %1$s</string>

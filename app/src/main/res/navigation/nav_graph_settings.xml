@@ -207,6 +207,11 @@
         <action
             android:id="@+id/action_sync_to_scan"
             app:destination="@id/p2p_scan" />
+        <!-- "Where to back up": the places sheet. No anims: a bottom sheet
+             brings its own. The pick comes back on this entry's handle. -->
+        <action
+            android:id="@+id/action_sync_to_places"
+            app:destination="@id/dialog_backup_places" />
         <!-- "Where to back up" → WebDAV server: the sign-in page. -->
         <action
             android:id="@+id/action_sync_to_webdav"
@@ -261,6 +266,10 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
     </fragment>
+    <dialog
+        android:id="@+id/dialog_backup_places"
+        android:name="com.solarized.firedown.settings.BackupPlacesSheetDialogFragment"
+        tools:layout="@layout/fragment_dialog_backup_places" />
     <dialog
         android:id="@+id/dialog_cloud_backup_item"
         android:name="com.solarized.firedown.settings.CloudBackupItemSheetDialogFragment" />

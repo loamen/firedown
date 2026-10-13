@@ -562,7 +562,7 @@
     <string name="folder_backup_guard_message">Firedown уже хранит ваши загрузки в %1$s. Резервная копия там теряется вместе с телефоном. Выберите вместо этого папку в облачном приложении или на SD-карте.</string>
     <string name="folder_backup_guard_choose_other">Выбрать другую</string>
     <string name="folder_backup_guard_use_anyway">Всё равно использовать</string>
-    <string name="folder_backup_step_folder">Выберите папку для копии на Google Диске, в Dropbox или на SD-карте</string>
+    <string name="folder_backup_step_folder">Выберите, куда сохранять копию</string>
     <string name="folder_backup_rechoose_cta">Выбрать папку заново</string>
     <string name="folder_backup_folder_set">Папка резервной копии: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup в %1$s</string>

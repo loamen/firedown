@@ -526,7 +526,7 @@
     <string name="folder_backup_guard_message">Firedown tallentaa latauksesi jo kansioon %1$s. Sinne tehty varmuuskopio katoaa puhelimen mukana. Valitse sen sijaan kansio pilvisovelluksesta tai SD-kortilta.</string>
     <string name="folder_backup_guard_choose_other">Valitse toinen</string>
     <string name="folder_backup_guard_use_anyway">Käytä silti</string>
-    <string name="folder_backup_step_folder">Valitse varmuuskopiokansio Drivesta, Dropboxista tai SD-kortilta</string>
+    <string name="folder_backup_step_folder">Valitse, minne varmuuskopioidaan</string>
     <string name="folder_backup_rechoose_cta">Valitse kansio uudelleen</string>
     <string name="folder_backup_folder_set">Varmuuskopiokansio: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup kohteessa %1$s</string>

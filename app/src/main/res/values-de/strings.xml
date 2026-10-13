@@ -658,7 +658,7 @@
     <string name="folder_backup_guard_message">Firedown speichert deine Downloads bereits in %1$s. Eine Sicherung dort geht mit dem Handy verloren. Wähle stattdessen einen Ordner in einer Cloud-App oder auf einer SD-Karte.</string>
     <string name="folder_backup_guard_choose_other">Anderen wählen</string>
     <string name="folder_backup_guard_use_anyway">Trotzdem verwenden</string>
-    <string name="folder_backup_step_folder">Sicherungsordner auf Drive, Dropbox oder einer SD-Karte wählen</string>
+    <string name="folder_backup_step_folder">Wählen, wohin gesichert wird</string>
     <string name="folder_backup_rechoose_cta">Ordner erneut wählen</string>
     <string name="folder_backup_folder_set">Backup-Ordner: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup auf %1$s</string>

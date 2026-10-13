@@ -558,7 +558,7 @@
     <string name="folder_backup_guard_message">Firedown indirmelerinizi zaten %1$s içinde tutuyor. Oradaki bir yedek telefonla birlikte kaybolur. Bunun yerine bir bulut uygulamasında veya SD kartta bir klasör seçin.</string>
     <string name="folder_backup_guard_choose_other">Başkasını seç</string>
     <string name="folder_backup_guard_use_anyway">Yine de kullan</string>
-    <string name="folder_backup_step_folder">Drive, Dropbox veya SD kartta bir yedek klasörü seçin</string>
+    <string name="folder_backup_step_folder">Nereye yedekleneceğini seçin</string>
     <string name="folder_backup_rechoose_cta">Klasörü yeniden seç</string>
     <string name="folder_backup_folder_set">Yedekleme klasörü: %1$s</string>
     <string name="folder_backup_header_on">%1$s üzerinde Firedown Backup</string>

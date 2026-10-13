@@ -208,35 +208,45 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
      * (both ① and ② done IS set up, which flips the card to the hero).
      */
     private void bindOnboardingSteps(Context ctx, PreferenceViewHolder holder) {
-        TextView stepCode = (TextView) holder.findViewById(R.id.cb_step_code);
-        TextView stepFolder = (TextView) holder.findViewById(R.id.cb_step_folder);
-        TextView stepBackup = (TextView) holder.findViewById(R.id.cb_step_backup);
-        if (stepCode == null || stepFolder == null || stepBackup == null) {
-            return;
-        }
         boolean codeDone = mHasKey;
         boolean folderDone = mHasFolder;
-        bindStep(stepCode, 1, ctx.getString(R.string.settings_sync_create_title),
-                codeDone, !codeDone);
-        bindStep(stepFolder, 2, ctx.getString(R.string.folder_backup_step_folder),
+        bindStep(holder, R.id.cb_step_code_row, R.id.cb_step_code_mark, R.id.cb_step_code, 1,
+                ctx.getString(R.string.settings_sync_create_title), codeDone, !codeDone);
+        bindStep(holder, R.id.cb_step_folder_row, R.id.cb_step_folder_mark, R.id.cb_step_folder, 2,
+                ctx.getString(R.string.folder_backup_step_folder),
                 folderDone, codeDone && !folderDone);
-        bindStep(stepBackup, 3, ctx.getString(R.string.cloud_status_empty_body),
-                false, codeDone && folderDone);
+        bindStep(holder, R.id.cb_step_backup_row, R.id.cb_step_backup_mark, R.id.cb_step_backup, 3,
+                ctx.getString(R.string.cloud_status_empty_body), false, codeDone && folderDone);
     }
 
-    /** One roadmap line: "✓ text" muted when done, "N · text" full-contrast
-     *  when it's the current step, "N · text" muted when still ahead. */
-    private static void bindStep(TextView view, int number, String text,
-                                 boolean done, boolean current) {
-        String prefix = done ? "✓  " : number + " ·  ";
-        view.setText(prefix + text);
+    /**
+     * One roadmap row: "✓" muted when done, "N ·" full-contrast bold when
+     * it's the current step, "N ·" muted when still ahead. The marker and the
+     * text are two columns (the hanging indent), so both take the same ink
+     * and weight, and the row carries the line a screen reader speaks.
+     */
+    private static void bindStep(PreferenceViewHolder holder, int rowId, int markId, int textId,
+                                 int number, String text, boolean done, boolean current) {
+        View row = holder.findViewById(rowId);
+        TextView mark = (TextView) holder.findViewById(markId);
+        TextView label = (TextView) holder.findViewById(textId);
+        if (row == null || mark == null || label == null) {
+            return;
+        }
+        String marker = done ? "✓" : number + " ·";
+        mark.setText(marker);
+        label.setText(text);
+        row.setContentDescription(marker + " " + text);
         int ink = current
-                ? MaterialColors.getColor(view,
+                ? MaterialColors.getColor(label,
                         com.google.android.material.R.attr.colorOnSurface)
-                : MaterialColors.getColor(view,
+                : MaterialColors.getColor(label,
                         com.google.android.material.R.attr.colorOnSurfaceVariant);
-        view.setTextColor(ink);
-        view.setTypeface(null, current ? Typeface.BOLD : Typeface.NORMAL);
+        int style = current ? Typeface.BOLD : Typeface.NORMAL;
+        for (TextView view : new TextView[] {mark, label}) {
+            view.setTextColor(ink);
+            view.setTypeface(null, style);
+        }
     }
 
     /**

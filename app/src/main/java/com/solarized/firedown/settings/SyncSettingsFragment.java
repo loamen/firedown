@@ -6,7 +6,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -15,12 +14,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.format.DateUtils;
 import android.text.TextUtils;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -203,6 +200,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         // here (not lazily when the scanner opens) so the result still lands
         // after a process death or config change while the scanner was up.
         observeScanResult();
+        // The "Where to back up" sheet's pick, the same mechanism and for the
+        // same reason (a pick made just before a rotation still lands).
+        observePlaceResult();
         // Live status: while a backup/restore runs, the hero caption reads
         // "Transfer in progress…" instead of the static usage.
         WorkManager.getInstance(requireContext().getApplicationContext())
@@ -614,102 +614,80 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * "Where to back up": one row per KIND of place, always shown. Cloud
-     * storage first (Google Drive, Nextcloud and the like: the picker hides
-     * them behind its ☰, so the row says so and draws that button), the SD
+     * "Where to back up": a sheet with one card per KIND of place, always
+     * shown ({@link BackupPlacesSheetDialogFragment}). Cloud storage first
+     * (Google Drive, Nextcloud and the like: the picker hides them behind its
+     * ☰, so the card says so and draws that button), a WebDAV server, the SD
      * card / USB drive while one is in (its own picker intent opens right on
      * it), then "Somewhere else", then one note that a cloud app shows under
-     * ☰ only once signed in. Every row opens the system picker; what the
-     * rows add is the instruction for it, before the user is on a screen
-     * that is not ours. The cloud row names only apps verified to take a
-     * folder pick and needs no detection, which is what the per-app rows it
-     * replaced could not do (see {@link BackupPlaces}). It came back after a
-     * build that opened the picker with no dialog when no card was in: a
-     * toast over the system picker was too little for someone who has never
-     * opened that drawer.
+     * ☰ only once signed in. The cards add the instruction for the system
+     * picker before the user is on a screen that is not ours; the pick comes
+     * back through {@link #observePlaceResult} and opens it from here, where
+     * the pickers are registered. The cloud card names only apps verified to
+     * take a folder pick and needs no detection, which is what the per-app
+     * rows it replaced could not do (see {@link BackupPlaces}).
      */
     private void showPlaceChooser() {
-        Context context = getContext();
-        if (context == null) {
+        NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_places);
+    }
+
+    /**
+     * The place picked in the sheet, delivered to this fragment's own
+     * back-stack entry (the scanner's pattern, {@link #observeScanResult}).
+     * Consumed with {@code set(null)}, never {@code remove()}, which would
+     * detach this LiveData from the handle. Handled on the next frame: the
+     * sheet hands the pick over from inside its own pop, and the WebDAV
+     * branch navigates.
+     */
+    private void observePlaceResult() {
+        NavBackStackEntry entry = NavHostFragment.findNavController(this).getCurrentBackStackEntry();
+        if (entry == null) {
             return;
         }
-        View content = LayoutInflater.from(context)
-                .inflate(R.layout.dialog_backup_places, null, false);
-        LinearLayout list = content.findViewById(R.id.places_list);
-        TextView note = content.findViewById(R.id.places_note);
-        AlertDialog[] shown = new AlertDialog[1];
-        View cloud = addPlaceRow(list, R.drawable.cloud_outline_24, R.attr.brandInk,
-                getString(R.string.folder_backup_place_cloud),
-                getString(R.string.folder_backup_place_cloud_sub), v -> {
-                    dismissChooser(shown);
-                    launchPicker(null, getString(R.string.folder_backup_hint_drawer));
+        entry.getSavedStateHandle()
+                .getLiveData(BackupPlacesSheetDialogFragment.RESULT, (Integer) null)
+                .observe(getViewLifecycleOwner(), place -> {
+                    if (place == null) {
+                        return;
+                    }
+                    entry.getSavedStateHandle().set(BackupPlacesSheetDialogFragment.RESULT,
+                            (Integer) null);
+                    View view = getView();
+                    if (view != null) {
+                        view.post(() -> openPlace(place));
+                    }
                 });
-        cloud.findViewById(R.id.place_picker_hint).setVisibility(View.VISIBLE);
-        // A server signed in to HERE, no app and no picker: the page asks for
-        // the address, a user and a password, and checks it before saving.
-        addPlaceRow(list, R.drawable.dns_24,
-                com.google.android.material.R.attr.colorOnSurfaceVariant,
-                getString(R.string.folder_backup_place_webdav),
-                getString(R.string.folder_backup_place_webdav_sub), v -> {
-                    dismissChooser(shown);
-                    openWebDav();
-                });
-        BackupPlaces.Volume volume = BackupPlaces.removable(context);
-        if (volume != null) {
-            String volumeLabel = TextUtils.isEmpty(volume.label)
-                    ? getString(R.string.folder_backup_provider_sd) : volume.label;
-            String volumeHint = getString(R.string.folder_backup_place_volume_sub, volumeLabel);
-            String volumeSub = volume.intent != null
-                    ? getString(R.string.folder_backup_place_removable_sub) : volumeHint;
-            addPlaceRow(list, R.drawable.sd_card_24,
-                    com.google.android.material.R.attr.colorOnSurfaceVariant,
-                    volumeLabel, volumeSub, v -> {
-                        dismissChooser(shown);
-                        launchPicker(volume.intent, volume.intent != null ? null : volumeHint);
-                    });
+    }
+
+    private void openPlace(int place) {
+        Context context = getContext();
+        if (context == null || !isAdded()) {
+            return;
         }
-        addPlaceRow(list, R.drawable.folder_24,
-                com.google.android.material.R.attr.colorOnSurfaceVariant,
-                getString(R.string.folder_backup_place_other),
-                getString(R.string.folder_backup_place_other_sub), v -> {
-                    dismissChooser(shown);
+        switch (place) {
+            case BackupPlacesSheetDialogFragment.PLACE_CLOUD ->
+                    launchPicker(null, getString(R.string.folder_backup_hint_drawer));
+            case BackupPlacesSheetDialogFragment.PLACE_WEBDAV -> openWebDav();
+            case BackupPlacesSheetDialogFragment.PLACE_VOLUME -> {
+                // Asked again here: a card pulled since the sheet opened
+                // falls back to the plain picker.
+                BackupPlaces.Volume volume = BackupPlaces.removable(context);
+                if (volume == null) {
                     launchPicker(null, null);
-                });
-        note.setText(R.string.folder_backup_place_signin);
-        shown[0] = new MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.folder_backup_pick_title)
-                .setView(content)
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                    return;
+                }
+                String label = TextUtils.isEmpty(volume.label)
+                        ? getString(R.string.folder_backup_provider_sd) : volume.label;
+                launchPicker(volume.intent, volume.intent != null
+                        ? null : getString(R.string.folder_backup_place_volume_sub, label));
+            }
+            default -> launchPicker(null, null);
+        }
     }
 
     /** The WebDAV sign-in page; prefilled from the saved server, if any. */
     private void openWebDav() {
         NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_webdav);
-    }
-
-    private static void dismissChooser(AlertDialog[] shown) {
-        if (shown[0] != null) {
-            shown[0].dismiss();
-        }
-    }
-
-    /** One chooser row: the glyph (tinted from {@code tintAttr}: brandInk for
-     *  the cloud row the dialog leads with, onSurfaceVariant like every
-     *  settings icon for the rest), the place, the one instruction that goes
-     *  with it. Returns the row so a caller can reveal its extras. */
-    private View addPlaceRow(LinearLayout list, int glyphRes, int tintAttr, String title,
-                             String subtitle, View.OnClickListener onTap) {
-        View row = LayoutInflater.from(list.getContext())
-                .inflate(R.layout.item_backup_place, list, false);
-        ImageView icon = row.findViewById(R.id.place_icon);
-        icon.setImageResource(glyphRes);
-        icon.setImageTintList(ColorStateList.valueOf(MaterialColors.getColor(icon, tintAttr)));
-        ((TextView) row.findViewById(R.id.place_title)).setText(title);
-        ((TextView) row.findViewById(R.id.place_sub)).setText(subtitle);
-        row.setOnClickListener(onTap);
-        list.addView(row);
-        return row;
     }
 
     /**

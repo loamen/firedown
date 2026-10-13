@@ -656,7 +656,7 @@
     <string name="folder_backup_guard_message">Firedown はすでに %1$s にダウンロードを保存しています。そこへのバックアップは端末と一緒に失われます。代わりにクラウドアプリか SD カードのフォルダーを選んでください。</string>
     <string name="folder_backup_guard_choose_other">別のフォルダーを選ぶ</string>
     <string name="folder_backup_guard_use_anyway">このまま使う</string>
-    <string name="folder_backup_step_folder">Google ドライブ、Dropbox、SD カードのいずれかにバックアップフォルダーを選ぶ</string>
+    <string name="folder_backup_step_folder">バックアップ先を選ぶ</string>
     <string name="folder_backup_rechoose_cta">フォルダーを選び直す</string>
     <string name="folder_backup_folder_set">バックアップフォルダー: %1$s</string>
     <string name="folder_backup_header_on">%1$s 上の Firedown Backup</string>

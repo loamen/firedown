@@ -170,34 +170,109 @@
 
         </LinearLayout>
 
-        <!-- Three roadmap lines; CloudStatusPreference prefixes ✓ / N · and
-             sets the ink (full-contrast bold = the current step). -->
-        <TextView
-            android:id="@+id/cb_step_code"
+        <!-- Three roadmap lines, each a HANGING row: the marker (✓ or
+             "N ·") in its own column under the cloud glyph, the step's text
+             in a second column under the title (28dp + 12dp, the header's
+             own geometry). A line that wraps continues under its text, never
+             under its number: the steps were one TextView each with the
+             marker typed in front, and step 2's second line ("card") sat
+             under "2 ·" (reported on-device). The marker's 28dp is a
+             MINIMUM, so a large font scale widens it instead of clipping it.
+             CloudStatusPreference sets the marker, the ink (full-contrast
+             bold = the current step) and the row's spoken text; the two
+             columns are hidden from TalkBack so a step reads as one line. -->
+        <LinearLayout
+            android:id="@+id/cb_step_code_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:textSize="12.5sp"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="1 ·  Create recovery code" />
+            android:importantForAccessibility="yes"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/cb_step_folder"
+            <TextView
+                android:id="@+id/cb_step_code_mark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="28dp"
+                android:importantForAccessibility="no"
+                android:textSize="12.5sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="✓" />
+
+            <TextView
+                android:id="@+id/cb_step_code"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:importantForAccessibility="no"
+                android:textSize="12.5sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Create recovery code" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cb_step_folder_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textSize="12.5sp"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="2 ·  Choose backup folder" />
+            android:importantForAccessibility="yes"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/cb_step_backup"
+            <TextView
+                android:id="@+id/cb_step_folder_mark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="28dp"
+                android:importantForAccessibility="no"
+                android:textSize="12.5sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="2 ·" />
+
+            <TextView
+                android:id="@+id/cb_step_folder"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:importantForAccessibility="no"
+                android:textSize="12.5sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Choose where to back up" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cb_step_backup_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textSize="12.5sp"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            tools:text="3 ·  Back up a finished download from its ⋮ menu." />
+            android:importantForAccessibility="yes"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/cb_step_backup_mark"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="28dp"
+                android:importantForAccessibility="no"
+                android:textSize="12.5sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="3 ·" />
+
+            <TextView
+                android:id="@+id/cb_step_backup"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:importantForAccessibility="no"
+                android:textSize="12.5sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Back up a finished download from its ⋮ menu." />
+
+        </LinearLayout>
 
     </LinearLayout>
 
