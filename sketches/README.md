@@ -68,3 +68,14 @@ between them show *why* we ended up where we did.
   block, no pills), B a single summary line + plain toggles, C calm
   per-category stat rows instead of pills. Proposed A. Supersedes the
   hero (B) from security-sheet-layouts.html.
+- `p2p-share-redo.html` — "Send directly" redo. CURRENT (link first, the
+  QR behind a fold, a reply stage, scan/paste pairs on both screens, and
+  the sender holding the screen for the whole transfer) vs A: a NEARBY
+  LIST of phones with the Receive screen open on this Wi‑Fi (NSD on the
+  existing answer server, tap → request → Accept, no code), "Anywhere"
+  keeping the link + QR, and the transfer owned by a foreground service so
+  the sender can leave; B: the receiver as an always-on "visible to nearby
+  devices" setting with the request as a notification (Quick Share's
+  model) — recorded, not recommended: it announces the phone on every
+  Wi‑Fi. Proposed A. The engine, codes, mailbox, relay and resume handshake
+  are untouched in both. Not yet implemented.
