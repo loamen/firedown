@@ -275,7 +275,9 @@ public final class FolderStore {
                 Log.w(TAG, "adopt: no persistable grant", e);
             }
         }
-        prefs.edit().putString(Preferences.FOLDER_BACKUP_TREE_URI, treeUri.toString()).apply();
+        prefs.edit().putString(Preferences.FOLDER_BACKUP_TREE_URI, treeUri.toString())
+                .remove(Preferences.FOLDER_BACKUP_TREE_NAME)
+                .apply();
         if (previous != null && !previous.equals(treeUri)) {
             releaseQuietly(previous);
         }
@@ -284,7 +286,9 @@ public final class FolderStore {
     /** Forgets the folder and releases its grant. Nothing in it is touched. */
     public void forget() {
         Uri previous = treeUri();
-        prefs.edit().remove(Preferences.FOLDER_BACKUP_TREE_URI).apply();
+        prefs.edit().remove(Preferences.FOLDER_BACKUP_TREE_URI)
+                .remove(Preferences.FOLDER_BACKUP_TREE_NAME)
+                .apply();
         if (previous != null) {
             releaseQuietly(previous);
         }
@@ -304,17 +308,71 @@ public final class FolderStore {
      * held with read+write, and the tree's root document answers a query.
      * One resolver round trip; safe off the main thread only (a provider may
      * take its time — Drive answers from the network when its cache is cold).
+     * The same query carries the folder's display name, remembered for
+     * {@link #locationLabel()} so no surface ever asks the provider for it on
+     * its own.
      */
     public boolean isReachable() {
         Uri tree = treeUri();
         if (tree == null || !holdsGrant(tree)) {
             return false;
         }
-        try {
-            return exists(rootDocument(tree));
+        String[] projection = {
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+        };
+        try (Cursor c = resolver.query(rootDocument(tree), projection, null, null, null)) {
+            if (c == null || !c.moveToFirst()) {
+                return false;
+            }
+            rememberFolderName(tree, c.isNull(1) ? null : c.getString(1));
+            return true;
         } catch (RuntimeException e) {
             return false;
         }
+    }
+
+    /**
+     * The picked folder's own name as its provider reports it ("My Drive",
+     * "Backups"), remembered by the last {@link #isReachable()} read; "" until
+     * one has answered. Cheap (prefs only).
+     */
+    @NonNull
+    public String folderName() {
+        String name = prefs.getString(Preferences.FOLDER_BACKUP_TREE_NAME, "");
+        return name == null ? "" : name;
+    }
+
+    private void rememberFolderName(Uri tree, @Nullable String name) {
+        if (!tree.equals(treeUri())) {
+            return; // a different folder was adopted while the query ran
+        }
+        String next = name == null ? "" : name.trim();
+        if (!next.equals(folderName())) {
+            prefs.edit().putString(Preferences.FOLDER_BACKUP_TREE_NAME, next).apply();
+        }
+    }
+
+    /**
+     * WHERE the backup is, in the user's terms, for the folder row and the
+     * hero: the provider, then the picked folder's name — "Google Drive ›
+     * Backups". "On Google Drive" alone (the first cut) never said WHICH
+     * folder, which is the question a cloud picker leaves open: Drive's root
+     * or a folder inside it both work, and the app adds its own
+     * {@code Firedown Backup} folder under either. The name is dropped when
+     * unknown (no read yet) or when it only repeats the provider.
+     */
+    @NonNull
+    public String locationLabel() {
+        String provider = providerLabel();
+        String name = folderName();
+        if (TextUtils.isEmpty(name) || name.equalsIgnoreCase(provider)) {
+            return provider;
+        }
+        if (TextUtils.isEmpty(provider)) {
+            return name;
+        }
+        return context.getString(R.string.folder_backup_location, provider, name);
     }
 
     private boolean holdsGrant(Uri tree) {

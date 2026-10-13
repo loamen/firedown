@@ -6,18 +6,23 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.format.DateUtils;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -38,6 +43,7 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.work.WorkManager;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.snackbar.Snackbar;
@@ -49,6 +55,7 @@ import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.StoragePaths;
 import com.solarized.firedown.phone.fragments.P2pScanFragment;
+import com.solarized.firedown.sync.BackupPlaces;
 import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.sync.FolderStore;
 import com.solarized.firedown.sync.SyncManager;
@@ -61,6 +68,7 @@ import com.solarized.firedown.utils.QrCodes;
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -77,12 +85,13 @@ import dagger.hilt.android.AndroidEntryPoint;
  * <p>Top to bottom: the {@link CloudStatusPreference} status hero (whose
  * not-set-up state is the three-step onboarding roadmap), the MORPHING filled
  * CTA — "Create recovery code" pre-key, "Choose backup folder" with a key but
- * no folder, "Change folder" (outlined, calm) once set up, and "Choose the
- * folder again" (filled) when the folder stopped answering — the
- * adopt-a-code door, the Backups row, one secondary inline Bookmarks switch,
- * the shared recovery code behind a device-auth gate, the website's how-it-
- * works page, and LAST the erasure door. All crypto/IO work lives in
- * {@link SyncManager} / {@link CloudBackupManager}.
+ * no folder, "Choose the folder again" when the folder stopped answering, and
+ * GONE once the backup is healthy — the adopt-a-code door, the "Backup
+ * folder" row (where it is: "Google Drive › Backups"; tap = change it), the
+ * Backups row, one secondary inline Bookmarks switch, the shared recovery
+ * code behind a device-auth gate, the website's how-it-works page, and LAST
+ * the erasure door. All crypto/IO work lives in {@link SyncManager} /
+ * {@link CloudBackupManager}.
  *
  * <p>The hero binds {@link CloudBackupManager#lastStatus()} synchronously on
  * entry (the singleton's last good snapshot) and the async
@@ -109,6 +118,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     private CloudStatusPreference mStatus;
     private CloudBuyButtonPreference mCta;
     private Preference mFiles;
+    /** "Backup folder" — WHERE as the summary, tap = change (changeFolder). */
+    private Preference mFolderRow;
     /** The ONE erasure door (see settings_sync.xml) → CloudDeleteFragment, the
      *  two-row sub-screen; hidden while neither scoped deletion applies. */
     private Preference mDeleteDoor;
@@ -168,6 +179,17 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     private final ActivityResultLauncher<Uri> mFolderPicker =
             registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(),
                     this::onFolderPicked);
+
+    /**
+     * A removable volume's OWN picker intent
+     * ({@code StorageVolume.createOpenDocumentTreeIntent()}, API 29+): the
+     * same ACTION_OPEN_DOCUMENT_TREE pre-pointed at the card, so its result
+     * is the same tree grant and lands in the same {@link #onFolderPicked}.
+     */
+    private final ActivityResultLauncher<Intent> mVolumePicker =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    result -> onFolderPicked(result.getResultCode() == Activity.RESULT_OK
+                            && result.getData() != null ? result.getData().getData() : null));
 
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
@@ -234,6 +256,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         mStatus = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_STATUS);
         mCta = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_CTA);
         mFiles = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_FILES);
+        mFolderRow = findPreference(Preferences.SETTINGS_CLOUD_BACKUP_FOLDER);
         mDeleteDoor = findPreference(Preferences.SETTINGS_CLOUD_DELETE);
         mBookmarksSwitch = findPreference(Preferences.SYNC_ENABLED);
         mHelp = findPreference(Preferences.SETTINGS_SYNC_HELP);
@@ -247,6 +270,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         }
         if (mFiles != null) {
             mFiles.setOnPreferenceClickListener(this);
+        }
+        if (mFolderRow != null) {
+            mFolderRow.setOnPreferenceClickListener(this);
         }
         if (mDeleteDoor != null) {
             mDeleteDoor.setOnPreferenceClickListener(this);
@@ -306,14 +332,15 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             case Preferences.SETTINGS_CLOUD_BACKUP_CTA -> {
                 // The MORPHING CTA: the next onboarding step. Pre-key it reads
                 // "Create recovery code" and runs the create flow (mandatory
-                // "I've saved it" gate); with a key every other label — choose,
-                // change, choose again — is the same folder picker.
+                // "I've saved it" gate); with a key the other labels — choose,
+                // choose again — open the "Where to back up" chooser.
                 if (mCloudBackup.hasAccount()) {
-                    openFolderPicker();
+                    showPlaceChooser();
                 } else {
                     createCode();
                 }
             }
+            case Preferences.SETTINGS_CLOUD_BACKUP_FOLDER -> changeFolder();
             case Preferences.SETTINGS_CLOUD_BACKUP_FILES ->
                     NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_files);
             case Preferences.SETTINGS_CLOUD_DELETE ->
@@ -408,7 +435,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         mStatus.setActive(mTransferActive);
         mStatus.setHasKey(hasKey);       // roadmap step ① check-off
         mStatus.setHasFolder(hasFolder); // roadmap step ② check-off
-        mStatus.setProvider(mCloudBackup.providerLabel());
+        mStatus.setProvider(mCloudBackup.locationLabel());
+        applyFolderRow(hasKey && hasFolder);
         CloudBackupManager.Status known = knownStatus();
         if (known != null) {
             mStatus.setSetUp(known.setUp);
@@ -433,9 +461,34 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             mStatus.setSetUp(status.setUp);
             mStatus.setReachable(status.reachable);
             mStatus.setUsage(status.fileCount, status.totalBytes);
+            // The read that just landed also named the folder (FolderStore
+            // remembers it from the reachability query), so the hero and
+            // the row can say "Google Drive › Backups" from here on.
+            mStatus.setProvider(status.location);
+            applyFolderRow(mCloudBackup.hasAccount() && mCloudBackup.hasFolder());
             applyCta(mCloudBackup.hasAccount(), mCloudBackup.hasFolder(),
                     status.setUp, status);
         });
+    }
+
+    /**
+     * The "Backup folder" row: WHERE the backup is, as the summary
+     * ("Google Drive › Backups" — the provider, then the picked folder's own
+     * name, {@link CloudBackupManager#locationLabel()}), and the ONE door to
+     * change it. Shown once a KEY and a folder exist, in every folder state:
+     * a lost folder still has a name worth stating, and the row's tap confirms
+     * before the chooser whenever the folder holds files. Gated on the key
+     * like the CTA (a restored install can carry a folder URI with no code;
+     * the key-first gate must hold on this door too).
+     */
+    private void applyFolderRow(boolean hasFolder) {
+        if (mFolderRow == null) {
+            return;
+        }
+        mFolderRow.setVisible(hasFolder);
+        if (hasFolder) {
+            mFolderRow.setSummary(mCloudBackup.locationLabel());
+        }
     }
 
     /**
@@ -452,13 +505,16 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * The MORPHING CTA always shows the next step, with STATE-DEPENDENT
-     * emphasis (see {@link CloudBuyButtonPreference}): FILLED while something
-     * is genuinely needed — no key yet ("Create recovery code"), no folder yet
-     * ("Choose backup folder"), or a folder that stopped answering ("Choose the
-     * folder again") — and OUTLINED once the backup is set up and the folder
-     * answers ("Change folder": available, not urgent). A healthy backup must
-     * not be stared down by a permanent filled button.
+     * The MORPHING CTA shows the next step while one is OWED — no key yet
+     * ("Create recovery code"), no folder yet ("Choose backup folder"), or a
+     * folder that stopped answering ("Choose the folder again") — FILLED
+     * (see {@link CloudBuyButtonPreference}), and is HIDDEN once the backup
+     * is set up and the folder answers. It used to stay as an outlined
+     * "Change folder" there, and that was the screen's one visible action on
+     * a healthy backup: a verb with nothing it pointed at, which asked "change
+     * it to what, from what?" (the maintainer's "open folder or change folder
+     * is confusing"). The folder row answers that by stating the folder and
+     * carrying the change; a backup that needs nothing shows no button.
      */
     private void applyCta(boolean hasKey, boolean hasFolder, boolean setUp,
                           @Nullable CloudBackupManager.Status status) {
@@ -467,22 +523,19 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         }
         boolean lost = setUp && status != null && status.setUp && !status.reachable;
         int title;
-        boolean emphasized;
         if (!hasKey) {
             title = R.string.settings_sync_create_title;
-            emphasized = true;
         } else if (!hasFolder) {
             title = R.string.folder_backup_choose_cta;
-            emphasized = true;
         } else if (lost) {
             title = R.string.folder_backup_rechoose_cta;
-            emphasized = true;
         } else {
-            title = R.string.folder_backup_change_cta;
-            emphasized = false;
+            mCta.setVisible(false);
+            return;
         }
         mCta.setTitle(title);
-        mCta.setEmphasized(emphasized);
+        mCta.setEmphasized(true);
+        mCta.setVisible(true);
     }
 
     /** The Backups row (+ the backed-up-files erasure) waits for set-up; the
@@ -503,30 +556,136 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * "Where to back up" — the instruction the system picker never gives.
-     * Android's folder picker opens on whatever it showed last, usually the
-     * phone's own storage, with the cloud apps a tap away behind its ☰ drawer
-     * (and only the apps installed on the phone listed there), so a user who
-     * has never seen the drawer picks a folder on the phone and gets a backup
-     * that dies with it. One dialog before every launch says where to look;
-     * "Change folder" is rare enough that the repeat costs nothing.
+     * The folder row's tap. A folder that HOLDS files confirms first, because
+     * the change is not what it looks like: nothing moves, the old folder
+     * keeps its files under the same code, and they leave the Backups list
+     * until that folder is chosen again (restore them first to bring them
+     * along). That consequence used to live only in CLAUDE.md; it belongs at
+     * the decision. An empty folder, or one never read, goes straight to the
+     * chooser.
      */
-    private void openFolderPicker() {
+    private void changeFolder() {
+        CloudBackupManager.Status known = knownStatus();
+        int files = known != null && known.fileCount >= 0
+                ? known.fileCount : mCloudBackup.lastKnownFileCount();
+        if (files <= 0) {
+            showPlaceChooser();
+            return;
+        }
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.folder_backup_pick_title)
-                .setMessage(R.string.folder_backup_pick_message)
-                .setPositiveButton(R.string.folder_backup_pick_open,
-                        (dialog, which) -> launchFolderPicker())
+                .setTitle(R.string.folder_backup_change_title)
+                .setMessage(getString(R.string.folder_backup_change_message,
+                        mCloudBackup.locationLabel()))
+                .setPositiveButton(R.string.folder_backup_change_confirm,
+                        (dialog, which) -> showPlaceChooser())
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 
-    /** Opens the system folder picker, pre-pointed at the current folder when
-     *  there is one (a hint the picker is free to ignore). */
-    private void launchFolderPicker() {
-        Uri initial = mCloudBackup.folderStore().treeUri();
+    /**
+     * "Where to back up" — the chooser that replaced a two-paragraph dialog
+     * ("the Android file picker opens next, tap ☰ in its top corner…" +
+     * "Open picker"). It is built from what the phone HAS ({@link
+     * BackupPlaces}): one row per installed cloud app with its own icon, the
+     * mounted SD card / USB drive, and "Somewhere else" (the plain picker).
+     * Nothing here can open the picker INSIDE a cloud app (roots are behind a
+     * system permission — see BackupPlaces), so a cloud row's subtitle says
+     * what to tap in the picker and the same line is toasted OVER the picker
+     * as it opens: the one moment the instruction is needed, on a screen that
+     * is not ours. The volume row opens the picker right on the card. No cloud
+     * app at all is finally a statable fact — the note says so and the card /
+     * plain-picker rows remain — where the paragraph could only list apps the
+     * phone might not have. Residual it cannot see: an app that hides from
+     * folder picks (Proton, CLAUDE.md) is listed and then absent from ☰.
+     */
+    private void showPlaceChooser() {
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        View content = LayoutInflater.from(context)
+                .inflate(R.layout.dialog_backup_places, null, false);
+        LinearLayout list = content.findViewById(R.id.places_list);
+        TextView note = content.findViewById(R.id.places_note);
+        AlertDialog[] shown = new AlertDialog[1];
+        List<BackupPlaces.Place> clouds = BackupPlaces.cloudApps(context);
+        for (BackupPlaces.Place place : clouds) {
+            addPlaceRow(list, place.icon, R.drawable.folder_24, place.label,
+                    getString(R.string.folder_backup_place_cloud_sub, place.label), v -> {
+                        dismissChooser(shown);
+                        Toast.makeText(context,
+                                getString(R.string.folder_backup_hint_drawer, place.label),
+                                Toast.LENGTH_LONG).show();
+                        launchPicker(null);
+                    });
+        }
+        BackupPlaces.Place removable = BackupPlaces.removable(context);
+        if (removable != null) {
+            String sub = removable.intent != null
+                    ? getString(R.string.folder_backup_place_removable_sub)
+                    : getString(R.string.folder_backup_place_cloud_sub, removable.label);
+            addPlaceRow(list, null, R.drawable.sd_card_24, removable.label, sub, v -> {
+                dismissChooser(shown);
+                launchPicker(removable.intent);
+            });
+        }
+        addPlaceRow(list, null, R.drawable.folder_24,
+                getString(R.string.folder_backup_place_other),
+                getString(R.string.folder_backup_place_other_sub), v -> {
+                    dismissChooser(shown);
+                    launchPicker(null);
+                });
+        note.setText(clouds.isEmpty()
+                ? R.string.folder_backup_place_none
+                : R.string.folder_backup_place_signin);
+        shown[0] = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.folder_backup_pick_title)
+                .setView(content)
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private static void dismissChooser(AlertDialog[] shown) {
+        if (shown[0] != null) {
+            shown[0].dismiss();
+        }
+    }
+
+    /** One chooser row: an app's own icon (untinted) or the chooser's glyph
+     *  (onSurfaceVariant, like every settings row icon), the place, the one
+     *  instruction that goes with it. */
+    private void addPlaceRow(LinearLayout list, @Nullable Drawable appIcon, int glyphRes,
+                             String title, String subtitle, View.OnClickListener onTap) {
+        View row = LayoutInflater.from(list.getContext())
+                .inflate(R.layout.item_backup_place, list, false);
+        ImageView icon = row.findViewById(R.id.place_icon);
+        if (appIcon != null) {
+            icon.setImageTintList(null);
+            icon.setImageDrawable(appIcon);
+        } else {
+            icon.setImageResource(glyphRes);
+            icon.setImageTintList(ColorStateList.valueOf(MaterialColors.getColor(icon,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant)));
+        }
+        ((TextView) row.findViewById(R.id.place_title)).setText(title);
+        ((TextView) row.findViewById(R.id.place_sub)).setText(subtitle);
+        row.setOnClickListener(onTap);
+        list.addView(row);
+    }
+
+    /**
+     * Opens the system folder picker: a volume's own intent when the chooser
+     * row carried one (the picker opens on the card), else the plain picker
+     * pre-pointed at the current folder when there is one (a hint the picker
+     * is free to ignore).
+     */
+    private void launchPicker(@Nullable Intent intent) {
         try {
-            mFolderPicker.launch(initial);
+            if (intent != null) {
+                mVolumePicker.launch(intent);
+            } else {
+                mFolderPicker.launch(mCloudBackup.folderStore().treeUri());
+            }
         } catch (ActivityNotFoundException e) {
             snackbar(getString(R.string.folder_backup_pick_unavailable));
         }
@@ -562,7 +721,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                     .setTitle(R.string.folder_backup_guard_title)
                     .setMessage(getString(R.string.folder_backup_guard_message, label))
                     .setPositiveButton(R.string.folder_backup_guard_choose_other,
-                            (dialog, which) -> launchFolderPicker())
+                            (dialog, which) -> showPlaceChooser())
                     .setNegativeButton(R.string.folder_backup_guard_use_anyway,
                             (dialog, which) -> adoptPickedFolder(treeUri))
                     .show();

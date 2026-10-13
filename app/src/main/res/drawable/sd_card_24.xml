@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols "sd_card" (outlined, weight 400), drawn in the 960 box
+     like its siblings: the "Where to back up" chooser's removable-volume
+     row (an SD card, a USB drive). No baked tint: the chooser tints it
+     onSurfaceVariant like the folder glyph beside it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M240,880Q207,880 183.5,856.5Q160,833 160,800L160,320L400,80L720,80Q753,80 776.5,103.5Q800,127 800,160L800,800Q800,833 776.5,856.5Q753,880 720,880L240,880ZM240,800L720,800L720,160L434,160L240,354L240,800ZM400,300L480,300L480,180L400,180L400,300ZM520,300L600,300L600,180L520,180L520,300ZM640,300L720,300L720,180L640,180L640,300Z"/>
+</vector>

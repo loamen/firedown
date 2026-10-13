@@ -57,8 +57,10 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
     private boolean mHasFolder;
     private int mFileCount = -1;
     private long mTotalBytes = -1;
-    /** The storage the folder sits in ("Google Drive", "this phone"…), or
-     *  empty when unknown — then the subtitle line is hidden. */
+    /** WHERE the backup is — the location label ("Google Drive › Backups":
+     *  the provider, then the picked folder's own name; the provider alone
+     *  until a read has named the folder), or empty when unknown — then the
+     *  subtitle line is hidden. */
     private String mProvider = "";
 
     public CloudStatusPreference(Context context, AttributeSet attrs) {
@@ -115,7 +117,7 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         }
     }
 
-    /** The provider label the subtitle names ("On Google Drive"). */
+    /** The location the subtitle names ("On Google Drive › Backups"). */
     public void setProvider(@Nullable String provider) {
         String next = provider == null ? "" : provider;
         if (!next.equals(mProvider)) {

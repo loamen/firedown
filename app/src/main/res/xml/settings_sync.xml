@@ -12,13 +12,15 @@
        the morphing CTA        directly under the hero (custom layout
                                preference_cloud_buy_button.xml): "Create
                                recovery code" → "Choose backup folder" →
-                               "Change folder" (outlined once healthy) /
-                               "Choose the folder again" (filled when lost)
+                               "Choose the folder again" (when lost); GONE
+                               once the backup is healthy — the folder row
+                               below carries the change
     ── three UNLABELLED card groups (title-less PreferenceCategory) ──
        KEY group   Recovery code (shown once a key exists; the reveal dialog
                    carries Copy AND Save-to-file) · I have a recovery code
                    (adopt / replace the key)
-       USE group   Backups (set-up gated) · Sync bookmarks (INLINE switch,
+       USE group   Backup folder (where it is; tap = change) · Backups
+                   (set-up gated) · Sync bookmarks (INLINE switch,
                    secondary by design; "Sync now" dropped — sync is
                    automatic, the summary shows last-synced)
        last        How sync & encryption work · Delete backup data (the ONE
@@ -61,14 +63,14 @@
     <!-- The one PROMINENT action — a MORPHING CTA whose label is the
          Preference title (the layout binds it into the button): pre-key it
          reads "Create recovery code" (onboarding step ①), then "Choose backup
-         folder" (step ②), then "Change folder" / "Choose the folder again".
-         SyncSettingsFragment swaps title + click routing in updateState.
-         EMPHASIS is state-dependent (CloudBuyButtonPreference): FILLED while
-         something is genuinely needed (no key, no folder, a lost folder),
-         demoted to an OUTLINED row once the backup is healthy — a permanent
-         filled button on a backup that needs nothing cuts against the
-         calm-by-default ethos. The key keeps its historical name
-         (…cloud.backup.buy); nothing is bought here any more. -->
+         folder" (step ②), then "Choose the folder again" when the folder
+         stopped answering. SyncSettingsFragment swaps title + click routing
+         in updateState. It shows ONLY while a step is owed: once the backup
+         is healthy it is HIDDEN, and the "Backup folder" row in the USE group
+         is the change door (an outlined "Change folder" lived here for one
+         release and read as the screen's one action — a verb with nothing it
+         pointed at). The key keeps its historical name (…cloud.backup.buy);
+         nothing is bought here any more. -->
     <com.solarized.firedown.settings.CloudBuyButtonPreference
         android:key="com.solarized.firedown.preferences.cloud.backup.buy"
         android:title="@string/settings_sync_create_title"
@@ -118,6 +120,21 @@
     <PreferenceCategory
         android:key="com.solarized.firedown.preferences.cloud.group.use"
         android:persistent="false">
+
+        <!-- WHERE the backup is — "Google Drive › Backups" as the summary — and
+             the ONE door to change it (SyncSettingsFragment.changeFolder:
+             confirmed while the folder holds files, since the old folder keeps
+             them and they leave the Backups list until it is chosen again). A
+             ROW, not a button: "Change folder" was the most prominent control
+             on a healthy backup, a verb with no object, and the question it
+             provoked — change it to what, from what? — is answered by stating
+             the folder, the way Signal, Aegis and Syncthing state their backup
+             path on a row. Visible once a folder is chosen. -->
+        <Preference
+            android:key="com.solarized.firedown.preferences.cloud.backup.folder"
+            android:title="@string/folder_backup_row_title"
+            app:singleLineTitle="false"
+            app:icon="@drawable/folder_24" />
 
         <!-- Visible once the backup is set up (a key AND a folder). No "Manage
              backup" label: over this row it restated the row (the same

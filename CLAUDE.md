@@ -4514,8 +4514,9 @@ children — the card edges do the grouping).
 - **The hero has THREE states** (`CloudStatusPreference`): set up + folder
   reachable (the cloud-upload glyph, `cloud_upload_24` — THE backup glyph
   on every door and notification, the maintainer's pick over the earlier
-  folder — "Firedown Backup" over "On <provider>", the
-  backed-up size headline, a file-count caption; the ⋮-menu hint while
+  folder — "Firedown Backup" over "On <provider › folder>" (the location
+  label, below), the backed-up size headline, a file-count caption; the
+  ⋮-menu hint while
   nothing is backed up yet; "Transfer in progress…" while a worker runs);
   set up + folder LOST (the cloud-off glyph, `cloud_off_24` — the healthy
   glyph's struck twin, so the pair stays one family; the same glyph is the
@@ -4528,21 +4529,43 @@ children — the card edges do the grouping).
   facts the card can state are what is in it and whether it answers.
   `mReachable` defaults TRUE so a cold bind never flashes the lost state;
   the hero binds `lastStatus()` first, then the fresh read.
-- **The CTA's label AND emphasis are state-dependent** (`applyCta`): no key
-  → "Create recovery code" (FILLED; with the mandatory "I've saved it"
-  dialog), key but no folder → "Choose backup folder" (FILLED), folder lost
-  → "Choose the folder again" (FILLED), healthy → "Change folder" (OUTLINED
-  `preference_cloud_buy_button_plain` — a backup that needs nothing is not
-  stared down by a permanent filled button). `setEmphasized` swaps the
-  layout resource and `notifyChanged()`s; no-op when unchanged. **ONE
-  `OpenDocumentTree` launcher serves first choice, change and re-choose**:
-  `onFolderPicked` → `adoptFolder` (takes the persistable grant; a previous
-  folder's grant is released, its files untouched), drops the screen's own
-  last answer, re-reads — a folder that already holds this account's backups
-  (a reinstall pointed back at its Drive folder) lists them straight away —
-  and snackbars "Backing up to <provider>". **Changing the folder moves
-  nothing**: the old folder keeps its files under the same code; "Restore
-  all" first is the way to bring them along.
+- **The CTA shows ONLY while a step is owed, and the FOLDER is a ROW**
+  (`applyCta` / `applyFolderRow`, 2026-10-13, the maintainer's "open folder
+  or change folder is still confusing for cloud"): no key → "Create
+  recovery code" (FILLED; with the mandatory "I've saved it" dialog), key
+  but no folder → "Choose backup folder" (FILLED), folder lost → "Choose
+  the folder again" (FILLED), healthy → the button is HIDDEN. It stayed as
+  an outlined "Change folder" for one release and that was the screen's
+  one visible action on a healthy backup: a verb with no object, which
+  asked "change it to what, from what?". The answer is the **"Backup
+  folder" row** at the top of the USE group (`folder_24`, key
+  `cloud.backup.folder`), whose summary STATES the folder —
+  `FolderStore.locationLabel()`, "Google Drive › Backups": the provider,
+  then the picked folder's own display name, remembered from the same
+  root-document query `isReachable()` already makes (pref
+  `FOLDER_BACKUP_TREE_NAME`, cleared with the tree; `Status.location`
+  carries it so the hero and the row repaint from the read that named it).
+  That is what Signal, Aegis and Syncthing do with a SAF folder: a row
+  with the path, tap to change — none has a standalone change button, and
+  none offers "open folder" (opening the tree shows `objects/` full of
+  random-named `.fdvc` files; the Backups list IS the folder's readable
+  view, deliberately the only one). Tapping the row runs `changeFolder`:
+  while the folder HOLDS files it confirms first (`folder_backup_change_*`:
+  new backups go to the next folder, what is already in <location> stays
+  there and leaves the Backups list until that folder is chosen again,
+  restore first to bring it along — the consequence that used to live only
+  in this file), else straight to the chooser. **ONE `OpenDocumentTree`
+  launcher serves first choice, change and re-choose** (plus
+  `mVolumePicker`, a `StartActivityForResult` for a removable volume's own
+  picker intent — same ACTION_OPEN_DOCUMENT_TREE, same tree grant, same
+  `onFolderPicked`): `onFolderPicked` → `adoptFolder` (takes the
+  persistable grant; a previous folder's grant is released, its files
+  untouched), drops the screen's own last answer, re-reads — a folder that
+  already holds this account's backups (a reinstall pointed back at its
+  Drive folder) lists them straight away — and snackbars "Backup folder:
+  <provider>". **Changing the folder moves nothing**: the old folder keeps
+  its files under the same code; "Restore all" first is the way to bring
+  them along.
 - **The picker is INSTRUCTED before and GUARDED after — the phone already
   has a folder named `backup`.** `Download/Firedown/backup/` is the
   download-LIST mirror (`DownloadBackupMirror`'s `.fdbk` + the bookmark
@@ -4551,12 +4574,30 @@ children — the card edges do the grouping).
   is keyed to the name). So a user browsing the phone in the system picker
   sees an app-made folder literally called backup and picks it, and the
   "backup" lands beside the originals on the same storage. Two answers, in
-  `SyncSettingsFragment`: (1) `openFolderPicker` shows ONE dialog before
-  every launch (`folder_backup_pick_*`): Android's picker opens on the
-  phone's own storage with the cloud apps behind its ☰ drawer and lists
-  only the apps installed, so the dialog says to tap ☰ and pick Drive /
-  Dropbox / Nextcloud, that an SD card works, and that a folder on the
-  phone dies with the phone — then `launchFolderPicker` (the
+  `SyncSettingsFragment`: (1) `showPlaceChooser` — the **"Where to back
+  up" chooser** (`dialog_backup_places` / `item_backup_place`), built from
+  what the phone HAS (`sync/BackupPlaces`): one row per installed app that
+  ships a DocumentsProvider, with its own icon
+  (`queryIntentContentProviders` on `DOCUMENTS_PROVIDER`, the manifest's
+  one `<queries>` entry for Android 11+ visibility, the system providers
+  and anything not protected by `MANAGE_DOCUMENTS` skipped), the mounted
+  SD card / USB drive (`StorageVolume.createOpenDocumentTreeIntent()` on
+  API 29+ opens the picker right on it), and "Somewhere else" (the plain
+  picker). It REPLACED a two-paragraph dialog ("the Android file picker
+  opens next, tap ☰ in its top corner…" + an "Open picker" button) whose
+  one job was to describe what this reads off the phone. What detection
+  CANNOT do, so the copy never claims it: read a provider's roots
+  (`MANAGE_DOCUMENTS` is system-only), hence whether the app is signed in
+  (Drive with no account lists nothing in ☰ — the maintainer's own
+  "cloud is not showing" turned out to be exactly that) or supports folder
+  picks at all (the Proton case below), and open the picker INSIDE a chosen
+  app (no documented root id for `EXTRA_INITIAL_URI`). So a cloud row
+  launches the plain picker with its subtitle saying what to tap there and
+  the same line TOASTED over the picker as it opens
+  (`folder_backup_hint_drawer` — the one moment the instruction is needed,
+  on a screen that is not ours); the chooser's note says a cloud app
+  appears in ☰ once signed in, or, with no provider installed, that none is
+  — a fact the paragraph could never state. Then `launchPicker` (the
   `ActivityNotFoundException` catch the restore picker has). (2)
   `onFolderPicked` runs `FolderStore.treeIsWithin(tree,
   StoragePaths.getDownloadPath())` — the external-storage provider's tree
@@ -4564,11 +4605,11 @@ children — the card edges do the grouping).
   `/storage/<id>`; a cloud provider's tree has no path and is never
   questioned) — and a tree that is the app's download directory or under
   it gets the `folder_backup_guard_*` dialog: "Choose another" relaunches
-  the picker, "Use it anyway" adopts like any other pick. Nothing is
+  the chooser, "Use it anyway" adopts like any other pick. Nothing is
   refused: a backup on the phone is a legitimate (weak) choice, the point
   is that it is not picked by accident. The setup copy and roadmap step ②
   (`cloud_backup_setup_message`, `folder_backup_step_folder`) name the
-  kinds of places too, so the first pick is steered before the picker
+  kinds of places too, so the first pick is steered before the chooser
   opens. The two folders stay as they are: list recovery for a same-phone
   reinstall vs file copies elsewhere are different jobs, and renaming the
   mirror's folder buys nothing the guard doesn't.
@@ -4594,12 +4635,13 @@ children — the card edges do the grouping).
   (declare the flag and implement `isChildDocument`; their documents
   already carry `FLAG_DIR_SUPPORTS_CREATE`/`SUPPORTS_WRITE`/`DELETE`, so a
   tree would work) goes through Proton's feedback forum or support, not
-  GitHub. So the pre-picker dialog names Drive, Dropbox and Nextcloud and
-  says an app missing from ☰ "doesn't let other apps use its folders" — it
-  used to promise "or any other app installed on this phone", which is
-  exactly what sent the maintainer looking for Proton there. Don't name an
-  absent app in the copy (stale the day it adds the flag); the diagnostic
-  for the next such report is the Import-picker test above.
+  GitHub. The chooser above lists Proton like any installed provider —
+  the flag lives in the roots, which an app cannot read — so its row says
+  "tap ☰ and choose Proton Drive" and Proton is not there; that residual
+  is accepted and recorded here, not papered over with an app allowlist
+  (stale the day Proton adds the flag). The chooser's no-provider note
+  names Drive, Dropbox and Nextcloud as the ones known to work; the
+  diagnostic for the next such report is the Import-picker test above.
 - **The KEY-FIRST GATE**: until a recovery code exists the CTA reads "Create
   recovery code" (not choose-a-folder), the Backups row is hidden and the
   Bookmarks switch is disabled — a folder can only be chosen once there is

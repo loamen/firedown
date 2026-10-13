@@ -188,6 +188,14 @@ public class CloudBackupManager {
         return store.providerLabel();
     }
 
+    /** Provider + the picked folder's name ("Google Drive › Backups"), the
+     *  provider alone until a reachability read has named the folder.
+     *  Cheap (prefs only). */
+    @NonNull
+    public String locationLabel() {
+        return store.locationLabel();
+    }
+
     /** Combined status snapshot for the hero + the Backups header. */
     public static final class Status {
         public final boolean setUp;
@@ -196,14 +204,19 @@ public class CloudBackupManager {
         public final int fileCount;   // -1 = unavailable (folder unreachable / not loaded)
         public final long totalBytes; // -1 = unavailable
         public final String providerLabel;
+        /** Provider › folder name ({@link FolderStore#locationLabel()}), read
+         *  AFTER the reachability probe so a first read already names the
+         *  folder. */
+        public final String location;
 
         Status(boolean setUp, boolean reachable, int fileCount, long totalBytes,
-               String providerLabel) {
+               String providerLabel, String location) {
             this.setUp = setUp;
             this.reachable = reachable;
             this.fileCount = fileCount;
             this.totalBytes = totalBytes;
             this.providerLabel = providerLabel;
+            this.location = location;
         }
     }
 
@@ -296,9 +309,10 @@ public class CloudBackupManager {
             String label = store.providerLabel();
             Status result;
             if (!setUp) {
-                result = new Status(false, false, -1, -1, label);
+                result = new Status(false, false, -1, -1, label, store.locationLabel());
             } else if (!store.isReachable()) {
-                result = new Status(true, false, lastKnownFileCount(), lastKnownTotalBytes(), label);
+                result = new Status(true, false, lastKnownFileCount(), lastKnownTotalBytes(),
+                        label, store.locationLabel());
             } else {
                 byte[] code = new SyncSecrets(context).load();
                 int files = -1;
@@ -322,14 +336,16 @@ public class CloudBackupManager {
                         SyncSecrets.wipe(code);
                     }
                 }
+                String location = store.locationLabel();
                 if (files >= 0) {
-                    result = new Status(true, true, files, bytes, label);
+                    result = new Status(true, true, files, bytes, label, location);
                     mLastStatus = result;
                     storeTotals(files, bytes);
                 } else {
                     // Reachable but the listing failed (a provider hiccup):
                     // report unreachable-with-last-known rather than invent.
-                    result = new Status(true, false, lastKnownFileCount(), lastKnownTotalBytes(), label);
+                    result = new Status(true, false, lastKnownFileCount(), lastKnownTotalBytes(),
+                            label, location);
                 }
             }
             final Status out = result;

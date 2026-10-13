@@ -160,15 +160,23 @@ public class Preferences {
      *  the Backup screen's folder-unreachable state ("Choose the folder again")
      *  is exactly the right first screen for a new phone. */
     public static final String FOLDER_BACKUP_TREE_URI = "com.solarized.firedown.preferences.cloud.backup.folder.tree";
+    /** The picked folder's display name as its provider reports it, remembered
+     *  by FolderStore.isReachable so the "Google Drive › Backups" location can
+     *  be painted without a provider round trip. Cleared with the tree. */
+    public static final String FOLDER_BACKUP_TREE_NAME = "com.solarized.firedown.preferences.cloud.backup.folder.name";
     /** Settings entry that opens the Backup screen (historical key; unreferenced). */
     public static final String SETTINGS_CLOUD_BACKUP = "com.solarized.firedown.preferences.settings.cloud.backup";
     /** Backup screen actions (clickable preferences). */
     public static final String SETTINGS_CLOUD_BACKUP_STATUS = "com.solarized.firedown.preferences.cloud.backup.status";
     public static final String SETTINGS_CLOUD_BACKUP_FILES = "com.solarized.firedown.preferences.cloud.backup.files";
+    /** The Backup screen's "Backup folder" row: title + the location as its
+     *  summary; tap = change it (confirmed while the folder holds files). */
+    public static final String SETTINGS_CLOUD_BACKUP_FOLDER = "com.solarized.firedown.preferences.cloud.backup.folder";
     /** The Backup screen's MORPHING CTA (the button under the hero): "Create
-     *  recovery code" pre-key, "Choose backup folder" once a key exists, "Change
-     *  folder" once set up, "Choose the folder again" when the folder is
-     *  unreachable. The key value is historical. */
+     *  recovery code" pre-key, "Choose backup folder" once a key exists,
+     *  "Choose the folder again" when the folder is unreachable; HIDDEN once
+     *  the backup is healthy (the folder row carries the change). The key
+     *  value is historical. */
     public static final String SETTINGS_CLOUD_BACKUP_CTA = "com.solarized.firedown.preferences.cloud.backup.buy";
     public static final String SETTINGS_CLOUD_BACKUP_SHOW_CODE = "com.solarized.firedown.preferences.cloud.backup.show.code";
     /** The ONE erasure door on the Backup screen — opens the scoped sub-screen. */

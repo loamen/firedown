@@ -314,15 +314,27 @@
     <string name="folder_backup_lost_seen">Last seen: %1$s</string>
     <string name="folder_backup_choose_cta">Choose backup folder</string>
     <string name="folder_backup_pick_title">Where to back up</string>
-    <string name="folder_backup_pick_message">The Android file picker opens next. Tap ☰ in its top corner and choose your cloud app, then open or create a folder there. Google Drive, Dropbox and Nextcloud work. A cloud app missing from that list doesn\'t let other apps use its folders, so it can\'t hold a backup.\n\nAn SD card works too. A folder on this phone\'s own storage is lost with the phone.</string>
-    <string name="folder_backup_pick_open">Open picker</string>
     <string name="folder_backup_pick_unavailable">No folder picker is available on this phone</string>
+    <string name="folder_backup_row_title">Backup folder</string>
+    <!-- Provider › the picked folder's own name ("Google Drive › Backups"); the
+         separator is typographic, not a word, so the base copy serves every
+         locale (FolderStore.locationLabel). -->
+    <string name="folder_backup_location" translatable="false">%1$s › %2$s</string>
+    <string name="folder_backup_change_title">Change the backup folder?</string>
+    <string name="folder_backup_change_message">New backups go to the folder you pick next. What\'s already in %1$s stays there and won\'t show in Backups until you choose that folder again. To bring it along, restore it to this phone first.</string>
+    <string name="folder_backup_change_confirm">Choose folder</string>
+    <string name="folder_backup_place_cloud_sub">In the picker, tap ☰ and choose %1$s</string>
+    <string name="folder_backup_place_removable_sub">The picker opens right on it</string>
+    <string name="folder_backup_place_other">Somewhere else</string>
+    <string name="folder_backup_place_other_sub">Any folder the picker can reach. One on this phone is lost with the phone.</string>
+    <string name="folder_backup_place_signin">A cloud app appears in the picker\'s ☰ once you\'re signed in to it.</string>
+    <string name="folder_backup_place_none">No cloud app with folder access is installed. Google Drive, Dropbox and Nextcloud work; so does an SD card.</string>
+    <string name="folder_backup_hint_drawer">Tap ☰ and choose %1$s</string>
     <string name="folder_backup_guard_title">That\'s your downloads folder</string>
     <string name="folder_backup_guard_message">Firedown already keeps your downloads in %1$s. A backup there is lost with the phone. Choose a folder on a cloud app or an SD card instead.</string>
     <string name="folder_backup_guard_choose_other">Choose another</string>
     <string name="folder_backup_guard_use_anyway">Use it anyway</string>
     <string name="folder_backup_step_folder">Choose a backup folder on Drive, Dropbox or an SD card</string>
-    <string name="folder_backup_change_cta">Change folder</string>
     <string name="folder_backup_rechoose_cta">Choose the folder again</string>
     <string name="folder_backup_folder_set">Backup folder: %1$s</string>
     <string name="folder_backup_header_on">Firedown Backup on %1$s</string>

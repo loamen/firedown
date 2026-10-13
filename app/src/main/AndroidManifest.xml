@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Package visibility for the Backup screen's "Where to back up"
+         chooser (sync/BackupPlaces): every installed app that ships a
+         DocumentsProvider (Drive, Dropbox, Nextcloud…) is listed by name and
+         icon so the user knows what the system folder picker will offer
+         behind its ☰ drawer. Android 11+ hides such packages from
+         queryIntentContentProviders without this entry. Roots themselves
+         stay unqueryable (MANAGE_DOCUMENTS is system-only). -->
+    <queries>
+        <intent>
+            <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+        </intent>
+    </queries>
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
