@@ -4209,6 +4209,35 @@ children — the card edges do the grouping).
   and snackbars "Backing up to <provider>". **Changing the folder moves
   nothing**: the old folder keeps its files under the same code; "Restore
   all" first is the way to bring them along.
+- **The picker is INSTRUCTED before and GUARDED after — the phone already
+  has a folder named `backup`.** `Download/Firedown/backup/` is the
+  download-LIST mirror (`DownloadBackupMirror`'s `.fdbk` + the bookmark
+  export): automatic, device-keyed, the same-phone reinstall recovery, and
+  it cannot move (every old install's `.fdbk` is there and the restore scan
+  is keyed to the name). So a user browsing the phone in the system picker
+  sees an app-made folder literally called backup and picks it, and the
+  "backup" lands beside the originals on the same storage. Two answers, in
+  `SyncSettingsFragment`: (1) `openFolderPicker` shows ONE dialog before
+  every launch (`folder_backup_pick_*`): Android's picker opens on the
+  phone's own storage with the cloud apps behind its ☰ drawer and lists
+  only the apps installed, so the dialog says to tap ☰ and pick Drive /
+  Dropbox / Nextcloud, that an SD card works, and that a folder on the
+  phone dies with the phone — then `launchFolderPicker` (the
+  `ActivityNotFoundException` catch the restore picker has). (2)
+  `onFolderPicked` runs `FolderStore.treeIsWithin(tree,
+  StoragePaths.getDownloadPath())` — the external-storage provider's tree
+  id mapped to a path (`primary` → the shared root, any other volume →
+  `/storage/<id>`; a cloud provider's tree has no path and is never
+  questioned) — and a tree that is the app's download directory or under
+  it gets the `folder_backup_guard_*` dialog: "Choose another" relaunches
+  the picker, "Use it anyway" adopts like any other pick. Nothing is
+  refused: a backup on the phone is a legitimate (weak) choice, the point
+  is that it is not picked by accident. The setup copy and roadmap step ②
+  (`cloud_backup_setup_message`, `folder_backup_step_folder`) name the
+  kinds of places too, so the first pick is steered before the picker
+  opens. The two folders stay as they are: list recovery for a same-phone
+  reinstall vs file copies elsewhere are different jobs, and renaming the
+  mirror's folder buys nothing the guard doesn't.
 - **The KEY-FIRST GATE**: until a recovery code exists the CTA reads "Create
   recovery code" (not choose-a-folder), the Backups row is hidden and the
   Bookmarks switch is disabled — a folder can only be chosen once there is

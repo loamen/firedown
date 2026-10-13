@@ -620,6 +620,15 @@
     <string name="folder_backup_lost_body">该文件夹可能已被移动、删除或退出登录。请重新选择以继续备份。本机上的内容不受影响。</string>
     <string name="folder_backup_lost_seen">上次读取：%1$s</string>
     <string name="folder_backup_choose_cta">选择备份文件夹</string>
+    <string name="folder_backup_pick_title">备份到哪里</string>
+    <string name="folder_backup_pick_message">接下来会打开 Android 文件选择器。点按其顶角的 ☰，选择你的云应用：Google 云端硬盘、Dropbox、Nextcloud 或本机已安装的其他应用，然后在那里打开或新建一个文件夹。\n\nSD 卡也可以。手机自身存储中的文件夹会随手机一起丢失。</string>
+    <string name="folder_backup_pick_open">打开选择器</string>
+    <string name="folder_backup_pick_unavailable">这部手机没有文件夹选择器</string>
+    <string name="folder_backup_guard_title">这是你的下载文件夹</string>
+    <string name="folder_backup_guard_message">Firedown 已经把你的下载保存在 %1$s。备份到那里会随手机一起丢失。请改为选择云应用或 SD 卡中的文件夹。</string>
+    <string name="folder_backup_guard_choose_other">另选一个</string>
+    <string name="folder_backup_guard_use_anyway">仍然使用</string>
+    <string name="folder_backup_step_folder">在云端硬盘、Dropbox 或 SD 卡上选择备份文件夹</string>
     <string name="folder_backup_change_cta">更改文件夹</string>
     <string name="folder_backup_rechoose_cta">重新选择文件夹</string>
     <string name="folder_backup_folder_set">备份文件夹：%1$s</string>
@@ -632,7 +641,7 @@
     <string name="folder_backup_transfer_not_set_up">备份尚未设置。请在“备份”中完成设置</string>
     <string name="folder_backup_choose_first">请先选择备份文件夹</string>
     <string name="cloud_backup_setup_title">设置备份</string>
-    <string name="cloud_backup_setup_message">下载内容会先加密，再复制到你选择的文件夹。你会获得一个恢复码——唯一的密钥，与书签同步共用。丢失后无法找回。</string>
+    <string name="cloud_backup_setup_message">下载内容会先加密，再复制到你在 Google 云端硬盘、Dropbox、SD 卡或其他能比这部手机留存更久的地方选择的文件夹。你会获得一个恢复码——唯一的密钥，与书签同步共用。丢失后无法找回。</string>
     <string name="cloud_backup_setup_create">创建密钥</string>
     <string name="cloud_backup_started">正在备份…</string>
     <string name="cloud_backup_none_eligible">选择已完成的文件进行备份</string>

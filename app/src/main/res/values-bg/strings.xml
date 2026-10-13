@@ -446,6 +446,15 @@
     <string name="folder_backup_lost_body">Папката може да е била преместена, изтрита или излязла от профила. Изберете я отново, за да продължите архивирането. Нищо на този телефон не е засегнато.</string>
     <string name="folder_backup_lost_seen">Последно: %1$s</string>
     <string name="folder_backup_choose_cta">Избор на папка за архивиране</string>
+    <string name="folder_backup_pick_title">Къде да се архивира</string>
+    <string name="folder_backup_pick_message">След това се отваря файловият избор на Android. Докоснете ☰ в горния му ъгъл и изберете облачното си приложение: Google Drive, Dropbox, Nextcloud или друго, инсталирано на този телефон. После отворете или създайте папка там.\n\nSD карта също става. Папка в паметта на самия телефон се губи заедно с телефона.</string>
+    <string name="folder_backup_pick_open">Отвори избора</string>
+    <string name="folder_backup_pick_unavailable">На този телефон няма избор на папка</string>
+    <string name="folder_backup_guard_title">Това е папката с изтеглянията ви</string>
+    <string name="folder_backup_guard_message">Firedown вече пази изтеглянията ви в %1$s. Архив там се губи заедно с телефона. Вместо това изберете папка в облачно приложение или на SD карта.</string>
+    <string name="folder_backup_guard_choose_other">Избери друга</string>
+    <string name="folder_backup_guard_use_anyway">Използвай я все пак</string>
+    <string name="folder_backup_step_folder">Изберете папка за архив в Drive, Dropbox или на SD карта</string>
     <string name="folder_backup_change_cta">Смяна на папката</string>
     <string name="folder_backup_rechoose_cta">Изберете папката отново</string>
     <string name="folder_backup_folder_set">Папка за архивиране: %1$s</string>
@@ -458,7 +467,7 @@
     <string name="folder_backup_transfer_not_set_up">Архивирането още не е настроено. Завършете настройката в „Архивиране“</string>
     <string name="folder_backup_choose_first">Първо изберете папка за архивиране</string>
     <string name="cloud_backup_setup_title">Настройване на архивирането</string>
-    <string name="cloud_backup_setup_message">Изтеглянията се шифроват, преди да бъдат копирани в папка по ваш избор. Получавате код за възстановяване — единственият ключ, споделен със синхронизирането на отметки. Не може да бъде възстановен, ако бъде изгубен.</string>
+    <string name="cloud_backup_setup_message">Изтеглянията се шифроват, преди да бъдат копирани в папка по ваш избор в Google Drive, Dropbox, на SD карта или друго място, което надживява този телефон. Получавате код за възстановяване — единственият ключ, споделен със синхронизирането на отметки. Не може да бъде възстановен, ако бъде изгубен.</string>
     <string name="cloud_backup_setup_create">Създаване на ключ</string>
     <string name="cloud_backup_started">Архивиране…</string>
     <string name="cloud_backup_none_eligible">Изберете завършени файлове за архивиране</string>

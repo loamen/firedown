@@ -623,6 +623,15 @@
     <string name="folder_backup_lost_body">Der Ordner wurde vielleicht verschoben, gelöscht oder abgemeldet. Wähle ihn erneut, um weiter zu sichern. Auf diesem Handy ändert sich nichts.</string>
     <string name="folder_backup_lost_seen">Zuletzt gesehen: %1$s</string>
     <string name="folder_backup_choose_cta">Backup-Ordner wählen</string>
+    <string name="folder_backup_pick_title">Wohin sichern</string>
+    <string name="folder_backup_pick_message">Als Nächstes öffnet sich die Android-Dateiauswahl. Tippe dort oben auf ☰ und wähle deine Cloud-App: Google Drive, Dropbox, Nextcloud oder eine andere auf diesem Handy installierte App. Öffne oder erstelle dort einen Ordner.\n\nEine SD-Karte geht auch. Ein Ordner im Speicher des Handys selbst geht mit dem Handy verloren.</string>
+    <string name="folder_backup_pick_open">Auswahl öffnen</string>
+    <string name="folder_backup_pick_unavailable">Auf diesem Handy ist keine Ordnerauswahl verfügbar</string>
+    <string name="folder_backup_guard_title">Das ist dein Downloads-Ordner</string>
+    <string name="folder_backup_guard_message">Firedown speichert deine Downloads bereits in %1$s. Eine Sicherung dort geht mit dem Handy verloren. Wähle stattdessen einen Ordner in einer Cloud-App oder auf einer SD-Karte.</string>
+    <string name="folder_backup_guard_choose_other">Anderen wählen</string>
+    <string name="folder_backup_guard_use_anyway">Trotzdem verwenden</string>
+    <string name="folder_backup_step_folder">Sicherungsordner auf Drive, Dropbox oder einer SD-Karte wählen</string>
     <string name="folder_backup_change_cta">Ordner ändern</string>
     <string name="folder_backup_rechoose_cta">Ordner erneut wählen</string>
     <string name="folder_backup_folder_set">Backup-Ordner: %1$s</string>
@@ -635,7 +644,7 @@
     <string name="folder_backup_transfer_not_set_up">Backup ist noch nicht eingerichtet. Schließe die Einrichtung unter „Backup“ ab</string>
     <string name="folder_backup_choose_first">Wähle zuerst einen Backup-Ordner</string>
     <string name="cloud_backup_setup_title">Backup einrichten</string>
-    <string name="cloud_backup_setup_message">Downloads werden verschlüsselt, bevor sie in einen Ordner deiner Wahl kopiert werden. Du erhältst einen Wiederherstellungscode – den einzigen Schlüssel, geteilt mit dem Lesezeichen-Sync. Bei Verlust ist er nicht wiederherstellbar.</string>
+    <string name="cloud_backup_setup_message">Downloads werden verschlüsselt, bevor sie in einen Ordner deiner Wahl kopiert werden – auf Google Drive, Dropbox, einer SD-Karte oder an einem anderen Ort, der dieses Handy überdauert. Du erhältst einen Wiederherstellungscode – den einzigen Schlüssel, geteilt mit dem Lesezeichen-Sync. Bei Verlust ist er nicht wiederherstellbar.</string>
     <string name="cloud_backup_setup_create">Schlüssel erstellen</string>
     <string name="cloud_backup_started">Wird gesichert…</string>
     <string name="cloud_backup_none_eligible">Wähle fertige Dateien zum Sichern aus</string>

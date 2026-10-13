@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.text.TextUtils;
@@ -26,6 +27,7 @@ import com.solarized.firedown.sync.model.VaultEntry;
 import com.solarized.firedown.sync.model.VaultManifest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -171,6 +173,87 @@ public final class FolderStore {
     public Uri treeUri() {
         String stored = prefs.getString(Preferences.FOLDER_BACKUP_TREE_URI, null);
         return TextUtils.isEmpty(stored) ? null : Uri.parse(stored);
+    }
+
+    /** The system external-storage provider: the one whose tree ids name a
+     *  filesystem path ({@code <volume>:<relative path>}). */
+    private static final String EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents";
+    private static final String PRIMARY_VOLUME = "primary";
+
+    /**
+     * The directory an external-storage tree URI denotes, or null for a tree
+     * on any other provider (Drive, Dropbox, Nextcloud… have no path). The
+     * provider derives its ids from the volume: {@code primary} is the shared
+     * storage root, any other volume id is a removable card mounted under
+     * {@code /storage/<id>} — the same mapping {@code RestoredFileAccess}
+     * applies in the other direction for the restore grant.
+     */
+    @Nullable
+    public static File directoryOfTree(@NonNull Uri treeUri) {
+        if (!EXTERNAL_STORAGE_AUTHORITY.equals(treeUri.getAuthority())) {
+            return null;
+        }
+        String docId;
+        try {
+            docId = DocumentsContract.getTreeDocumentId(treeUri);
+        } catch (IllegalArgumentException e) {
+            return null; // not a tree URI
+        }
+        int colon = docId.indexOf(':');
+        if (colon < 0) {
+            return null;
+        }
+        String volume = docId.substring(0, colon);
+        String relative = docId.substring(colon + 1);
+        File volumeRoot = PRIMARY_VOLUME.equals(volume)
+                ? Environment.getExternalStorageDirectory()
+                : new File("/storage", volume);
+        if (volumeRoot == null) {
+            return null;
+        }
+        return TextUtils.isEmpty(relative) ? volumeRoot : new File(volumeRoot, relative);
+    }
+
+    /**
+     * True when the tree is {@code dir} itself or anything under it — the
+     * check behind the "that's your downloads folder" guard: a backup written
+     * into the app's own download directory is a second copy on the same
+     * storage as the originals, which survives a deleted file and nothing
+     * else. Paths are compared canonically (symlinked storage roots), falling
+     * back to the absolute form; a tree on a cloud provider is never within.
+     */
+    public static boolean treeIsWithin(@NonNull Uri treeUri, @NonNull File dir) {
+        File treeDir = directoryOfTree(treeUri);
+        if (treeDir == null) {
+            return false;
+        }
+        String tree = canonical(treeDir);
+        String target = canonical(dir);
+        return tree.equals(target) || tree.startsWith(target + File.separator);
+    }
+
+    /** The user-readable path of an external-storage tree ({@code Download/
+     *  Firedown}), or null for any other provider. */
+    @Nullable
+    public static String treePathLabel(@NonNull Uri treeUri) {
+        if (!EXTERNAL_STORAGE_AUTHORITY.equals(treeUri.getAuthority())) {
+            return null;
+        }
+        try {
+            String docId = DocumentsContract.getTreeDocumentId(treeUri);
+            int colon = docId.indexOf(':');
+            return colon < 0 ? docId : docId.substring(colon + 1);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static String canonical(@NonNull File file) {
+        try {
+            return file.getCanonicalPath();
+        } catch (IOException e) {
+            return file.getAbsolutePath();
+        }
     }
 
     /**

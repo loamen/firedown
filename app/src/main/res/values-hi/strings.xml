@@ -459,6 +459,15 @@
     <string name="folder_backup_lost_body">फ़ोल्डर शायद हटाया, मिटाया या साइन आउट कर दिया गया है। बैकअप जारी रखने के लिए इसे फिर से चुनें। इस फ़ोन पर कुछ भी प्रभावित नहीं होता।</string>
     <string name="folder_backup_lost_seen">आख़िरी बार: %1$s</string>
     <string name="folder_backup_choose_cta">बैकअप फ़ोल्डर चुनें</string>
+    <string name="folder_backup_pick_title">बैकअप कहाँ लें</string>
+    <string name="folder_backup_pick_message">इसके बाद Android का फ़ाइल चयनकर्ता खुलेगा। उसके ऊपरी कोने में ☰ पर टैप करें और अपना क्लाउड ऐप चुनें: Google Drive, Dropbox, Nextcloud या इस फ़ोन पर इंस्टॉल कोई और ऐप। फिर वहाँ कोई फ़ोल्डर खोलें या बनाएँ।\n\nSD कार्ड भी चलेगा। फ़ोन की अपनी स्टोरेज का फ़ोल्डर फ़ोन के साथ ही खो जाता है।</string>
+    <string name="folder_backup_pick_open">चयनकर्ता खोलें</string>
+    <string name="folder_backup_pick_unavailable">इस फ़ोन पर कोई फ़ोल्डर चयनकर्ता उपलब्ध नहीं है</string>
+    <string name="folder_backup_guard_title">यह आपका डाउनलोड फ़ोल्डर है</string>
+    <string name="folder_backup_guard_message">Firedown आपके डाउनलोड पहले से %1$s में रखता है। वहाँ का बैकअप फ़ोन के साथ ही खो जाता है। इसके बजाय किसी क्लाउड ऐप या SD कार्ड का फ़ोल्डर चुनें।</string>
+    <string name="folder_backup_guard_choose_other">दूसरा चुनें</string>
+    <string name="folder_backup_guard_use_anyway">फिर भी इस्तेमाल करें</string>
+    <string name="folder_backup_step_folder">Drive, Dropbox या SD कार्ड पर बैकअप फ़ोल्डर चुनें</string>
     <string name="folder_backup_change_cta">फ़ोल्डर बदलें</string>
     <string name="folder_backup_rechoose_cta">फ़ोल्डर फिर से चुनें</string>
     <string name="folder_backup_folder_set">बैकअप फ़ोल्डर: %1$s</string>
@@ -471,7 +480,7 @@
     <string name="folder_backup_transfer_not_set_up">बैकअप अभी सेट नहीं है। बैकअप में सेटअप पूरा करें</string>
     <string name="folder_backup_choose_first">पहले एक बैकअप फ़ोल्डर चुनें</string>
     <string name="cloud_backup_setup_title">बैकअप सेट करें</string>
-    <string name="cloud_backup_setup_message">डाउनलोड को आपकी चुनी हुई फ़ोल्डर में कॉपी करने से पहले एन्क्रिप्ट किया जाता है। आपको एक रिकवरी कोड मिलता है — एकमात्र कुंजी, जो बुकमार्क सिंक के साथ साझा है। खो जाने पर इसे वापस नहीं पाया जा सकता।</string>
+    <string name="cloud_backup_setup_message">डाउनलोड को Google Drive, Dropbox, SD कार्ड या इस फ़ोन से आगे टिकने वाली किसी और जगह पर आपके चुने फ़ोल्डर में कॉपी करने से पहले एन्क्रिप्ट किया जाता है। आपको एक रिकवरी कोड मिलता है — एकमात्र कुंजी, जो बुकमार्क सिंक के साथ साझा है। खो जाने पर इसे वापस नहीं पाया जा सकता।</string>
     <string name="cloud_backup_setup_create">कुंजी बनाएँ</string>
     <string name="cloud_backup_started">बैकअप हो रहा है…</string>
     <string name="cloud_backup_none_eligible">बैकअप लेने के लिए पूर्ण फ़ाइलें चुनें</string>

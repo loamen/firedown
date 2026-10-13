@@ -623,6 +623,15 @@
     <string name="folder_backup_lost_body">Puede que la carpeta se haya movido, eliminado o cerrado sesión. Elígela de nuevo para seguir haciendo copias. Nada en este teléfono se ve afectado.</string>
     <string name="folder_backup_lost_seen">Última vez: %1$s</string>
     <string name="folder_backup_choose_cta">Elegir carpeta de copia de seguridad</string>
+    <string name="folder_backup_pick_title">Dónde hacer la copia</string>
+    <string name="folder_backup_pick_message">A continuación se abre el selector de archivos de Android. Toca ☰ en su esquina superior y elige tu app de nube: Google Drive, Dropbox, Nextcloud u otra instalada en este teléfono. Luego abre o crea una carpeta ahí.\n\nUna tarjeta SD también sirve. Una carpeta en el almacenamiento del propio teléfono se pierde con el teléfono.</string>
+    <string name="folder_backup_pick_open">Abrir selector</string>
+    <string name="folder_backup_pick_unavailable">Este teléfono no tiene un selector de carpetas</string>
+    <string name="folder_backup_guard_title">Esa es tu carpeta de descargas</string>
+    <string name="folder_backup_guard_message">Firedown ya guarda tus descargas en %1$s. Una copia ahí se pierde con el teléfono. Elige en su lugar una carpeta en una app de nube o en una tarjeta SD.</string>
+    <string name="folder_backup_guard_choose_other">Elegir otra</string>
+    <string name="folder_backup_guard_use_anyway">Usarla igualmente</string>
+    <string name="folder_backup_step_folder">Elige una carpeta de copia en Drive, Dropbox o una tarjeta SD</string>
     <string name="folder_backup_change_cta">Cambiar carpeta</string>
     <string name="folder_backup_rechoose_cta">Elegir la carpeta de nuevo</string>
     <string name="folder_backup_folder_set">Carpeta de copia de seguridad: %1$s</string>
@@ -635,7 +644,7 @@
     <string name="folder_backup_transfer_not_set_up">La copia de seguridad aún no está configurada. Termina la configuración en Copia de seguridad</string>
     <string name="folder_backup_choose_first">Elige primero una carpeta de copia de seguridad</string>
     <string name="cloud_backup_setup_title">Configurar copia de seguridad</string>
-    <string name="cloud_backup_setup_message">Las descargas se cifran antes de copiarse a una carpeta que elijas. Recibes un código de recuperación, la única clave, compartida con la sincronización de marcadores. No se puede recuperar si se pierde.</string>
+    <string name="cloud_backup_setup_message">Las descargas se cifran antes de copiarse a una carpeta que elijas en Google Drive, Dropbox, una tarjeta SD u otro lugar que sobreviva a este teléfono. Recibes un código de recuperación, la única clave, compartida con la sincronización de marcadores. No se puede recuperar si se pierde.</string>
     <string name="cloud_backup_setup_create">Crear clave</string>
     <string name="cloud_backup_started">Haciendo copia de seguridad…</string>
     <string name="cloud_backup_none_eligible">Selecciona archivos finalizados para hacer copia</string>

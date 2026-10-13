@@ -523,6 +523,15 @@
     <string name="folder_backup_lost_body">A pasta pode ter sido movida, excluída ou desconectada. Escolha-a novamente para continuar fazendo backup. Nada neste telefone é afetado.</string>
     <string name="folder_backup_lost_seen">Visto pela última vez: %1$s</string>
     <string name="folder_backup_choose_cta">Escolher pasta de backup</string>
+    <string name="folder_backup_pick_title">Onde fazer o backup</string>
+    <string name="folder_backup_pick_message">Em seguida abre o seletor de arquivos do Android. Toque em ☰ no canto superior e escolha seu app de nuvem: Google Drive, Dropbox, Nextcloud ou outro instalado neste celular. Depois abra ou crie uma pasta ali.\n\nUm cartão SD também serve. Uma pasta no armazenamento do próprio celular se perde junto com o celular.</string>
+    <string name="folder_backup_pick_open">Abrir seletor</string>
+    <string name="folder_backup_pick_unavailable">Este celular não tem um seletor de pastas</string>
+    <string name="folder_backup_guard_title">Essa é a sua pasta de downloads</string>
+    <string name="folder_backup_guard_message">O Firedown já guarda seus downloads em %1$s. Um backup ali se perde junto com o celular. Escolha em vez disso uma pasta em um app de nuvem ou em um cartão SD.</string>
+    <string name="folder_backup_guard_choose_other">Escolher outra</string>
+    <string name="folder_backup_guard_use_anyway">Usar mesmo assim</string>
+    <string name="folder_backup_step_folder">Escolha uma pasta de backup no Drive, Dropbox ou cartão SD</string>
     <string name="folder_backup_change_cta">Mudar pasta</string>
     <string name="folder_backup_rechoose_cta">Escolher a pasta novamente</string>
     <string name="folder_backup_folder_set">Pasta de backup: %1$s</string>
@@ -535,7 +544,7 @@
     <string name="folder_backup_transfer_not_set_up">O backup ainda não está configurado. Conclua a configuração em Backup</string>
     <string name="folder_backup_choose_first">Escolha primeiro uma pasta de backup</string>
     <string name="cloud_backup_setup_title">Configurar backup</string>
-    <string name="cloud_backup_setup_message">Os downloads são criptografados antes de serem copiados para uma pasta à sua escolha. Você recebe um código de recuperação, a única chave, compartilhada com a sincronização de favoritos. Não pode ser recuperado se for perdido.</string>
+    <string name="cloud_backup_setup_message">Os downloads são criptografados antes de serem copiados para uma pasta à sua escolha no Google Drive, Dropbox, cartão SD ou outro lugar que sobreviva a este celular. Você recebe um código de recuperação, a única chave, compartilhada com a sincronização de favoritos. Não pode ser recuperado se for perdido.</string>
     <string name="cloud_backup_setup_create">Criar chave</string>
     <string name="cloud_backup_started">Fazendo backup…</string>
     <string name="cloud_backup_none_eligible">Selecione arquivos concluídos para fazer backup</string>

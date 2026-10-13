@@ -527,6 +527,15 @@
     <string name="folder_backup_lost_body">Folder mógł zostać przeniesiony, usunięty lub wylogowany. Wybierz go ponownie, aby dalej tworzyć kopie. Nic na tym telefonie nie ucierpi.</string>
     <string name="folder_backup_lost_seen">Ostatnio: %1$s</string>
     <string name="folder_backup_choose_cta">Wybierz folder kopii zapasowej</string>
+    <string name="folder_backup_pick_title">Gdzie zapisać kopię</string>
+    <string name="folder_backup_pick_message">Za chwilę otworzy się selektor plików Androida. Dotknij ☰ w jego górnym rogu i wybierz swoją aplikację chmurową: Google Drive, Dropbox, Nextcloud lub inną zainstalowaną na tym telefonie. Następnie otwórz lub utwórz tam folder.\n\nKarta SD też się nadaje. Folder w pamięci samego telefonu przepada razem z telefonem.</string>
+    <string name="folder_backup_pick_open">Otwórz selektor</string>
+    <string name="folder_backup_pick_unavailable">Ten telefon nie ma selektora folderów</string>
+    <string name="folder_backup_guard_title">To folder z pobranymi plikami</string>
+    <string name="folder_backup_guard_message">Firedown już przechowuje pobrane pliki w %1$s. Kopia zapasowa tam przepada razem z telefonem. Wybierz zamiast tego folder w aplikacji chmurowej lub na karcie SD.</string>
+    <string name="folder_backup_guard_choose_other">Wybierz inny</string>
+    <string name="folder_backup_guard_use_anyway">Użyj mimo to</string>
+    <string name="folder_backup_step_folder">Wybierz folder kopii na Drive, Dropboksie lub karcie SD</string>
     <string name="folder_backup_change_cta">Zmień folder</string>
     <string name="folder_backup_rechoose_cta">Wybierz folder ponownie</string>
     <string name="folder_backup_folder_set">Folder kopii zapasowej: %1$s</string>
@@ -539,7 +548,7 @@
     <string name="folder_backup_transfer_not_set_up">Kopia zapasowa nie jest jeszcze skonfigurowana. Dokończ konfigurację w Kopii zapasowej</string>
     <string name="folder_backup_choose_first">Najpierw wybierz folder kopii zapasowej</string>
     <string name="cloud_backup_setup_title">Skonfiguruj kopię zapasową</string>
-    <string name="cloud_backup_setup_message">Pobrane pliki są szyfrowane, zanim trafią do wybranego folderu. Otrzymujesz kod odzyskiwania — jedyny klucz, wspólny z synchronizacją zakładek. Po utracie nie da się go odzyskać.</string>
+    <string name="cloud_backup_setup_message">Pobrane pliki są szyfrowane, zanim trafią do wybranego folderu na Google Drive, Dropboksie, karcie SD lub w innym miejscu, które przetrwa ten telefon. Otrzymujesz kod odzyskiwania — jedyny klucz, wspólny z synchronizacją zakładek. Po utracie nie da się go odzyskać.</string>
     <string name="cloud_backup_setup_create">Utwórz klucz</string>
     <string name="cloud_backup_started">Tworzenie kopii zapasowej…</string>
     <string name="cloud_backup_none_eligible">Wybierz ukończone pliki do utworzenia kopii zapasowej</string>

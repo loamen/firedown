@@ -620,6 +620,15 @@
     <string name="folder_backup_lost_body">フォルダーが移動・削除されたか、サインアウトされた可能性があります。バックアップを続けるには選び直してください。この端末のデータには影響しません。</string>
     <string name="folder_backup_lost_seen">最終確認: %1$s</string>
     <string name="folder_backup_choose_cta">バックアップフォルダーを選択</string>
+    <string name="folder_backup_pick_title">バックアップ先</string>
+    <string name="folder_backup_pick_message">次に Android のファイル選択画面が開きます。上隅の ☰ をタップしてクラウドアプリ（Google ドライブ、Dropbox、Nextcloud など、この端末にインストール済みのもの）を選び、そこでフォルダーを開くか作成してください。\n\nSD カードも使えます。端末本体のストレージ内のフォルダーは、端末と一緒に失われます。</string>
+    <string name="folder_backup_pick_open">選択画面を開く</string>
+    <string name="folder_backup_pick_unavailable">この端末にはフォルダー選択画面がありません</string>
+    <string name="folder_backup_guard_title">これはダウンロードフォルダーです</string>
+    <string name="folder_backup_guard_message">Firedown はすでに %1$s にダウンロードを保存しています。そこへのバックアップは端末と一緒に失われます。代わりにクラウドアプリか SD カードのフォルダーを選んでください。</string>
+    <string name="folder_backup_guard_choose_other">別のフォルダーを選ぶ</string>
+    <string name="folder_backup_guard_use_anyway">このまま使う</string>
+    <string name="folder_backup_step_folder">Google ドライブ、Dropbox、SD カードのいずれかにバックアップフォルダーを選ぶ</string>
     <string name="folder_backup_change_cta">フォルダーを変更</string>
     <string name="folder_backup_rechoose_cta">フォルダーを選び直す</string>
     <string name="folder_backup_folder_set">バックアップフォルダー: %1$s</string>
@@ -632,7 +641,7 @@
     <string name="folder_backup_transfer_not_set_up">バックアップはまだ設定されていません。「バックアップ」で設定を完了してください</string>
     <string name="folder_backup_choose_first">先にバックアップフォルダーを選択してください</string>
     <string name="cloud_backup_setup_title">バックアップを設定</string>
-    <string name="cloud_backup_setup_message">ダウンロードは、選んだフォルダーにコピーされる前に暗号化されます。復元コードが発行されます。これが唯一の鍵で、ブックマーク同期と共通です。紛失すると復元できません。</string>
+    <string name="cloud_backup_setup_message">ダウンロードは、Google ドライブ、Dropbox、SD カードなど、この端末より長く残る場所に選んだフォルダーへコピーされる前に暗号化されます。復元コードが発行されます。これが唯一の鍵で、ブックマーク同期と共通です。紛失すると復元できません。</string>
     <string name="cloud_backup_setup_create">鍵を作成</string>
     <string name="cloud_backup_started">バックアップ中…</string>
     <string name="cloud_backup_none_eligible">バックアップする完了済みファイルを選択してください</string>

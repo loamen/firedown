@@ -423,6 +423,15 @@
     <string name="folder_backup_lost_body">Kaust võib olla teisaldatud, kustutatud või välja logitud. Vali see uuesti, et varundamist jätkata. Selles telefonis ei muutu midagi.</string>
     <string name="folder_backup_lost_seen">Viimati nähtud: %1$s</string>
     <string name="folder_backup_choose_cta">Vali varunduskaust</string>
+    <string name="folder_backup_pick_title">Kuhu varundada</string>
+    <string name="folder_backup_pick_message">Järgmisena avaneb Androidi failivalija. Puuduta selle ülanurgas ☰ ja vali oma pilverakendus: Google Drive, Dropbox, Nextcloud või mõni muu sellesse telefoni paigaldatud rakendus. Seejärel ava või loo seal kaust.\n\nSobib ka SD-kaart. Telefoni enda mälus olev kaust kaob koos telefoniga.</string>
+    <string name="folder_backup_pick_open">Ava valija</string>
+    <string name="folder_backup_pick_unavailable">Selles telefonis pole kaustavalijat</string>
+    <string name="folder_backup_guard_title">See on sinu allalaadimiste kaust</string>
+    <string name="folder_backup_guard_message">Firedown hoiab sinu allalaadimisi juba kaustas %1$s. Sealne varukoopia kaob koos telefoniga. Vali selle asemel kaust pilverakenduses või SD-kaardil.</string>
+    <string name="folder_backup_guard_choose_other">Vali teine</string>
+    <string name="folder_backup_guard_use_anyway">Kasuta siiski</string>
+    <string name="folder_backup_step_folder">Vali varukaust Drive\'is, Dropboxis või SD-kaardil</string>
     <string name="folder_backup_change_cta">Muuda kausta</string>
     <string name="folder_backup_rechoose_cta">Vali kaust uuesti</string>
     <string name="folder_backup_folder_set">Varunduskaust: %1$s</string>
@@ -435,7 +444,7 @@
     <string name="folder_backup_transfer_not_set_up">Varundus pole veel seadistatud. Lõpeta seadistamine Varunduses</string>
     <string name="folder_backup_choose_first">Vali esmalt varunduskaust</string>
     <string name="cloud_backup_setup_title">Seadista varundus</string>
-    <string name="cloud_backup_setup_message">Allalaadimised krüpteeritakse enne, kui need kopeeritakse sinu valitud kausta. Saad taastekoodi — ainsa võtme, mida jagatakse järjehoidjate sünkroonimisega. Kaotamise korral ei saa seda taastada.</string>
+    <string name="cloud_backup_setup_message">Allalaadimised krüpteeritakse enne, kui need kopeeritakse sinu valitud kausta Google Drive\'is, Dropboxis, SD-kaardil või mujal, mis seda telefoni üle elab. Saad taastekoodi — ainsa võtme, mida jagatakse järjehoidjate sünkroonimisega. Kaotamise korral ei saa seda taastada.</string>
     <string name="cloud_backup_setup_create">Loo võti</string>
     <string name="cloud_backup_started">Varundamine…</string>
     <string name="cloud_backup_none_eligible">Varundamiseks vali lõpetatud failid</string>

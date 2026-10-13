@@ -523,6 +523,15 @@
     <string name="folder_backup_lost_body">Klasör taşınmış, silinmiş veya oturumu kapatılmış olabilir. Yedeklemeye devam etmek için yeniden seçin. Bu telefondaki hiçbir şey etkilenmez.</string>
     <string name="folder_backup_lost_seen">Son görülme: %1$s</string>
     <string name="folder_backup_choose_cta">Yedekleme klasörü seç</string>
+    <string name="folder_backup_pick_title">Nereye yedeklensin</string>
+    <string name="folder_backup_pick_message">Sırada Android dosya seçici açılır. Üst köşesindeki ☰ simgesine dokunup bulut uygulamanızı seçin: Google Drive, Dropbox, Nextcloud veya bu telefonda kurulu başka bir uygulama. Sonra orada bir klasör açın ya da oluşturun.\n\nSD kart da olur. Telefonun kendi depolamasındaki bir klasör telefonla birlikte kaybolur.</string>
+    <string name="folder_backup_pick_open">Seçiciyi aç</string>
+    <string name="folder_backup_pick_unavailable">Bu telefonda klasör seçici yok</string>
+    <string name="folder_backup_guard_title">Bu sizin indirmeler klasörünüz</string>
+    <string name="folder_backup_guard_message">Firedown indirmelerinizi zaten %1$s içinde tutuyor. Oradaki bir yedek telefonla birlikte kaybolur. Bunun yerine bir bulut uygulamasında veya SD kartta bir klasör seçin.</string>
+    <string name="folder_backup_guard_choose_other">Başkasını seç</string>
+    <string name="folder_backup_guard_use_anyway">Yine de kullan</string>
+    <string name="folder_backup_step_folder">Drive, Dropbox veya SD kartta bir yedek klasörü seçin</string>
     <string name="folder_backup_change_cta">Klasörü değiştir</string>
     <string name="folder_backup_rechoose_cta">Klasörü yeniden seç</string>
     <string name="folder_backup_folder_set">Yedekleme klasörü: %1$s</string>
@@ -535,7 +544,7 @@
     <string name="folder_backup_transfer_not_set_up">Yedekleme henüz ayarlanmadı. Kurulumu Yedekleme\'de tamamlayın</string>
     <string name="folder_backup_choose_first">Önce bir yedekleme klasörü seçin</string>
     <string name="cloud_backup_setup_title">Yedeklemeyi ayarla</string>
-    <string name="cloud_backup_setup_message">İndirmeler, seçtiğiniz bir klasöre kopyalanmadan önce şifrelenir. Yer imi eşitlemeyle ortak tek anahtar olan bir kurtarma kodu alırsınız. Kaybolursa geri alınamaz.</string>
+    <string name="cloud_backup_setup_message">İndirmeler, Google Drive, Dropbox, SD kart veya bu telefondan daha uzun ömürlü başka bir yerde seçtiğiniz bir klasöre kopyalanmadan önce şifrelenir. Yer imi eşitlemeyle ortak tek anahtar olan bir kurtarma kodu alırsınız. Kaybolursa geri alınamaz.</string>
     <string name="cloud_backup_setup_create">Anahtar oluştur</string>
     <string name="cloud_backup_started">Yedekleniyor…</string>
     <string name="cloud_backup_none_eligible">Yedeklemek için tamamlanmış dosyaları seçin</string>

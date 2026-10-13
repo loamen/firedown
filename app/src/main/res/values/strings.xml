@@ -333,6 +333,15 @@
     <string name="folder_backup_lost_body">The folder may have been moved, deleted or signed out. Choose it again to keep backing up. Nothing on this phone is affected.</string>
     <string name="folder_backup_lost_seen">Last seen: %1$s</string>
     <string name="folder_backup_choose_cta">Choose backup folder</string>
+    <string name="folder_backup_pick_title">Where to back up</string>
+    <string name="folder_backup_pick_message">The Android file picker opens next. Tap ☰ in its top corner and choose your cloud app: Google Drive, Dropbox, Nextcloud or any other app installed on this phone. Then open or create a folder there.\n\nAn SD card works too. A folder on this phone\'s own storage is lost with the phone.</string>
+    <string name="folder_backup_pick_open">Open picker</string>
+    <string name="folder_backup_pick_unavailable">No folder picker is available on this phone</string>
+    <string name="folder_backup_guard_title">That\'s your downloads folder</string>
+    <string name="folder_backup_guard_message">Firedown already keeps your downloads in %1$s. A backup there is lost with the phone. Choose a folder on a cloud app or an SD card instead.</string>
+    <string name="folder_backup_guard_choose_other">Choose another</string>
+    <string name="folder_backup_guard_use_anyway">Use it anyway</string>
+    <string name="folder_backup_step_folder">Choose a backup folder on Drive, Dropbox or an SD card</string>
     <string name="folder_backup_change_cta">Change folder</string>
     <string name="folder_backup_rechoose_cta">Choose the folder again</string>
     <string name="folder_backup_folder_set">Backup folder: %1$s</string>
@@ -345,7 +354,7 @@
     <string name="folder_backup_transfer_not_set_up">Backup isn\'t set up yet. Finish the setup in Backup</string>
     <string name="folder_backup_choose_first">Choose a backup folder first</string>
     <string name="cloud_backup_setup_title">Set up backup</string>
-    <string name="cloud_backup_setup_message">Downloads are encrypted before they are copied to a folder you choose. You get a recovery code, the only key, shared with bookmark sync. It can\'t be recovered if lost.</string>
+    <string name="cloud_backup_setup_message">Downloads are encrypted before they are copied to a folder you choose on Google Drive, Dropbox, an SD card or another place that outlives this phone. You get a recovery code, the only key, shared with bookmark sync. It can\'t be recovered if lost.</string>
     <string name="cloud_backup_setup_create">Create key</string>
     <string name="cloud_backup_started">Backing up…</string>
     <string name="cloud_backup_none_eligible">Select finished files to back up</string>

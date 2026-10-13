@@ -1,6 +1,7 @@
 package com.solarized.firedown.settings;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -46,8 +47,10 @@ import com.solarized.firedown.IntentActions;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
+import com.solarized.firedown.StoragePaths;
 import com.solarized.firedown.phone.fragments.P2pScanFragment;
 import com.solarized.firedown.sync.CloudBackupManager;
+import com.solarized.firedown.sync.FolderStore;
 import com.solarized.firedown.sync.SyncManager;
 import com.solarized.firedown.sync.SyncSecrets;
 import com.solarized.firedown.sync.VaultBackupWorker;
@@ -55,6 +58,7 @@ import com.solarized.firedown.sync.crypto.SyncIdentity;
 import com.solarized.firedown.utils.NavigationUtils;
 import com.solarized.firedown.utils.QrCodes;
 
+import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -498,25 +502,84 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         }
     }
 
+    /**
+     * "Where to back up" — the instruction the system picker never gives.
+     * Android's folder picker opens on whatever it showed last, usually the
+     * phone's own storage, with the cloud apps a tap away behind its ☰ drawer
+     * (and only the apps installed on the phone listed there), so a user who
+     * has never seen the drawer picks a folder on the phone and gets a backup
+     * that dies with it. One dialog before every launch says where to look;
+     * "Change folder" is rare enough that the repeat costs nothing.
+     */
+    private void openFolderPicker() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.folder_backup_pick_title)
+                .setMessage(R.string.folder_backup_pick_message)
+                .setPositiveButton(R.string.folder_backup_pick_open,
+                        (dialog, which) -> launchFolderPicker())
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
     /** Opens the system folder picker, pre-pointed at the current folder when
      *  there is one (a hint the picker is free to ignore). */
-    private void openFolderPicker() {
+    private void launchFolderPicker() {
         Uri initial = mCloudBackup.folderStore().treeUri();
-        mFolderPicker.launch(initial);
+        try {
+            mFolderPicker.launch(initial);
+        } catch (ActivityNotFoundException e) {
+            snackbar(getString(R.string.folder_backup_pick_unavailable));
+        }
     }
 
     /**
-     * The folder picker's result. The store takes the persistable grant and
+     * The folder picker's result, GUARDED: a tree that is the app's own
+     * download directory or anything under it (the phone's
+     * {@code Download/Firedown}, which also holds the {@code backup/} folder
+     * the download-list mirror writes — a folder literally named backup, the
+     * natural wrong pick) is a second copy on the same storage as the
+     * originals. It survives a deleted file and not a lost phone, which is
+     * what the feature is for, so the pick is questioned once: choose another
+     * (back to the picker) or use it anyway (adopted like any other). The
+     * guard knows only the external-storage provider's paths; a cloud
+     * provider's tree has no path and is never questioned.
+     */
+    private void onFolderPicked(@Nullable Uri treeUri) {
+        if (treeUri == null) {
+            return; // user backed out of the picker
+        }
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        File downloads = new File(StoragePaths.getDownloadPath(context));
+        if (FolderStore.treeIsWithin(treeUri, downloads)) {
+            String label = FolderStore.treePathLabel(treeUri);
+            if (TextUtils.isEmpty(label)) {
+                label = downloads.getName();
+            }
+            new MaterialAlertDialogBuilder(context)
+                    .setTitle(R.string.folder_backup_guard_title)
+                    .setMessage(getString(R.string.folder_backup_guard_message, label))
+                    .setPositiveButton(R.string.folder_backup_guard_choose_other,
+                            (dialog, which) -> launchFolderPicker())
+                    .setNegativeButton(R.string.folder_backup_guard_use_anyway,
+                            (dialog, which) -> adoptPickedFolder(treeUri))
+                    .show();
+            return;
+        }
+        adoptPickedFolder(treeUri);
+    }
+
+    /**
+     * Adopts a picked tree. The store takes the persistable grant and
      * remembers the tree; the cached status is about the PREVIOUS folder, so
      * this screen's own last answer is dropped before the re-read, and the
      * hero rebinds from the fresh listing (a folder that already holds this
      * account's backups — a reinstall pointed back at its Drive folder — lists
      * them straight away).
      */
-    private void onFolderPicked(@Nullable Uri treeUri) {
-        if (treeUri == null) {
-            return; // user backed out of the picker
-        }
+    private void adoptPickedFolder(@NonNull Uri treeUri) {
         mCloudBackup.adoptFolder(treeUri);
         mLastLoaded = null;
         updateState();

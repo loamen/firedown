@@ -624,6 +624,15 @@
     <string name="folder_backup_lost_body">Le dossier a peut-être été déplacé, supprimé ou déconnecté. Choisissez-le à nouveau pour continuer à sauvegarder. Rien sur ce téléphone n\'est affecté.</string>
     <string name="folder_backup_lost_seen">Dernier état : %1$s</string>
     <string name="folder_backup_choose_cta">Choisir le dossier de sauvegarde</string>
+    <string name="folder_backup_pick_title">Où sauvegarder</string>
+    <string name="folder_backup_pick_message">Le sélecteur de fichiers d\'Android s\'ouvre ensuite. Touchez ☰ dans son coin supérieur et choisissez votre appli cloud : Google Drive, Dropbox, Nextcloud ou une autre installée sur ce téléphone. Ouvrez ou créez-y un dossier.\n\nUne carte SD convient aussi. Un dossier dans la mémoire du téléphone lui-même est perdu avec le téléphone.</string>
+    <string name="folder_backup_pick_open">Ouvrir le sélecteur</string>
+    <string name="folder_backup_pick_unavailable">Aucun sélecteur de dossier n\'est disponible sur ce téléphone</string>
+    <string name="folder_backup_guard_title">C\'est votre dossier de téléchargements</string>
+    <string name="folder_backup_guard_message">Firedown garde déjà vos téléchargements dans %1$s. Une sauvegarde à cet endroit est perdue avec le téléphone. Choisissez plutôt un dossier dans une appli cloud ou sur une carte SD.</string>
+    <string name="folder_backup_guard_choose_other">En choisir un autre</string>
+    <string name="folder_backup_guard_use_anyway">L\'utiliser quand même</string>
+    <string name="folder_backup_step_folder">Choisissez un dossier de sauvegarde sur Drive, Dropbox ou une carte SD</string>
     <string name="folder_backup_change_cta">Changer de dossier</string>
     <string name="folder_backup_rechoose_cta">Choisir à nouveau le dossier</string>
     <string name="folder_backup_folder_set">Dossier de sauvegarde : %1$s</string>
@@ -636,7 +645,7 @@
     <string name="folder_backup_transfer_not_set_up">La sauvegarde n\'est pas encore configurée. Terminez la configuration dans Sauvegarde</string>
     <string name="folder_backup_choose_first">Choisissez d\'abord un dossier de sauvegarde</string>
     <string name="cloud_backup_setup_title">Configurer la sauvegarde</string>
-    <string name="cloud_backup_setup_message">Les téléchargements sont chiffrés avant d\'être copiés dans un dossier de votre choix. Vous recevez un code de récupération, la seule clé, partagée avec la synchronisation des favoris. Il ne peut pas être récupéré si vous le perdez.</string>
+    <string name="cloud_backup_setup_message">Les téléchargements sont chiffrés avant d\'être copiés dans un dossier de votre choix sur Google Drive, Dropbox, une carte SD ou un autre endroit qui survit à ce téléphone. Vous recevez un code de récupération, la seule clé, partagée avec la synchronisation des favoris. Il ne peut pas être récupéré si vous le perdez.</string>
     <string name="cloud_backup_setup_create">Créer la clé</string>
     <string name="cloud_backup_started">Sauvegarde en cours…</string>
     <string name="cloud_backup_none_eligible">Sélectionnez des fichiers terminés à sauvegarder</string>

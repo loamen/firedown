@@ -461,6 +461,15 @@
     <string name="folder_backup_lost_body">Теку могли перемістити, видалити або від неї вийшли. Виберіть її знову, щоб продовжити резервне копіювання. На цьому телефоні нічого не змінюється.</string>
     <string name="folder_backup_lost_seen">Востаннє: %1$s</string>
     <string name="folder_backup_choose_cta">Вибрати теку резервної копії</string>
+    <string name="folder_backup_pick_title">Куди зберігати копію</string>
+    <string name="folder_backup_pick_message">Далі відкриється вибір файлів Android. Торкніться ☰ у його верхньому куті й виберіть свій хмарний застосунок: Google Диск, Dropbox, Nextcloud або інший, встановлений на цьому телефоні. Потім відкрийте або створіть там теку.\n\nПідійде й SD-картка. Тека в пам\'яті самого телефона втрачається разом із телефоном.</string>
+    <string name="folder_backup_pick_open">Відкрити вибір</string>
+    <string name="folder_backup_pick_unavailable">На цьому телефоні немає вибору теки</string>
+    <string name="folder_backup_guard_title">Це ваша тека завантажень</string>
+    <string name="folder_backup_guard_message">Firedown уже зберігає ваші завантаження в %1$s. Резервна копія там втрачається разом із телефоном. Натомість виберіть теку в хмарному застосунку або на SD-картці.</string>
+    <string name="folder_backup_guard_choose_other">Вибрати іншу</string>
+    <string name="folder_backup_guard_use_anyway">Усе одно використати</string>
+    <string name="folder_backup_step_folder">Виберіть теку для копії на Google Диску, у Dropbox або на SD-картці</string>
     <string name="folder_backup_change_cta">Змінити теку</string>
     <string name="folder_backup_rechoose_cta">Вибрати теку знову</string>
     <string name="folder_backup_folder_set">Тека резервної копії: %1$s</string>
@@ -473,7 +482,7 @@
     <string name="folder_backup_transfer_not_set_up">Резервне копіювання ще не налаштовано. Завершіть налаштування в розділі «Резервна копія»</string>
     <string name="folder_backup_choose_first">Спершу виберіть теку резервної копії</string>
     <string name="cloud_backup_setup_title">Налаштувати резервне копіювання</string>
-    <string name="cloud_backup_setup_message">Завантаження шифруються перед копіюванням у вибрану вами теку. Ви отримуєте код відновлення — єдиний ключ, спільний із синхронізацією закладок. У разі втрати його неможливо відновити.</string>
+    <string name="cloud_backup_setup_message">Завантаження шифруються перед копіюванням у вибрану вами теку на Google Диску, у Dropbox, на SD-картці чи в іншому місці, яке переживе цей телефон. Ви отримуєте код відновлення — єдиний ключ, спільний із синхронізацією закладок. У разі втрати його неможливо відновити.</string>
     <string name="cloud_backup_setup_create">Створити ключ</string>
     <string name="cloud_backup_started">Резервне копіювання…</string>
     <string name="cloud_backup_none_eligible">Виберіть завершені файли для збереження</string>

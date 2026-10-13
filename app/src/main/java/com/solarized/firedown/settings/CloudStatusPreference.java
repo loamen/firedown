@@ -205,7 +205,7 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         boolean folderDone = mHasFolder;
         bindStep(stepCode, 1, ctx.getString(R.string.settings_sync_create_title),
                 codeDone, !codeDone);
-        bindStep(stepFolder, 2, ctx.getString(R.string.folder_backup_choose_cta),
+        bindStep(stepFolder, 2, ctx.getString(R.string.folder_backup_step_folder),
                 folderDone, codeDone && !folderDone);
         bindStep(stepBackup, 3, ctx.getString(R.string.cloud_status_empty_body),
                 false, codeDone && folderDone);
