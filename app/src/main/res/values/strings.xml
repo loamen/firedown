@@ -325,6 +325,8 @@
     <string name="folder_backup_change_confirm">Choose folder</string>
     <string name="folder_backup_place_volume_sub">In the picker, tap ☰ and choose %1$s</string>
     <string name="folder_backup_place_removable_sub">The picker opens right on it</string>
+    <string name="folder_backup_place_cloud">Cloud storage</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud and other cloud apps. On the next screen, tap ☰ and pick yours.</string>
     <string name="folder_backup_place_other">Somewhere else</string>
     <string name="folder_backup_place_other_sub">Any folder the picker can reach. One on this phone is lost with the phone.</string>
     <string name="folder_backup_place_signin">A cloud app appears in the picker\'s ☰ once you\'re signed in to it.</string>

@@ -448,6 +448,8 @@
     <string name="folder_backup_change_confirm">फ़ोल्डर चुनें</string>
     <string name="folder_backup_place_volume_sub">चयनकर्ता में ☰ पर टैप करके %1$s चुनें</string>
     <string name="folder_backup_place_removable_sub">चयनकर्ता सीधे उसी पर खुलता है</string>
+    <string name="folder_backup_place_cloud">क्लाउड स्टोरेज</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud और दूसरे क्लाउड ऐप। अगली स्क्रीन पर ☰ पर टैप करें और अपना ऐप चुनें।</string>
     <string name="folder_backup_place_other">कहीं और</string>
     <string name="folder_backup_place_other_sub">कोई भी फ़ोल्डर जहाँ तक चयनकर्ता पहुँचता है। इस फ़ोन का फ़ोल्डर फ़ोन के साथ ही खो जाता है।</string>
     <string name="folder_backup_place_signin">क्लाउड ऐप में साइन इन करने के बाद ही वह चयनकर्ता के ☰ में दिखता है।</string>

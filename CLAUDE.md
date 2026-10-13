@@ -4576,18 +4576,33 @@ children — the card edges do the grouping).
   sees an app-made folder literally called backup and picks it, and the
   "backup" lands beside the originals on the same storage. Two answers, in
   `SyncSettingsFragment`: (1) `showPlaceChooser` — **"Where to back up"
-  names only what it can act on.** With no SD card / USB drive mounted it is
-  no dialog at all: the system picker opens straight away with the one
-  instruction it never gives, "Tap ☰ in the picker to find your cloud apps"
-  (`folder_backup_hint_drawer`), TOASTED over it as it opens (the one moment
-  it is needed, on a screen that is not ours). With a card in, a two-row
-  chooser (`dialog_backup_places` / `item_backup_place`) offers the card
-  (`sync/BackupPlaces.removable`: `StorageVolume.createOpenDocumentTreeIntent()`
-  on API 29+ opens the picker right on it) or "Somewhere else", with the
-  sign-in note under them (a cloud app appears in ☰ once signed in — Drive
-  with no account lists nothing there, which was the maintainer's own
-  "cloud is not showing"). It REPLACED a two-paragraph dialog that said all
-  this in words. **There are NO per-app cloud rows, and there must not be
+  is one row per KIND of place, always shown** (`dialog_backup_places` /
+  `item_backup_place`): "Cloud storage" first (`cloud_outline_24` in
+  `brandInk`, "Google Drive, Nextcloud and other cloud apps. On the next
+  screen, tap ☰ and pick yours.", and under it a PICTURE of the picker's
+  top bar, `layout_backup_picker_hint`: the ☰ ringed in brandInk, a
+  skeleton title line, the search glyph; decorative, the sentence carries
+  it for TalkBack), the SD card / USB drive only while one is mounted
+  (`sync/BackupPlaces.removable`:
+  `StorageVolume.createOpenDocumentTreeIntent()` on API 29+ opens the
+  picker right on it), then "Somewhere else", then the sign-in note (a
+  cloud app appears in ☰ once signed in; Drive with no account lists
+  nothing there, which was the maintainer's own "cloud is not showing").
+  The cloud row opens the plain picker with "Tap ☰ in the picker to find
+  your cloud apps" (`folder_backup_hint_drawer`) TOASTED over it; "Somewhere
+  else" opens it with no toast. History, all on 2026-10-13: a
+  two-paragraph dialog that said all this in words; then per-app rows (see
+  below); then NO dialog at all without a card (the picker straight away,
+  the toast the only instruction), which the maintainer rejected as too
+  much for someone who has never opened that drawer — a toast over a
+  screen that is not ours is easy to miss, and the dialog is the one place
+  the instruction can sit beside a picture of the button. **A KIND row is
+  not an app row**: it needs no detection and no list, names as examples
+  only apps verified to take a folder pick (Drive, Nextcloud; never
+  Dropbox or OneDrive, which are unverified), and promises nothing about
+  what the picker will list. The miniature's title is a skeleton line, not
+  "Downloads", because the picker may open on any folder and the picture
+  should not promise one. **There are NO per-app cloud rows, and there must not be
   a list of cloud apps — both were built and removed on 2026-10-13.** First
   detection (`queryIntentContentProviders` on `DOCUMENTS_PROVIDER`): it
   listed Files, Proton Drive, System Tracing and Termux as places to back
@@ -4663,8 +4678,9 @@ children — the card edges do the grouping).
   already carry `FLAG_DIR_SUPPORTS_CREATE`/`SUPPORTS_WRITE`/`DELETE`, so a
   tree would work) goes through Proton's feedback forum or support, not
   GitHub. The flag lives in the roots, which an app cannot read, so nothing
-  in the app can see it either (the chooser history above): a user simply
-  does not find Proton under ☰. The diagnostic for the next such report is
+  in the app can see it either (the chooser history above): a user who
+  taps "Cloud storage" simply does not find Proton under ☰, and the write
+  check never runs because there was nothing to pick. The diagnostic for the next such report is
   the Import-picker test above.
 - **The KEY-FIRST GATE**: until a recovery code exists the CTA reads "Create
   recovery code" (not choose-a-folder), the Backups row is hidden and the

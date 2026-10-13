@@ -610,6 +610,8 @@
     <string name="folder_backup_change_confirm">フォルダーを選ぶ</string>
     <string name="folder_backup_place_volume_sub">選択画面で ☰ をタップし、%1$s を選びます</string>
     <string name="folder_backup_place_removable_sub">選択画面がそのまま開きます</string>
+    <string name="folder_backup_place_cloud">クラウドストレージ</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive、Nextcloud などのクラウドアプリ。次の画面で ☰ をタップして、使うアプリを選びます。</string>
     <string name="folder_backup_place_other">その他の場所</string>
     <string name="folder_backup_place_other_sub">選択画面で開ける任意のフォルダー。この端末内のフォルダーは端末と一緒に失われます。</string>
     <string name="folder_backup_place_signin">クラウドアプリはログイン後に選択画面の ☰ に表示されます。</string>

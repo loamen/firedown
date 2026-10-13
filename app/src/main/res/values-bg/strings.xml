@@ -435,6 +435,8 @@
     <string name="folder_backup_change_confirm">Избор на папка</string>
     <string name="folder_backup_place_volume_sub">В избора докоснете ☰ и изберете %1$s</string>
     <string name="folder_backup_place_removable_sub">Изборът се отваря направо в нея</string>
+    <string name="folder_backup_place_cloud">Облачно хранилище</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud и други облачни приложения. На следващия екран докоснете ☰ и изберете своето.</string>
     <string name="folder_backup_place_other">Другаде</string>
     <string name="folder_backup_place_other_sub">Всяка папка, до която изборът стига. Папка на този телефон се губи с него.</string>
     <string name="folder_backup_place_signin">Облачно приложение се появява в ☰ на избора, след като влезете в него.</string>

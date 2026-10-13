@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A picture of the system folder picker's top bar under the Backup
+     chooser's "Cloud storage" row (SyncSettingsFragment.showPlaceChooser):
+     the ☰ ringed in brandInk, a title line, the search glyph. The picker
+     hides cloud apps behind that ☰ and never says so; the row's sentence
+     says it and this shows WHICH button, before the user is on a screen
+     that is not ours. Decorative: the sentence above carries it for a
+     screen reader. The title is a skeleton line, not a folder name, so it
+     needs no string and promises no folder. It fills the row's text column
+     (212dp on a 360dp phone, where a fixed 216dp bar overflowed by 4dp). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="34dp"
+    android:layout_marginTop="8dp"
+    android:background="@drawable/bg_picker_hint_bar"
+    android:gravity="center_vertical"
+    android:importantForAccessibility="noHideDescendants"
+    android:orientation="horizontal"
+    android:paddingStart="3dp"
+    android:paddingEnd="10dp">
+
+    <ImageView
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:background="@drawable/bg_picker_hint_ring"
+        android:contentDescription="@null"
+        android:padding="6dp"
+        android:src="@drawable/ic_menu_24"
+        app:tint="?attr/brandInk" />
+
+    <View
+        android:layout_width="64dp"
+        android:layout_height="6dp"
+        android:layout_marginStart="10dp"
+        android:background="@drawable/bg_picker_hint_title" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <ImageView
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_search_24" />
+
+</LinearLayout>

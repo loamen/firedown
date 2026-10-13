@@ -14,9 +14,13 @@ import com.solarized.firedown.utils.BuildUtils;
 
 /**
  * The one place the Backup screen's folder chooser can name on its own: a
- * mounted removable volume (an SD card, a USB drive). Everything else is the
- * system folder picker, opened plain, with one hint: cloud apps are under its
- * ☰ drawer.
+ * mounted removable volume (an SD card, a USB drive). Its other rows are
+ * KINDS of place, not apps: "Cloud storage" (the plain picker, with the
+ * instruction it never gives, that cloud apps are under its ☰, and a picture
+ * of that button) and "Somewhere else". A kind needs no detection and no
+ * list: the row names only apps verified to take a folder pick (Google
+ * Drive, Nextcloud) as examples, and the picker shows whatever is really
+ * there.
  *
  * <p><b>Why there are no per-app cloud rows.</b> They shipped for two commits
  * (2026-10-13) and went for two reasons. (1) Nothing an app can read tells a

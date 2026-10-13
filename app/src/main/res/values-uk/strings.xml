@@ -448,6 +448,8 @@
     <string name="folder_backup_change_confirm">Вибрати теку</string>
     <string name="folder_backup_place_volume_sub">У виборі торкніться ☰ і виберіть %1$s</string>
     <string name="folder_backup_place_removable_sub">Вибір відкриється одразу на ній</string>
+    <string name="folder_backup_place_cloud">Хмарне сховище</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud та інші хмарні застосунки. На наступному екрані торкніться ☰ і виберіть свій.</string>
     <string name="folder_backup_place_other">В іншому місці</string>
     <string name="folder_backup_place_other_sub">Будь-яка тека, до якої дотягується вибір. Тека на цьому телефоні втрачається разом із ним.</string>
     <string name="folder_backup_place_signin">Хмарний застосунок з\'являється в ☰ вибору після входу в нього.</string>

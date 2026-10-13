@@ -514,6 +514,8 @@
     <string name="folder_backup_change_confirm">Wybierz folder</string>
     <string name="folder_backup_place_volume_sub">W selektorze dotknij ☰ i wybierz %1$s</string>
     <string name="folder_backup_place_removable_sub">Selektor otworzy się od razu na niej</string>
+    <string name="folder_backup_place_cloud">Pamięć w chmurze</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud i inne aplikacje chmurowe. Na następnym ekranie dotknij ☰ i wybierz swoją.</string>
     <string name="folder_backup_place_other">Gdzie indziej</string>
     <string name="folder_backup_place_other_sub">Dowolny folder, do którego sięga selektor. Folder na tym telefonie ginie razem z nim.</string>
     <string name="folder_backup_place_signin">Aplikacja chmurowa pojawia się w ☰ selektora dopiero po zalogowaniu się do niej.</string>

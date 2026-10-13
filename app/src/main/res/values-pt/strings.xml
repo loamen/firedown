@@ -512,6 +512,8 @@
     <string name="folder_backup_change_confirm">Escolher pasta</string>
     <string name="folder_backup_place_volume_sub">No seletor, toque em ☰ e escolha %1$s</string>
     <string name="folder_backup_place_removable_sub">O seletor abre direto nele</string>
+    <string name="folder_backup_place_cloud">Armazenamento em nuvem</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud e outros apps de nuvem. Na próxima tela, toque em ☰ e escolha o seu.</string>
     <string name="folder_backup_place_other">Outro lugar</string>
     <string name="folder_backup_place_other_sub">Qualquer pasta que o seletor alcance. Uma pasta neste celular se perde junto com ele.</string>
     <string name="folder_backup_place_signin">Um app de nuvem aparece no ☰ do seletor depois que você faz login nele.</string>

@@ -612,6 +612,8 @@
     <string name="folder_backup_change_confirm">Ordner wählen</string>
     <string name="folder_backup_place_volume_sub">Tippe in der Auswahl auf ☰ und wähle %1$s</string>
     <string name="folder_backup_place_removable_sub">Die Auswahl öffnet sich direkt darauf</string>
+    <string name="folder_backup_place_cloud">Cloud-Speicher</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud und andere Cloud-Apps. Tippe auf dem nächsten Bildschirm auf ☰ und wähle deine aus.</string>
     <string name="folder_backup_place_other">Woanders</string>
     <string name="folder_backup_place_other_sub">Jeder Ordner, den die Auswahl erreicht. Einer auf diesem Handy geht mit dem Handy verloren.</string>
     <string name="folder_backup_place_signin">Eine Cloud-App erscheint im ☰ der Auswahl, sobald du dort angemeldet bist.</string>

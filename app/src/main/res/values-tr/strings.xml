@@ -512,6 +512,8 @@
     <string name="folder_backup_change_confirm">Klasör seç</string>
     <string name="folder_backup_place_volume_sub">Seçicide ☰ simgesine dokunup %1$s seçin</string>
     <string name="folder_backup_place_removable_sub">Seçici doğrudan onun üzerinde açılır</string>
+    <string name="folder_backup_place_cloud">Bulut depolama</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ve diğer bulut uygulamaları. Sonraki ekranda ☰ simgesine dokunun ve kendinizinkini seçin.</string>
     <string name="folder_backup_place_other">Başka bir yer</string>
     <string name="folder_backup_place_other_sub">Seçicinin ulaşabildiği herhangi bir klasör. Bu telefondaki bir klasör telefonla birlikte kaybolur.</string>
     <string name="folder_backup_place_signin">Bir bulut uygulaması, ona giriş yaptıktan sonra seçicinin ☰ menüsünde görünür.</string>

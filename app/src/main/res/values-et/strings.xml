@@ -412,6 +412,8 @@
     <string name="folder_backup_change_confirm">Vali kaust</string>
     <string name="folder_backup_place_volume_sub">Puuduta valijas ☰ ja vali %1$s</string>
     <string name="folder_backup_place_removable_sub">Valija avaneb otse sellel</string>
+    <string name="folder_backup_place_cloud">Pilvesalvestus</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ja muud pilverakendused. Puuduta järgmisel ekraanil ☰ ja vali oma.</string>
     <string name="folder_backup_place_other">Mujal</string>
     <string name="folder_backup_place_other_sub">Mis tahes kaust, kuhu valija ulatub. Selle telefoni kaust kaob koos telefoniga.</string>
     <string name="folder_backup_place_signin">Pilverakendus ilmub valija ☰ alla, kui oled sinna sisse loginud.</string>

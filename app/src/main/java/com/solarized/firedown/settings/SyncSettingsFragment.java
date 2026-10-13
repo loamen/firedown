@@ -585,24 +585,23 @@ public class SyncSettingsFragment extends BasePreferenceFragment
     }
 
     /**
-     * "Where to back up". With no SD card / USB drive in, there is nothing to
-     * choose between: the system picker opens straight away, with the one
-     * instruction it never gives (cloud apps are under its ☰) toasted over
-     * it. With a card in, a two-row chooser offers the card (its own picker
-     * intent opens right on it) or "Somewhere else", with the same hint as a
-     * note. There are deliberately no per-app cloud rows: an app cannot tell
-     * which installed providers take a folder pick, and a row could only
-     * open the same picker anyway (see {@link BackupPlaces}). It replaced a
-     * two-paragraph dialog that described all this in words.
+     * "Where to back up": one row per KIND of place, always shown. Cloud
+     * storage first (Google Drive, Nextcloud and the like: the picker hides
+     * them behind its ☰, so the row says so and draws that button), the SD
+     * card / USB drive while one is in (its own picker intent opens right on
+     * it), then "Somewhere else", then one note that a cloud app shows under
+     * ☰ only once signed in. Every row opens the system picker; what the
+     * rows add is the instruction for it, before the user is on a screen
+     * that is not ours. The cloud row names only apps verified to take a
+     * folder pick and needs no detection, which is what the per-app rows it
+     * replaced could not do (see {@link BackupPlaces}). It came back after a
+     * build that opened the picker with no dialog when no card was in: a
+     * toast over the system picker was too little for someone who has never
+     * opened that drawer.
      */
     private void showPlaceChooser() {
         Context context = getContext();
         if (context == null) {
-            return;
-        }
-        BackupPlaces.Volume volume = BackupPlaces.removable(context);
-        if (volume == null) {
-            launchPicker(null, getString(R.string.folder_backup_hint_drawer));
             return;
         }
         View content = LayoutInflater.from(context)
@@ -610,20 +609,33 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         LinearLayout list = content.findViewById(R.id.places_list);
         TextView note = content.findViewById(R.id.places_note);
         AlertDialog[] shown = new AlertDialog[1];
-        String volumeLabel = TextUtils.isEmpty(volume.label)
-                ? getString(R.string.folder_backup_provider_sd) : volume.label;
-        String volumeHint = getString(R.string.folder_backup_place_volume_sub, volumeLabel);
-        String volumeSub = volume.intent != null
-                ? getString(R.string.folder_backup_place_removable_sub) : volumeHint;
-        addPlaceRow(list, R.drawable.sd_card_24, volumeLabel, volumeSub, v -> {
-            dismissChooser(shown);
-            launchPicker(volume.intent, volume.intent != null ? null : volumeHint);
-        });
+        View cloud = addPlaceRow(list, R.drawable.cloud_outline_24, R.attr.brandInk,
+                getString(R.string.folder_backup_place_cloud),
+                getString(R.string.folder_backup_place_cloud_sub), v -> {
+                    dismissChooser(shown);
+                    launchPicker(null, getString(R.string.folder_backup_hint_drawer));
+                });
+        cloud.findViewById(R.id.place_picker_hint).setVisibility(View.VISIBLE);
+        BackupPlaces.Volume volume = BackupPlaces.removable(context);
+        if (volume != null) {
+            String volumeLabel = TextUtils.isEmpty(volume.label)
+                    ? getString(R.string.folder_backup_provider_sd) : volume.label;
+            String volumeHint = getString(R.string.folder_backup_place_volume_sub, volumeLabel);
+            String volumeSub = volume.intent != null
+                    ? getString(R.string.folder_backup_place_removable_sub) : volumeHint;
+            addPlaceRow(list, R.drawable.sd_card_24,
+                    com.google.android.material.R.attr.colorOnSurfaceVariant,
+                    volumeLabel, volumeSub, v -> {
+                        dismissChooser(shown);
+                        launchPicker(volume.intent, volume.intent != null ? null : volumeHint);
+                    });
+        }
         addPlaceRow(list, R.drawable.folder_24,
+                com.google.android.material.R.attr.colorOnSurfaceVariant,
                 getString(R.string.folder_backup_place_other),
                 getString(R.string.folder_backup_place_other_sub), v -> {
                     dismissChooser(shown);
-                    launchPicker(null, getString(R.string.folder_backup_hint_drawer));
+                    launchPicker(null, null);
                 });
         note.setText(R.string.folder_backup_place_signin);
         shown[0] = new MaterialAlertDialogBuilder(context)
@@ -639,20 +651,22 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         }
     }
 
-    /** One chooser row: the glyph (onSurfaceVariant, like every settings row
-     *  icon), the place, the one instruction that goes with it. */
-    private void addPlaceRow(LinearLayout list, int glyphRes, String title, String subtitle,
-                             View.OnClickListener onTap) {
+    /** One chooser row: the glyph (tinted from {@code tintAttr}: brandInk for
+     *  the cloud row the dialog leads with, onSurfaceVariant like every
+     *  settings icon for the rest), the place, the one instruction that goes
+     *  with it. Returns the row so a caller can reveal its extras. */
+    private View addPlaceRow(LinearLayout list, int glyphRes, int tintAttr, String title,
+                             String subtitle, View.OnClickListener onTap) {
         View row = LayoutInflater.from(list.getContext())
                 .inflate(R.layout.item_backup_place, list, false);
         ImageView icon = row.findViewById(R.id.place_icon);
         icon.setImageResource(glyphRes);
-        icon.setImageTintList(ColorStateList.valueOf(MaterialColors.getColor(icon,
-                com.google.android.material.R.attr.colorOnSurfaceVariant)));
+        icon.setImageTintList(ColorStateList.valueOf(MaterialColors.getColor(icon, tintAttr)));
         ((TextView) row.findViewById(R.id.place_title)).setText(title);
         ((TextView) row.findViewById(R.id.place_sub)).setText(subtitle);
         row.setOnClickListener(onTap);
         list.addView(row);
+        return row;
     }
 
     /**

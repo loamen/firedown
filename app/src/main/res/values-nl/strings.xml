@@ -512,6 +512,8 @@
     <string name="folder_backup_change_confirm">Map kiezen</string>
     <string name="folder_backup_place_volume_sub">Tik in de kiezer op ☰ en kies %1$s</string>
     <string name="folder_backup_place_removable_sub">De kiezer opent er direct op</string>
+    <string name="folder_backup_place_cloud">Cloudopslag</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud en andere cloud-apps. Tik op het volgende scherm op ☰ en kies de jouwe.</string>
     <string name="folder_backup_place_other">Ergens anders</string>
     <string name="folder_backup_place_other_sub">Elke map die de kiezer kan bereiken. Een map op deze telefoon gaat met de telefoon verloren.</string>
     <string name="folder_backup_place_signin">Een cloud-app verschijnt in de ☰ van de kiezer zodra je erin bent ingelogd.</string>

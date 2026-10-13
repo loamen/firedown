@@ -485,6 +485,8 @@
     <string name="folder_backup_change_confirm">Vybrat složku</string>
     <string name="folder_backup_place_volume_sub">Ve výběru klepněte na ☰ a zvolte %1$s</string>
     <string name="folder_backup_place_removable_sub">Výběr se otevře rovnou na ní</string>
+    <string name="folder_backup_place_cloud">Cloudové úložiště</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud a další cloudové aplikace. Na další obrazovce klepněte na ☰ a vyberte tu svou.</string>
     <string name="folder_backup_place_other">Jinde</string>
     <string name="folder_backup_place_other_sub">Jakákoli složka, kam výběr dosáhne. Složka v tomto telefonu se ztratí i s ním.</string>
     <string name="folder_backup_place_signin">Cloudová aplikace se v ☰ výběru objeví, až se do ní přihlásíte.</string>

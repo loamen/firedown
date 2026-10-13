@@ -612,6 +612,8 @@
     <string name="folder_backup_change_confirm">Choisir le dossier</string>
     <string name="folder_backup_place_volume_sub">Dans le sélecteur, touchez ☰ et choisissez %1$s</string>
     <string name="folder_backup_place_removable_sub">Le sélecteur s\'ouvre directement dessus</string>
+    <string name="folder_backup_place_cloud">Stockage cloud</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud et d\'autres applis cloud. Sur l\'écran suivant, touchez ☰ et choisissez la vôtre.</string>
     <string name="folder_backup_place_other">Ailleurs</string>
     <string name="folder_backup_place_other_sub">N\'importe quel dossier que le sélecteur atteint. Un dossier sur ce téléphone est perdu avec lui.</string>
     <string name="folder_backup_place_signin">Une appli cloud apparaît dans le ☰ du sélecteur une fois que vous y êtes connecté.</string>

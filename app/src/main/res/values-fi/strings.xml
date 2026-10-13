@@ -480,6 +480,8 @@
     <string name="folder_backup_change_confirm">Valitse kansio</string>
     <string name="folder_backup_place_volume_sub">Napauta valitsimessa ☰ ja valitse %1$s</string>
     <string name="folder_backup_place_removable_sub">Valitsin avautuu suoraan siihen</string>
+    <string name="folder_backup_place_cloud">Pilvitallennustila</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ja muut pilvisovellukset. Napauta seuraavassa näkymässä ☰ ja valitse omasi.</string>
     <string name="folder_backup_place_other">Muualle</string>
     <string name="folder_backup_place_other_sub">Mikä tahansa kansio, johon valitsin yltää. Tällä puhelimella oleva kansio katoaa puhelimen mukana.</string>
     <string name="folder_backup_place_signin">Pilvisovellus näkyy valitsimen ☰-valikossa, kun olet kirjautunut siihen.</string>

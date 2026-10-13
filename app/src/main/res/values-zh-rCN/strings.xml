@@ -610,6 +610,8 @@
     <string name="folder_backup_change_confirm">选择文件夹</string>
     <string name="folder_backup_place_volume_sub">在选择器中点按 ☰，然后选择 %1$s</string>
     <string name="folder_backup_place_removable_sub">选择器会直接在其中打开</string>
+    <string name="folder_backup_place_cloud">云存储</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive、Nextcloud 等云应用。在下一个屏幕点按 ☰，然后选择你的应用。</string>
     <string name="folder_backup_place_other">其他位置</string>
     <string name="folder_backup_place_other_sub">选择器能访问的任何文件夹。这部手机上的文件夹会随手机一起丢失。</string>
     <string name="folder_backup_place_signin">云应用在你登录后才会出现在选择器的 ☰ 中。</string>

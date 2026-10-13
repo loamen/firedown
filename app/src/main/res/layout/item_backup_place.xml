@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- One row of the Backup screen's "Where to back up" chooser
-     (SyncSettingsFragment.showPlaceChooser): the glyph (a removable volume,
-     "Somewhere else"), the place, and the one instruction that goes with
-     tapping it. The 24dp
-     gutter is the M3 dialog inset, not the 16dp sheet row's. -->
+     (SyncSettingsFragment.showPlaceChooser): the glyph (cloud storage, a
+     removable volume, "Somewhere else"), the place, and the one instruction
+     that goes with tapping it; the cloud row also shows the picker
+     miniature (place_picker_hint, gone on the others). Top-aligned, the M3
+     rule for a multi-line item, because that row is three lines tall. The
+     24dp gutter is the M3 dialog inset, not the 16dp sheet row's. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="?attr/selectableItemBackground"
-    android:gravity="center_vertical"
+    android:gravity="top"
     android:minHeight="64dp"
     android:orientation="horizontal"
     android:paddingHorizontal="24dp"
@@ -37,7 +39,7 @@
             android:maxLines="1"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textColor="?attr/colorOnSurface"
-            tools:text="Google Drive" />
+            tools:text="@string/folder_backup_place_cloud" />
 
         <TextView
             android:id="@+id/place_sub"
@@ -47,6 +49,11 @@
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="@string/folder_backup_place_volume_sub" />
+
+        <include
+            android:id="@+id/place_picker_hint"
+            layout="@layout/layout_backup_picker_hint"
+            android:visibility="gone" />
 
     </LinearLayout>
 
