@@ -25,7 +25,9 @@ import javax.crypto.spec.GCMParameterSpec;
  */
 public final class SyncSecrets {
 
-    private static final String PREFS = "secret_shared_prefs";
+    /** The backup-excluded prefs file; {@link WebDavSettings} keeps the
+     *  server sign-in here too. */
+    static final String PREFS = "secret_shared_prefs";
     private static final String KEY_RECOVERY = "firedown.sync.recovery_code";
     private static final String KEYSTORE = "AndroidKeyStore";
     private static final String KEY_ALIAS = "firedown.sync.wrap.v1";
@@ -45,6 +47,20 @@ public final class SyncSecrets {
 
     /** Persists the recovery-code bytes (keystore-wrapped). */
     public void store(byte[] code) {
+        prefs.edit().putString(KEY_RECOVERY, seal(code)).apply();
+    }
+
+    /** Returns the recovery-code bytes, or null if none stored / unreadable. */
+    public byte[] load() {
+        return open(prefs.getString(KEY_RECOVERY, null));
+    }
+
+    /**
+     * Wraps {@code plain} under the keystore key: base64({@code iv || ct+tag}).
+     * The same key and format as the recovery code, for the other secrets
+     * that live in this file (the WebDAV password).
+     */
+    static String seal(byte[] plain) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             // AndroidKeyStore GCM keys mandate a RANDOMIZED IV the keystore picks
@@ -54,24 +70,24 @@ public final class SyncSecrets {
             // GCM, matching IV_BYTES); only DECRYPT supplies the stored IV.
             cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey());
             byte[] iv = cipher.getIV();
-            byte[] ct = cipher.doFinal(code);
+            byte[] ct = cipher.doFinal(plain);
             byte[] blob = new byte[iv.length + ct.length];
             System.arraycopy(iv, 0, blob, 0, iv.length);
             System.arraycopy(ct, 0, blob, iv.length, ct.length);
-            prefs.edit().putString(KEY_RECOVERY, Base64.encodeToString(blob, Base64.NO_WRAP)).apply();
+            return Base64.encodeToString(blob, Base64.NO_WRAP);
         } catch (Exception e) {
-            throw new IllegalStateException("store recovery code failed", e);
+            throw new IllegalStateException("keystore wrap failed", e);
         }
     }
 
-    /** Returns the recovery-code bytes, or null if none stored / unreadable. */
-    public byte[] load() {
-        String stored = prefs.getString(KEY_RECOVERY, null);
-        if (stored == null) {
+    /** The bytes {@link #seal} wrapped, or null when absent or unreadable
+     *  (the keystore key is gone, the value is corrupt). */
+    static byte[] open(String sealed) {
+        if (sealed == null) {
             return null;
         }
         try {
-            byte[] blob = Base64.decode(stored, Base64.NO_WRAP);
+            byte[] blob = Base64.decode(sealed, Base64.NO_WRAP);
             if (blob.length <= IV_BYTES) {
                 return null;
             }
@@ -90,7 +106,7 @@ public final class SyncSecrets {
         prefs.edit().remove(KEY_RECOVERY).apply();
     }
 
-    private SecretKey getOrCreateKey() throws Exception {
+    private static SecretKey getOrCreateKey() throws Exception {
         SecretKey existing = getKey();
         if (existing != null) {
             return existing;
@@ -105,7 +121,7 @@ public final class SyncSecrets {
         return gen.generateKey();
     }
 
-    private SecretKey getKey() throws Exception {
+    private static SecretKey getKey() throws Exception {
         KeyStore ks = KeyStore.getInstance(KEYSTORE);
         ks.load(null);
         KeyStore.Entry entry = ks.getEntry(KEY_ALIAS, null);

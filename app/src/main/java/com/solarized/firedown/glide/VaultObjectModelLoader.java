@@ -15,7 +15,8 @@ import com.bumptech.glide.load.model.ModelLoader;
 import com.bumptech.glide.load.model.ModelLoaderFactory;
 import com.bumptech.glide.load.model.MultiModelLoaderFactory;
 import com.bumptech.glide.signature.ObjectKey;
-import com.solarized.firedown.sync.FolderStore;
+import com.solarized.firedown.sync.BackupStore;
+import com.solarized.firedown.sync.BackupStores;
 import com.solarized.firedown.sync.SyncSecrets;
 import com.solarized.firedown.sync.VaultObjectInputStream;
 import com.solarized.firedown.sync.VaultObjectReader;
@@ -77,7 +78,7 @@ public final class VaultObjectModelLoader implements ModelLoader<VaultObjectMode
             try {
                 SyncIdentity identity = SyncIdentity.fromCode(code);
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(appContext);
-                FolderStore store = new FolderStore(appContext, prefs);
+                BackupStore store = BackupStores.open(appContext, prefs);
                 VaultEntry entry = new VaultEntry(model.objectId, model.wrappedDek, null,
                         model.size, null, 0, model.chunkCount, null, null); // thumb + origin unused for decode
                 VaultObjectReader reader = new VaultObjectReader(store, identity, entry);

@@ -1,6 +1,5 @@
 package com.solarized.firedown.sync;
 
-import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -22,8 +21,9 @@ import java.util.List;
  * The backup engine: encrypts a local download and writes it into the backup
  * folder as one object (chunk → AES-256-GCM → appended to {@code <id>.fdvc}),
  * then writes the encrypted sidecar that commits it; restores by the reverse
- * path. Runs on a worker thread. {@link FolderStore} is the only thing it talks
- * to — there is no server, and the folder's own app does the syncing.
+ * path. Runs on a worker thread. A {@link BackupStore} is the only thing it
+ * talks to: a folder the user picked ({@link FolderStore}) or a WebDAV server
+ * ({@link WebDavStore}); there is no Firedown server either way.
  *
  * <p>All encryption is client-side ({@link VaultCrypto}); the sidecar reuses the
  * bookmark blob framing under the storage master key. The on-disk chunk format
@@ -63,12 +63,12 @@ public final class VaultEngine {
         InputStream open() throws IOException;
     }
 
-    private final FolderStore store;
+    private final BackupStore store;
     private final String account;
     private final byte[] storageKey;
     private volatile boolean cancelled;
 
-    public VaultEngine(FolderStore store, SyncIdentity identity) {
+    public VaultEngine(BackupStore store, SyncIdentity identity) {
         this.store = store;
         this.account = identity.accountBase32();
         this.storageKey = identity.storageMasterKey();
@@ -145,32 +145,40 @@ public final class VaultEngine {
         if (chunkCount == 0) {
             chunkCount = 1; // an empty file still writes one (empty) chunk
         }
-        String objectId = FolderStore.newObjectId();
+        String objectId = BackupLayout.newObjectId();
         byte[] dek = VaultCrypto.generateDek();
-        Uri object = null;
+        boolean attempted = false;
         boolean committed = false;
         try {
-            object = store.createObject(account, objectId);
-            try (InputStream in = source.open(); OutputStream out = store.openWrite(object)) {
-                byte[] buf = new byte[CHUNK_SIZE];
-                long written = 0;
-                if (progress != null) {
-                    progress.onProgress(0, size); // 0% up front (determinate)
-                }
-                for (int i = 0; i < chunkCount; i++) {
-                    checkCancelled();
-                    int n = readFully(in, buf);
-                    byte[] plain = (n == buf.length) ? buf : Arrays.copyOf(buf, n);
-                    // FDVC2: sealed with (objectId, i) as GCM AAD, so a restore
-                    // proves the bytes are chunk i of THIS object.
-                    byte[] enc = VaultCrypto.encryptChunk(plain, dek, objectId, i);
-                    out.write(enc);
-                    written += n;
+            try (InputStream in = source.open()) {
+                // From here a store may hold part of an object, so a failure
+                // below deletes it. The exact length is declared up front: a
+                // store that sends the object over the network needs it, and
+                // refuses a short or long write (a file that changed size
+                // under the backup).
+                attempted = true;
+                try (OutputStream out = store.openNewObject(account, objectId,
+                        objectLength(size, chunkCount))) {
+                    byte[] buf = new byte[CHUNK_SIZE];
+                    long written = 0;
                     if (progress != null) {
-                        progress.onProgress(written, size);
+                        progress.onProgress(0, size); // 0% up front (determinate)
                     }
+                    for (int i = 0; i < chunkCount; i++) {
+                        checkCancelled();
+                        int n = readFully(in, buf);
+                        byte[] plain = (n == buf.length) ? buf : Arrays.copyOf(buf, n);
+                        // FDVC2: sealed with (objectId, i) as GCM AAD, so a
+                        // restore proves the bytes are chunk i of THIS object.
+                        byte[] enc = VaultCrypto.encryptChunk(plain, dek, objectId, i);
+                        out.write(enc);
+                        written += n;
+                        if (progress != null) {
+                            progress.onProgress(written, size);
+                        }
+                    }
+                    out.flush();
                 }
-                out.flush();
             }
             checkCancelled();
             String wrappedDek = Base64.encodeToString(VaultCrypto.wrapDek(dek, storageKey), B64);
@@ -189,7 +197,7 @@ public final class VaultEngine {
             return entry;
         } finally {
             Arrays.fill(dek, (byte) 0);
-            if (!committed && object != null) {
+            if (!committed && attempted) {
                 // A failed or cancelled upload: free the half-written object
                 // now rather than leave it to the age sweep — a retry writes a
                 // fresh id, so nothing refers to this one.
@@ -221,9 +229,8 @@ public final class VaultEngine {
             throws IOException, GeneralSecurityException {
         byte[] dek = VaultCrypto.unwrapDek(Base64.decode(entry.wrappedDek, B64), storageKey);
         try {
-            Uri object = store.requireObject(account, entry.objectId);
             long done = 0;
-            try (InputStream in = store.openStream(object);
+            try (InputStream in = store.openObject(account, entry.objectId);
                  OutputStream out = new FileOutputStream(dest)) {
                 for (int i = 0; i < entry.chunkCount; i++) {
                     checkCancelled();
@@ -263,6 +270,13 @@ public final class VaultEngine {
         long start = (long) i * CHUNK_SIZE;
         long plainLen = Math.max(0, Math.min(CHUNK_SIZE, size - start));
         return (int) (plainLen + CHUNK_OVERHEAD);
+    }
+
+    /** The exact byte length of an object holding {@code size} plaintext
+     *  bytes in {@code chunkCount} chunks: every chunk carries the overhead.
+     *  What {@link BackupStore#openNewObject} is told to expect. */
+    public static long objectLength(long size, int chunkCount) {
+        return size + (long) chunkCount * CHUNK_OVERHEAD;
     }
 
     /** The byte offset of chunk {@code i} inside the object file. */

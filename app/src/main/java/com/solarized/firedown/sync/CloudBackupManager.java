@@ -14,6 +14,7 @@ import androidx.work.WorkManager;
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.data.RestoredFileAccess;
+import com.solarized.firedown.data.di.NetworkModule;
 import com.solarized.firedown.data.di.Qualifiers;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.repository.DownloadDataRepository;
@@ -84,7 +85,9 @@ public class CloudBackupManager {
 
     private final Context context;
     private final SharedPreferences prefs;
-    private final FolderStore store;
+    /** The picked folder (grant, picker-side checks). The ACTIVE place is
+     *  {@link #store()}: a saved WebDAV server wins over it. */
+    private final FolderStore folders;
     /** A small BOUNDED pool — NOT the DiskIO/HeavyIO single-thread lanes — for
      *  the folder ops (listings, sidecar reads, deletes). A provider can take
      *  its time (Drive answers a cold listing from the network), so a list
@@ -112,12 +115,26 @@ public class CloudBackupManager {
         this.prefs = prefs;
         this.heavyExecutor = heavyExecutor;
         this.downloads = downloads;
-        this.store = new FolderStore(context, prefs);
+        this.folders = new FolderStore(context, prefs);
     }
 
-    /** The folder (grant, layout, reachability). */
+    /** The picked folder (grant, layout, reachability), whether or not it is
+     *  the active place. */
     public FolderStore folderStore() {
-        return store;
+        return folders;
+    }
+
+    /** The active backup place ({@link BackupStores}). Off the main thread:
+     *  the first call for a WebDAV server unwraps the password and loads the
+     *  trust store. The cheap questions (set up? where?) read the settings
+     *  instead. */
+    BackupStore store() {
+        return BackupStores.open(context, folders);
+    }
+
+    /** Whether the active place is a WebDAV server (else a picked folder). */
+    public boolean usesWebDav() {
+        return BackupStores.usesNetwork(context);
     }
 
     /** Cancels the hosted service's periodic account watch, which WorkManager
@@ -133,12 +150,13 @@ public class CloudBackupManager {
      * without a folder.
      */
     public boolean isSetUp() {
-        return store.isConfigured() && hasAccount();
+        return hasFolder() && hasAccount();
     }
 
-    /** Whether a backup folder has been chosen (reachable or not). */
+    /** Whether a backup place has been chosen (reachable or not): a folder
+     *  or a WebDAV server. */
     public boolean hasFolder() {
-        return store.isConfigured();
+        return usesWebDav() || folders.isConfigured();
     }
 
     /** Marks Backup as in use (a folder was chosen). */
@@ -176,7 +194,9 @@ public class CloudBackupManager {
      * load reads the new folder.
      */
     public void adoptFolder(@NonNull Uri treeUri) {
-        store.adopt(treeUri);
+        // One place at a time: a picked folder replaces a WebDAV server.
+        new WebDavSettings(context).clear();
+        folders.adopt(treeUri);
         markEnabled();
         forgetCachedStatus();
         storeTotals(-1, -1);
@@ -195,7 +215,7 @@ public class CloudBackupManager {
         folderExecutor.execute(() -> {
             boolean writable;
             try {
-                store.checkWritable(treeUri);
+                folders.checkWritable(treeUri);
                 writable = true;
             } catch (IOException | RuntimeException e) {
                 if (BuildConfig.DEBUG) {
@@ -213,11 +233,50 @@ public class CloudBackupManager {
         });
     }
 
+    /**
+     * Finds and tests a WebDAV server ({@link WebDavCheck}) and, when it
+     * passes, makes it THE backup place: the sign-in is saved, the picked
+     * folder (if any) is forgotten (its files stay where they are), and every
+     * cached figure is dropped. Runs on the folder pool; the result lands on
+     * the main thread. Anything but {@link WebDavCheck.Kind#OK} saves nothing,
+     * so the current place stays as it was. {@code pinSha256} is the leaf the
+     * user chose to trust after an {@link WebDavCheck.Kind#UNTRUSTED_CERT}
+     * answer, else null.
+     */
+    public void checkAndAdoptWebDav(@NonNull String address, @NonNull String user,
+                                    @NonNull String password, @Nullable String pinSha256,
+                                    @NonNull Consumer<WebDavCheck.Result> onResult) {
+        folderExecutor.execute(() -> {
+            WebDavCheck.Result result = WebDavCheck.run(NetworkModule.globalClient,
+                    address, user, password, pinSha256);
+            main.post(() -> {
+                if (result.kind == WebDavCheck.Kind.OK && result.config != null) {
+                    adoptWebDav(result.config);
+                }
+                onResult.accept(result);
+            });
+        });
+    }
+
+    /** Saves a checked WebDAV sign-in as the backup place (see
+     *  {@link #checkAndAdoptWebDav}). */
+    public void adoptWebDav(@NonNull WebDavConfig config) {
+        new WebDavSettings(context).save(config);
+        folders.forget();
+        markEnabled();
+        forgetCachedStatus();
+        storeTotals(-1, -1);
+    }
+
     /** A human name for where the folder lives ("Google Drive", "SD card"),
      *  or "" when no folder is chosen. Cheap (no provider round trip). */
     @NonNull
     public String providerLabel() {
-        return store.providerLabel();
+        WebDavSettings dav = new WebDavSettings(context);
+        if (dav.isConfigured()) {
+            return WebDavStore.labelOf(dav.url());
+        }
+        return folders.providerLabel();
     }
 
     /** Provider + the picked folder's name ("Google Drive › Backups"), the
@@ -225,7 +284,11 @@ public class CloudBackupManager {
      *  Cheap (prefs only). */
     @NonNull
     public String locationLabel() {
-        return store.locationLabel();
+        WebDavSettings dav = new WebDavSettings(context);
+        if (dav.isConfigured()) {
+            return WebDavStore.labelOf(dav.url());
+        }
+        return folders.locationLabel();
     }
 
     /** Combined status snapshot for the hero + the Backups header. */
@@ -236,7 +299,7 @@ public class CloudBackupManager {
         public final int fileCount;   // -1 = unavailable (folder unreachable / not loaded)
         public final long totalBytes; // -1 = unavailable
         public final String providerLabel;
-        /** Provider › folder name ({@link FolderStore#locationLabel()}), read
+        /** Provider › folder name ({@link BackupStore#locationLabel()}), read
          *  AFTER the reachability probe so a first read already names the
          *  folder. */
         public final String location;
@@ -337,7 +400,8 @@ public class CloudBackupManager {
      */
     public void loadStatus(Consumer<Status> onResult) {
         folderExecutor.execute(() -> {
-            boolean setUp = isSetUp();
+            BackupStore store = store();
+            boolean setUp = store.isConfigured() && hasAccount();
             String label = store.providerLabel();
             Status result;
             if (!setUp) {
@@ -394,6 +458,7 @@ public class CloudBackupManager {
     public void loadEntries(Consumer<List<VaultEntry>> onResult, Runnable onError) {
         folderExecutor.execute(() -> {
             byte[] code = new SyncSecrets(context).load();
+            BackupStore store = store();
             if (code == null || !store.isConfigured()) {
                 SyncSecrets.wipe(code);
                 main.post(() -> onResult.accept(new ArrayList<>()));
@@ -455,7 +520,7 @@ public class CloudBackupManager {
             if (code != null && isSetUp()) {
                 try {
                     SyncIdentity identity = SyncIdentity.fromCode(code);
-                    VaultEngine engine = new VaultEngine(store, identity);
+                    VaultEngine engine = new VaultEngine(store(), identity);
                     for (VaultEntry e : engine.loadManifest()) {
                         keys.add(contentKey(e.name, e.size));
                     }
@@ -494,7 +559,7 @@ public class CloudBackupManager {
             } else {
                 try {
                     SyncIdentity identity = SyncIdentity.fromCode(code);
-                    VaultEngine engine = new VaultEngine(store, identity);
+                    VaultEngine engine = new VaultEngine(store(), identity);
                     engine.deleteEntries(entries);
                     ok = true;
                     // Keep the key cache honest for our own mutation: a
@@ -663,6 +728,7 @@ public class CloudBackupManager {
         folderExecutor.execute(() -> {
             boolean ok;
             byte[] code = new SyncSecrets(context).load();
+            BackupStore store = store();
             if (code == null || !store.isConfigured()) {
                 ok = true; // nothing addressable — nothing to erase
                 SyncSecrets.wipe(code);

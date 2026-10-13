@@ -4216,8 +4216,135 @@ not hidden):
   Drive" / "Firedown Backup on Google Drive": the provider app's label, or
   for the system providers the device's own words (this phone / SD card /
   Downloads); falls back to the authority, never to an empty string.
-- `newObjectId()` mints the 32-char lowercase hex id (16 random bytes) the
-  AAD binds chunks to — client-minted now, same shape the server issued.
+- `BackupLayout.newObjectId()` mints the 32-char lowercase hex id (16
+  random bytes) the AAD binds chunks to — client-minted now, same shape the
+  server issued.
+- **The layout and its rules are not FolderStore's own any more** — they
+  are `BackupLayout`'s (names, sidecar codec, `collectEntries`), shared with
+  `WebDavStore` (next section). FolderStore is the Storage Access Framework
+  half: the grant, the picker-side write check, the labels, and the
+  `DocumentsContract` calls behind `BackupStore`.
+
+### `BackupStore` — one layout, two places: a folder or a WebDAV server
+
+`sync/BackupStore` is the contract `VaultEngine` and `VaultObjectReader`
+talk to: list, write a sidecar, open a NEW object for exactly N bytes, open
+an object as a stream or for positional reads, delete one, delete an
+account, plus reachability and labels. `BackupStore.UnreachableException`
+lives here (it was `FolderStore.UnreachableException`): "the place needs the
+user", against a plain `IOException`, "a retry may fix it". Two
+implementations: `FolderStore` (a picked SAF tree) and `WebDavStore` (a
+WebDAV server the user signs in to: Nextcloud, ownCloud, a NAS).
+
+- **ONE layout, in `BackupLayout`** — the names, the sidecar framing
+  (`encodeEntry`/`decodeEntry`), and `collectEntries` (the commit rule: an
+  object without a sidecar is swept after 24 h, a sidecar without its
+  object is skipped and never deleted, a sidecar this key cannot open is
+  skipped, a conflict copy's file name wins over the id inside it). So a
+  Nextcloud folder synced to the phone by its app (read through
+  `FolderStore`) and the same Nextcloud reached over WebDAV read the same
+  files the same way. Don't put a layout rule in a store.
+- **`BackupStores.open` picks the place**: a saved WebDAV sign-in wins,
+  else the picked folder. Choosing one forgets the other
+  (`CloudBackupManager.adoptFolder` clears `WebDavSettings`; `adoptWebDav`
+  releases the tree's grant), and neither touches the files already in the
+  place left behind. The `WebDavStore` is cached per process and rebuilt
+  when `WebDavSettings.generation()` moves. `CloudBackupManager.store()` is
+  OFF the main thread only (the first call unwraps the password and loads
+  the trust store); `isSetUp`/`hasFolder`/`providerLabel`/`locationLabel`
+  read the settings directly because the Backup screen asks them on the
+  main thread.
+- **`VaultEngine` declares the object's exact length up front**
+  (`objectLength` = size + 34 per chunk) and opens the source BEFORE the
+  object, so a source that will not open costs no remote request; the
+  cleanup delete runs only once an object may exist (`attempted`).
+
+### `WebDavStore` — backups on a server the user signs in to (backend only)
+
+Built on 2026-10-13 behind the canvas boards 5–8 ("Where to back up" gains
+a "WebDAV server" row → sign in → trust a self-made certificate →
+connected). **The screen is NOT built yet**: no chooser row, no sign-in
+page, no trust prompt, no strings. `CloudBackupManager.checkAndAdoptWebDav
+(address, user, password, pin, onResult)` is the one entry point it will
+call; the result's `kind` maps 1:1 to the board's error states. Pieces:
+`WebDavClient` (the wire), `WebDavStore` (the layout on top), `WebDavCheck`
+(find and test a server before saving), `WebDavConfig`, `WebDavSettings`
+(the saved sign-in, in the backup-EXCLUDED `secret_shared_prefs` beside the
+recovery code, the password sealed under the same keystore key through
+`SyncSecrets.seal`/`open`).
+
+- **One PUT per object, streamed, exact length.** The engine writes into an
+  okio `Pipe` that a one-shot `RequestBody` drains on its own thread; the
+  `Content-Length` is the declared length; `close()` waits for the answer
+  and throws unless it was 2xx. A stream closed short (a cancel, a file that
+  shrank) cancels the call, a longer write is refused, and the server
+  stores nothing either way (Nextcloud and Apache write uploads to a
+  temporary name). No temporary copy on the phone. The costs, stated: a
+  dropped connection restarts that FILE from zero (no resume, no Nextcloud
+  chunking v2), and a proxy that caps request bodies caps backups
+  (Cloudflare's free plan: 100 MB).
+- **Sign-in is preemptive Basic, to the server's own origin only** (an
+  application interceptor; OkHttp drops the header on a cross-host or
+  cross-scheme redirect). A streamed body cannot be re-sent after a 401
+  challenge, so waiting for one is not an option. No Digest. No
+  `Expect: 100-continue` (a server that ignores it makes every upload wait
+  out the read timeout). The client is the app's (DNS, pool) with EVERY
+  interceptor removed and cookies off.
+- **Trust: the phone's store first, then ONE pinned leaf.** A
+  `X509ExtendedTrustManager` wraps the system one (so Android's network
+  security config and its hostname-aware checks run exactly as before); a
+  chain it refuses passes only when the leaf's SHA-256 equals
+  `WebDavConfig.pinSha256`, and the same pin covers a name mismatch (a NAS
+  reached by IP). A refused leaf is recorded (`rejectedCert()`) so the
+  check can show subject, issuer and the fingerprint as servers print it
+  (`4F:9A:…`) — the board's "Trust this server?" dialog. A pinned
+  certificate that CHANGES is an `UnreachableException`: backups stop until
+  the user looks, which is what the board promises.
+- **Failure classes** (`statusError`/`translate`): 401, 403, a refused
+  certificate, the collection gone (404 on the base, checked whenever the
+  objects collection 404s) → `UnreachableException`, so the worker fails
+  with `SLUG_FOLDER` and the folder-lost notification; timeouts, 5xx, 507
+  (out of space) → plain `IOException`, retried. Every object and sidecar
+  write first PROPFINDs the objects collection (Depth 0) and MKCOLs the
+  three levels when it is missing — one cheap request instead of a cache of
+  "already made" that a delete on the server would make stale (409s).
+- **A listing is one Depth-1 PROPFIND plus a GET per sidecar not seen at
+  that version** (the ETag, else size + date). Decoded sidecars sit in a
+  16 MB LRU keyed by account and id, shared with whoever listed them, so
+  the Downloads marks, the status and the Backups list don't each re-read
+  every sidecar; a first listing fetches four at a time. A sidecar that
+  404s between the listing and the GET is skipped; any OTHER read failure
+  fails the listing — a network list is never silently short.
+- **Streaming reads** are one ranged GET per 8 MiB chunk (`getRange`); a
+  server that ignores Range (200) is still read right, by skipping; a 206
+  whose `Content-Range` starts elsewhere is refused before decryption.
+- **PROPFIND parsing** is namespace-aware SAX over a body capped at 32 MB;
+  a DOCTYPE is refused outright (no multistatus has one, and it is the door
+  to entity expansion on whatever parser Android ships); only 2xx propstats
+  count (Nextcloud's 404 propstat lists the props a collection lacks,
+  empty); hrefs resolve against the URL that answered (relative, absolute
+  path or full URL); a Depth-0 answer whose one href is spelled oddly is
+  still the resource asked about.
+- **`WebDavCheck`**: a bare host gets `https://`, `davs://`/`dav://` map to
+  https/http; the typed address is tried, then (unless it already names
+  `remote.php`) `remote.php/dav/files/<user>/` and the legacy
+  `remote.php/webdav/` (which also works for an account that signs in with
+  an email address); a 401 on one candidate is not final; the address SAVED
+  is the one that answered after redirects, and an https→http downgrade is
+  not accepted. Then the write check (FolderStore's twin): make
+  `Firedown Backup` when missing, write a small file, delete it, remove the
+  folder again if a later step failed. Kinds: `OK`, `BAD_ADDRESS`,
+  `UNREACHABLE`, `UNTRUSTED_CERT` (+ `CertInfo`), `AUTH_FAILED`,
+  `NOT_WEBDAV`, `READ_ONLY`, `FULL`.
+- **Backup and restore work carry a CONNECTED constraint while WebDAV is
+  the place** (`BackupStores.transferConstraints`, both request builders);
+  a folder stays unconstrained (it may be on the phone or a card).
+- **Nextcloud moves deletes to its trash bin**, where they count against
+  the quota until emptied. That is the server's policy; nothing a client
+  can skip, worth one line in the screen's copy.
+- Not supported, by decision for now: Digest, resumable/chunked uploads,
+  client certificates, Nextcloud Login Flow v2 (the user types an app
+  password).
 
 ### `VaultEngine` + the workers — same pipeline, a folder underneath
 
@@ -4245,9 +4372,11 @@ not hidden):
   thread, so without the per-chunk `checkCancelled` a cancelled backup kept
   writing a multi-GB object to the end.
 - **`VaultBackupWorker`** runs foreground (`dataSync`, the app's declared
-  type) with **no network constraint**: the folder is written through its
-  provider (a local copy for Drive/Dropbox/Nextcloud, which upload on their
-  own; an SD card needs nothing), so a backup works offline. It loads the
+  type) with **no network constraint for a folder**: the folder is written
+  through its provider (a local copy for Drive/Dropbox/Nextcloud, which
+  upload on their own; an SD card needs nothing), so a backup works offline.
+  A WebDAV server is the exception (`BackupStores.transferConstraints`
+  adds CONNECTED, restores too): there every byte is a request. It loads the
   shared identity, drives the engine, publishes per-chunk progress
   (`KEY_PROGRESS_DONE`/`_TOTAL`, throttled to whole percents, skipped when
   `isStopped()`, and the last `setProgressAsync` future DRAINED before every
@@ -4851,6 +4980,25 @@ children — the card edges do the grouping).
   later build, so a new field is optional on read and written only when
   set (the `backedUpAt`/`origin` precedent) — never a bump that strands
   existing folders.
+- **Any change to `BackupStore`, `BackupLayout`, the WebDAV classes or the
+  engine: `sh scripts/webdav-harness/run.sh`.** It copies the REAL classes
+  out of app/src, compiles them against the REAL OkHttp/Okio (fetched from
+  Maven Central into a cache, sha1-checked) with Android stubs, and drives
+  them against an in-JVM fake WebDAV server with a switch for every failure
+  above (wrong password, read-only, full, a dropped or cancelled upload, a
+  file that shrank, Range ignored, a wrong 206, a 500, the collection
+  gone, a redirect, absolute hrefs, a site root that is not WebDAV, two
+  self-made certificates for the trust path), then — when wsgidav is
+  installed (`pip install wsgidav cheroot`, or `WSGIDAV=`) — the same
+  backup/list/restore/stream/delete round trip against a REAL WebDAV
+  server, checked on its disk. 86 checks with wsgidav, 75 without, ~1 min.
+  Teeth proven by mutation: each of eight planted bugs fails it (a refused
+  certificate not mapped to unreachable, a 401 treated as retryable, no
+  sidecar cache, the 206 range unchecked, a vanished collection read as
+  empty, the pin ignored, no preemptive sign-in, the sidecar written before
+  the object). What it cannot prove: Android's trust manager and SAX
+  parser, and a real Nextcloud/NAS — on-device with both once the screen
+  exists.
 
 ## Browser chrome, pull-to-refresh & session recovery (Fenix-parity invariants)
 

@@ -44,7 +44,8 @@ import com.solarized.firedown.R;
 import com.solarized.firedown.phone.player.PlaybackDebugInfo;
 import com.solarized.firedown.glide.MimeTypeThumbnail;
 import com.solarized.firedown.glide.VaultObjectModel;
-import com.solarized.firedown.sync.FolderStore;
+import com.solarized.firedown.sync.BackupStore;
+import com.solarized.firedown.sync.BackupStores;
 import com.solarized.firedown.sync.SyncSecrets;
 import com.solarized.firedown.sync.VaultDataSource;
 import com.solarized.firedown.sync.VaultObjectReader;
@@ -186,7 +187,7 @@ public class CloudBackupStreamActivity extends AppCompatActivity {
             VaultObjectReader reader;
             try {
                 SyncIdentity identity = SyncIdentity.fromCode(code);
-                FolderStore store = new FolderStore(this,
+                BackupStore store = BackupStores.open(this,
                         PreferenceManager.getDefaultSharedPreferences(this));
                 reader = new VaultObjectReader(store, identity, entry);
             } catch (Exception e) {

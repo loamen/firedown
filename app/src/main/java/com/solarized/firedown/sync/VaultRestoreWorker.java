@@ -195,7 +195,7 @@ public class VaultRestoreWorker extends Worker {
             SyncSecrets.wipe(code);
         }
 
-        FolderStore store = new FolderStore(mContext, mPrefs);
+        BackupStore store = BackupStores.open(mContext, mPrefs);
         VaultEngine engine = new VaultEngine(store, identity);
         mEngine = engine;
         if (isStopped()) {
@@ -216,7 +216,7 @@ public class VaultRestoreWorker extends Worker {
                     mRepo.add(download);
                 }
             });
-        } catch (FolderStore.UnreachableException | FileNotFoundException e) {
+        } catch (BackupStore.UnreachableException | FileNotFoundException e) {
             // The folder is gone, or the object is not in it (deleted from
             // another phone, or never synced here) — a retry cannot change
             // that. Mark the row ERROR (a visible failed download the user can

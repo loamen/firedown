@@ -54,6 +54,7 @@ import com.solarized.firedown.phone.CloudBackupStreamActivity;
 import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.R;
 import com.solarized.firedown.data.entity.DownloadEntity;
+import com.solarized.firedown.sync.BackupStores;
 import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.sync.PendingRemovals;
 import com.solarized.firedown.sync.VaultBackupWorker;
@@ -1666,12 +1667,12 @@ public class CloudBackupListFragment extends Fragment
                 .putInt(VaultRestoreWorker.KEY_CHUNK_COUNT, entry.chunkCount)
                 .putString(VaultRestoreWorker.KEY_ORIGIN, entry.origin)
                 .build();
-        // No network constraint: the folder may be on the phone or an SD card,
-        // and a provider that does need the network answers the read with an
-        // error the worker retries (the backup worker is unconstrained for the
-        // same reason).
+        // A network constraint only for a WebDAV server: a folder may be on the
+        // phone or an SD card, and a provider that does need the network
+        // answers the read with an error the worker retries.
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(VaultRestoreWorker.class)
                 .setInputData(input)
+                .setConstraints(BackupStores.transferConstraints(requireContext()))
                 .addTag(CloudBackupManager.WORK_TAG)
                 // Identifies WHICH entry this restore is for, so a remove can
                 // warn about it and cancel it deterministically instead of

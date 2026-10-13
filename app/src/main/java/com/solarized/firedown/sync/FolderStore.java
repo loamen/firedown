@@ -21,12 +21,8 @@ import androidx.annotation.Nullable;
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
-import com.solarized.firedown.sync.crypto.BookmarkBlob;
-import com.solarized.firedown.sync.crypto.Hex;
 import com.solarized.firedown.sync.model.VaultEntry;
-import com.solarized.firedown.sync.model.VaultManifest;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -37,12 +33,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The backup FOLDER: a Storage Access Framework tree the user picked once
@@ -64,11 +58,14 @@ import java.util.concurrent.TimeUnit;
  * see each other's files, and a new phone that adopts the same code and picks
  * the same folder finds them. The sidecar is written LAST and is the commit
  * marker: an object without one is an upload that never finished and is swept
- * once it is older than {@link #ORPHAN_MIN_AGE_MS}; a sidecar without its
- * object is skipped and never deleted (see {@link #listEntries}). Everything the server
- * used to hold encrypted — the manifest — is now these sidecars, under the same
- * {@link BookmarkBlob} framing and the same storage key, so the provider sees
- * only ciphertext and opaque names.
+ * once it is older than {@link BackupLayout#ORPHAN_MIN_AGE_MS}; a sidecar
+ * without its object is skipped and never deleted (see
+ * {@link BackupLayout#collectEntries}). Everything the server used to hold
+ * encrypted — the manifest — is now these sidecars, under the same
+ * {@code BookmarkBlob} framing and the same storage key, so the provider sees
+ * only ciphertext and opaque names. The layout and its rules are
+ * {@link BackupLayout}'s, shared with {@link WebDavStore}; this class is the
+ * Storage Access Framework half.
  *
  * <p><b>Why sidecars, not one index file.</b> A sync-lagged folder has no
  * optimistic concurrency: two phones writing one index would overwrite each
@@ -88,30 +85,23 @@ import java.util.concurrent.TimeUnit;
  * when listing for the same reason.
  *
  * <p>Every method that touches the resolver can throw {@link
- * UnreachableException}: the grant was revoked (the provider app signed out,
+ * BackupStore.UnreachableException}: the grant was revoked (the provider app signed out,
  * updated, or was uninstalled; the SD card left), the tree is gone, or the
  * provider is not responding. Callers treat it as "the folder, not the
  * network" — the worker names it, the Backup screen shows the folder-lost
  * state and asks for the folder again.
  */
-public final class FolderStore {
+public final class FolderStore implements BackupStore {
 
     private static final String TAG = FolderStore.class.getSimpleName();
 
-    /** The root we create inside the picked folder, visible to the user in
-     *  their Drive/Dropbox/file manager — so named rather than hidden. */
-    public static final String ROOT_DIR = "Firedown Backup";
-    static final String OBJECTS_DIR = "objects";
-    static final String OBJECT_EXT = ".fdvc";
-    static final String ENTRY_EXT = ".entry";
+    private static final String ROOT_DIR = BackupLayout.ROOT_DIR;
+    private static final String OBJECTS_DIR = BackupLayout.OBJECTS_DIR;
+    private static final String OBJECT_EXT = BackupLayout.OBJECT_EXT;
+    private static final String ENTRY_EXT = BackupLayout.ENTRY_EXT;
     /** No registered extension anywhere, so every provider keeps the display
      *  name we hand it verbatim (see the class doc). */
     static final String OBJECT_MIME = "application/vnd.firedown.vault";
-    /** An object with no sidecar younger than this is an upload in flight. */
-    static final long ORPHAN_MIN_AGE_MS = TimeUnit.HOURS.toMillis(24);
-    /** A sidecar is a few KB (one entry + a thumbnail); refuse anything that
-     *  is not one rather than read a stray multi-MB file into memory. */
-    private static final long MAX_ENTRY_BYTES = 512 * 1024;
 
     private static final String[] CHILD_PROJECTION = {
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
@@ -124,25 +114,12 @@ public final class FolderStore {
     private static final String AUTHORITY_EXTERNAL = "com.android.externalstorage.documents";
     private static final String AUTHORITY_DOWNLOADS = "com.android.providers.downloads.documents";
 
-    /** The folder cannot be used right now: grant gone, tree gone, provider
-     *  not answering. Distinct from a plain {@link IOException} (a failed
-     *  write on a reachable folder) so the worker can name the cause. */
-    public static final class UnreachableException extends IOException {
-        public UnreachableException(String message) {
-            super(message);
-        }
-
-        public UnreachableException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
-    /** One file in the objects directory. */
-    public static final class Doc {
-        public final Uri uri;
-        public final String name;
-        public final long size;
-        public final long modified;
+    /** One file of a directory listing. */
+    private static final class Doc {
+        final Uri uri;
+        final String name;
+        final long size;
+        final long modified;
 
         Doc(Uri uri, String name, long size, long modified) {
             this.uri = uri;
@@ -165,6 +142,7 @@ public final class FolderStore {
     // ---- the grant ----
 
     /** Whether a folder has been chosen (not whether it is reachable now). */
+    @Override
     public boolean isConfigured() {
         return treeUri() != null;
     }
@@ -331,7 +309,7 @@ public final class FolderStore {
         Uri probe = null;
         boolean passed = false;
         try {
-            String name = "write-check-" + newObjectId().substring(0, 8) + ".tmp";
+            String name = "write-check-" + BackupLayout.newObjectId().substring(0, 8) + ".tmp";
             try {
                 probe = DocumentsContract.createDocument(resolver, backupRoot, OBJECT_MIME, name);
             } catch (SecurityException e) {
@@ -388,6 +366,7 @@ public final class FolderStore {
      * {@link #locationLabel()} so no surface ever asks the provider for it on
      * its own.
      */
+    @Override
     public boolean isReachable() {
         Uri tree = treeUri();
         if (tree == null || !holdsGrant(tree)) {
@@ -439,6 +418,7 @@ public final class FolderStore {
      * unknown (no read yet) or when it only repeats the provider.
      */
     @NonNull
+    @Override
     public String locationLabel() {
         String provider = providerLabel();
         String name = folderName();
@@ -467,6 +447,7 @@ public final class FolderStore {
      * Downloads). Falls back to the authority, never to an empty string.
      */
     @NonNull
+    @Override
     public String providerLabel() {
         Uri tree = treeUri();
         if (tree == null) {
@@ -636,159 +617,58 @@ public final class FolderStore {
 
     // ---- the objects directory ----
 
-    /** A fresh object id: 16 random bytes as lowercase hex, the id shape the
-     *  FDVC2 chunk AAD hex-decodes. */
-    public static String newObjectId() {
-        byte[] id = new byte[16];
-        new SecureRandom().nextBytes(id);
-        return Hex.encode(id);
-    }
-
-    /** The listing of the objects directory, split into objects and sidecars
-     *  by object id (a provider may have renamed on conflict — a name that does
-     *  not start with a 32-hex id is ignored). Empty when the directory does
-     *  not exist yet. */
-    public static final class Listing {
-        public final Map<String, Doc> objects = new HashMap<>();
-        public final Map<String, Doc> entries = new HashMap<>();
-    }
-
-    public Listing list(String account) throws IOException {
-        Listing listing = new Listing();
+    /** The objects directory, split by object id. Empty when it does not
+     *  exist yet. */
+    private BackupLayout.Listing<Uri> list(String account) throws IOException {
+        BackupLayout.Listing<Uri> listing = new BackupLayout.Listing<>();
         Uri dir = objectsDir(account, false);
         if (dir == null) {
             return listing;
         }
         Uri tree = requireTree();
         for (Doc d : listChildren(tree, dir, false)) {
-            String id = objectIdOf(d.name, OBJECT_EXT);
-            if (id != null) {
-                listing.objects.put(id, d);
-                continue;
-            }
-            id = objectIdOf(d.name, ENTRY_EXT);
-            if (id != null) {
-                listing.entries.put(id, d);
-            }
+            listing.add(new BackupLayout.Item<>(d.uri, d.name, d.size, d.modified));
         }
         return listing;
     }
 
-    /** {@code <32 hex>.ext} → the id; a provider's conflict suffix
-     *  ({@code name (1).fdvc}, {@code name.fdvc (1)}) still matches by prefix. */
-    @Nullable
-    private static String objectIdOf(@Nullable String name, String ext) {
-        if (name == null || name.length() < 32 + ext.length()) {
-            return null;
-        }
-        String id = name.substring(0, 32);
-        if (!name.startsWith(ext, 32)) {
-            return null;
-        }
-        for (int i = 0; i < 32; i++) {
-            char c = id.charAt(i);
-            boolean hex = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
-            if (!hex) {
-                return null;
-            }
-        }
-        return id;
-    }
-
-    /**
-     * Reads every committed entry — the folder's index. An object with no
-     * sidecar is an upload that never finished: swept once it is older than
-     * {@link #ORPHAN_MIN_AGE_MS}, kept (and not listed) while it is young. A
-     * sidecar whose object is missing is skipped, never deleted (another
-     * phone's object may still be syncing in). A sidecar this key cannot open
-     * (another code's leftovers, a corrupt file) is skipped, never deleted —
-     * it is not ours to judge.
-     */
+    /** Every committed entry — the folder's index ({@link
+     *  BackupLayout#collectEntries}: orphans swept, a sidecar without its
+     *  object or one this key cannot open skipped, never deleted). */
+    @Override
     public List<VaultEntry> listEntries(String account, byte[] storageKey) throws IOException {
-        Listing listing = list(account);
-        List<VaultEntry> out = new ArrayList<>();
-        long now = System.currentTimeMillis();
-        for (Map.Entry<String, Doc> e : listing.entries.entrySet()) {
-            String id = e.getKey();
-            Doc object = listing.objects.get(id);
-            if (object == null) {
-                // No object (yet): another phone's object may still be on its
-                // way through the provider's sync while its small sidecar
-                // arrived first, or the object was deleted outside the app.
-                // Not listed, and NEVER deleted — a sidecar is the other
-                // phone's commit marker, and destroying it would turn a
-                // finished backup there into an orphan swept by the next
-                // listing. A few KB is the price of being sure.
-                continue;
+        return BackupLayout.collectEntries(list(account), sidecars -> {
+            Map<String, VaultEntry> out = new HashMap<>();
+            for (BackupLayout.Item<Uri> item : sidecars) {
+                VaultEntry entry = readEntry(item, storageKey);
+                if (entry != null) {
+                    String id = BackupLayout.objectIdOf(item.name, ENTRY_EXT);
+                    out.put(id, entry);
+                }
             }
-            VaultEntry entry = readEntry(e.getValue(), storageKey);
-            if (entry == null) {
-                continue;
-            }
-            if (!id.equals(entry.objectId)) {
-                // The sidecar names a different object than its file name —
-                // a conflict copy a provider glued to the wrong name. Trust
-                // the name on disk, which is what the object lives under.
-                entry = withObjectId(entry, id);
-            }
-            out.add(entry);
-        }
-        for (Map.Entry<String, Doc> e : listing.objects.entrySet()) {
-            if (listing.entries.containsKey(e.getKey())) {
-                continue;
-            }
-            long age = now - e.getValue().modified;
-            if (e.getValue().modified > 0 && age > ORPHAN_MIN_AGE_MS) {
-                deleteQuietly(e.getValue().uri);
-            }
-        }
-        return out;
-    }
-
-    private static VaultEntry withObjectId(VaultEntry e, String objectId) {
-        return new VaultEntry(objectId, e.wrappedDek, e.name, e.size, e.mime,
-                e.downloadedAt, e.chunkCount, e.thumb, e.origin, e.backedUpAt);
+            return out;
+        }, object -> deleteQuietly(object.handle), System.currentTimeMillis());
     }
 
     @Nullable
-    private VaultEntry readEntry(Doc doc, byte[] storageKey) {
-        if (doc.size > MAX_ENTRY_BYTES) {
+    private VaultEntry readEntry(BackupLayout.Item<Uri> item, byte[] storageKey) {
+        if (item.size > BackupLayout.MAX_ENTRY_BYTES) {
             return null;
         }
         byte[] blob;
-        try (InputStream in = resolver.openInputStream(doc.uri)) {
+        try (InputStream in = resolver.openInputStream(item.handle)) {
             if (in == null) {
                 return null;
             }
-            blob = readAll(in, MAX_ENTRY_BYTES);
+            blob = BackupLayout.readAll(in, BackupLayout.MAX_ENTRY_BYTES);
         } catch (IOException | RuntimeException e) {
             return null;
         }
-        try {
-            List<VaultEntry> entries = VaultManifest.fromJson(BookmarkBlob.decrypt(blob, storageKey));
-            return entries.isEmpty() ? null : entries.get(0);
-        } catch (GeneralSecurityException | RuntimeException e) {
-            return null;
-        }
-    }
-
-    private static byte[] readAll(InputStream in, long max) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buf = new byte[16 * 1024];
-        long total = 0;
-        int n;
-        while ((n = in.read(buf)) != -1) {
-            total += n;
-            if (total > max) {
-                throw new IOException("sidecar too large");
-            }
-            out.write(buf, 0, n);
-        }
-        return out.toByteArray();
+        return BackupLayout.decodeEntry(blob, storageKey);
     }
 
     /** Creates the (empty) object file for {@code objectId}; returns its URI. */
-    public Uri createObject(String account, String objectId) throws IOException {
+    private Uri createObject(String account, String objectId) throws IOException {
         Uri dir = objectsDir(account, true);
         if (dir == null) {
             throw new IOException("objects directory unavailable");
@@ -808,8 +688,18 @@ public final class FolderStore {
         return created;
     }
 
+    /** Creates the object file and opens it for writing. {@code length} is
+     *  not needed here: the provider takes the bytes as they come. A failed
+     *  or short write leaves a file without a sidecar, which the engine
+     *  deletes (and the orphan sweep would). */
+    @Override
+    public OutputStream openNewObject(String account, String objectId, long length)
+            throws IOException {
+        return openWrite(createObject(account, objectId));
+    }
+
     /** Opens a document for a fresh write (truncating). */
-    public OutputStream openWrite(Uri doc) throws IOException {
+    private OutputStream openWrite(Uri doc) throws IOException {
         OutputStream out;
         try {
             out = resolver.openOutputStream(doc, "wt");
@@ -829,16 +719,14 @@ public final class FolderStore {
      * The whole sidecar is one small write; a provider that cannot overwrite
      * in place gets a delete + create.
      */
+    @Override
     public void writeEntry(String account, VaultEntry entry, byte[] storageKey)
             throws IOException, GeneralSecurityException {
         Uri dir = objectsDir(account, true);
         if (dir == null) {
             throw new IOException("objects directory unavailable");
         }
-        List<VaultEntry> one = new ArrayList<>(1);
-        one.add(entry);
-        byte[] blob = BookmarkBlob.encrypt(
-                VaultManifest.toJson(one, System.currentTimeMillis()), storageKey);
+        byte[] blob = BackupLayout.encodeEntry(entry, storageKey);
         Uri existing = findDoc(account, entry.objectId, ENTRY_EXT);
         if (existing != null) {
             try (OutputStream out = openWrite(existing)) {
@@ -869,14 +757,15 @@ public final class FolderStore {
 
     /** The object (or sidecar) document of {@code objectId}, or null. */
     @Nullable
-    public Uri findDoc(String account, String objectId, String ext) throws IOException {
-        Listing listing = list(account);
-        Doc d = OBJECT_EXT.equals(ext) ? listing.objects.get(objectId) : listing.entries.get(objectId);
-        return d == null ? null : d.uri;
+    private Uri findDoc(String account, String objectId, String ext) throws IOException {
+        BackupLayout.Listing<Uri> listing = list(account);
+        BackupLayout.Item<Uri> d = OBJECT_EXT.equals(ext)
+                ? listing.objects.get(objectId) : listing.entries.get(objectId);
+        return d == null ? null : d.handle;
     }
 
-    /** The object document of {@code objectId}, or an {@link IOException}. */
-    public Uri requireObject(String account, String objectId) throws IOException {
+    /** The object document of {@code objectId}, or a FileNotFoundException. */
+    private Uri requireObject(String account, String objectId) throws IOException {
         Uri doc = findDoc(account, objectId, OBJECT_EXT);
         if (doc == null) {
             throw new FileNotFoundException("object " + objectId + " is not in the folder");
@@ -885,7 +774,7 @@ public final class FolderStore {
     }
 
     /** Opens an object read-only. The descriptor is the caller's to close. */
-    public ParcelFileDescriptor openRead(Uri doc) throws IOException {
+    private ParcelFileDescriptor openRead(Uri doc) throws IOException {
         ParcelFileDescriptor pfd;
         try {
             pfd = resolver.openFileDescriptor(doc, "r");
@@ -898,6 +787,28 @@ public final class FolderStore {
         return pfd;
     }
 
+    /** Positional reads over an open descriptor (see {@link #readRange}). */
+    @Override
+    public RangeReader openObjectRanges(String account, String objectId) throws IOException {
+        Uri doc = requireObject(account, objectId);
+        ParcelFileDescriptor pfd = openRead(doc);
+        return new RangeReader() {
+            @Override
+            public byte[] read(long offset, int length) throws IOException {
+                return readRange(doc, pfd, offset, length);
+            }
+
+            @Override
+            public void close() {
+                try {
+                    pfd.close();
+                } catch (IOException ignored) {
+                    // nothing further to do with a descriptor that will not close
+                }
+            }
+        };
+    }
+
     /**
      * Reads {@code length} bytes at {@code offset} from an open object: a
      * positional channel read when the provider handed over a real file (the
@@ -905,7 +816,7 @@ public final class FolderStore {
      * fresh stream skipped forward (a provider that serves a pipe). Returns
      * fewer bytes at the end of the file.
      */
-    public byte[] readRange(Uri doc, ParcelFileDescriptor pfd, long offset, int length)
+    private byte[] readRange(Uri doc, ParcelFileDescriptor pfd, long offset, int length)
             throws IOException {
         byte[] buf = new byte[length];
         int got = 0;
@@ -966,7 +877,9 @@ public final class FolderStore {
     }
 
     /** Opens an object as a sequential stream (restore). */
-    public InputStream openStream(Uri doc) throws IOException {
+    @Override
+    public InputStream openObject(String account, String objectId) throws IOException {
+        Uri doc = requireObject(account, objectId);
         InputStream in;
         try {
             in = resolver.openInputStream(doc);
@@ -983,17 +896,18 @@ public final class FolderStore {
      * Deletes one backed-up file: the SIDECAR first (unreference — a listing
      * stops showing it the moment this lands), then the object, best-effort.
      * An object left behind by a failed second delete is an orphan the next
-     * listing sweeps after {@link #ORPHAN_MIN_AGE_MS}.
+     * listing sweeps after {@link BackupLayout#ORPHAN_MIN_AGE_MS}.
      */
+    @Override
     public void deleteObject(String account, String objectId) throws IOException {
-        Listing listing = list(account);
-        Doc entry = listing.entries.get(objectId);
+        BackupLayout.Listing<Uri> listing = list(account);
+        BackupLayout.Item<Uri> entry = listing.entries.get(objectId);
         if (entry != null) {
-            delete(entry.uri);
+            delete(entry.handle);
         }
-        Doc object = listing.objects.get(objectId);
+        BackupLayout.Item<Uri> object = listing.objects.get(objectId);
         if (object != null) {
-            deleteQuietly(object.uri);
+            deleteQuietly(object.handle);
         }
     }
 
@@ -1024,6 +938,7 @@ public final class FolderStore {
      * sidecar, then the account directory. Only this account's directory:
      * another code's files beside it are untouched, as is the folder itself.
      */
+    @Override
     public void deleteAccount(String account) throws IOException {
         Uri tree = requireTree();
         Uri root = rootDocument(tree);
@@ -1043,7 +958,7 @@ public final class FolderStore {
             // Sidecars first, so a listing that races this delete sees the
             // entries disappear before their objects do.
             for (Doc d : listChildren(tree, objects, false)) {
-                if (objectIdOf(d.name, ENTRY_EXT) != null) {
+                if (BackupLayout.objectIdOf(d.name, ENTRY_EXT) != null) {
                     delete(d.uri);
                 }
             }

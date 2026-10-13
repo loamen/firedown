@@ -182,6 +182,7 @@ public class VaultBackupWorker extends Worker {
                 .build();
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(VaultBackupWorker.class)
                 .setInputData(input)
+                .setConstraints(BackupStores.transferConstraints(context))
                 .addTag(CloudBackupManager.WORK_TAG)
                 .addTag(TAG_NAME + truncateTag(entity.getFileName()))
                 .addTag(TAG_MIME + truncateTag(entity.getFileMimeType()))
@@ -257,7 +258,7 @@ public class VaultBackupWorker extends Worker {
             }
             return failTerminal(name, SLUG_ERROR);
         }
-        FolderStore store = new FolderStore(mContext, mPrefs);
+        BackupStore store = BackupStores.open(mContext, mPrefs);
         if (!store.isConfigured()) {
             return failure(SLUG_NOT_SET_UP);
         }
@@ -343,8 +344,9 @@ public class VaultBackupWorker extends Worker {
                 }, mime, thumb, (done, total) -> publishProgress(fName, fMime, done, total),
                         origin, downloadedAt);
             }
-        } catch (FolderStore.UnreachableException e) {
-            // The FOLDER, not the file: grant revoked, provider gone, card out.
+        } catch (BackupStore.UnreachableException e) {
+            // The FOLDER, not the file: grant revoked, provider gone, card out,
+            // a server that refused the sign-in or changed its certificate.
             // Terminal — a retry cannot grow a grant — and told ONCE as a
             // notification, because the Backup hero's lost state is only seen
             // by someone who opens the app. Checked BEFORE the bare-IOException

@@ -1,7 +1,5 @@
 package com.solarized.firedown.sync;
 
-import android.net.Uri;
-import android.os.ParcelFileDescriptor;
 import android.util.Base64;
 
 import com.solarized.firedown.sync.crypto.SyncIdentity;
@@ -26,14 +24,15 @@ import java.util.Map;
  * back to back. So a plaintext byte offset maps to exactly one chunk
  * ({@code offset / CHUNK_SIZE}) at a byte range the sidecar fixes
  * ({@link VaultEngine#chunkOffset}, {@link VaultEngine#chunkCiphertextLength}),
- * read with one positional read and decrypted on its own — a player seeking
+ * read with one positional read ({@link BackupStore.RangeReader}: a file
+ * channel read for a folder, a ranged GET for a WebDAV server) and decrypted
+ * on its own — a player seeking
  * anywhere pays for the ~8 MiB chunk(s) covering that range, not the file.</p>
  *
  * <p>The DEK is unwrapped once in the constructor from the sidecar's wrapped
- * blob under the account's storage master key. The object is located (one
- * directory listing) and opened in the constructor too, so construction is IO
- * and belongs off the main thread; the descriptor stays open for the reader's
- * life. A tiny LRU of decrypted chunks avoids re-reading the same chunk on
+ * blob under the account's storage master key. The object is located and
+ * opened in the constructor too, so construction is IO and belongs off the
+ * main thread; the range reader stays open for the reader's life. A tiny LRU of decrypted chunks avoids re-reading the same chunk on
  * adjacent reads (a demuxer reads a chunk in many small {@code readAt} calls).</p>
  *
  * <p>Not thread-safe by field, so {@link #readAt} is {@code synchronized}.</p>
@@ -46,13 +45,11 @@ public final class VaultObjectReader {
      *  of plaintext in memory for no real gain. */
     private static final int CACHE_CHUNKS = 2;
 
-    private final FolderStore store;
     private final String objectIdHex;
     private final long length;      // plaintext bytes (the file size)
     private final int chunkCount;
     private final byte[] dek;
-    private final Uri object;
-    private final ParcelFileDescriptor pfd;
+    private final BackupStore.RangeReader ranges;
 
     /** Decrypted-chunk cache, access-ordered so the eldest entry is the LRU
      *  victim. Bounded to {@link #CACHE_CHUNKS}. */
@@ -65,25 +62,21 @@ public final class VaultObjectReader {
 
     private boolean closed;
 
-    public VaultObjectReader(FolderStore store, SyncIdentity identity, VaultEntry entry)
+    public VaultObjectReader(BackupStore store, SyncIdentity identity, VaultEntry entry)
             throws GeneralSecurityException, IOException {
-        this.store = store;
         this.objectIdHex = entry.objectId;
         this.length = entry.size;
         this.chunkCount = Math.max(1, entry.chunkCount);
         this.dek = VaultCrypto.unwrapDek(Base64.decode(entry.wrappedDek, B64),
                 identity.storageMasterKey());
-        Uri doc;
-        ParcelFileDescriptor opened;
+        BackupStore.RangeReader opened;
         try {
-            doc = store.requireObject(identity.accountBase32(), entry.objectId);
-            opened = store.openRead(doc);
+            opened = store.openObjectRanges(identity.accountBase32(), entry.objectId);
         } catch (IOException | RuntimeException e) {
             Arrays.fill(dek, (byte) 0);
             throw e;
         }
-        this.object = doc;
-        this.pfd = opened;
+        this.ranges = opened;
     }
 
     /** Total plaintext length of the file. */
@@ -154,7 +147,7 @@ public final class VaultObjectReader {
             throw new IOException("chunk " + i + " out of range");
         }
         int cipherLen = VaultEngine.chunkCiphertextLength(length, i);
-        byte[] enc = store.readRange(object, pfd, VaultEngine.chunkOffset(i), cipherLen);
+        byte[] enc = ranges.read(VaultEngine.chunkOffset(i), cipherLen);
         if (enc.length != cipherLen) {
             throw new IOException("object truncated at chunk " + i
                     + " (" + enc.length + " of " + cipherLen + " bytes)");
@@ -186,10 +179,6 @@ public final class VaultObjectReader {
         closed = true;
         Arrays.fill(dek, (byte) 0);
         cache.clear();
-        try {
-            pfd.close();
-        } catch (IOException ignored) {
-            // nothing further to do with a descriptor that will not close
-        }
+        ranges.close();
     }
 }
