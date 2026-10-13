@@ -517,12 +517,15 @@
     <string name="folder_backup_place_volume_sub">В выборе нажмите ☰ и выберите %1$s</string>
     <string name="folder_backup_place_removable_sub">Выбор откроется сразу на ней</string>
     <string name="folder_backup_place_cloud">Облачное хранилище</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud и другие облачные приложения. На следующем экране нажмите ☰ и выберите своё.</string>
+    <string name="folder_backup_place_cloud_sub">Google Диск, Nextcloud и другие</string>
     <string name="folder_backup_place_other">В другом месте</string>
-    <string name="folder_backup_place_other_sub">Любая папка, до которой дотягивается выбор. Папка на этом телефоне теряется вместе с ним.</string>
-    <string name="folder_backup_place_signin">Облачное приложение появляется в ☰ выбора после входа в него.</string>
+    <string name="folder_backup_place_other_sub">Любая другая папка</string>
+    <string name="folder_backup_place_signin">Нет в списке? Сначала войдите в приложение.</string>
+    <string name="folder_backup_guide_title">Найдите своё облачное приложение</string>
+    <string name="folder_backup_guide_body">Нажмите ☰, выберите приложение, затем папку.</string>
+    <string name="folder_backup_guide_open">Открыть выбор</string>
     <string name="folder_backup_place_webdav">Сервер WebDAV</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, домашний NAS или любой адрес WebDAV. Вход выполняется здесь, отдельное приложение не нужно.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud или NAS</string>
     <string name="webdav_intro">Войдите на сервер, где будут храниться ваши резервные копии. Firedown создаст там папку «Firedown Backup».</string>
     <string name="webdav_address">Адрес сервера</string>
     <string name="webdav_address_help">Адрес WebDAV или просто имя сервера для Nextcloud и ownCloud.</string>
@@ -554,7 +557,6 @@
     <string name="webdav_lost_notif_text">Firedown не может связаться с %1$s. Откройте «Резервная копия», чтобы подключиться заново.</string>
     <string name="webdav_state_lost">Сервер недоступен</string>
     <string name="webdav_transfer_lost">Сервер резервной копии недоступен. Подключитесь заново в разделе «Резервная копия»</string>
-    <string name="folder_backup_hint_drawer">В выборе нажмите ☰, чтобы найти облачные приложения</string>
     <string name="folder_backup_checking">Проверка папки…</string>
     <string name="folder_backup_unwritable_title">Сюда нельзя сохранять копии</string>
     <string name="folder_backup_unwritable_message">Firedown не смог сохранить и удалить тестовый файл в %1$s, поэтому копии там не сохранятся. Выберите другую папку.</string>

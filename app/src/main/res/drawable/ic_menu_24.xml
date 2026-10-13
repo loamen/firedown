@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Material "menu" (☰): the system folder picker's drawer button, drawn in
-     the Backup chooser's picture of that picker (layout_backup_picker_hint)
-     so the row can point at the exact control it names. No baked tint. -->
+     the Backup sheet's picture of that picker (layout_backup_picker_guide)
+     so the page can point at the exact control it names. No baked tint. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

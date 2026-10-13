@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The ☰ button in the "Find your cloud app" picture: ringed in the brand
+     mark (brandInk) inside a soft halo of the same wash as the drawer entry,
+     the one control the page tells you to tap. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/picker_guide_wash" />
+        </shape>
+    </item>
+    <item
+        android:bottom="5dp"
+        android:left="5dp"
+        android:right="5dp"
+        android:top="5dp">
+        <shape android:shape="oval">
+            <solid android:color="?attr/colorSurface" />
+            <stroke
+                android:width="2dp"
+                android:color="?attr/brandInk" />
+        </shape>
+    </item>
+</layer-list>

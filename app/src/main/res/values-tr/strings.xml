@@ -513,12 +513,15 @@
     <string name="folder_backup_place_volume_sub">Seçicide ☰ simgesine dokunup %1$s seçin</string>
     <string name="folder_backup_place_removable_sub">Seçici doğrudan onun üzerinde açılır</string>
     <string name="folder_backup_place_cloud">Bulut depolama</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ve diğer bulut uygulamaları. Sonraki ekranda ☰ simgesine dokunun ve kendinizinkini seçin.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ve diğerleri</string>
     <string name="folder_backup_place_other">Başka bir yer</string>
-    <string name="folder_backup_place_other_sub">Seçicinin ulaşabildiği herhangi bir klasör. Bu telefondaki bir klasör telefonla birlikte kaybolur.</string>
-    <string name="folder_backup_place_signin">Bir bulut uygulaması, ona giriş yaptıktan sonra seçicinin ☰ menüsünde görünür.</string>
+    <string name="folder_backup_place_other_sub">Başka herhangi bir klasör</string>
+    <string name="folder_backup_place_signin">Yok mu? Önce uygulamada oturum açın.</string>
+    <string name="folder_backup_guide_title">Bulut uygulamanızı bulun</string>
+    <string name="folder_backup_guide_body">☰ simgesine dokunun, uygulamanızı, ardından bir klasör seçin.</string>
+    <string name="folder_backup_guide_open">Seçiciyi aç</string>
     <string name="folder_backup_place_webdav">WebDAV sunucusu</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, bir ev NAS\'ı veya herhangi bir WebDAV adresi. Giriş burada yapılır; uygulama gerekmez.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud veya bir NAS</string>
     <string name="webdav_intro">Yedeklerinizi saklayacak sunucuya giriş yapın. Firedown orada “Firedown Backup” adlı bir klasör oluşturur.</string>
     <string name="webdav_address">Sunucu adresi</string>
     <string name="webdav_address_help">WebDAV adresi ya da Nextcloud ve ownCloud için yalnızca sunucu adı.</string>
@@ -550,7 +553,6 @@
     <string name="webdav_lost_notif_text">Firedown %1$s adresine erişemiyor. Yeniden bağlanmak için Yedekleme\'yi açın.</string>
     <string name="webdav_state_lost">Sunucuya erişilemiyor</string>
     <string name="webdav_transfer_lost">Yedekleme sunucusuna erişilemiyor. Yedekleme\'de yeniden bağlanın</string>
-    <string name="folder_backup_hint_drawer">Bulut uygulamalarınızı bulmak için seçicide ☰ simgesine dokunun</string>
     <string name="folder_backup_checking">Klasör denetleniyor…</string>
     <string name="folder_backup_unwritable_title">Buraya yedeklenemiyor</string>
     <string name="folder_backup_unwritable_message">Firedown, %1$s içinde bir deneme dosyası kaydedip silemedi; yedekler orada başarısız olur. Başka bir klasör seçin.</string>

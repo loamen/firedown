@@ -615,17 +615,15 @@ public class SyncSettingsFragment extends BasePreferenceFragment
 
     /**
      * "Where to back up": a sheet with one card per KIND of place, always
-     * shown ({@link BackupPlacesSheetDialogFragment}). Cloud storage first
-     * (Google Drive, Nextcloud and the like: the picker hides them behind its
-     * ☰, so the card says so and draws that button), a WebDAV server, the SD
-     * card / USB drive while one is in (its own picker intent opens right on
-     * it), then "Somewhere else", then one note that a cloud app shows under
-     * ☰ only once signed in. The cards add the instruction for the system
-     * picker before the user is on a screen that is not ours; the pick comes
-     * back through {@link #observePlaceResult} and opens it from here, where
-     * the pickers are registered. The cloud card names only apps verified to
-     * take a folder pick and needs no detection, which is what the per-app
-     * rows it replaced could not do (see {@link BackupPlaces}).
+     * shown ({@link BackupPlacesSheetDialogFragment}): cloud storage, a WebDAV
+     * server, the SD card / USB drive while one is in (its own picker intent
+     * opens right on it), "Somewhere else". Cloud storage first opens the
+     * sheet's "Find your cloud app" page, which shows the ☰ the picker hides
+     * cloud apps behind before the user is on a screen that is not ours. The
+     * pick comes back through {@link #observePlaceResult} and opens from
+     * here, where the pickers are registered. The cloud card names only apps
+     * verified to take a folder pick and needs no detection, which is what
+     * the per-app rows it replaced could not do (see {@link BackupPlaces}).
      */
     private void showPlaceChooser() {
         NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_places);
@@ -665,8 +663,6 @@ public class SyncSettingsFragment extends BasePreferenceFragment
             return;
         }
         switch (place) {
-            case BackupPlacesSheetDialogFragment.PLACE_CLOUD ->
-                    launchPicker(null, getString(R.string.folder_backup_hint_drawer));
             case BackupPlacesSheetDialogFragment.PLACE_WEBDAV -> openWebDav();
             case BackupPlacesSheetDialogFragment.PLACE_VOLUME -> {
                 // Asked again here: a card pulled since the sheet opened
@@ -681,6 +677,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                 launchPicker(volume.intent, volume.intent != null
                         ? null : getString(R.string.folder_backup_place_volume_sub, label));
             }
+            // Cloud and "Somewhere else" open the plain picker with no toast:
+            // for cloud the sheet's guide page showed the ☰ a moment ago.
             default -> launchPicker(null, null);
         }
     }
@@ -694,8 +692,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * Opens the system folder picker: a volume's own intent when the chooser
      * row carried one (the picker opens on the card), else the plain picker
      * pre-pointed at the current folder when there is one (a hint the picker
-     * is free to ignore). {@code hint} is toasted as the picker opens: the
-     * one moment the instruction is needed, on a screen that is not ours.
+     * is free to ignore). {@code hint} is toasted as the picker opens, for
+     * the one row that needs it there: a removable volume with no picker
+     * intent of its own (before API 29), found under the picker's ☰.
      */
     private void launchPicker(@Nullable Intent intent, @Nullable String hint) {
         try {

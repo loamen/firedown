@@ -613,12 +613,15 @@
     <string name="folder_backup_place_volume_sub">Tippe in der Auswahl auf ☰ und wähle %1$s</string>
     <string name="folder_backup_place_removable_sub">Die Auswahl öffnet sich direkt darauf</string>
     <string name="folder_backup_place_cloud">Cloud-Speicher</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud und andere Cloud-Apps. Tippe auf dem nächsten Bildschirm auf ☰ und wähle deine aus.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud und mehr</string>
     <string name="folder_backup_place_other">Woanders</string>
-    <string name="folder_backup_place_other_sub">Jeder Ordner, den die Auswahl erreicht. Einer auf diesem Handy geht mit dem Handy verloren.</string>
-    <string name="folder_backup_place_signin">Eine Cloud-App erscheint im ☰ der Auswahl, sobald du dort angemeldet bist.</string>
+    <string name="folder_backup_place_other_sub">Jeder andere Ordner</string>
+    <string name="folder_backup_place_signin">Nicht dabei? Melde dich zuerst in der App an.</string>
+    <string name="folder_backup_guide_title">Finde deine Cloud-App</string>
+    <string name="folder_backup_guide_body">Tippe auf ☰, wähle deine App und dann einen Ordner.</string>
+    <string name="folder_backup_guide_open">Auswahl öffnen</string>
     <string name="folder_backup_place_webdav">WebDAV-Server</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, ein NAS zu Hause oder jede WebDAV-Adresse. Du meldest dich hier an, ohne App.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud oder ein NAS</string>
     <string name="webdav_intro">Melde dich bei dem Server an, der deine Backups aufbewahren soll. Firedown legt dort einen Ordner „Firedown Backup“ an.</string>
     <string name="webdav_address">Serveradresse</string>
     <string name="webdav_address_help">Die WebDAV-Adresse, bei Nextcloud und ownCloud reicht der Servername.</string>
@@ -650,7 +653,6 @@
     <string name="webdav_lost_notif_text">Firedown erreicht %1$s nicht. Öffne „Backup“, um dich erneut zu verbinden.</string>
     <string name="webdav_state_lost">Server nicht erreichbar</string>
     <string name="webdav_transfer_lost">Backup-Server nicht erreichbar. Verbinde dich unter „Backup“ erneut</string>
-    <string name="folder_backup_hint_drawer">Tippe in der Auswahl auf ☰, um deine Cloud-Apps zu finden</string>
     <string name="folder_backup_checking">Ordner wird geprüft…</string>
     <string name="folder_backup_unwritable_title">Hier ist kein Backup möglich</string>
     <string name="folder_backup_unwritable_message">Firedown konnte in %1$s keine Testdatei speichern und wieder löschen, Backups würden dort scheitern. Wähle einen anderen Ordner.</string>

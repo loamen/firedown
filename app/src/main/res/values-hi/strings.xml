@@ -449,12 +449,15 @@
     <string name="folder_backup_place_volume_sub">चयनकर्ता में ☰ पर टैप करके %1$s चुनें</string>
     <string name="folder_backup_place_removable_sub">चयनकर्ता सीधे उसी पर खुलता है</string>
     <string name="folder_backup_place_cloud">क्लाउड स्टोरेज</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud और दूसरे क्लाउड ऐप। अगली स्क्रीन पर ☰ पर टैप करें और अपना ऐप चुनें।</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud और अन्य</string>
     <string name="folder_backup_place_other">कहीं और</string>
-    <string name="folder_backup_place_other_sub">कोई भी फ़ोल्डर जहाँ तक चयनकर्ता पहुँचता है। इस फ़ोन का फ़ोल्डर फ़ोन के साथ ही खो जाता है।</string>
-    <string name="folder_backup_place_signin">क्लाउड ऐप में साइन इन करने के बाद ही वह चयनकर्ता के ☰ में दिखता है।</string>
+    <string name="folder_backup_place_other_sub">कोई भी दूसरा फ़ोल्डर</string>
+    <string name="folder_backup_place_signin">नहीं दिख रहा? पहले ऐप में साइन इन करें।</string>
+    <string name="folder_backup_guide_title">अपना क्लाउड ऐप ढूँढें</string>
+    <string name="folder_backup_guide_body">☰ पर टैप करें, अपना ऐप चुनें, फिर एक फ़ोल्डर।</string>
+    <string name="folder_backup_guide_open">चयनकर्ता खोलें</string>
     <string name="folder_backup_place_webdav">WebDAV सर्वर</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, घर का NAS या कोई भी WebDAV पता। साइन इन यहीं होता है, किसी ऐप की ज़रूरत नहीं।</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud या NAS</string>
     <string name="webdav_intro">उस सर्वर में साइन इन करें जो आपके बैकअप रखेगा। Firedown वहाँ “Firedown Backup” फ़ोल्डर बनाता है।</string>
     <string name="webdav_address">सर्वर का पता</string>
     <string name="webdav_address_help">WebDAV पता, या Nextcloud और ownCloud के लिए सिर्फ़ सर्वर का नाम।</string>
@@ -486,7 +489,6 @@
     <string name="webdav_lost_notif_text">Firedown %1$s तक नहीं पहुँच पा रहा। फिर से कनेक्ट करने के लिए बैकअप खोलें।</string>
     <string name="webdav_state_lost">सर्वर उपलब्ध नहीं</string>
     <string name="webdav_transfer_lost">बैकअप सर्वर तक नहीं पहुँच पा रहे। बैकअप में फिर से कनेक्ट करें</string>
-    <string name="folder_backup_hint_drawer">अपने क्लाउड ऐप ढूँढने के लिए चयनकर्ता में ☰ पर टैप करें</string>
     <string name="folder_backup_checking">फ़ोल्डर की जाँच हो रही है…</string>
     <string name="folder_backup_unwritable_title">यहाँ बैकअप नहीं हो सकता</string>
     <string name="folder_backup_unwritable_message">Firedown %1$s में परीक्षण फ़ाइल सहेज और हटा नहीं सका, इसलिए वहाँ बैकअप विफल होंगे। कोई दूसरा फ़ोल्डर चुनें।</string>

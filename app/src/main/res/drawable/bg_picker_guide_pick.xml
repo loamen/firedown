@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The drawer entry to tap in the "Find your cloud app" picture: the
+     picker's own selected-entry pill, in the brand wash. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/picker_guide_wash" />
+    <corners android:radius="17dp" />
+</shape>

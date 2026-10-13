@@ -326,14 +326,19 @@
     <string name="folder_backup_place_volume_sub">In the picker, tap ☰ and choose %1$s</string>
     <string name="folder_backup_place_removable_sub">The picker opens right on it</string>
     <string name="folder_backup_place_cloud">Cloud storage</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud and other cloud apps. On the next screen, tap ☰ and pick yours.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud and more</string>
     <string name="folder_backup_place_other">Somewhere else</string>
-    <string name="folder_backup_place_other_sub">Any folder the picker can reach. One on this phone is lost with the phone.</string>
-    <string name="folder_backup_place_signin">A cloud app appears in the picker\'s ☰ once you\'re signed in to it.</string>
+    <string name="folder_backup_place_other_sub">Any other folder</string>
+    <string name="folder_backup_place_signin">Not there? Sign in to the app first.</string>
+    <string name="folder_backup_guide_title">Find your cloud app</string>
+    <string name="folder_backup_guide_body">Tap ☰, pick your app, then a folder.</string>
+    <string name="folder_backup_guide_open">Open the picker</string>
+    <string name="folder_backup_guide_app_drive" translatable="false">Google Drive</string>
+    <string name="folder_backup_guide_app_nextcloud" translatable="false">Nextcloud</string>
     <!-- WebDAV: a server the user signs in to, the third kind of place
          (WebDavConnectFragment, canvas boards 5-8). -->
     <string name="folder_backup_place_webdav">WebDAV server</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, a home NAS or any WebDAV address. You sign in here; no app needed.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud or a NAS</string>
     <string name="webdav_intro">Sign in to the server that will keep your backups. Firedown makes a “Firedown Backup” folder there.</string>
     <string name="webdav_address">Server address</string>
     <string name="webdav_address_help">The WebDAV address, or just the server name for Nextcloud and ownCloud.</string>
@@ -368,7 +373,6 @@
     <string name="webdav_lost_notif_text">Firedown can\'t reach %1$s. Open Backup to reconnect.</string>
     <string name="webdav_state_lost">Server unreachable</string>
     <string name="webdav_transfer_lost">Can\'t reach the backup server. Reconnect in Backup</string>
-    <string name="folder_backup_hint_drawer">Tap ☰ in the picker to find your cloud apps</string>
     <string name="folder_backup_checking">Checking the folder…</string>
     <string name="folder_backup_unwritable_title">Can\'t back up here</string>
     <string name="folder_backup_unwritable_message">Firedown couldn\'t save and remove a test file in %1$s, so backups would fail there. Choose another folder.</string>

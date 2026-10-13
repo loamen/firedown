@@ -513,12 +513,15 @@
     <string name="folder_backup_place_volume_sub">Tik in de kiezer op ☰ en kies %1$s</string>
     <string name="folder_backup_place_removable_sub">De kiezer opent er direct op</string>
     <string name="folder_backup_place_cloud">Cloudopslag</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud en andere cloud-apps. Tik op het volgende scherm op ☰ en kies de jouwe.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud en meer</string>
     <string name="folder_backup_place_other">Ergens anders</string>
-    <string name="folder_backup_place_other_sub">Elke map die de kiezer kan bereiken. Een map op deze telefoon gaat met de telefoon verloren.</string>
-    <string name="folder_backup_place_signin">Een cloud-app verschijnt in de ☰ van de kiezer zodra je erin bent ingelogd.</string>
+    <string name="folder_backup_place_other_sub">Elke andere map</string>
+    <string name="folder_backup_place_signin">Staat hij er niet bij? Log eerst in op de app.</string>
+    <string name="folder_backup_guide_title">Vind je cloud-app</string>
+    <string name="folder_backup_guide_body">Tik op ☰, kies je app en dan een map.</string>
+    <string name="folder_backup_guide_open">Kiezer openen</string>
     <string name="folder_backup_place_webdav">WebDAV-server</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, een NAS thuis of elk WebDAV-adres. Je logt hier in, geen app nodig.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud of een NAS</string>
     <string name="webdav_intro">Log in op de server die je back-ups gaat bewaren. Firedown maakt daar een map “Firedown Backup” aan.</string>
     <string name="webdav_address">Serveradres</string>
     <string name="webdav_address_help">Het WebDAV-adres, of alleen de servernaam voor Nextcloud en ownCloud.</string>
@@ -550,7 +553,6 @@
     <string name="webdav_lost_notif_text">Firedown kan %1$s niet bereiken. Open Back-up om opnieuw te verbinden.</string>
     <string name="webdav_state_lost">Server onbereikbaar</string>
     <string name="webdav_transfer_lost">Back-upserver onbereikbaar. Verbind opnieuw in Back-up</string>
-    <string name="folder_backup_hint_drawer">Tik in de kiezer op ☰ om je cloud-apps te vinden</string>
     <string name="folder_backup_checking">Map wordt gecontroleerd…</string>
     <string name="folder_backup_unwritable_title">Back-up hier niet mogelijk</string>
     <string name="folder_backup_unwritable_message">Firedown kon in %1$s geen testbestand opslaan en verwijderen, dus back-ups zouden daar mislukken. Kies een andere map.</string>

@@ -611,12 +611,15 @@
     <string name="folder_backup_place_volume_sub">在选择器中点按 ☰，然后选择 %1$s</string>
     <string name="folder_backup_place_removable_sub">选择器会直接在其中打开</string>
     <string name="folder_backup_place_cloud">云存储</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive、Nextcloud 等云应用。在下一个屏幕点按 ☰，然后选择你的应用。</string>
+    <string name="folder_backup_place_cloud_sub">Google 云端硬盘、Nextcloud 等</string>
     <string name="folder_backup_place_other">其他位置</string>
-    <string name="folder_backup_place_other_sub">选择器能访问的任何文件夹。这部手机上的文件夹会随手机一起丢失。</string>
-    <string name="folder_backup_place_signin">云应用在你登录后才会出现在选择器的 ☰ 中。</string>
+    <string name="folder_backup_place_other_sub">任意其他文件夹</string>
+    <string name="folder_backup_place_signin">找不到？请先登录该应用。</string>
+    <string name="folder_backup_guide_title">找到你的云应用</string>
+    <string name="folder_backup_guide_body">点按 ☰，选择你的应用，然后选择文件夹。</string>
+    <string name="folder_backup_guide_open">打开选择器</string>
     <string name="folder_backup_place_webdav">WebDAV 服务器</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud、ownCloud、家用 NAS 或任意 WebDAV 地址。直接在这里登录，无需其他应用。</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud、ownCloud 或 NAS</string>
     <string name="webdav_intro">登录用来保存你的备份的服务器。Firedown 会在其中创建“Firedown Backup”文件夹。</string>
     <string name="webdav_address">服务器地址</string>
     <string name="webdav_address_help">WebDAV 地址；如果是 Nextcloud 或 ownCloud，只需填写服务器名称。</string>
@@ -648,7 +651,6 @@
     <string name="webdav_lost_notif_text">Firedown 无法访问 %1$s。请打开“备份”重新连接。</string>
     <string name="webdav_state_lost">服务器无法访问</string>
     <string name="webdav_transfer_lost">无法访问备份服务器。请在“备份”中重新连接</string>
-    <string name="folder_backup_hint_drawer">在选择器中点按 ☰ 即可找到你的云应用</string>
     <string name="folder_backup_checking">正在检查文件夹…</string>
     <string name="folder_backup_unwritable_title">无法备份到这里</string>
     <string name="folder_backup_unwritable_message">Firedown 无法在 %1$s 中保存并删除测试文件，因此无法在那里备份。请选择其他文件夹。</string>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A folder row behind the drawer in the "Find your cloud app" picture:
+     a block, not content. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="?attr/colorSurfaceContainerLow" />
+    <corners android:radius="6dp" />
+</shape>

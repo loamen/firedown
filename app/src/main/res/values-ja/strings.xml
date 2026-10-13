@@ -611,12 +611,15 @@
     <string name="folder_backup_place_volume_sub">選択画面で ☰ をタップし、%1$s を選びます</string>
     <string name="folder_backup_place_removable_sub">選択画面がそのまま開きます</string>
     <string name="folder_backup_place_cloud">クラウドストレージ</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive、Nextcloud などのクラウドアプリ。次の画面で ☰ をタップして、使うアプリを選びます。</string>
+    <string name="folder_backup_place_cloud_sub">Google ドライブ、Nextcloud など</string>
     <string name="folder_backup_place_other">その他の場所</string>
-    <string name="folder_backup_place_other_sub">選択画面で開ける任意のフォルダー。この端末内のフォルダーは端末と一緒に失われます。</string>
-    <string name="folder_backup_place_signin">クラウドアプリはログイン後に選択画面の ☰ に表示されます。</string>
+    <string name="folder_backup_place_other_sub">ほかのフォルダー</string>
+    <string name="folder_backup_place_signin">表示されない場合は、先にアプリにログインしてください。</string>
+    <string name="folder_backup_guide_title">クラウドアプリを探す</string>
+    <string name="folder_backup_guide_body">☰ をタップし、アプリ、フォルダーの順に選びます。</string>
+    <string name="folder_backup_guide_open">選択画面を開く</string>
     <string name="folder_backup_place_webdav">WebDAV サーバー</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud、ownCloud、自宅の NAS、その他の WebDAV アドレス。ここでログインするので、アプリは必要ありません。</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud、ownCloud、NAS</string>
     <string name="webdav_intro">バックアップを保存するサーバーにログインします。Firedown はそこに「Firedown Backup」フォルダーを作成します。</string>
     <string name="webdav_address">サーバーアドレス</string>
     <string name="webdav_address_help">WebDAV アドレス。Nextcloud と ownCloud ではサーバー名だけでもかまいません。</string>
@@ -648,7 +651,6 @@
     <string name="webdav_lost_notif_text">Firedown が %1$s に接続できません。「バックアップ」を開いて接続し直してください。</string>
     <string name="webdav_state_lost">サーバーに接続不可</string>
     <string name="webdav_transfer_lost">バックアップサーバーに接続できません。「バックアップ」で接続し直してください</string>
-    <string name="folder_backup_hint_drawer">選択画面で ☰ をタップすると、クラウドアプリが表示されます</string>
     <string name="folder_backup_checking">フォルダーを確認しています…</string>
     <string name="folder_backup_unwritable_title">ここにはバックアップできません</string>
     <string name="folder_backup_unwritable_message">Firedown は %1$s にテストファイルを保存・削除できませんでした。ここではバックアップできません。別のフォルダーを選んでください。</string>

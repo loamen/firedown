@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The Backup chooser's miniature of the system picker's top bar: the
-     page surface inset into the dialog's raised one, outlined like the
-     P2P pill, so it reads as "a screen you are about to see". -->
+<!-- The picker's own screen in the "Find your cloud app" picture: the page
+     surface, outlined, so it reads as a screen you are about to see. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="?attr/colorSurface" />
     <stroke android:width="1dp" android:color="?attr/colorOutlineVariant" />
-    <corners android:radius="10dp" />
+    <corners android:radius="12dp" />
 </shape>

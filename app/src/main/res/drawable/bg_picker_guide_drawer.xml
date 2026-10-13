@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The picker's drawer, open, in the "Find your cloud app" picture: a
+     raised surface with its outer corners rounded, as the drawer is. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="?attr/colorSurfaceContainerHigh" />
+    <corners
+        android:bottomRightRadius="14dp"
+        android:topRightRadius="14dp" />
+</shape>

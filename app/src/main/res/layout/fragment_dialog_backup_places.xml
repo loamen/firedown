@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    The Backup screen's "Where to back up" sheet (BackupPlacesSheetDialogFragment):
-    a label, ONE group of grouped sheet cards (one per KIND of place: cloud
-    storage with the picker miniature, a WebDAV server, the SD card / USB
-    drive while one is in, "Somewhere else"), then one footnote, that a cloud
-    app appears under the picker's ☰ once signed in. It was a centred
-    MaterialAlertDialog with a Cancel button, the one menu in the app that
-    was not a sheet; a list of places to pick from is a menu, so it wears the
-    sheets' shape (the handle, the cards, swipe or tap outside to dismiss).
+    The Backup screen's "Where to back up" sheet (BackupPlacesSheetDialogFragment),
+    TWO pages in one sheet:
 
-    Each row is two or three lines, so it is not a SheetRowText: the glyph
-    (24dp, the sheet rows' size) sits top-aligned with the title's first line,
-    the M3 rule for a multi-line item, and the instruction under the title is
-    the settings summary type (BodyMedium), the screen the sheet opens from.
-    The removable-volume row hides when no card is in, so the fragment runs
-    SheetGroups.applyCorners on the group after setting it.
+    1. The places: a title and ONE group of grouped sheet cards, one per KIND
+       of place (cloud storage, a WebDAV server, the SD card / USB drive while
+       one is in, "Somewhere else"), each a title, one short line and a
+       chevron. The removable-volume card hides when no card is in, so the
+       fragment runs SheetGroups.applyCorners on the group after setting it.
+    2. "Find your cloud app", opened by the cloud card: a back arrow, a picture
+       of the system picker with its ☰ ringed and its drawer open
+       (layout_backup_picker_guide), one line saying what to tap, one for the
+       app that is not there, and "Open the picker". The ☰ step is where
+       people get stuck, so it gets a page of its own right before the picker
+       opens, and the list stays a list.
+
+    It shipped first as one page carrying all of it: three-line rows, a
+    miniature of the picker's top bar that read as a search field, and a
+    footnote, the ☰ instruction said three times (reported on-device as
+    "looks horrible"; canvas option C). Copy is a name or an instruction,
+    nothing else: no reassurance, no explaining the app.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -22,165 +27,246 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingBottom="8dp">
+    android:paddingBottom="16dp">
 
     <include layout="@layout/dialog_drag_handle" />
 
-    <TextView
-        style="@style/TextAppearance.Material3.TitleMedium"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:text="@string/folder_backup_pick_title"
-        android:textColor="?attr/colorOnSurface"
-        android:textSize="18sp" />
-
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/places_scroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <LinearLayout
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_height="wrap_content">
 
             <LinearLayout
-                android:id="@+id/places_group"
-                style="@style/Firedown.Widget.SheetGroup"
-                android:layout_marginHorizontal="16dp">
+                android:id="@+id/places_list_page"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/place_cloud"
-                    style="@style/Firedown.Widget.SheetRowCard"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupTop">
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:accessibilityHeading="true"
+                    android:text="@string/folder_backup_pick_title"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="18sp" />
 
-                    <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
+                <LinearLayout
+                    android:id="@+id/places_group"
+                    style="@style/Firedown.Widget.SheetGroup"
+                    android:layout_marginHorizontal="16dp">
 
-                        <ImageView
-                            style="@style/Firedown.Widget.SheetPlaceIcon"
-                            android:src="@drawable/cloud_outline_24"
-                            app:tint="?attr/brandInk" />
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/place_cloud"
+                        style="@style/Firedown.Widget.SheetRowCard"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupTop">
 
-                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
+                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
 
-                            <TextView
-                                style="@style/Firedown.Widget.SheetPlaceTitle"
-                                android:text="@string/folder_backup_place_cloud" />
+                            <ImageView
+                                style="@style/Firedown.Widget.SheetPlaceIcon"
+                                android:src="@drawable/cloud_outline_24"
+                                app:tint="?attr/brandInk" />
 
-                            <TextView
-                                style="@style/Firedown.Widget.SheetPlaceSub"
-                                android:text="@string/folder_backup_place_cloud_sub" />
+                            <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
 
-                            <include layout="@layout/layout_backup_picker_hint" />
+                                <TextView
+                                    style="@style/Firedown.Widget.SheetPlaceTitle"
+                                    android:text="@string/folder_backup_place_cloud" />
 
-                        </LinearLayout>
+                                <TextView
+                                    style="@style/Firedown.Widget.SheetPlaceSub"
+                                    android:text="@string/folder_backup_place_cloud_sub" />
 
-                    </LinearLayout>
+                            </LinearLayout>
 
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/place_webdav"
-                    style="@style/Firedown.Widget.SheetRowCard"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupMiddle">
-
-                    <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
-
-                        <ImageView
-                            style="@style/Firedown.Widget.SheetPlaceIcon"
-                            android:src="@drawable/dns_24" />
-
-                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
-
-                            <TextView
-                                style="@style/Firedown.Widget.SheetPlaceTitle"
-                                android:text="@string/folder_backup_place_webdav" />
-
-                            <TextView
-                                style="@style/Firedown.Widget.SheetPlaceSub"
-                                android:text="@string/folder_backup_place_webdav_sub" />
+                            <ImageView style="@style/Firedown.Widget.SheetPlaceChevron" />
 
                         </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/place_webdav"
+                        style="@style/Firedown.Widget.SheetRowCard"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupMiddle">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/place_volume"
-                    style="@style/Firedown.Widget.SheetRowCard"
-                    android:visibility="gone"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupMiddle"
-                    tools:visibility="visible">
+                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
 
-                    <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
+                            <ImageView
+                                style="@style/Firedown.Widget.SheetPlaceIcon"
+                                android:src="@drawable/dns_24" />
 
-                        <ImageView
-                            style="@style/Firedown.Widget.SheetPlaceIcon"
-                            android:src="@drawable/sd_card_24" />
+                            <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
 
-                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
+                                <TextView
+                                    style="@style/Firedown.Widget.SheetPlaceTitle"
+                                    android:text="@string/folder_backup_place_webdav" />
 
-                            <TextView
-                                android:id="@+id/place_volume_title"
-                                style="@style/Firedown.Widget.SheetPlaceTitle"
-                                tools:text="@string/folder_backup_provider_sd" />
+                                <TextView
+                                    style="@style/Firedown.Widget.SheetPlaceSub"
+                                    android:text="@string/folder_backup_place_webdav_sub" />
 
-                            <TextView
-                                android:id="@+id/place_volume_sub"
-                                style="@style/Firedown.Widget.SheetPlaceSub"
-                                tools:text="@string/folder_backup_place_removable_sub" />
+                            </LinearLayout>
+
+                            <ImageView style="@style/Firedown.Widget.SheetPlaceChevron" />
 
                         </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/place_volume"
+                        style="@style/Firedown.Widget.SheetRowCard"
+                        android:visibility="gone"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupMiddle"
+                        tools:visibility="visible">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/place_other"
-                    style="@style/Firedown.Widget.SheetRowCard"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupBottom">
+                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
 
-                    <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
+                            <ImageView
+                                style="@style/Firedown.Widget.SheetPlaceIcon"
+                                android:src="@drawable/sd_card_24" />
 
-                        <ImageView
-                            style="@style/Firedown.Widget.SheetPlaceIcon"
-                            android:src="@drawable/folder_24" />
+                            <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
 
-                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
+                                <TextView
+                                    android:id="@+id/place_volume_title"
+                                    style="@style/Firedown.Widget.SheetPlaceTitle"
+                                    tools:text="@string/folder_backup_provider_sd" />
 
-                            <TextView
-                                style="@style/Firedown.Widget.SheetPlaceTitle"
-                                android:text="@string/folder_backup_place_other" />
+                                <TextView
+                                    android:id="@+id/place_volume_sub"
+                                    style="@style/Firedown.Widget.SheetPlaceSub"
+                                    tools:text="@string/folder_backup_place_removable_sub" />
 
-                            <TextView
-                                style="@style/Firedown.Widget.SheetPlaceSub"
-                                android:text="@string/folder_backup_place_other_sub" />
+                            </LinearLayout>
+
+                            <ImageView style="@style/Firedown.Widget.SheetPlaceChevron" />
 
                         </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
-                </com.google.android.material.card.MaterialCardView>
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/place_other"
+                        style="@style/Firedown.Widget.SheetRowCard"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.FireDown.SheetGroupBottom">
+
+                        <LinearLayout style="@style/Firedown.Widget.SheetPlaceRow">
+
+                            <ImageView
+                                style="@style/Firedown.Widget.SheetPlaceIcon"
+                                android:src="@drawable/folder_24" />
+
+                            <LinearLayout style="@style/Firedown.Widget.SheetPlaceText">
+
+                                <TextView
+                                    style="@style/Firedown.Widget.SheetPlaceTitle"
+                                    android:text="@string/folder_backup_place_other" />
+
+                                <TextView
+                                    style="@style/Firedown.Widget.SheetPlaceSub"
+                                    android:text="@string/folder_backup_place_other_sub" />
+
+                            </LinearLayout>
+
+                            <ImageView style="@style/Firedown.Widget.SheetPlaceChevron" />
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                </LinearLayout>
 
             </LinearLayout>
 
-            <!-- Under the group, on the glyph column (16dp margin + 16dp card
-                 padding), where the Backups item sheet puts its footnote. -->
-            <TextView
+            <LinearLayout
+                android:id="@+id/places_guide_page"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="32dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="8dp"
-                android:text="@string/folder_backup_place_signin"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="?attr/colorOnSurfaceVariant" />
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="gone">
 
-        </LinearLayout>
+                <!-- The page's header: back to the places, and the title. The
+                     handle band above already spaces it from the pill; the
+                     48dp button centres the title on its own. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="-8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="16dp">
 
-    </ScrollView>
+                    <ImageButton
+                        android:id="@+id/places_guide_back"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/browser_menu_back"
+                        android:src="@drawable/ic_arrow_back_24"
+                        app:tint="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/places_guide_title"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:accessibilityHeading="true"
+                        android:text="@string/folder_backup_guide_title"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="18sp" />
+
+                </LinearLayout>
+
+                <include
+                    layout="@layout/layout_backup_picker_guide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/folder_backup_guide_body"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/folder_backup_place_signin"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/places_guide_open"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/folder_backup_guide_open" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>

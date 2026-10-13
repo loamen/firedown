@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A skeleton line in the "Find your cloud app" picture of the system
+     picker (layout_backup_picker_guide): the title, and a third drawer
+     entry. A line rather than a name, because the picker may open on any
+     folder and list other places, and the picture should not promise one. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="?attr/colorOutlineVariant" />
+    <corners android:radius="3dp" />
+</shape>

@@ -613,12 +613,15 @@
     <string name="folder_backup_place_volume_sub">Dans le sélecteur, touchez ☰ et choisissez %1$s</string>
     <string name="folder_backup_place_removable_sub">Le sélecteur s\'ouvre directement dessus</string>
     <string name="folder_backup_place_cloud">Stockage cloud</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud et d\'autres applis cloud. Sur l\'écran suivant, touchez ☰ et choisissez la vôtre.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud et plus</string>
     <string name="folder_backup_place_other">Ailleurs</string>
-    <string name="folder_backup_place_other_sub">N\'importe quel dossier que le sélecteur atteint. Un dossier sur ce téléphone est perdu avec lui.</string>
-    <string name="folder_backup_place_signin">Une appli cloud apparaît dans le ☰ du sélecteur une fois que vous y êtes connecté.</string>
+    <string name="folder_backup_place_other_sub">Tout autre dossier</string>
+    <string name="folder_backup_place_signin">Introuvable ? Connectez-vous d\'abord à l\'appli.</string>
+    <string name="folder_backup_guide_title">Trouvez votre appli cloud</string>
+    <string name="folder_backup_guide_body">Touchez ☰, choisissez votre appli, puis un dossier.</string>
+    <string name="folder_backup_guide_open">Ouvrir le sélecteur</string>
     <string name="folder_backup_place_webdav">Serveur WebDAV</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, un NAS domestique ou toute adresse WebDAV. Vous vous connectez ici, aucune appli n\'est nécessaire.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud ou un NAS</string>
     <string name="webdav_intro">Connectez-vous au serveur qui conservera vos sauvegardes. Firedown y crée un dossier « Firedown Backup ».</string>
     <string name="webdav_address">Adresse du serveur</string>
     <string name="webdav_address_help">L\'adresse WebDAV, ou simplement le nom du serveur pour Nextcloud et ownCloud.</string>
@@ -650,7 +653,6 @@
     <string name="webdav_lost_notif_text">Firedown ne peut pas atteindre %1$s. Ouvrez Sauvegarde pour vous reconnecter.</string>
     <string name="webdav_state_lost">Serveur inaccessible</string>
     <string name="webdav_transfer_lost">Serveur de sauvegarde inaccessible. Reconnectez-vous dans Sauvegarde</string>
-    <string name="folder_backup_hint_drawer">Dans le sélecteur, touchez ☰ pour trouver vos applis cloud</string>
     <string name="folder_backup_checking">Vérification du dossier…</string>
     <string name="folder_backup_unwritable_title">Impossible de sauvegarder ici</string>
     <string name="folder_backup_unwritable_message">Firedown n\'a pas pu enregistrer puis supprimer un fichier de test dans %1$s : les sauvegardes y échoueraient. Choisissez un autre dossier.</string>

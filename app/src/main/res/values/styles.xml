@@ -426,20 +426,30 @@
         <item name="android:orientation">vertical</item>
     </style>
 
-    <!-- A MULTI-LINE row INSIDE a SheetRowCard (the Backup screen's "Where
-         to back up" sheet): a glyph and a title with an instruction under
-         it. The glyph is the sheet rows' 24dp, top-aligned with the title's
-         first line (the M3 rule for an item that runs to three lines), the
-         text column starts where a SheetRowText label does (16 + 24 + 16),
-         and the instruction is the settings summary type. -->
+    <!-- A two-line row INSIDE a SheetRowCard that leads somewhere (the
+         Backup screen's "Where to back up" sheet): a glyph, a title with one
+         short line under it, a trailing chevron. The glyph is the sheet
+         rows' 24dp, the text column starts where a SheetRowText label does
+         (16 + 24 + 16), and the line under the title is the settings summary
+         type. -->
     <style name="Firedown.Widget.SheetPlaceRow" parent="">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:minHeight">72dp</item>
-        <item name="android:gravity">top</item>
+        <item name="android:gravity">center_vertical</item>
         <item name="android:orientation">horizontal</item>
-        <item name="android:paddingHorizontal">16dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">12dp</item>
         <item name="android:paddingVertical">12dp</item>
+    </style>
+
+    <style name="Firedown.Widget.SheetPlaceChevron" parent="">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:contentDescription">@null</item>
+        <item name="android:src">@drawable/ic_chevron_right_24</item>
+        <item name="tint">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="Firedown.Widget.SheetPlaceIcon" parent="">

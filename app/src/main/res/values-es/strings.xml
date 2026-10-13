@@ -613,12 +613,15 @@
     <string name="folder_backup_place_volume_sub">En el selector, toca ☰ y elige %1$s</string>
     <string name="folder_backup_place_removable_sub">El selector se abre directamente en ella</string>
     <string name="folder_backup_place_cloud">Almacenamiento en la nube</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud y otras apps de nube. En la siguiente pantalla, toca ☰ y elige la tuya.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud y más</string>
     <string name="folder_backup_place_other">En otro sitio</string>
-    <string name="folder_backup_place_other_sub">Cualquier carpeta a la que llegue el selector. Una en este teléfono se pierde con él.</string>
-    <string name="folder_backup_place_signin">Una app de nube aparece en el ☰ del selector cuando has iniciado sesión en ella.</string>
+    <string name="folder_backup_place_other_sub">Cualquier otra carpeta</string>
+    <string name="folder_backup_place_signin">¿No aparece? Inicia sesión en la app primero.</string>
+    <string name="folder_backup_guide_title">Busca tu app de nube</string>
+    <string name="folder_backup_guide_body">Toca ☰, elige tu app y luego una carpeta.</string>
+    <string name="folder_backup_guide_open">Abrir el selector</string>
     <string name="folder_backup_place_webdav">Servidor WebDAV</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, un NAS en casa o cualquier dirección WebDAV. Inicias sesión aquí, sin instalar ninguna app.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud o un NAS</string>
     <string name="webdav_intro">Inicia sesión en el servidor que guardará tus copias de seguridad. Firedown crea allí una carpeta “Firedown Backup”.</string>
     <string name="webdav_address">Dirección del servidor</string>
     <string name="webdav_address_help">La dirección WebDAV, o solo el nombre del servidor en Nextcloud y ownCloud.</string>
@@ -650,7 +653,6 @@
     <string name="webdav_lost_notif_text">Firedown no puede acceder a %1$s. Abre Copia de seguridad para conectarte de nuevo.</string>
     <string name="webdav_state_lost">Servidor inaccesible</string>
     <string name="webdav_transfer_lost">No se puede acceder al servidor de copia de seguridad. Conéctate de nuevo en Copia de seguridad</string>
-    <string name="folder_backup_hint_drawer">En el selector, toca ☰ para encontrar tus apps de nube</string>
     <string name="folder_backup_checking">Comprobando la carpeta…</string>
     <string name="folder_backup_unwritable_title">No se puede hacer una copia de seguridad aquí</string>
     <string name="folder_backup_unwritable_message">Firedown no pudo guardar y eliminar un archivo de prueba en %1$s, así que las copias de seguridad fallarían allí. Elige otra carpeta.</string>

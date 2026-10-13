@@ -513,12 +513,15 @@
     <string name="folder_backup_place_volume_sub">No seletor, toque em ☰ e escolha %1$s</string>
     <string name="folder_backup_place_removable_sub">O seletor abre direto nele</string>
     <string name="folder_backup_place_cloud">Armazenamento em nuvem</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud e outros apps de nuvem. Na próxima tela, toque em ☰ e escolha o seu.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud e mais</string>
     <string name="folder_backup_place_other">Outro lugar</string>
-    <string name="folder_backup_place_other_sub">Qualquer pasta que o seletor alcance. Uma pasta neste celular se perde junto com ele.</string>
-    <string name="folder_backup_place_signin">Um app de nuvem aparece no ☰ do seletor depois que você faz login nele.</string>
+    <string name="folder_backup_place_other_sub">Qualquer outra pasta</string>
+    <string name="folder_backup_place_signin">Não aparece? Entre no app primeiro.</string>
+    <string name="folder_backup_guide_title">Encontre seu app de nuvem</string>
+    <string name="folder_backup_guide_body">Toque em ☰, escolha seu app e depois uma pasta.</string>
+    <string name="folder_backup_guide_open">Abrir o seletor</string>
     <string name="folder_backup_place_webdav">Servidor WebDAV</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, um NAS em casa ou qualquer endereço WebDAV. Você faz login aqui, sem precisar de app.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud ou um NAS</string>
     <string name="webdav_intro">Faça login no servidor que vai guardar seus backups. O Firedown cria uma pasta “Firedown Backup” lá.</string>
     <string name="webdav_address">Endereço do servidor</string>
     <string name="webdav_address_help">O endereço WebDAV, ou só o nome do servidor no Nextcloud e no ownCloud.</string>
@@ -550,7 +553,6 @@
     <string name="webdav_lost_notif_text">O Firedown não consegue acessar %1$s. Abra Backup para conectar novamente.</string>
     <string name="webdav_state_lost">Servidor inacessível</string>
     <string name="webdav_transfer_lost">Não é possível acessar o servidor de backup. Conecte novamente em Backup</string>
-    <string name="folder_backup_hint_drawer">No seletor, toque em ☰ para encontrar seus apps de nuvem</string>
     <string name="folder_backup_checking">Verificando a pasta…</string>
     <string name="folder_backup_unwritable_title">Não é possível fazer backup aqui</string>
     <string name="folder_backup_unwritable_message">O Firedown não conseguiu salvar e remover um arquivo de teste em %1$s, então os backups falhariam lá. Escolha outra pasta.</string>

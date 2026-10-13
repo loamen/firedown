@@ -413,12 +413,15 @@
     <string name="folder_backup_place_volume_sub">Puuduta valijas ☰ ja vali %1$s</string>
     <string name="folder_backup_place_removable_sub">Valija avaneb otse sellel</string>
     <string name="folder_backup_place_cloud">Pilvesalvestus</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ja muud pilverakendused. Puuduta järgmisel ekraanil ☰ ja vali oma.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ja muud</string>
     <string name="folder_backup_place_other">Mujal</string>
-    <string name="folder_backup_place_other_sub">Mis tahes kaust, kuhu valija ulatub. Selle telefoni kaust kaob koos telefoniga.</string>
-    <string name="folder_backup_place_signin">Pilverakendus ilmub valija ☰ alla, kui oled sinna sisse loginud.</string>
+    <string name="folder_backup_place_other_sub">Mis tahes muu kaust</string>
+    <string name="folder_backup_place_signin">Pole seal? Logi esmalt rakendusse sisse.</string>
+    <string name="folder_backup_guide_title">Leia oma pilverakendus</string>
+    <string name="folder_backup_guide_body">Puuduta ☰, vali rakendus ja siis kaust.</string>
+    <string name="folder_backup_guide_open">Ava valija</string>
     <string name="folder_backup_place_webdav">WebDAV-server</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, kodune NAS või mis tahes WebDAV-aadress. Sisse logid siin, eraldi rakendust pole vaja.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud või NAS</string>
     <string name="webdav_intro">Logi sisse serverisse, mis hakkab sinu varundusi hoidma. Firedown loob sinna kausta „Firedown Backup“.</string>
     <string name="webdav_address">Serveri aadress</string>
     <string name="webdav_address_help">WebDAV-aadress või Nextcloudi ja ownCloudi puhul lihtsalt serveri nimi.</string>
@@ -450,7 +453,6 @@
     <string name="webdav_lost_notif_text">Firedown ei pääse ligi: %1$s. Ava Varundus, et uuesti ühendada.</string>
     <string name="webdav_state_lost">Server pole kättesaadav</string>
     <string name="webdav_transfer_lost">Varundusserver pole kättesaadav. Ühenda Varunduses uuesti</string>
-    <string name="folder_backup_hint_drawer">Puuduta valijas ☰, et leida oma pilverakendused</string>
     <string name="folder_backup_checking">Kausta kontrollimine…</string>
     <string name="folder_backup_unwritable_title">Siia ei saa varundada</string>
     <string name="folder_backup_unwritable_message">Firedown ei saanud asukohta %1$s proovifaili salvestada ega kustutada, seega varundused seal ebaõnnestuksid. Vali teine kaust.</string>

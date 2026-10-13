@@ -481,12 +481,15 @@
     <string name="folder_backup_place_volume_sub">Napauta valitsimessa ☰ ja valitse %1$s</string>
     <string name="folder_backup_place_removable_sub">Valitsin avautuu suoraan siihen</string>
     <string name="folder_backup_place_cloud">Pilvitallennustila</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ja muut pilvisovellukset. Napauta seuraavassa näkymässä ☰ ja valitse omasi.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud ja muut</string>
     <string name="folder_backup_place_other">Muualle</string>
-    <string name="folder_backup_place_other_sub">Mikä tahansa kansio, johon valitsin yltää. Tällä puhelimella oleva kansio katoaa puhelimen mukana.</string>
-    <string name="folder_backup_place_signin">Pilvisovellus näkyy valitsimen ☰-valikossa, kun olet kirjautunut siihen.</string>
+    <string name="folder_backup_place_other_sub">Mikä tahansa muu kansio</string>
+    <string name="folder_backup_place_signin">Eikö näy? Kirjaudu ensin sovellukseen.</string>
+    <string name="folder_backup_guide_title">Etsi pilvisovelluksesi</string>
+    <string name="folder_backup_guide_body">Napauta ☰, valitse sovellus ja sitten kansio.</string>
+    <string name="folder_backup_guide_open">Avaa valitsin</string>
     <string name="folder_backup_place_webdav">WebDAV-palvelin</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, kodin NAS tai mikä tahansa WebDAV-osoite. Kirjaudut sisään täällä, sovellusta ei tarvita.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud tai NAS</string>
     <string name="webdav_intro">Kirjaudu palvelimelle, joka säilyttää varmuuskopiosi. Firedown luo sinne kansion ”Firedown Backup”.</string>
     <string name="webdav_address">Palvelimen osoite</string>
     <string name="webdav_address_help">WebDAV-osoite tai Nextcloudille ja ownCloudille pelkkä palvelimen nimi.</string>
@@ -518,7 +521,6 @@
     <string name="webdav_lost_notif_text">Firedown ei tavoita kohdetta %1$s. Avaa Varmuuskopio ja yhdistä uudelleen.</string>
     <string name="webdav_state_lost">Palvelin ei tavoitettavissa</string>
     <string name="webdav_transfer_lost">Varmuuskopiopalvelinta ei tavoiteta. Yhdistä uudelleen Varmuuskopiossa</string>
-    <string name="folder_backup_hint_drawer">Napauta valitsimessa ☰ löytääksesi pilvisovelluksesi</string>
     <string name="folder_backup_checking">Tarkistetaan kansiota…</string>
     <string name="folder_backup_unwritable_title">Tähän ei voi varmuuskopioida</string>
     <string name="folder_backup_unwritable_message">Firedown ei voinut tallentaa ja poistaa testitiedostoa kohteessa %1$s, joten varmuuskopiot epäonnistuisivat siellä. Valitse toinen kansio.</string>

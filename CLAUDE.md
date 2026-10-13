@@ -4774,47 +4774,56 @@ children — the card edges do the grouping).
   sees an app-made folder literally called backup and picks it, and the
   "backup" lands beside the originals on the same storage. Two answers, in
   `SyncSettingsFragment`: (1) `showPlaceChooser` — **"Where to back up"
-  is a BOTTOM SHEET with one card per KIND of place, always shown**
-  (`BackupPlacesSheetDialogFragment`, `fragment_dialog_backup_places`, a
-  `<dialog>` destination of `nav_graph_settings`; the multi-line card row
-  is `Firedown.Widget.SheetPlaceRow`/`Icon`/`Text`/`Title`/`Sub`): "Cloud
-  storage" first (`cloud_outline_24` in
-  `brandInk`, "Google Drive, Nextcloud and other cloud apps. On the next
-  screen, tap ☰ and pick yours.", and under it a PICTURE of the picker's
-  top bar, `layout_backup_picker_hint`: the ☰ ringed in brandInk, a
-  skeleton title line, the search glyph; decorative, the sentence carries
-  it for TalkBack), a WebDAV server (→ the sign-in page), the SD card /
-  USB drive only while one is mounted
-  (`sync/BackupPlaces.removable`:
+  is a BOTTOM SHEET with one card per KIND of place, always shown, and a
+  second page for the cloud step** (`BackupPlacesSheetDialogFragment`,
+  `fragment_dialog_backup_places`, a `<dialog>` destination of
+  `nav_graph_settings`; the card row is `Firedown.Widget.SheetPlaceRow`/
+  `Icon`/`Text`/`Title`/`Sub`/`Chevron`: a title, ONE short line, a
+  chevron). Page 1, the places: "Cloud storage" (`cloud_outline_24` in
+  `brandInk`, "Google Drive, Nextcloud and more"), "WebDAV server"
+  ("Nextcloud, ownCloud or a NAS", → the sign-in page), the SD card / USB
+  drive only while one is mounted (`sync/BackupPlaces.removable`:
   `StorageVolume.createOpenDocumentTreeIntent()` on API 29+ opens the
-  picker right on it), then "Somewhere else", then the sign-in note (a
-  cloud app appears in ☰ once signed in; Drive with no account lists
-  nothing there, which was the maintainer's own "cloud is not showing").
-  The sheet only CHOOSES: the pickers are registered on
+  picker right on it), "Somewhere else" ("Any other folder"). Page 2,
+  opened by the cloud card, "Find your cloud app": a back arrow, a
+  PICTURE of the system picker (`layout_backup_picker_guide`: the ☰ ringed
+  in brandInk inside a brand-wash halo, the drawer open on Google Drive
+  above Nextcloud, a skeleton title and third entry so it promises no
+  folder and no other app; decorative, the line under it carries it for
+  TalkBack), "Tap ☰, pick your app, then a folder.", "Not there? Sign in to
+  the app first." (Drive with no account lists nothing under ☰, which was
+  the maintainer's own "cloud is not showing"), and "Open the picker",
+  which opens the plain picker with NO toast (the page said it a moment
+  ago). Back on page 2 returns to page 1 (an `OnBackPressedCallback` on
+  the dialog, enabled only there); the page survives a rotation. The
+  sheet only CHOOSES: the pickers are registered on
   `SyncSettingsFragment`, so the pick (`RESULT`, a `PLACE_*` int) goes
   back on settings_sync's own back-stack entry, set AFTER the sheet pops
   (the WebDAV branch navigates with an action of settings_sync, which
   only resolves once it is current again), consumed with `set(null)` and
   handled on the next frame (`observePlaceResult` → `openPlace`, which
   asks `BackupPlaces.removable` again, so a card pulled meanwhile falls
-  back to the plain picker). It was a centred `MaterialAlertDialog` with
-  a Cancel button until 2026-10-13, the one menu in the app not wearing
-  the sheet shape (reported beside the Downloads ⋮ sheet); swipe and tap
-  outside dismiss it now. The cloud row opens the plain picker with "Tap ☰ in the picker to find
-  your cloud apps" (`folder_backup_hint_drawer`) TOASTED over it; "Somewhere
-  else" opens it with no toast. History, all on 2026-10-13: a
-  two-paragraph dialog that said all this in words; then per-app rows (see
-  below); then NO dialog at all without a card (the picker straight away,
-  the toast the only instruction), which the maintainer rejected as too
-  much for someone who has never opened that drawer — a toast over a
-  screen that is not ours is easy to miss, and the chooser is the one place
-  the instruction can sit beside a picture of the button. **A KIND row is
+  back to the plain picker). **The copy is a name or an instruction,
+  nothing else** (maintainer, on "You sign in here; no app needed":
+  "empty theater, worthless text, keep the copy simple and direct"): no
+  reassurance, no explaining how the app works, no consequence a later
+  screen already states. History, all on 2026-10-13: a two-paragraph
+  dialog that said all this in words; then per-app rows (see below); then
+  NO dialog at all without a card (the picker straight away, a toast the
+  only instruction), rejected as too little for someone who has never
+  opened that drawer; then a centred `MaterialAlertDialog` of three-line
+  rows with a miniature of the picker's top bar under the cloud row and a
+  footnote; then that dialog as a one-page sheet, reported "looks
+  horrible": rows that were paragraphs, the ☰ instruction said three times
+  (row text, miniature, footnote), and a miniature that read as a search
+  field inside a button. Canvas option C (two pages) was chosen over a
+  compact one-page list (A) and a cloud-first hero card (B): the ☰ step is
+  where people get stuck, so it gets a page right before the picker opens,
+  at the cost of one tap on the most common path. **A KIND row is
   not an app row**: it needs no detection and no list, names as examples
   only apps verified to take a folder pick (Drive, Nextcloud; never
   Dropbox or OneDrive, which are unverified), and promises nothing about
-  what the picker will list. The miniature's title is a skeleton line, not
-  "Downloads", because the picker may open on any folder and the picture
-  should not promise one. **There are NO per-app cloud rows, and there must not be
+  what the picker will list. **There are NO per-app cloud rows, and there must not be
   a list of cloud apps — both were built and removed on 2026-10-13.** First
   detection (`queryIntentContentProviders` on `DOCUMENTS_PROVIDER`): it
   listed Files, Proton Drive, System Tracing and Termux as places to back
@@ -7574,8 +7583,9 @@ maintainer call after sketches on the design canvas:
   shared ground has no other cue where one target ends, whereas the
   Browser popup's two stacked rows read as a grid and carry none), the
   Backups item sheet (Open is revealed late → `refreshActionCorners`),
-  the Backup screen's "Where to back up" places sheet (multi-line cards,
-  the removable-volume card hides → `applyCorners`),
+  the Backup screen's "Where to back up" places sheet (two-line cards with
+  a chevron, the removable-volume card hides → `applyCorners`; its second
+  page is a guide, not a menu),
   the Translate sheet's switch rows (the card toggles the switch), the
   Sort-by and search-engine radio sheets (label + TRAILING non-clickable
   radio; the card is the touch, the fragment/adapter checks the radio —

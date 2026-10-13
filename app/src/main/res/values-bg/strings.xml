@@ -436,12 +436,15 @@
     <string name="folder_backup_place_volume_sub">В избора докоснете ☰ и изберете %1$s</string>
     <string name="folder_backup_place_removable_sub">Изборът се отваря направо в нея</string>
     <string name="folder_backup_place_cloud">Облачно хранилище</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud и други облачни приложения. На следващия екран докоснете ☰ и изберете своето.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud и други</string>
     <string name="folder_backup_place_other">Другаде</string>
-    <string name="folder_backup_place_other_sub">Всяка папка, до която изборът стига. Папка на този телефон се губи с него.</string>
-    <string name="folder_backup_place_signin">Облачно приложение се появява в ☰ на избора, след като влезете в него.</string>
+    <string name="folder_backup_place_other_sub">Всяка друга папка</string>
+    <string name="folder_backup_place_signin">Не е тук? Първо влезте в приложението.</string>
+    <string name="folder_backup_guide_title">Намерете облачното си приложение</string>
+    <string name="folder_backup_guide_body">Докоснете ☰, изберете приложението, после папка.</string>
+    <string name="folder_backup_guide_open">Отваряне на избора</string>
     <string name="folder_backup_place_webdav">WebDAV сървър</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, домашен NAS или всеки WebDAV адрес. Влизате тук, без нужда от приложение.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud или NAS</string>
     <string name="webdav_intro">Влезте в сървъра, който ще пази архивите ви. Firedown създава там папка „Firedown Backup“.</string>
     <string name="webdav_address">Адрес на сървъра</string>
     <string name="webdav_address_help">WebDAV адресът или само името на сървъра за Nextcloud и ownCloud.</string>
@@ -473,7 +476,6 @@
     <string name="webdav_lost_notif_text">Firedown не може да достигне %1$s. Отворете „Архивиране“, за да се свържете отново.</string>
     <string name="webdav_state_lost">Сървърът е недостъпен</string>
     <string name="webdav_transfer_lost">Сървърът за архивиране е недостъпен. Свържете се отново в „Архивиране“</string>
-    <string name="folder_backup_hint_drawer">В избора докоснете ☰, за да намерите облачните си приложения</string>
     <string name="folder_backup_checking">Проверка на папката…</string>
     <string name="folder_backup_unwritable_title">Тук не може да се архивира</string>
     <string name="folder_backup_unwritable_message">Firedown не успя да запише и изтрие пробен файл в %1$s, така че архивирането там няма да работи. Изберете друга папка.</string>

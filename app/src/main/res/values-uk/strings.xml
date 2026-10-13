@@ -449,12 +449,15 @@
     <string name="folder_backup_place_volume_sub">У виборі торкніться ☰ і виберіть %1$s</string>
     <string name="folder_backup_place_removable_sub">Вибір відкриється одразу на ній</string>
     <string name="folder_backup_place_cloud">Хмарне сховище</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud та інші хмарні застосунки. На наступному екрані торкніться ☰ і виберіть свій.</string>
+    <string name="folder_backup_place_cloud_sub">Google Диск, Nextcloud та інші</string>
     <string name="folder_backup_place_other">В іншому місці</string>
-    <string name="folder_backup_place_other_sub">Будь-яка тека, до якої дотягується вибір. Тека на цьому телефоні втрачається разом із ним.</string>
-    <string name="folder_backup_place_signin">Хмарний застосунок з\'являється в ☰ вибору після входу в нього.</string>
+    <string name="folder_backup_place_other_sub">Будь-яка інша тека</string>
+    <string name="folder_backup_place_signin">Немає в списку? Спершу увійдіть у застосунок.</string>
+    <string name="folder_backup_guide_title">Знайдіть свій хмарний застосунок</string>
+    <string name="folder_backup_guide_body">Торкніться ☰, виберіть застосунок, потім теку.</string>
+    <string name="folder_backup_guide_open">Відкрити вибір</string>
     <string name="folder_backup_place_webdav">Сервер WebDAV</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, домашній NAS або будь-яка адреса WebDAV. Вхід виконується тут, окремий застосунок не потрібен.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud або NAS</string>
     <string name="webdav_intro">Увійдіть на сервер, де зберігатимуться ваші резервні копії. Firedown створить там теку «Firedown Backup».</string>
     <string name="webdav_address">Адреса сервера</string>
     <string name="webdav_address_help">Адреса WebDAV або просто назва сервера для Nextcloud і ownCloud.</string>
@@ -486,7 +489,6 @@
     <string name="webdav_lost_notif_text">Firedown не може зв\'язатися з %1$s. Відкрийте «Резервна копія», щоб підключитися знову.</string>
     <string name="webdav_state_lost">Сервер недоступний</string>
     <string name="webdav_transfer_lost">Сервер резервної копії недоступний. Підключіться знову в розділі «Резервна копія»</string>
-    <string name="folder_backup_hint_drawer">У виборі торкніться ☰, щоб знайти хмарні застосунки</string>
     <string name="folder_backup_checking">Перевірка теки…</string>
     <string name="folder_backup_unwritable_title">Сюди не можна зберігати копії</string>
     <string name="folder_backup_unwritable_message">Firedown не зміг зберегти й видалити тестовий файл у %1$s, тож копії там не збережуться. Виберіть іншу теку.</string>

@@ -486,12 +486,15 @@
     <string name="folder_backup_place_volume_sub">Ve výběru klepněte na ☰ a zvolte %1$s</string>
     <string name="folder_backup_place_removable_sub">Výběr se otevře rovnou na ní</string>
     <string name="folder_backup_place_cloud">Cloudové úložiště</string>
-    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud a další cloudové aplikace. Na další obrazovce klepněte na ☰ a vyberte tu svou.</string>
+    <string name="folder_backup_place_cloud_sub">Google Drive, Nextcloud a další</string>
     <string name="folder_backup_place_other">Jinde</string>
-    <string name="folder_backup_place_other_sub">Jakákoli složka, kam výběr dosáhne. Složka v tomto telefonu se ztratí i s ním.</string>
-    <string name="folder_backup_place_signin">Cloudová aplikace se v ☰ výběru objeví, až se do ní přihlásíte.</string>
+    <string name="folder_backup_place_other_sub">Jakákoli jiná složka</string>
+    <string name="folder_backup_place_signin">Není tam? Nejdřív se do aplikace přihlaste.</string>
+    <string name="folder_backup_guide_title">Najděte svou cloudovou aplikaci</string>
+    <string name="folder_backup_guide_body">Klepněte na ☰, vyberte aplikaci a pak složku.</string>
+    <string name="folder_backup_guide_open">Otevřít výběr</string>
     <string name="folder_backup_place_webdav">Server WebDAV</string>
-    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, domácí NAS nebo jakákoli adresa WebDAV. Přihlásíte se přímo tady, bez aplikace.</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud nebo NAS</string>
     <string name="webdav_intro">Přihlaste se k serveru, který bude uchovávat vaše zálohy. Firedown na něm vytvoří složku „Firedown Backup“.</string>
     <string name="webdav_address">Adresa serveru</string>
     <string name="webdav_address_help">Adresa WebDAV, u Nextcloudu a ownCloudu stačí název serveru.</string>
@@ -523,7 +526,6 @@
     <string name="webdav_lost_notif_text">Firedown se nedostane k %1$s. Otevřete Zálohu a připojte se znovu.</string>
     <string name="webdav_state_lost">Server nedostupný</string>
     <string name="webdav_transfer_lost">Server zálohy je nedostupný. Připojte se znovu v Záloze</string>
-    <string name="folder_backup_hint_drawer">Ve výběru klepněte na ☰ a najdete své cloudové aplikace</string>
     <string name="folder_backup_checking">Kontrola složky…</string>
     <string name="folder_backup_unwritable_title">Sem nelze zálohovat</string>
     <string name="folder_backup_unwritable_message">Firedown nemohl v %1$s uložit a smazat zkušební soubor, takže by tam zálohy selhaly. Zvolte jinou složku.</string>

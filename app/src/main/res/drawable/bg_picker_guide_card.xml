@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The card the "Find your cloud app" picture sits in: a sheet row's
+     ground (colorSurfaceContainerLow) and its 16dp outer corner. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="?attr/colorSurfaceContainerLow" />
+    <corners android:radius="16dp" />
+</shape>
