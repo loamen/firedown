@@ -460,7 +460,7 @@
     <string name="folder_backup_lost_seen">आख़िरी बार: %1$s</string>
     <string name="folder_backup_choose_cta">बैकअप फ़ोल्डर चुनें</string>
     <string name="folder_backup_pick_title">बैकअप कहाँ लें</string>
-    <string name="folder_backup_pick_message">इसके बाद Android का फ़ाइल चयनकर्ता खुलेगा। उसके ऊपरी कोने में ☰ पर टैप करें और अपना क्लाउड ऐप चुनें: Google Drive, Dropbox, Nextcloud या इस फ़ोन पर इंस्टॉल कोई और ऐप। फिर वहाँ कोई फ़ोल्डर खोलें या बनाएँ।\n\nSD कार्ड भी चलेगा। फ़ोन की अपनी स्टोरेज का फ़ोल्डर फ़ोन के साथ ही खो जाता है।</string>
+    <string name="folder_backup_pick_message">इसके बाद Android का फ़ाइल चयनकर्ता खुलेगा। उसके ऊपरी कोने में ☰ पर टैप करें, अपना क्लाउड ऐप चुनें और फिर वहाँ कोई फ़ोल्डर खोलें या बनाएँ। Google Drive, Dropbox और Nextcloud काम करते हैं। जो क्लाउड ऐप उस सूची में नहीं दिखता, वह दूसरे ऐप्स को अपने फ़ोल्डर इस्तेमाल नहीं करने देता, इसलिए उसमें बैकअप नहीं रखा जा सकता।\n\nSD कार्ड भी चलेगा। फ़ोन की अपनी स्टोरेज का फ़ोल्डर फ़ोन के साथ ही खो जाता है।</string>
     <string name="folder_backup_pick_open">चयनकर्ता खोलें</string>
     <string name="folder_backup_pick_unavailable">इस फ़ोन पर कोई फ़ोल्डर चयनकर्ता उपलब्ध नहीं है</string>
     <string name="folder_backup_guard_title">यह आपका डाउनलोड फ़ोल्डर है</string>

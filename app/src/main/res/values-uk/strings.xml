@@ -462,7 +462,7 @@
     <string name="folder_backup_lost_seen">Востаннє: %1$s</string>
     <string name="folder_backup_choose_cta">Вибрати теку резервної копії</string>
     <string name="folder_backup_pick_title">Куди зберігати копію</string>
-    <string name="folder_backup_pick_message">Далі відкриється вибір файлів Android. Торкніться ☰ у його верхньому куті й виберіть свій хмарний застосунок: Google Диск, Dropbox, Nextcloud або інший, встановлений на цьому телефоні. Потім відкрийте або створіть там теку.\n\nПідійде й SD-картка. Тека в пам\'яті самого телефона втрачається разом із телефоном.</string>
+    <string name="folder_backup_pick_message">Далі відкриється вибір файлів Android. Торкніться ☰ у його верхньому куті, виберіть свій хмарний застосунок, а потім відкрийте або створіть там теку. Google Диск, Dropbox і Nextcloud підходять. Хмарний застосунок, якого немає в цьому списку, не дозволяє іншим застосункам користуватися його теками, тому зберігати резервну копію в ньому не можна.\n\nПідійде й SD-картка. Тека в пам\'яті самого телефона втрачається разом із телефоном.</string>
     <string name="folder_backup_pick_open">Відкрити вибір</string>
     <string name="folder_backup_pick_unavailable">На цьому телефоні немає вибору теки</string>
     <string name="folder_backup_guard_title">Це ваша тека завантажень</string>

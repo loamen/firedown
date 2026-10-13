@@ -524,7 +524,7 @@
     <string name="folder_backup_lost_seen">Son görülme: %1$s</string>
     <string name="folder_backup_choose_cta">Yedekleme klasörü seç</string>
     <string name="folder_backup_pick_title">Nereye yedeklensin</string>
-    <string name="folder_backup_pick_message">Sırada Android dosya seçici açılır. Üst köşesindeki ☰ simgesine dokunup bulut uygulamanızı seçin: Google Drive, Dropbox, Nextcloud veya bu telefonda kurulu başka bir uygulama. Sonra orada bir klasör açın ya da oluşturun.\n\nSD kart da olur. Telefonun kendi depolamasındaki bir klasör telefonla birlikte kaybolur.</string>
+    <string name="folder_backup_pick_message">Sırada Android dosya seçici açılır. Üst köşesindeki ☰ simgesine dokunup bulut uygulamanızı seçin, sonra orada bir klasör açın ya da oluşturun. Google Drive, Dropbox ve Nextcloud çalışır. O listede görünmeyen bir bulut uygulaması, klasörlerini başka uygulamalara kullandırmaz; dolayısıyla yedek tutamaz.\n\nSD kart da olur. Telefonun kendi depolamasındaki bir klasör telefonla birlikte kaybolur.</string>
     <string name="folder_backup_pick_open">Seçiciyi aç</string>
     <string name="folder_backup_pick_unavailable">Bu telefonda klasör seçici yok</string>
     <string name="folder_backup_guard_title">Bu sizin indirmeler klasörünüz</string>

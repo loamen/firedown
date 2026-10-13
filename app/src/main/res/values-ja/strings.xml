@@ -621,7 +621,7 @@
     <string name="folder_backup_lost_seen">最終確認: %1$s</string>
     <string name="folder_backup_choose_cta">バックアップフォルダーを選択</string>
     <string name="folder_backup_pick_title">バックアップ先</string>
-    <string name="folder_backup_pick_message">次に Android のファイル選択画面が開きます。上隅の ☰ をタップしてクラウドアプリ（Google ドライブ、Dropbox、Nextcloud など、この端末にインストール済みのもの）を選び、そこでフォルダーを開くか作成してください。\n\nSD カードも使えます。端末本体のストレージ内のフォルダーは、端末と一緒に失われます。</string>
+    <string name="folder_backup_pick_message">次に Android のファイル選択画面が開きます。上隅の ☰ をタップしてクラウドアプリを選び、そこでフォルダーを開くか作成してください。Google ドライブ、Dropbox、Nextcloud は使えます。その一覧に出てこないクラウドアプリは、他のアプリにフォルダーの利用を許可していないため、バックアップ先にはできません。\n\nSD カードも使えます。端末本体のストレージ内のフォルダーは、端末と一緒に失われます。</string>
     <string name="folder_backup_pick_open">選択画面を開く</string>
     <string name="folder_backup_pick_unavailable">この端末にはフォルダー選択画面がありません</string>
     <string name="folder_backup_guard_title">これはダウンロードフォルダーです</string>

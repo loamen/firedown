@@ -624,7 +624,7 @@
     <string name="folder_backup_lost_seen">Última vez: %1$s</string>
     <string name="folder_backup_choose_cta">Elegir carpeta de copia de seguridad</string>
     <string name="folder_backup_pick_title">Dónde hacer la copia</string>
-    <string name="folder_backup_pick_message">A continuación se abre el selector de archivos de Android. Toca ☰ en su esquina superior y elige tu app de nube: Google Drive, Dropbox, Nextcloud u otra instalada en este teléfono. Luego abre o crea una carpeta ahí.\n\nUna tarjeta SD también sirve. Una carpeta en el almacenamiento del propio teléfono se pierde con el teléfono.</string>
+    <string name="folder_backup_pick_message">A continuación se abre el selector de archivos de Android. Toca ☰ en su esquina superior, elige tu app de nube y luego abre o crea una carpeta ahí. Google Drive, Dropbox y Nextcloud funcionan. Una app de nube que no aparece en esa lista no deja que otras apps usen sus carpetas, así que no puede guardar una copia de seguridad.\n\nUna tarjeta SD también sirve. Una carpeta en el almacenamiento del propio teléfono se pierde con el teléfono.</string>
     <string name="folder_backup_pick_open">Abrir selector</string>
     <string name="folder_backup_pick_unavailable">Este teléfono no tiene un selector de carpetas</string>
     <string name="folder_backup_guard_title">Esa es tu carpeta de descargas</string>

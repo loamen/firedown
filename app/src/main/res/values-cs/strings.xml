@@ -499,7 +499,7 @@
     <string name="folder_backup_lost_seen">Naposledy: %1$s</string>
     <string name="folder_backup_choose_cta">Vybrat složku zálohy</string>
     <string name="folder_backup_pick_title">Kam zálohovat</string>
-    <string name="folder_backup_pick_message">Dále se otevře výběr souborů Androidu. Klepněte na ☰ v jeho horním rohu a zvolte svou cloudovou aplikaci: Google Drive, Dropbox, Nextcloud nebo jinou nainstalovanou v tomto telefonu. Pak tam otevřete nebo vytvořte složku.\n\nFunguje i SD karta. Složka v úložišti samotného telefonu se ztratí spolu s telefonem.</string>
+    <string name="folder_backup_pick_message">Dále se otevře výběr souborů Androidu. Klepněte na ☰ v jeho horním rohu, zvolte svou cloudovou aplikaci a pak tam otevřete nebo vytvořte složku. Google Drive, Dropbox a Nextcloud fungují. Cloudová aplikace, která v tom seznamu chybí, nedovoluje jiným aplikacím používat své složky, a zálohu tedy uchovat nemůže.\n\nFunguje i SD karta. Složka v úložišti samotného telefonu se ztratí spolu s telefonem.</string>
     <string name="folder_backup_pick_open">Otevřít výběr</string>
     <string name="folder_backup_pick_unavailable">V tomto telefonu není k dispozici výběr složky</string>
     <string name="folder_backup_guard_title">To je složka s vašimi staženými soubory</string>

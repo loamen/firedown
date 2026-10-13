@@ -624,7 +624,7 @@
     <string name="folder_backup_lost_seen">Zuletzt gesehen: %1$s</string>
     <string name="folder_backup_choose_cta">Backup-Ordner wählen</string>
     <string name="folder_backup_pick_title">Wohin sichern</string>
-    <string name="folder_backup_pick_message">Als Nächstes öffnet sich die Android-Dateiauswahl. Tippe dort oben auf ☰ und wähle deine Cloud-App: Google Drive, Dropbox, Nextcloud oder eine andere auf diesem Handy installierte App. Öffne oder erstelle dort einen Ordner.\n\nEine SD-Karte geht auch. Ein Ordner im Speicher des Handys selbst geht mit dem Handy verloren.</string>
+    <string name="folder_backup_pick_message">Als Nächstes öffnet sich die Android-Dateiauswahl. Tippe dort oben auf ☰, wähle deine Cloud-App und öffne oder erstelle dort einen Ordner. Google Drive, Dropbox und Nextcloud funktionieren. Eine Cloud-App, die in dieser Liste fehlt, lässt andere Apps ihre Ordner nicht nutzen und kann daher kein Backup aufnehmen.\n\nEine SD-Karte geht auch. Ein Ordner im Speicher des Handys selbst geht mit dem Handy verloren.</string>
     <string name="folder_backup_pick_open">Auswahl öffnen</string>
     <string name="folder_backup_pick_unavailable">Auf diesem Handy ist keine Ordnerauswahl verfügbar</string>
     <string name="folder_backup_guard_title">Das ist dein Downloads-Ordner</string>

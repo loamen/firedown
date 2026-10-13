@@ -621,7 +621,7 @@
     <string name="folder_backup_lost_seen">上次读取：%1$s</string>
     <string name="folder_backup_choose_cta">选择备份文件夹</string>
     <string name="folder_backup_pick_title">备份到哪里</string>
-    <string name="folder_backup_pick_message">接下来会打开 Android 文件选择器。点按其顶角的 ☰，选择你的云应用：Google 云端硬盘、Dropbox、Nextcloud 或本机已安装的其他应用，然后在那里打开或新建一个文件夹。\n\nSD 卡也可以。手机自身存储中的文件夹会随手机一起丢失。</string>
+    <string name="folder_backup_pick_message">接下来会打开 Android 文件选择器。点按其顶角的 ☰，选择你的云应用，然后在那里打开或新建一个文件夹。Google 云端硬盘、Dropbox 和 Nextcloud 都可以。没有出现在该列表中的云应用不允许其他应用使用它的文件夹，因此无法存放备份。\n\nSD 卡也可以。手机自身存储中的文件夹会随手机一起丢失。</string>
     <string name="folder_backup_pick_open">打开选择器</string>
     <string name="folder_backup_pick_unavailable">这部手机没有文件夹选择器</string>
     <string name="folder_backup_guard_title">这是你的下载文件夹</string>

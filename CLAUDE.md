@@ -4276,6 +4276,34 @@ children — the card edges do the grouping).
   opens. The two folders stay as they are: list recovery for a same-phone
   reinstall vs file copies elsewhere are different jobs, and renaming the
   mirror's folder buys nothing the guard doesn't.
+- **The folder picker lists ONLY providers that declare
+  `Root.FLAG_SUPPORTS_IS_CHILD` — a cloud app that shows in the Files app
+  and in a file picker can still be absent here, and nothing in our intent
+  can change that.** The picker is the stock `OpenDocumentTree` contract
+  (`ACTION_OPEN_DOCUMENT_TREE`, no `EXTRA_LOCAL_ONLY`, no MIME filter), and
+  DocumentsUI's `ProvidersAccess.getMatchingRoots` skips, for a tree pick
+  only, every root without `supportsChildren()` — that flag, meaning the
+  provider implements `isChildDocument`, which a subtree grant needs —
+  while browse mode and `ACTION_OPEN_DOCUMENT` list the same root. Proton
+  Drive is the shipped case (2026-10-13, the maintainer's phone: Proton in
+  Files and in Bookmarks → Import's single-file picker, absent from the
+  backup picker): its open-source provider (`ProtonDriveApps/android-drive`
+  3.1.0, `drive/documentsprovider/data/…/extension/Account.kt`) sets the
+  root flags to `FLAG_SUPPORTS_CREATE` alone and `DriveDocumentsProvider`
+  overrides no `isChildDocument`, so Android hides it from EVERY app's
+  folder picker (Joplin's sync-folder picker has the same report). The
+  source carries no F-Droid flavor (dev/alpha/beta/prod), so a build from
+  it behaves the same wherever it was installed from, and the repo has
+  Issues disabled ("No contributions are accepted for now") — the ask
+  (declare the flag and implement `isChildDocument`; their documents
+  already carry `FLAG_DIR_SUPPORTS_CREATE`/`SUPPORTS_WRITE`/`DELETE`, so a
+  tree would work) goes through Proton's feedback forum or support, not
+  GitHub. So the pre-picker dialog names Drive, Dropbox and Nextcloud and
+  says an app missing from ☰ "doesn't let other apps use its folders" — it
+  used to promise "or any other app installed on this phone", which is
+  exactly what sent the maintainer looking for Proton there. Don't name an
+  absent app in the copy (stale the day it adds the flag); the diagnostic
+  for the next such report is the Import-picker test above.
 - **The KEY-FIRST GATE**: until a recovery code exists the CTA reads "Create
   recovery code" (not choose-a-folder), the Backups row is hidden and the
   Bookmarks switch is disabled — a folder can only be chosen once there is

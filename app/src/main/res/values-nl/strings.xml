@@ -524,7 +524,7 @@
     <string name="folder_backup_lost_seen">Laatst gezien: %1$s</string>
     <string name="folder_backup_choose_cta">Back-upmap kiezen</string>
     <string name="folder_backup_pick_title">Waar back-uppen</string>
-    <string name="folder_backup_pick_message">Hierna opent de bestandskiezer van Android. Tik op ☰ in de bovenhoek en kies je cloud-app: Google Drive, Dropbox, Nextcloud of een andere app die op deze telefoon staat. Open of maak daar een map.\n\nEen SD-kaart kan ook. Een map in de opslag van de telefoon zelf gaat met de telefoon verloren.</string>
+    <string name="folder_backup_pick_message">Hierna opent de bestandskiezer van Android. Tik op ☰ in de bovenhoek, kies je cloud-app en open of maak daar een map. Google Drive, Dropbox en Nextcloud werken. Een cloud-app die in die lijst ontbreekt, laat andere apps zijn mappen niet gebruiken en kan dus geen back-up bewaren.\n\nEen SD-kaart kan ook. Een map in de opslag van de telefoon zelf gaat met de telefoon verloren.</string>
     <string name="folder_backup_pick_open">Kiezer openen</string>
     <string name="folder_backup_pick_unavailable">Deze telefoon heeft geen mapkiezer</string>
     <string name="folder_backup_guard_title">Dat is je downloadmap</string>

@@ -524,7 +524,7 @@
     <string name="folder_backup_lost_seen">Visto pela última vez: %1$s</string>
     <string name="folder_backup_choose_cta">Escolher pasta de backup</string>
     <string name="folder_backup_pick_title">Onde fazer o backup</string>
-    <string name="folder_backup_pick_message">Em seguida abre o seletor de arquivos do Android. Toque em ☰ no canto superior e escolha seu app de nuvem: Google Drive, Dropbox, Nextcloud ou outro instalado neste celular. Depois abra ou crie uma pasta ali.\n\nUm cartão SD também serve. Uma pasta no armazenamento do próprio celular se perde junto com o celular.</string>
+    <string name="folder_backup_pick_message">Em seguida abre o seletor de arquivos do Android. Toque em ☰ no canto superior, escolha seu app de nuvem e depois abra ou crie uma pasta ali. Google Drive, Dropbox e Nextcloud funcionam. Um app de nuvem que não aparece nessa lista não deixa outros apps usarem suas pastas, então não pode guardar um backup.\n\nUm cartão SD também serve. Uma pasta no armazenamento do próprio celular se perde junto com o celular.</string>
     <string name="folder_backup_pick_open">Abrir seletor</string>
     <string name="folder_backup_pick_unavailable">Este celular não tem um seletor de pastas</string>
     <string name="folder_backup_guard_title">Essa é a sua pasta de downloads</string>

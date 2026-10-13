@@ -528,7 +528,7 @@
     <string name="folder_backup_lost_seen">Ostatnio: %1$s</string>
     <string name="folder_backup_choose_cta">Wybierz folder kopii zapasowej</string>
     <string name="folder_backup_pick_title">Gdzie zapisać kopię</string>
-    <string name="folder_backup_pick_message">Za chwilę otworzy się selektor plików Androida. Dotknij ☰ w jego górnym rogu i wybierz swoją aplikację chmurową: Google Drive, Dropbox, Nextcloud lub inną zainstalowaną na tym telefonie. Następnie otwórz lub utwórz tam folder.\n\nKarta SD też się nadaje. Folder w pamięci samego telefonu przepada razem z telefonem.</string>
+    <string name="folder_backup_pick_message">Za chwilę otworzy się selektor plików Androida. Dotknij ☰ w jego górnym rogu, wybierz swoją aplikację chmurową, a następnie otwórz lub utwórz tam folder. Google Drive, Dropbox i Nextcloud działają. Aplikacja chmurowa, której brakuje na tej liście, nie pozwala innym aplikacjom korzystać ze swoich folderów, więc nie może przechowywać kopii zapasowej.\n\nKarta SD też się nadaje. Folder w pamięci samego telefonu przepada razem z telefonem.</string>
     <string name="folder_backup_pick_open">Otwórz selektor</string>
     <string name="folder_backup_pick_unavailable">Ten telefon nie ma selektora folderów</string>
     <string name="folder_backup_guard_title">To folder z pobranymi plikami</string>

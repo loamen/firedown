@@ -530,7 +530,7 @@
     <string name="folder_backup_lost_seen">Последний раз: %1$s</string>
     <string name="folder_backup_choose_cta">Выбрать папку резервной копии</string>
     <string name="folder_backup_pick_title">Куда сохранять копию</string>
-    <string name="folder_backup_pick_message">Далее откроется выбор файлов Android. Нажмите ☰ в его верхнем углу и выберите своё облачное приложение: Google Диск, Dropbox, Nextcloud или другое, установленное на этом телефоне. Затем откройте или создайте там папку.\n\nПодойдёт и SD-карта. Папка в памяти самого телефона теряется вместе с телефоном.</string>
+    <string name="folder_backup_pick_message">Далее откроется выбор файлов Android. Нажмите ☰ в его верхнем углу, выберите своё облачное приложение, затем откройте или создайте там папку. Google Диск, Dropbox и Nextcloud подходят. Облачное приложение, которого нет в этом списке, не разрешает другим приложениям пользоваться своими папками, поэтому хранить резервную копию в нём нельзя.\n\nПодойдёт и SD-карта. Папка в памяти самого телефона теряется вместе с телефоном.</string>
     <string name="folder_backup_pick_open">Открыть выбор</string>
     <string name="folder_backup_pick_unavailable">На этом телефоне нет выбора папки</string>
     <string name="folder_backup_guard_title">Это ваша папка загрузок</string>

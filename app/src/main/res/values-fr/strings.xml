@@ -625,7 +625,7 @@
     <string name="folder_backup_lost_seen">Dernier état : %1$s</string>
     <string name="folder_backup_choose_cta">Choisir le dossier de sauvegarde</string>
     <string name="folder_backup_pick_title">Où sauvegarder</string>
-    <string name="folder_backup_pick_message">Le sélecteur de fichiers d\'Android s\'ouvre ensuite. Touchez ☰ dans son coin supérieur et choisissez votre appli cloud : Google Drive, Dropbox, Nextcloud ou une autre installée sur ce téléphone. Ouvrez ou créez-y un dossier.\n\nUne carte SD convient aussi. Un dossier dans la mémoire du téléphone lui-même est perdu avec le téléphone.</string>
+    <string name="folder_backup_pick_message">Le sélecteur de fichiers d\'Android s\'ouvre ensuite. Touchez ☰ dans son coin supérieur, choisissez votre appli cloud, puis ouvrez ou créez-y un dossier. Google Drive, Dropbox et Nextcloud fonctionnent. Une appli cloud absente de cette liste ne laisse pas d\'autres applis utiliser ses dossiers et ne peut donc pas accueillir de sauvegarde.\n\nUne carte SD convient aussi. Un dossier dans la mémoire du téléphone lui-même est perdu avec le téléphone.</string>
     <string name="folder_backup_pick_open">Ouvrir le sélecteur</string>
     <string name="folder_backup_pick_unavailable">Aucun sélecteur de dossier n\'est disponible sur ce téléphone</string>
     <string name="folder_backup_guard_title">C\'est votre dossier de téléchargements</string>

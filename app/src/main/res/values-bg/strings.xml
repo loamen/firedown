@@ -447,7 +447,7 @@
     <string name="folder_backup_lost_seen">Последно: %1$s</string>
     <string name="folder_backup_choose_cta">Избор на папка за архивиране</string>
     <string name="folder_backup_pick_title">Къде да се архивира</string>
-    <string name="folder_backup_pick_message">След това се отваря файловият избор на Android. Докоснете ☰ в горния му ъгъл и изберете облачното си приложение: Google Drive, Dropbox, Nextcloud или друго, инсталирано на този телефон. После отворете или създайте папка там.\n\nSD карта също става. Папка в паметта на самия телефон се губи заедно с телефона.</string>
+    <string name="folder_backup_pick_message">След това се отваря файловият избор на Android. Докоснете ☰ в горния му ъгъл, изберете облачното си приложение и отворете или създайте папка там. Google Drive, Dropbox и Nextcloud работят. Облачно приложение, което липсва в този списък, не позволява на други приложения да ползват папките му и затова не може да съхранява архив.\n\nSD карта също става. Папка в паметта на самия телефон се губи заедно с телефона.</string>
     <string name="folder_backup_pick_open">Отвори избора</string>
     <string name="folder_backup_pick_unavailable">На този телефон няма избор на папка</string>
     <string name="folder_backup_guard_title">Това е папката с изтеглянията ви</string>

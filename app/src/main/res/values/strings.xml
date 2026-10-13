@@ -334,7 +334,7 @@
     <string name="folder_backup_lost_seen">Last seen: %1$s</string>
     <string name="folder_backup_choose_cta">Choose backup folder</string>
     <string name="folder_backup_pick_title">Where to back up</string>
-    <string name="folder_backup_pick_message">The Android file picker opens next. Tap ☰ in its top corner and choose your cloud app: Google Drive, Dropbox, Nextcloud or any other app installed on this phone. Then open or create a folder there.\n\nAn SD card works too. A folder on this phone\'s own storage is lost with the phone.</string>
+    <string name="folder_backup_pick_message">The Android file picker opens next. Tap ☰ in its top corner and choose your cloud app, then open or create a folder there. Google Drive, Dropbox and Nextcloud work. A cloud app missing from that list doesn\'t let other apps use its folders, so it can\'t hold a backup.\n\nAn SD card works too. A folder on this phone\'s own storage is lost with the phone.</string>
     <string name="folder_backup_pick_open">Open picker</string>
     <string name="folder_backup_pick_unavailable">No folder picker is available on this phone</string>
     <string name="folder_backup_guard_title">That\'s your downloads folder</string>

@@ -424,7 +424,7 @@
     <string name="folder_backup_lost_seen">Viimati nähtud: %1$s</string>
     <string name="folder_backup_choose_cta">Vali varunduskaust</string>
     <string name="folder_backup_pick_title">Kuhu varundada</string>
-    <string name="folder_backup_pick_message">Järgmisena avaneb Androidi failivalija. Puuduta selle ülanurgas ☰ ja vali oma pilverakendus: Google Drive, Dropbox, Nextcloud või mõni muu sellesse telefoni paigaldatud rakendus. Seejärel ava või loo seal kaust.\n\nSobib ka SD-kaart. Telefoni enda mälus olev kaust kaob koos telefoniga.</string>
+    <string name="folder_backup_pick_message">Järgmisena avaneb Androidi failivalija. Puuduta selle ülanurgas ☰, vali oma pilverakendus ja seejärel ava või loo seal kaust. Google Drive, Dropbox ja Nextcloud töötavad. Pilverakendus, mida selles loendis pole, ei luba teistel rakendustel oma kaustu kasutada ega saa seega varukoopiat hoida.\n\nSobib ka SD-kaart. Telefoni enda mälus olev kaust kaob koos telefoniga.</string>
     <string name="folder_backup_pick_open">Ava valija</string>
     <string name="folder_backup_pick_unavailable">Selles telefonis pole kaustavalijat</string>
     <string name="folder_backup_guard_title">See on sinu allalaadimiste kaust</string>

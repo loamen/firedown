@@ -492,7 +492,7 @@
     <string name="folder_backup_lost_seen">Viimeksi nähty: %1$s</string>
     <string name="folder_backup_choose_cta">Valitse varmuuskopiokansio</string>
     <string name="folder_backup_pick_title">Minne varmuuskopioidaan</string>
-    <string name="folder_backup_pick_message">Seuraavaksi avautuu Androidin tiedostovalitsin. Napauta sen yläkulmassa ☰ ja valitse pilvisovelluksesi: Google Drive, Dropbox, Nextcloud tai muu tähän puhelimeen asennettu sovellus. Avaa tai luo sinne kansio.\n\nMyös SD-kortti käy. Puhelimen omassa muistissa oleva kansio katoaa puhelimen mukana.</string>
+    <string name="folder_backup_pick_message">Seuraavaksi avautuu Androidin tiedostovalitsin. Napauta sen yläkulmassa ☰, valitse pilvisovelluksesi ja avaa tai luo sinne kansio. Google Drive, Dropbox ja Nextcloud toimivat. Pilvisovellus, joka puuttuu tuosta luettelosta, ei anna muiden sovellusten käyttää kansioitaan, joten se ei voi säilyttää varmuuskopiota.\n\nMyös SD-kortti käy. Puhelimen omassa muistissa oleva kansio katoaa puhelimen mukana.</string>
     <string name="folder_backup_pick_open">Avaa valitsin</string>
     <string name="folder_backup_pick_unavailable">Tässä puhelimessa ei ole kansiovalitsinta</string>
     <string name="folder_backup_guard_title">Tämä on latauskansiosi</string>
