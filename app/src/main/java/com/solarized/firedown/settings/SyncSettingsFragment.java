@@ -754,6 +754,15 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * {@link SyncManager#linkWithCode}, which stores the code WITHOUT enabling
      * bookmark sync. Reuses the code-input dialog layout.
      *
+     * <p>The code alone joins nothing. Under the hosted service one code WAS
+     * one backup; now it is the key plus the NAME of the account directory
+     * inside whatever folder each device chose, so two devices meet only when
+     * they also use the same folder. Every string on this door therefore ends
+     * in "then choose the same backup folder" — the copy shipped for a cycle
+     * as "both devices will share one backup", which sent a second phone to
+     * an empty Backups list expecting files that live in a folder it had
+     * never picked.
+     *
      * <p>When this device ALREADY has a code, adopting another one is a REPLACE
      * and is confirmed first. The warning is not ceremony: the recovery code is
      * the ONLY key to what sits under it, so a user who never saved the current
@@ -827,9 +836,21 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                             return;
                         }
                         updateState();
-                        snackbar(getString(ok
-                                ? R.string.settings_sync_link_ok
-                                : R.string.settings_sync_link_bad));
+                        // The code is the KEY and the directory NAME in the
+                        // folder, not the backup: the other device's files are
+                        // readable here only once this device also uses the
+                        // folder they sit in. With no folder chosen yet the
+                        // next step is choosing it, so the snackbar says so
+                        // rather than claiming the backups are readable now.
+                        int message;
+                        if (!ok) {
+                            message = R.string.settings_sync_link_bad;
+                        } else if (mCloudBackup.hasFolder()) {
+                            message = R.string.settings_sync_link_ok;
+                        } else {
+                            message = R.string.settings_sync_link_ok_choose_folder;
+                        }
+                        snackbar(getString(message));
                     });
                 })
                 .setNegativeButton(R.string.cancel, null)

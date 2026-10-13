@@ -192,49 +192,37 @@
     <string name="cloud_banner_title">Keep your downloads if you lose your phone</string>
     <string name="cloud_banner_subtitle">Back them up encrypted to any folder: Google Drive, Dropbox, an SD card. Only your recovery code can read them.</string>
     <string name="settings_sync_title">Sync bookmarks</string>
-    <string name="settings_sync_summary">End-to-end encrypted bookmark sync across your devices</string>
     <!-- Backup settings entry — one recovery code covering bookmark sync and the
          encrypted download backup in a folder the user chooses. -->
     <string name="settings_account_title">Backup</string>
     <string name="settings_account_summary">Encrypted download backup in a folder you choose, and bookmark sync. One recovery code</string>
-    <!-- Unified Sync screen section headers (grouped by feature). -->
-    <!-- The recovery code now unlocks BOTH bookmarks and backups. -->
+    <!-- The recovery code unlocks BOTH bookmarks and backups. -->
     <string name="settings_sync_show_code_shared_summary">The one key for your bookmarks and backups</string>
-    <!-- Downloads-backup row summary while an upload/restore is running. -->
-    <string name="settings_sync_downloads_active">Backing up your downloads…</string>
     <string name="settings_sync_switch_summary">Off. Bookmarks stay on this device</string>
     <string name="settings_sync_never_synced">On. Not synced yet</string>
     <string name="settings_sync_last_synced">On. Last synced %1$s</string>
-    <string name="settings_sync_setup_title">Set up bookmark sync</string>
-    <string name="settings_sync_setup_message">Bookmarks are encrypted before they leave this device. You get a recovery code, the only key. It can\'t be recovered if lost.</string>
-    <string name="settings_sync_setup_create">Create new</string>
-    <string name="settings_sync_setup_restore">I have a code</string>
-    <string name="settings_sync_restore_title">Restore bookmark sync</string>
-    <string name="settings_sync_restore_message">Enter the recovery code from your other device to merge its bookmarks here.</string>
     <string name="settings_sync_restore_action">Restore</string>
-    <string name="settings_sync_restore_ok">Bookmark sync restored</string>
-    <string name="settings_sync_restore_bad">That recovery code doesn\'t look right</string>
     <!-- Account-level Create / "I have a recovery code" pair (Backup screen, no-key state).
          The key is the gateway: bookmarks + downloads backup stay disabled until one exists. -->
     <string name="settings_sync_create_title">Create recovery code</string>
-    <string name="settings_sync_create_summary">Set up encryption with a new key on this device</string>
     <!-- Disabled-row summary shown on Bookmarks + Downloads backup until a key exists. -->
     <string name="settings_sync_needs_key">Create or enter a recovery code first</string>
     <string name="settings_sync_link_title">I have a recovery code</string>
-    <string name="settings_sync_link_summary">Use the code from your other device to read its backups here</string>
+    <string name="settings_sync_link_summary">Use another device\'s code, then choose its backup folder</string>
     <string name="settings_sync_link_dialog_title">Enter your recovery code</string>
-    <string name="settings_sync_link_dialog_message">Paste the code from your other device to read its backup here. Bookmark sync stays off.</string>
+    <string name="settings_sync_link_dialog_message">Paste the code from your other device. Its backups are readable here once this device also uses the same backup folder. Bookmark sync stays off.</string>
     <string name="settings_sync_link_action">Restore</string>
-    <string name="settings_sync_link_ok">Code restored. Your backups can be read on this device</string>
+    <string name="settings_sync_link_ok">Code restored</string>
+    <string name="settings_sync_link_ok_choose_folder">Code restored. Now choose the same backup folder</string>
     <string name="settings_sync_link_bad">That recovery code doesn\'t look right</string>
-    <string name="settings_sync_link_replace_summary">Use another device\'s code to share one backup</string>
+    <string name="settings_sync_link_replace_summary">Switch to another device\'s code and its backup folder</string>
     <string name="settings_sync_link_replace_title">Replace this device\'s recovery code?</string>
-    <string name="settings_sync_link_replace_message">Both devices will share one backup.\n\nNothing is deleted, but anything already backed up under this device\'s current code needs that code to be read. Save it first.</string>
+    <string name="settings_sync_link_replace_message">This device will use the other device\'s key. The two share a backup only when they also use the same backup folder.\n\nNothing is deleted, but anything already backed up under this device\'s current code needs that code to be read. Save it first.</string>
     <string name="settings_sync_link_replace_action">Continue</string>
     <string name="settings_sync_code_show_qr">Show QR code</string>
     <string name="settings_sync_code_hide_qr">Hide QR code</string>
     <string name="settings_sync_code_qr_desc">Recovery code as a QR code</string>
-    <string name="settings_sync_code_qr_hint">Scan this from your other device to share this backup.</string>
+    <string name="settings_sync_code_qr_hint">Scan this from your other device, then choose the same backup folder there.</string>
     <string name="settings_sync_link_scan">Scan</string>
     <string name="settings_sync_scan_title">Scan recovery code</string>
     <string name="settings_sync_scan_bad">That QR code isn\'t a recovery code</string>
@@ -243,12 +231,10 @@
     <string name="settings_sync_code_saved_check">I\'ve saved my recovery code</string>
     <string name="settings_sync_code_created_title">Save your recovery code</string>
     <string name="settings_sync_show_code_title">Show recovery code</string>
-    <string name="settings_sync_show_code_summary">Reveal the code that unlocks your bookmarks and backups</string>
     <string name="settings_sync_code_copy">Copy</string>
     <string name="settings_sync_code_save_file">Save to file</string>
     <string name="settings_sync_code_done">Done</string>
     <string name="settings_sync_export_title">Save recovery code to file</string>
-    <string name="settings_sync_export_summary">Export the code as a text file you can store</string>
     <!-- DELIBERATELY UNTRANSLATED (English-only, falls back from every
          locale): it is the default FILE NAME handed to the SAF picker, not
          UI text. Keeping it ASCII keeps the file recognisable across
@@ -264,13 +250,7 @@
     <string name="settings_sync_export_failed">Couldn\'t save the file</string>
     <string name="settings_sync_code_copied">Recovery code copied</string>
     <string name="settings_sync_code_unavailable">Recovery code unavailable</string>
-    <string name="settings_sync_now_title">Sync now</string>
-    <string name="settings_sync_now_started">Syncing bookmarks…</string>
     <string name="settings_sync_now_failed">Couldn\'t sync bookmarks. Check your connection and try again</string>
-    <plurals name="settings_sync_now_done">
-        <item quantity="one">Synced %d bookmark</item>
-        <item quantity="other">Synced %d bookmarks</item>
-    </plurals>
     <string name="settings_sync_auth_subtitle">Verify it\'s you to reveal the recovery code</string>
     <!-- Sync settings section headers. -->
     <string name="settings_sync_cat_code">Recovery code</string>
@@ -396,7 +376,6 @@
         <item quantity="other">%d of the selected files are being restored. Removing them will cancel those restores.</item>
     </plurals>
     <string name="settings_sync_sign_out_title">Turn off sync</string>
-    <string name="settings_sync_sign_out_summary">Stop syncing and remove the keys from this device</string>
     <string name="settings_sync_sign_out_message">Sync turns off and the recovery code is removed from this device. Your bookmarks stay. Save the code first if you want to sync again.</string>
     <string name="settings_sync_sign_out_action">Turn off</string>
     <string name="settings_sync_signed_out">Bookmark sync turned off</string>

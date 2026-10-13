@@ -4313,7 +4313,25 @@ children — the card edges do the grouping).
   flips to the replace wording and `showLinkDialog` CONFIRMS first
   (`settings_sync_link_replace_*`): the current code is the ONLY key to
   whatever sits under it in the folder. Re-gating it on `!hasKey` re-breaks
-  the two-phones-two-codes case.
+  the two-phones-two-codes case. **The code alone joins nothing, and every
+  string on this door says so.** Under the hosted service one code WAS one
+  backup; now the code is the key plus the NAME of the account directory
+  (`Firedown Backup/<account>/`) inside whatever folder each device chose,
+  so two devices share a backup only when they also use the same folder.
+  The door's copy shipped for the whole 1.2.01 cycle as "Both devices will
+  share one backup" / "scan this from your other device to share this
+  backup" / "Code restored. Your backups can be read on this device" —
+  the hosted model's truth, which sends a second phone to an empty Backups
+  list expecting files that live in a folder it never picked. Now the row
+  summaries, the input dialog, the replace confirm and the QR hint all end
+  in "then choose the same backup folder", and the link snackbar splits on
+  `hasFolder()` (`settings_sync_link_ok` / `_ok_choose_folder`) so the
+  next step is named. Don't write "share a backup" about the code again;
+  it is the folder that is shared. The 17 `settings_sync_*` strings of the
+  retired focused-bookmarks screen (`_setup_*`, `_restore_*`, `_now_*`,
+  `_sign_out_summary`, `_downloads_active`, …) went with this audit — dead
+  resources whose text still described a server ("Der Server sieht sie
+  nie") are exactly what a later wire-up would ship unread.
 - **The code travels by QR as well as by typing, and the SCANNER IS THE P2P
   ONE** (`P2pScanFragment`, registered as a `<dialog>` in
   `nav_graph_settings` too; `ARG_PREFIX` empty, `ARG_TITLE_RES` added; the

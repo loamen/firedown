@@ -2,6 +2,7 @@
 
 - Backup: the hosted Cloud Backup is replaced by backing up to a folder of your choice — Google Drive, Dropbox, Nextcloud, an SD card or the phone itself, anything the system folder picker offers. Files are encrypted on the phone before they are written, under the same recovery code bookmark sync uses; the Backups list, restore, open-without-restoring, "Free up space" and the download menu's "Back up" all work against the folder. Nothing goes through a Firedown server. Choosing the folder first explains how to reach your cloud app in Android's picker, and warns if you pick the phone's own Download/Firedown folder. A backup that fails says why, in the Backups list and as a notification
 - Removed with the hosted service: storage credit and its Bitcoin payments, "Pair a browser" and the web client. Restore anything you still want from the old Cloud Backup to this phone BEFORE updating, then back it up into a folder
+- Backup: "I have a recovery code" now says what it does under the folder model — the code is the key, and a second phone reads the first one's backups only once it also uses the same backup folder; the row, the dialog, the replace warning, the QR hint and the confirmation no longer claim that the code alone shares a backup
 
 ## [1.2.00] - 2026-10-08
 
