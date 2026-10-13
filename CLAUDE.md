@@ -4203,7 +4203,9 @@ children — the card edges do the grouping).
   folder — "Firedown Backup" over "On <provider>", the
   backed-up size headline, a file-count caption; the ⋮-menu hint while
   nothing is backed up yet; "Transfer in progress…" while a worker runs);
-  set up + folder LOST (the folder-off glyph, "Can't reach your backup
+  set up + folder LOST (the cloud-off glyph, `cloud_off_24` — the healthy
+  glyph's struck twin, so the pair stays one family; the same glyph is the
+  folder-lost notification's small icon — "Can't reach your backup
   folder", the LAST SEEN totals, the body line saying what to do — the card
   states the fact, the CTA acts); not set up → the dashed ROADMAP ① Create
   recovery code → ② Choose backup folder → ③ Back up a finished download

@@ -9,7 +9,7 @@
                                    size headline, and a caption with the file
                                    count — or the ⋮-menu hint while nothing is
                                    backed up yet
-    B · set up, folder LOST      — the same frame with the folder-off glyph,
+    B · set up, folder LOST      — the same frame with the cloud-off glyph,
                                    "Can't reach your backup folder", the last
                                    seen totals, and the body line that says
                                    what to do (cb_alert)

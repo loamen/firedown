@@ -1,4 +1,8 @@
-<!-- Cloud with a slash: bookmark-sync "error/offline" state. Untinted; tinted at use site. -->
+<!-- Cloud with a slash: the bookmark-sync "error/offline" state, and since
+     2026-10 the Backup hero's folder-LOST state, the "can't reach your backup
+     folder" notification's small icon and the "Delete backed-up files" row —
+     the struck twin of cloud_upload_24 (it replaced a folder-off glyph so the
+     healthy/lost pair stays in one family). Untinted; tinted at use site. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

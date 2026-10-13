@@ -486,7 +486,7 @@ public class VaultBackupWorker extends Worker {
                 : mContext.getString(R.string.folder_backup_lost_notif_text_noname);
         Notification notification = new NotificationCompat.Builder(
                 mContext, App.DOWNLOADS_NOTIFICATION_ID)
-                .setSmallIcon(R.drawable.ic_folder_off_24)
+                .setSmallIcon(R.drawable.cloud_off_24)
                 .setLargeIcon(BitmapFactory.decodeResource(
                         mContext.getResources(), R.mipmap.ic_launcher_round))
                 .setContentTitle(title)

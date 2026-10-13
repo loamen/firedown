@@ -4,8 +4,10 @@
      multi-select action, the Settings / Backup-screen rows, the Downloads
      banner, the popups' row, the Backup hero's reachable state and every
      backup notification. Replaced the Material "drive_folder_upload" folder
-     (cloud_upload_24) at the maintainer's request (2026-10); the hero's
-     LOST state keeps ic_folder_off_24 — the folder is what went missing.
+     (ic_folder_upload_24) at the maintainer's request (2026-10), and the
+     folder-off glyph that paired with it went the same way: the hero's
+     LOST state, the folder-lost notification and the "Delete backed-up
+     files" row wear cloud_off_24, so the family is one cloud throughout.
      Material Symbols draw in a 960 box, hence the viewport. The export's
      trailing zero-length subpath was dropped. No baked android:tint, like
      its siblings: the options sheet / preference adapter / notification

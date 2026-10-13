@@ -28,8 +28,8 @@ import com.solarized.firedown.settings.ui.FlatPreference;
  *       it sits in — Google Drive, Dropbox, Nextcloud, this phone…), the
  *       backed-up size headline and a caption with the file count. While
  *       nothing is backed up yet the caption is the ⋮-menu hint instead.</li>
- *   <li><b>Set up, folder LOST</b> — the same frame with the folder-off
- *       glyph, "Can't reach your backup folder", the LAST SEEN totals (so the
+ *   <li><b>Set up, folder LOST</b> — the same frame with the cloud-off
+ *       glyph (the struck twin of the healthy one), "Can't reach your backup folder", the LAST SEEN totals (so the
  *       user knows what was there), and the body line saying what to do. The
  *       CTA under the hero reads "Choose the folder again" in that state
  *       (SyncSettingsFragment); this card only states the fact.</li>
@@ -166,7 +166,7 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
             title.setTextColor(onSurface);
             alert.setVisibility(View.GONE);
         } else {
-            glyph.setImageResource(R.drawable.ic_folder_off_24);
+            glyph.setImageResource(R.drawable.cloud_off_24);
             title.setText(R.string.folder_backup_lost_title);
             title.setTextColor(error);
             alert.setText(R.string.folder_backup_lost_body);

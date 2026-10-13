@@ -26,6 +26,6 @@
         android:title="@string/settings_cloud_backup_delete_title"
         android:summary="@string/settings_cloud_backup_delete_message"
         app:singleLineTitle="false"
-        app:icon="@drawable/ic_folder_off_24" />
+        app:icon="@drawable/cloud_off_24" />
 
 </PreferenceScreen>
