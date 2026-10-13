@@ -646,7 +646,11 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
                     return;
                 }
                 if (info.getState() == WorkInfo.State.FAILED) {
-                    showErrorSnackbar(R.string.cloud_backup_failed);
+                    // The worker's own slug → sentence mapping, so this says the
+                    // same thing the Backups list and the notification say.
+                    String slug = info.getOutputData().getString(
+                            VaultBackupWorker.KEY_ERROR_SLUG);
+                    showErrorSnackbar(VaultBackupWorker.failureSummaryRes(slug));
                 }
             }
         });

@@ -478,6 +478,12 @@
     <string name="folder_backup_state_not_set_up">सेट नहीं है</string>
     <string name="folder_backup_transfer_lost">बैकअप फ़ोल्डर तक नहीं पहुँच पा रहे। इसे बैकअप में फिर से चुनें</string>
     <string name="folder_backup_transfer_not_set_up">बैकअप अभी सेट नहीं है। बैकअप में सेटअप पूरा करें</string>
+    <string name="folder_backup_state_file">फ़ाइल पढ़ी नहीं जा सकी</string>
+    <string name="folder_backup_transfer_file">फ़ाइल पढ़ी नहीं जा सकी। शायद वह हटा दी गई या कहीं और ले जाई गई है</string>
+    <string name="folder_backup_state_write">लिखना विफल</string>
+    <string name="folder_backup_transfer_write">बैकअप फ़ोल्डर में लिखा नहीं जा सका। खाली जगह जाँचें और फिर कोशिश करें</string>
+    <string name="folder_backup_failed_notif_title">%1$s का बैकअप नहीं हो सका</string>
+    <string name="folder_backup_failed_notif_title_noname">एक फ़ाइल का बैकअप नहीं हो सका</string>
     <string name="folder_backup_choose_first">पहले एक बैकअप फ़ोल्डर चुनें</string>
     <string name="cloud_backup_setup_title">बैकअप सेट करें</string>
     <string name="cloud_backup_setup_message">डाउनलोड को Google Drive, Dropbox, SD कार्ड या इस फ़ोन से आगे टिकने वाली किसी और जगह पर आपके चुने फ़ोल्डर में कॉपी करने से पहले एन्क्रिप्ट किया जाता है। आपको एक रिकवरी कोड मिलता है — एकमात्र कुंजी, जो बुकमार्क सिंक के साथ साझा है। खो जाने पर इसे वापस नहीं पाया जा सकता।</string>
@@ -485,7 +491,7 @@
     <string name="cloud_backup_started">बैकअप हो रहा है…</string>
     <string name="cloud_backup_none_eligible">बैकअप लेने के लिए पूर्ण फ़ाइलें चुनें</string>
     <string name="cloud_backup_safe_excluded">सेफ़ फ़ोल्डर की फ़ाइलें इसी डिवाइस पर रहती हैं और उनका बैकअप नहीं लिया जा सकता</string>
-    <string name="cloud_backup_failed">बैकअप नहीं हो सका। जाँचें कि बैकअप फ़ोल्डर उपलब्ध है और फिर कोशिश करें</string>
+    <string name="cloud_backup_failed">इस फ़ाइल का बैकअप नहीं हो सका। फिर कोशिश करें</string>
     <string name="cloud_backup_notification_title">बैकअप हो रहा है</string>
     <string name="cloud_backup_files_title">बैकअप</string>
     <string name="cloud_backup_list_empty">अभी तक कोई बैकअप नहीं</string>

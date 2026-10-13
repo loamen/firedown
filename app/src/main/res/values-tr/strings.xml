@@ -542,6 +542,12 @@
     <string name="folder_backup_state_not_set_up">Ayarlanmadı</string>
     <string name="folder_backup_transfer_lost">Yedekleme klasörüne erişilemiyor. Yedekleme\'de yeniden seçin</string>
     <string name="folder_backup_transfer_not_set_up">Yedekleme henüz ayarlanmadı. Kurulumu Yedekleme\'de tamamlayın</string>
+    <string name="folder_backup_state_file">Dosya okunamıyor</string>
+    <string name="folder_backup_transfer_file">Dosya okunamadı. Silinmiş ya da taşınmış olabilir</string>
+    <string name="folder_backup_state_write">Yazma başarısız</string>
+    <string name="folder_backup_transfer_write">Yedek klasörüne yazılamadı. Boş alanı kontrol edip yeniden deneyin</string>
+    <string name="folder_backup_failed_notif_title">%1$s yedeklenemedi</string>
+    <string name="folder_backup_failed_notif_title_noname">Bir dosya yedeklenemedi</string>
     <string name="folder_backup_choose_first">Önce bir yedekleme klasörü seçin</string>
     <string name="cloud_backup_setup_title">Yedeklemeyi ayarla</string>
     <string name="cloud_backup_setup_message">İndirmeler, Google Drive, Dropbox, SD kart veya bu telefondan daha uzun ömürlü başka bir yerde seçtiğiniz bir klasöre kopyalanmadan önce şifrelenir. Yer imi eşitlemeyle ortak tek anahtar olan bir kurtarma kodu alırsınız. Kaybolursa geri alınamaz.</string>
@@ -549,7 +555,7 @@
     <string name="cloud_backup_started">Yedekleniyor…</string>
     <string name="cloud_backup_none_eligible">Yedeklemek için tamamlanmış dosyaları seçin</string>
     <string name="cloud_backup_safe_excluded">Kasa klasöründeki dosyalar bu cihazda kalır ve yedeklenemez</string>
-    <string name="cloud_backup_failed">Yedeklenemedi. Yedekleme klasörüne erişilebildiğini kontrol edip yeniden deneyin</string>
+    <string name="cloud_backup_failed">Bu dosya yedeklenemedi. Yeniden deneyin</string>
     <string name="cloud_backup_notification_title">Yedekleniyor</string>
     <string name="cloud_backup_files_title">Yedekler</string>
     <string name="cloud_backup_list_empty">Henüz yedek yok</string>

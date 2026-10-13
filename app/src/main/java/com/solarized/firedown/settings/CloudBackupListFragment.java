@@ -1178,8 +1178,8 @@ public class CloudBackupListFragment extends Fragment
     private static final String SLUG_NOT_SET_UP = VaultBackupWorker.SLUG_NOT_SET_UP;
 
     /**
-     * The COMPACT cause for the transfer row's state line, or null for the
-     * generic "Backup failed".
+     * The COMPACT cause for the transfer row's state line ("Backup failed" for
+     * a null or unknown slug — never null while attached).
      *
      * <p>Split from {@link #failureText} because the two have opposite budgets.
      * The row's state line is {@code singleLine} + {@code ellipsize=end} at 11sp,
@@ -1189,24 +1189,17 @@ public class CloudBackupListFragment extends Fragment
      * tells the user what to do. Two or three words fit; a sentence never will,
      * in any language.
      *
-     * <p>These stay parallel to {@link #failureText}'s cases — same slugs, same
-     * meanings, different lengths. The sentence is not lost: it goes to the
-     * snackbar, with the Backup screen one tap away where the folder is the
-     * cause.
+     * <p>Both lengths come from the worker's ONE slug mapping
+     * ({@code VaultBackupWorker.failureLabelRes} / {@code failureSummaryRes}),
+     * so they cannot drift. The sentence is not lost: it goes to the snackbar,
+     * with the Backup screen one tap away where the folder is the cause.
      */
     @Nullable
     private String failureShort(@Nullable String slug) {
-        if (slug == null || !isAdded()) {
+        if (!isAdded()) {
             return null;
         }
-        switch (slug) {
-            case SLUG_FOLDER:
-                return getString(R.string.folder_backup_state_lost);
-            case SLUG_NOT_SET_UP:
-                return getString(R.string.folder_backup_state_not_set_up);
-            default:
-                return null;
-        }
+        return getString(VaultBackupWorker.failureLabelRes(slug));
     }
 
     /**
@@ -1236,26 +1229,22 @@ public class CloudBackupListFragment extends Fragment
             return;
         }
         Snackbar bar = Snackbar.make(view, text, Snackbar.LENGTH_LONG);
-        // Both slugs are fixed on the Backup screen (choose the folder / finish
-        // the setup), so both carry the door.
-        bar.setAction(R.string.settings_account_title, v -> NavigationUtils.navigateSafe(
-                mNavController, R.id.action_cloud_backup_files_to_sync));
+        // The folder and not-set-up slugs are fixed on the Backup screen (choose
+        // the folder / finish the setup), so they carry the door; a file or
+        // write failure has no screen to go to — its row is right here.
+        if (VaultBackupWorker.failureFixedInBackupScreen(slug)) {
+            bar.setAction(R.string.settings_account_title, v -> NavigationUtils.navigateSafe(
+                    mNavController, R.id.action_cloud_backup_files_to_sync));
+        }
         bar.show();
     }
 
     @Nullable
     private String failureText(@Nullable String slug, long fileBytes) {
-        if (slug == null || !isAdded()) {
+        if (!isAdded()) {
             return null;
         }
-        switch (slug) {
-            case SLUG_FOLDER:
-                return getString(R.string.folder_backup_transfer_lost);
-            case SLUG_NOT_SET_UP:
-                return getString(R.string.folder_backup_transfer_not_set_up);
-            default:
-                return null;
-        }
+        return getString(VaultBackupWorker.failureSummaryRes(slug));
     }
 
     /** Confirms then removes every selected file from the cloud (optimistically). */

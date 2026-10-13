@@ -642,6 +642,12 @@
     <string name="folder_backup_state_not_set_up">Nicht eingerichtet</string>
     <string name="folder_backup_transfer_lost">Backup-Ordner nicht erreichbar. Wähle ihn unter „Backup“ erneut</string>
     <string name="folder_backup_transfer_not_set_up">Backup ist noch nicht eingerichtet. Schließe die Einrichtung unter „Backup“ ab</string>
+    <string name="folder_backup_state_file">Datei nicht lesbar</string>
+    <string name="folder_backup_transfer_file">Die Datei konnte nicht gelesen werden. Sie wurde vielleicht gelöscht oder verschoben</string>
+    <string name="folder_backup_state_write">Schreiben fehlgeschlagen</string>
+    <string name="folder_backup_transfer_write">In den Sicherungsordner konnte nicht geschrieben werden. Prüfe den freien Speicher und versuche es erneut</string>
+    <string name="folder_backup_failed_notif_title">%1$s konnte nicht gesichert werden</string>
+    <string name="folder_backup_failed_notif_title_noname">Eine Datei konnte nicht gesichert werden</string>
     <string name="folder_backup_choose_first">Wähle zuerst einen Backup-Ordner</string>
     <string name="cloud_backup_setup_title">Backup einrichten</string>
     <string name="cloud_backup_setup_message">Downloads werden verschlüsselt, bevor sie in einen Ordner deiner Wahl kopiert werden – auf Google Drive, Dropbox, einer SD-Karte oder an einem anderen Ort, der dieses Handy überdauert. Du erhältst einen Wiederherstellungscode – den einzigen Schlüssel, geteilt mit dem Lesezeichen-Sync. Bei Verlust ist er nicht wiederherstellbar.</string>
@@ -649,7 +655,7 @@
     <string name="cloud_backup_started">Wird gesichert…</string>
     <string name="cloud_backup_none_eligible">Wähle fertige Dateien zum Sichern aus</string>
     <string name="cloud_backup_safe_excluded">Dateien im Safe-Ordner bleiben auf diesem Gerät und können nicht gesichert werden</string>
-    <string name="cloud_backup_failed">Sichern fehlgeschlagen. Prüfe, ob der Backup-Ordner erreichbar ist, und versuche es erneut</string>
+    <string name="cloud_backup_failed">Diese Datei konnte nicht gesichert werden. Versuche es erneut</string>
     <string name="cloud_backup_notification_title">Sicherung läuft</string>
     <string name="cloud_backup_files_title">Backups</string>
     <string name="cloud_backup_list_empty">Noch keine Backups</string>

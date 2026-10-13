@@ -639,6 +639,12 @@
     <string name="folder_backup_state_not_set_up">未設定</string>
     <string name="folder_backup_transfer_lost">バックアップフォルダーに接続できません。「バックアップ」で選び直してください</string>
     <string name="folder_backup_transfer_not_set_up">バックアップはまだ設定されていません。「バックアップ」で設定を完了してください</string>
+    <string name="folder_backup_state_file">ファイルを読めません</string>
+    <string name="folder_backup_transfer_file">ファイルを読み取れませんでした。削除または移動された可能性があります</string>
+    <string name="folder_backup_state_write">書き込みに失敗</string>
+    <string name="folder_backup_transfer_write">バックアップフォルダーに書き込めませんでした。空き容量を確認してもう一度お試しください</string>
+    <string name="folder_backup_failed_notif_title">%1$s をバックアップできませんでした</string>
+    <string name="folder_backup_failed_notif_title_noname">ファイルをバックアップできませんでした</string>
     <string name="folder_backup_choose_first">先にバックアップフォルダーを選択してください</string>
     <string name="cloud_backup_setup_title">バックアップを設定</string>
     <string name="cloud_backup_setup_message">ダウンロードは、Google ドライブ、Dropbox、SD カードなど、この端末より長く残る場所に選んだフォルダーへコピーされる前に暗号化されます。復元コードが発行されます。これが唯一の鍵で、ブックマーク同期と共通です。紛失すると復元できません。</string>
@@ -646,7 +652,7 @@
     <string name="cloud_backup_started">バックアップ中…</string>
     <string name="cloud_backup_none_eligible">バックアップする完了済みファイルを選択してください</string>
     <string name="cloud_backup_safe_excluded">セーフフォルダのファイルはこの端末に留まり、バックアップできません</string>
-    <string name="cloud_backup_failed">バックアップできませんでした。バックアップフォルダーに接続できるか確認して、もう一度お試しください</string>
+    <string name="cloud_backup_failed">このファイルをバックアップできませんでした。もう一度お試しください</string>
     <string name="cloud_backup_notification_title">バックアップ中</string>
     <string name="cloud_backup_files_title">バックアップ</string>
     <string name="cloud_backup_list_empty">バックアップはまだありません</string>

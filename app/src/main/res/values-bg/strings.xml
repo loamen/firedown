@@ -465,6 +465,12 @@
     <string name="folder_backup_state_not_set_up">Не е настроено</string>
     <string name="folder_backup_transfer_lost">Папката за архивиране е недостъпна. Изберете я отново в „Архивиране“</string>
     <string name="folder_backup_transfer_not_set_up">Архивирането още не е настроено. Завършете настройката в „Архивиране“</string>
+    <string name="folder_backup_state_file">Файлът не може да се прочете</string>
+    <string name="folder_backup_transfer_file">Файлът не може да бъде прочетен. Може да е изтрит или преместен</string>
+    <string name="folder_backup_state_write">Записът не успя</string>
+    <string name="folder_backup_transfer_write">Не може да се записва в папката за архив. Проверете свободното място и опитайте отново</string>
+    <string name="folder_backup_failed_notif_title">%1$s не можа да бъде архивиран</string>
+    <string name="folder_backup_failed_notif_title_noname">Файл не можа да бъде архивиран</string>
     <string name="folder_backup_choose_first">Първо изберете папка за архивиране</string>
     <string name="cloud_backup_setup_title">Настройване на архивирането</string>
     <string name="cloud_backup_setup_message">Изтеглянията се шифроват, преди да бъдат копирани в папка по ваш избор в Google Drive, Dropbox, на SD карта или друго място, което надживява този телефон. Получавате код за възстановяване — единственият ключ, споделен със синхронизирането на отметки. Не може да бъде възстановен, ако бъде изгубен.</string>
@@ -472,7 +478,7 @@
     <string name="cloud_backup_started">Архивиране…</string>
     <string name="cloud_backup_none_eligible">Изберете завършени файлове за архивиране</string>
     <string name="cloud_backup_safe_excluded">Файловете в Сейфа остават на това устройство и не могат да се архивират</string>
-    <string name="cloud_backup_failed">Неуспешно архивиране. Проверете дали папката за архивиране е достъпна и опитайте отново</string>
+    <string name="cloud_backup_failed">Този файл не можа да бъде архивиран. Опитайте отново</string>
     <string name="cloud_backup_notification_title">Архивиране</string>
     <string name="cloud_backup_files_title">Архиви</string>
     <string name="cloud_backup_list_empty">Все още няма архиви</string>

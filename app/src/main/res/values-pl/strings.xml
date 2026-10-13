@@ -546,6 +546,12 @@
     <string name="folder_backup_state_not_set_up">Nieskonfigurowane</string>
     <string name="folder_backup_transfer_lost">Brak dostępu do folderu kopii zapasowej. Wybierz go ponownie w Kopii zapasowej</string>
     <string name="folder_backup_transfer_not_set_up">Kopia zapasowa nie jest jeszcze skonfigurowana. Dokończ konfigurację w Kopii zapasowej</string>
+    <string name="folder_backup_state_file">Nie można odczytać pliku</string>
+    <string name="folder_backup_transfer_file">Nie udało się odczytać pliku. Mógł zostać usunięty lub przeniesiony</string>
+    <string name="folder_backup_state_write">Zapis nie powiódł się</string>
+    <string name="folder_backup_transfer_write">Nie udało się zapisać do folderu kopii. Sprawdź wolne miejsce i spróbuj ponownie</string>
+    <string name="folder_backup_failed_notif_title">Nie udało się zapisać kopii pliku %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">Nie udało się zapisać kopii pliku</string>
     <string name="folder_backup_choose_first">Najpierw wybierz folder kopii zapasowej</string>
     <string name="cloud_backup_setup_title">Skonfiguruj kopię zapasową</string>
     <string name="cloud_backup_setup_message">Pobrane pliki są szyfrowane, zanim trafią do wybranego folderu na Google Drive, Dropboksie, karcie SD lub w innym miejscu, które przetrwa ten telefon. Otrzymujesz kod odzyskiwania — jedyny klucz, wspólny z synchronizacją zakładek. Po utracie nie da się go odzyskać.</string>
@@ -553,7 +559,7 @@
     <string name="cloud_backup_started">Tworzenie kopii zapasowej…</string>
     <string name="cloud_backup_none_eligible">Wybierz ukończone pliki do utworzenia kopii zapasowej</string>
     <string name="cloud_backup_safe_excluded">Pliki w Sejfie pozostają na tym urządzeniu i nie można ich zarchiwizować</string>
-    <string name="cloud_backup_failed">Nie udało się utworzyć kopii. Sprawdź, czy folder kopii zapasowej jest dostępny, i spróbuj ponownie</string>
+    <string name="cloud_backup_failed">Nie udało się zapisać kopii tego pliku. Spróbuj ponownie</string>
     <string name="cloud_backup_notification_title">Tworzenie kopii zapasowej</string>
     <string name="cloud_backup_files_title">Kopie zapasowe</string>
     <string name="cloud_backup_list_empty">Brak kopii zapasowych</string>

@@ -352,6 +352,12 @@
     <string name="folder_backup_state_not_set_up">Not set up</string>
     <string name="folder_backup_transfer_lost">Can\'t reach the backup folder. Choose it again in Backup</string>
     <string name="folder_backup_transfer_not_set_up">Backup isn\'t set up yet. Finish the setup in Backup</string>
+    <string name="folder_backup_state_file">File unreadable</string>
+    <string name="folder_backup_transfer_file">Couldn\'t read the file. It may have been deleted or moved</string>
+    <string name="folder_backup_state_write">Write failed</string>
+    <string name="folder_backup_transfer_write">Couldn\'t write to the backup folder. Check its free space and try again</string>
+    <string name="folder_backup_failed_notif_title">Couldn\'t back up %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">Couldn\'t back up a file</string>
     <string name="folder_backup_choose_first">Choose a backup folder first</string>
     <string name="cloud_backup_setup_title">Set up backup</string>
     <string name="cloud_backup_setup_message">Downloads are encrypted before they are copied to a folder you choose on Google Drive, Dropbox, an SD card or another place that outlives this phone. You get a recovery code, the only key, shared with bookmark sync. It can\'t be recovered if lost.</string>
@@ -359,7 +365,7 @@
     <string name="cloud_backup_started">Backing up…</string>
     <string name="cloud_backup_none_eligible">Select finished files to back up</string>
     <string name="cloud_backup_safe_excluded">Safe Folder files stay on this device and can\'t be backed up</string>
-    <string name="cloud_backup_failed">Couldn\'t back up. Check that the backup folder is reachable and try again</string>
+    <string name="cloud_backup_failed">Couldn\'t back up this file. Try again</string>
     <string name="cloud_backup_notification_title">Backing up</string>
     <!-- Backups list (backed-up files) + per-item restore/remove. -->
     <string name="cloud_backup_files_title">Backups</string>

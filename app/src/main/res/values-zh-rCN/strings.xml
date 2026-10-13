@@ -639,6 +639,12 @@
     <string name="folder_backup_state_not_set_up">未设置</string>
     <string name="folder_backup_transfer_lost">无法访问备份文件夹。请在“备份”中重新选择</string>
     <string name="folder_backup_transfer_not_set_up">备份尚未设置。请在“备份”中完成设置</string>
+    <string name="folder_backup_state_file">文件无法读取</string>
+    <string name="folder_backup_transfer_file">无法读取该文件，它可能已被删除或移动</string>
+    <string name="folder_backup_state_write">写入失败</string>
+    <string name="folder_backup_transfer_write">无法写入备份文件夹。请检查可用空间后重试</string>
+    <string name="folder_backup_failed_notif_title">无法备份 %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">无法备份一个文件</string>
     <string name="folder_backup_choose_first">请先选择备份文件夹</string>
     <string name="cloud_backup_setup_title">设置备份</string>
     <string name="cloud_backup_setup_message">下载内容会先加密，再复制到你在 Google 云端硬盘、Dropbox、SD 卡或其他能比这部手机留存更久的地方选择的文件夹。你会获得一个恢复码——唯一的密钥，与书签同步共用。丢失后无法找回。</string>
@@ -646,7 +652,7 @@
     <string name="cloud_backup_started">正在备份…</string>
     <string name="cloud_backup_none_eligible">选择已完成的文件进行备份</string>
     <string name="cloud_backup_safe_excluded">保险箱中的文件仅保留在此设备上，无法备份</string>
-    <string name="cloud_backup_failed">无法备份。请检查备份文件夹是否可访问，然后重试</string>
+    <string name="cloud_backup_failed">无法备份此文件，请重试</string>
     <string name="cloud_backup_notification_title">正在备份</string>
     <string name="cloud_backup_files_title">备份</string>
     <string name="cloud_backup_list_empty">暂无备份</string>

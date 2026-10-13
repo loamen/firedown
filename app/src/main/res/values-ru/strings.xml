@@ -548,6 +548,12 @@
     <string name="folder_backup_state_not_set_up">Не настроено</string>
     <string name="folder_backup_transfer_lost">Папка резервной копии недоступна. Выберите её заново в разделе «Резервная копия»</string>
     <string name="folder_backup_transfer_not_set_up">Резервное копирование ещё не настроено. Завершите настройку в разделе «Резервная копия»</string>
+    <string name="folder_backup_state_file">Файл не читается</string>
+    <string name="folder_backup_transfer_file">Не удалось прочитать файл. Возможно, он удалён или перемещён</string>
+    <string name="folder_backup_state_write">Ошибка записи</string>
+    <string name="folder_backup_transfer_write">Не удалось записать в папку резервной копии. Проверьте свободное место и повторите попытку</string>
+    <string name="folder_backup_failed_notif_title">Не удалось создать копию %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">Не удалось создать копию файла</string>
     <string name="folder_backup_choose_first">Сначала выберите папку резервной копии</string>
     <string name="cloud_backup_setup_title">Настроить резервное копирование</string>
     <string name="cloud_backup_setup_message">Загрузки шифруются перед копированием в выбранную вами папку на Google Диске, в Dropbox, на SD-карте или в другом месте, которое переживёт этот телефон. Вы получаете код восстановления — единственный ключ, общий с синхронизацией закладок. При утере восстановить его невозможно.</string>
@@ -555,7 +561,7 @@
     <string name="cloud_backup_started">Резервное копирование…</string>
     <string name="cloud_backup_none_eligible">Выберите завершённые файлы для копии</string>
     <string name="cloud_backup_safe_excluded">Файлы в Сейфе остаются на этом устройстве, их нельзя резервировать</string>
-    <string name="cloud_backup_failed">Не удалось создать резервную копию. Проверьте, доступна ли папка резервной копии, и попробуйте снова</string>
+    <string name="cloud_backup_failed">Не удалось создать копию этого файла. Повторите попытку</string>
     <string name="cloud_backup_notification_title">Резервное копирование</string>
     <string name="cloud_backup_files_title">Копии</string>
     <string name="cloud_backup_list_empty">Пока нет копий</string>

@@ -542,6 +542,12 @@
     <string name="folder_backup_state_not_set_up">Não configurado</string>
     <string name="folder_backup_transfer_lost">Não é possível acessar a pasta de backup. Escolha-a novamente em Backup</string>
     <string name="folder_backup_transfer_not_set_up">O backup ainda não está configurado. Conclua a configuração em Backup</string>
+    <string name="folder_backup_state_file">Arquivo ilegível</string>
+    <string name="folder_backup_transfer_file">Não foi possível ler o arquivo. Ele pode ter sido excluído ou movido</string>
+    <string name="folder_backup_state_write">Falha ao gravar</string>
+    <string name="folder_backup_transfer_write">Não foi possível gravar na pasta de backup. Verifique o espaço livre e tente de novo</string>
+    <string name="folder_backup_failed_notif_title">Não foi possível fazer backup de %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">Não foi possível fazer backup de um arquivo</string>
     <string name="folder_backup_choose_first">Escolha primeiro uma pasta de backup</string>
     <string name="cloud_backup_setup_title">Configurar backup</string>
     <string name="cloud_backup_setup_message">Os downloads são criptografados antes de serem copiados para uma pasta à sua escolha no Google Drive, Dropbox, cartão SD ou outro lugar que sobreviva a este celular. Você recebe um código de recuperação, a única chave, compartilhada com a sincronização de favoritos. Não pode ser recuperado se for perdido.</string>
@@ -549,7 +555,7 @@
     <string name="cloud_backup_started">Fazendo backup…</string>
     <string name="cloud_backup_none_eligible">Selecione arquivos concluídos para fazer backup</string>
     <string name="cloud_backup_safe_excluded">Os arquivos da Pasta segura permanecem neste dispositivo e não podem ser copiados</string>
-    <string name="cloud_backup_failed">Não foi possível fazer o backup. Verifique se a pasta de backup está acessível e tente novamente</string>
+    <string name="cloud_backup_failed">Não foi possível fazer backup deste arquivo. Tente de novo</string>
     <string name="cloud_backup_notification_title">Fazendo backup</string>
     <string name="cloud_backup_files_title">Backups</string>
     <string name="cloud_backup_list_empty">Nenhum backup ainda</string>

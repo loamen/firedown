@@ -16,6 +16,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.hilt.work.HiltWorker;
@@ -107,6 +108,14 @@ public class VaultBackupWorker extends Worker {
     /** No backup folder has been chosen (a job queued by a build that still
      *  had one, or the folder was forgotten between enqueue and run). */
     public static final String SLUG_NOT_SET_UP = "not-set-up";
+    /** The FILE could not be read (deleted mid-flight, or a foreign-owned
+     *  restored file whose grant vanished). Permanent for this file. */
+    public static final String SLUG_FILE = "file";
+    /** A write on a REACHABLE folder kept failing past the retry ceiling (a
+     *  provider refusing the write, a full disk). */
+    public static final String SLUG_WRITE = "write";
+    /** Anything else — the generic sentence, never silence. */
+    public static final String SLUG_ERROR = "error";
 
     /** Progress-data keys the Backups list reads to render a per-item
      *  determinate bar (KEY_NAME/KEY_MIME above identify the file). */
@@ -118,6 +127,9 @@ public class VaultBackupWorker extends Worker {
     /** The ONE "can't reach your backup folder" notification — a fixed id so
      *  a burst of failing backups replaces it rather than stacking. */
     private static final int NOTIFICATION_FOLDER_LOST_ID = 0x6246; // "Bf"
+    /** The ONE "couldn't back up <file>" notification for every OTHER terminal
+     *  failure — same fixed-id rule; the Backups list holds the per-file rows. */
+    private static final int NOTIFICATION_FAILED_ID = 0x6245; // "Be"
 
     /** Give-up ceiling for the retry branch: a backup that keeps failing on a
      *  reachable folder (a provider that refuses the write, a full disk) must
@@ -208,7 +220,7 @@ public class VaultBackupWorker extends Worker {
             if (BuildConfig.DEBUG) {
                 Log.e(TAG, "backup failed: no path in input data");
             }
-            return failure();
+            return failTerminal(name, SLUG_ERROR);
         }
         FolderStore store = new FolderStore(mContext, mPrefs);
         if (!store.isConfigured()) {
@@ -236,7 +248,7 @@ public class VaultBackupWorker extends Worker {
                 if (BuildConfig.DEBUG) {
                     Log.e(TAG, "backup failed: file missing/unreadable (no SAF grant?): " + path);
                 }
-                return failure();
+                return failTerminal(name, SLUG_FILE);
             }
         }
 
@@ -317,7 +329,7 @@ public class VaultBackupWorker extends Worker {
                 Log.e(TAG, "backup failed: file unreadable", e);
             }
             awaitLastProgress();
-            return failure();
+            return failTerminal(name, SLUG_FILE);
         } catch (IOException e) {
             // A failed write on a reachable folder, a cancel, a provider hiccup:
             // retry with WorkManager's backoff, bounded.
@@ -325,8 +337,13 @@ public class VaultBackupWorker extends Worker {
                 Log.e(TAG, "backup attempt " + getRunAttemptCount() + " failed (transient)", e);
             }
             awaitLastProgress();
-            if (isStopped() || getRunAttemptCount() >= MAX_RUN_ATTEMPTS) {
-                return failure();
+            if (isStopped()) {
+                // A cancel lands here as an IOException on the stream; it is the
+                // user's own stop, not a failure to announce.
+                return failure(SLUG_WRITE);
+            }
+            if (getRunAttemptCount() >= MAX_RUN_ATTEMPTS) {
+                return failTerminal(name, SLUG_WRITE);
             }
             return Result.retry();
         } catch (Exception e) {
@@ -334,7 +351,7 @@ public class VaultBackupWorker extends Worker {
                 Log.e(TAG, "backup failed (unexpected)", e);
             }
             awaitLastProgress();
-            return failure();
+            return failTerminal(name, SLUG_ERROR);
         }
 
         // A pending setProgressAsync MUST complete before we return a Result, or
@@ -358,8 +375,17 @@ public class VaultBackupWorker extends Worker {
         super.onStopped();
     }
 
-    private Result failure() {
-        return failure(null);
+    /**
+     * A terminal failure that is NOT the folder's: told as the "couldn't back
+     * up <file>" notification (the folder's own failure has its own, see
+     * {@link #notifyFolderLost}) and returned with its slug. A stopped worker
+     * announces nothing — the stop was the user's.
+     */
+    private Result failTerminal(@Nullable String name, @NonNull String slug) {
+        if (!isStopped()) {
+            notifyFailed(name, slug);
+        }
+        return failure(slug);
     }
 
     /** @param slug the named cause when there is one, else null — the list row
@@ -471,6 +497,97 @@ public class VaultBackupWorker extends Worker {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
         nm.notify(NOTIFICATION_FOLDER_LOST_ID, notification);
+    }
+
+    /**
+     * "Couldn't back up <file>" — every terminal failure that is not the
+     * folder's is announced, because the two in-app surfaces that name it are
+     * both conditional: the Downloads snackbar needs that fragment alive, the
+     * Backups list's failed row needs the list opened. A backup started from the
+     * finished-download notification and left alone used to fail in silence.
+     * The text is the slug's sentence (the ONE mapping, {@link #failureSummaryRes});
+     * tap → the Backups list, where the failed row sits with its ✕. Fixed id,
+     * so a failing batch replaces rather than stacks; the rows are the record.
+     */
+    private void notifyFailed(@Nullable String name, @NonNull String slug) {
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        NotificationManager nm = (NotificationManager)
+                mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) {
+            return;
+        }
+        String title = name != null
+                ? mContext.getString(R.string.folder_backup_failed_notif_title, name)
+                : mContext.getString(R.string.folder_backup_failed_notif_title_noname);
+        String text = mContext.getString(failureSummaryRes(slug));
+        Notification notification = new NotificationCompat.Builder(
+                mContext, App.DOWNLOADS_NOTIFICATION_ID)
+                .setSmallIcon(R.drawable.ic_folder_upload_24)
+                .setLargeIcon(BitmapFactory.decodeResource(
+                        mContext.getResources(), R.mipmap.ic_launcher_round))
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(cloudBackupFilesIntent(mContext))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build();
+        nm.notify(NOTIFICATION_FAILED_ID, notification);
+    }
+
+    /**
+     * The ONE slug → sentence mapping: the Backups list's snackbar, the
+     * Downloads snackbar and the failure notification all read it, so a
+     * failure says the same thing everywhere. A null or unknown slug (a
+     * worker from an older build) gets the generic sentence, never silence.
+     */
+    @StringRes
+    public static int failureSummaryRes(@Nullable String slug) {
+        if (slug == null) {
+            return R.string.cloud_backup_failed;
+        }
+        switch (slug) {
+            case SLUG_FOLDER:
+                return R.string.folder_backup_transfer_lost;
+            case SLUG_NOT_SET_UP:
+                return R.string.folder_backup_transfer_not_set_up;
+            case SLUG_FILE:
+                return R.string.folder_backup_transfer_file;
+            case SLUG_WRITE:
+                return R.string.folder_backup_transfer_write;
+            default:
+                return R.string.cloud_backup_failed;
+        }
+    }
+
+    /** The slug's SHORT label for the failed transfer row (one line beside the
+     *  mime chip); same null/unknown rule as {@link #failureSummaryRes}. */
+    @StringRes
+    public static int failureLabelRes(@Nullable String slug) {
+        if (slug == null) {
+            return R.string.cloud_backup_transfer_failed;
+        }
+        switch (slug) {
+            case SLUG_FOLDER:
+                return R.string.folder_backup_state_lost;
+            case SLUG_NOT_SET_UP:
+                return R.string.folder_backup_state_not_set_up;
+            case SLUG_FILE:
+                return R.string.folder_backup_state_file;
+            case SLUG_WRITE:
+                return R.string.folder_backup_state_write;
+            default:
+                return R.string.cloud_backup_transfer_failed;
+        }
+    }
+
+    /** True when the Backup screen is the remedy (choose the folder again,
+     *  finish the setup) — the snackbar carries a door only then. */
+    public static boolean failureFixedInBackupScreen(@Nullable String slug) {
+        return SLUG_FOLDER.equals(slug) || SLUG_NOT_SET_UP.equals(slug);
     }
 
     /** PendingIntent that opens the Backup screen (the merged settings screen

@@ -510,6 +510,12 @@
     <string name="folder_backup_state_not_set_up">Ei määritetty</string>
     <string name="folder_backup_transfer_lost">Varmuuskopiokansiota ei tavoiteta. Valitse se uudelleen Varmuuskopiossa</string>
     <string name="folder_backup_transfer_not_set_up">Varmuuskopiota ei ole vielä määritetty. Viimeistele määritys Varmuuskopiossa</string>
+    <string name="folder_backup_state_file">Tiedostoa ei voi lukea</string>
+    <string name="folder_backup_transfer_file">Tiedostoa ei voitu lukea. Se on ehkä poistettu tai siirretty</string>
+    <string name="folder_backup_state_write">Kirjoitus epäonnistui</string>
+    <string name="folder_backup_transfer_write">Varmuuskopiokansioon ei voitu kirjoittaa. Tarkista vapaa tila ja yritä uudelleen</string>
+    <string name="folder_backup_failed_notif_title">Tiedostoa %1$s ei voitu varmuuskopioida</string>
+    <string name="folder_backup_failed_notif_title_noname">Tiedostoa ei voitu varmuuskopioida</string>
     <string name="folder_backup_choose_first">Valitse ensin varmuuskopiokansio</string>
     <string name="cloud_backup_setup_title">Määritä varmuuskopio</string>
     <string name="cloud_backup_setup_message">Lataukset salataan ennen kuin ne kopioidaan valitsemaasi kansioon Google Drivessa, Dropboxissa, SD-kortilla tai muussa paikassa, joka säilyy tätä puhelinta pidempään. Saat palautuskoodin – ainoan avaimen, joka on yhteinen kirjanmerkkien synkronoinnin kanssa. Sitä ei voi palauttaa, jos se katoaa.</string>
@@ -517,7 +523,7 @@
     <string name="cloud_backup_started">Varmuuskopioidaan…</string>
     <string name="cloud_backup_none_eligible">Valitse valmiit tiedostot varmuuskopioitavaksi</string>
     <string name="cloud_backup_safe_excluded">Turvakansion tiedostot pysyvät tällä laitteella eikä niitä voi varmuuskopioida</string>
-    <string name="cloud_backup_failed">Varmuuskopiointi epäonnistui. Tarkista, että varmuuskopiokansio on tavoitettavissa, ja yritä uudelleen</string>
+    <string name="cloud_backup_failed">Tätä tiedostoa ei voitu varmuuskopioida. Yritä uudelleen</string>
     <string name="cloud_backup_notification_title">Varmuuskopiointi</string>
     <string name="cloud_backup_files_title">Varmuuskopiot</string>
     <string name="cloud_backup_list_empty">Ei vielä varmuuskopioita</string>

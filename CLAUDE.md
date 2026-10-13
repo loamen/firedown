@@ -3937,9 +3937,25 @@ not hidden):
   (`KEY_PROGRESS_DONE`/`_TOTAL`, throttled to whole percents, skipped when
   `isStopped()`, and the last `setProgressAsync` future DRAINED before every
   `Result` — WorkManager throws "must complete before a ListenableWorker
-  signals completion" otherwise), and names exactly two terminal causes:
-  `SLUG_FOLDER` (above) and `SLUG_NOT_SET_UP` (a job queued before the
-  folder was forgotten). The request carries `TAG_NAME`/`TAG_MIME`/`TAG_SIZE`
+  signals completion" otherwise), and names EVERY terminal cause with a
+  slug on its output data: `SLUG_FOLDER` (above), `SLUG_NOT_SET_UP` (a job
+  queued before the folder was forgotten), `SLUG_FILE` (the file could not
+  be read), `SLUG_WRITE` (a write on a reachable folder failed past the
+  retry ceiling) and `SLUG_ERROR` (anything else). **The slug → words
+  mapping lives ONCE, in the worker** (`failureSummaryRes` the sentence,
+  `failureLabelRes` the row's short label, `failureFixedInBackupScreen`
+  whether the snackbar carries a door to the Backup screen); the Backups
+  list's row + snackbar, the Downloads snackbar and the notification all
+  read it, and a null/unknown slug gets the GENERIC sentence, never
+  silence. **Every terminal failure is also a NOTIFICATION**: the folder's
+  is the folder-lost one (tap → the Backup screen), every other is
+  "Couldn't back up <name>" with the slug's sentence (tap → the Backups
+  list, where the failed row sits with its ✕; fixed id, a failing batch
+  replaces rather than stacks). It exists because both in-app surfaces are
+  conditional — the Downloads snackbar needs that fragment alive, the
+  Backups row needs the list opened — so a backup started from the
+  finished-download notification and left alone used to fail in silence. A
+  STOPPED worker announces nothing (the stop was the user's). The request carries `TAG_NAME`/`TAG_MIME`/`TAG_SIZE`
   so the Backups list can render a transfer row for an ENQUEUED worker
   (WorkInfo exposes tags, not input data, and progress is empty until the
   worker starts — without the tags the list looked EMPTY right after "Back
@@ -4298,8 +4314,8 @@ children — the card edges do the grouping).
   `isSetUp()` — a notification cannot run the first-time setup. All three
   call `VaultBackupWorker.enqueue`. **"Backing up…" snackbar with a View
   action, NO success snackbar** — the list is the confirmation; only a
-  FAILED transfer surfaces an error snackbar, naming the folder when that
-  was the cause.
+  FAILED transfer surfaces an error snackbar, naming the cause through the
+  worker's one slug mapping (see `VaultBackupWorker` above).
 - **The Downloads banner is ONE stage** (`SyncBannerAdapter`, parameterized
   by copy + glyph, never forked; prepended through the same `ConcatAdapter`
   as the Safe Folder row, below it): shown while NOT set up, the list has

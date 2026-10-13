@@ -642,6 +642,12 @@
     <string name="folder_backup_state_not_set_up">Sin configurar</string>
     <string name="folder_backup_transfer_lost">No se puede acceder a la carpeta de copia de seguridad. Elígela de nuevo en Copia de seguridad</string>
     <string name="folder_backup_transfer_not_set_up">La copia de seguridad aún no está configurada. Termina la configuración en Copia de seguridad</string>
+    <string name="folder_backup_state_file">Archivo ilegible</string>
+    <string name="folder_backup_transfer_file">No se pudo leer el archivo. Puede que se haya borrado o movido</string>
+    <string name="folder_backup_state_write">Fallo al escribir</string>
+    <string name="folder_backup_transfer_write">No se pudo escribir en la carpeta de copia. Comprueba el espacio libre e inténtalo de nuevo</string>
+    <string name="folder_backup_failed_notif_title">No se pudo hacer la copia de %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">No se pudo hacer la copia de un archivo</string>
     <string name="folder_backup_choose_first">Elige primero una carpeta de copia de seguridad</string>
     <string name="cloud_backup_setup_title">Configurar copia de seguridad</string>
     <string name="cloud_backup_setup_message">Las descargas se cifran antes de copiarse a una carpeta que elijas en Google Drive, Dropbox, una tarjeta SD u otro lugar que sobreviva a este teléfono. Recibes un código de recuperación, la única clave, compartida con la sincronización de marcadores. No se puede recuperar si se pierde.</string>
@@ -649,7 +655,7 @@
     <string name="cloud_backup_started">Haciendo copia de seguridad…</string>
     <string name="cloud_backup_none_eligible">Selecciona archivos finalizados para hacer copia</string>
     <string name="cloud_backup_safe_excluded">Los archivos de la Carpeta segura permanecen en este dispositivo y no se pueden respaldar</string>
-    <string name="cloud_backup_failed">No se pudo hacer la copia. Comprueba que la carpeta de copia de seguridad esté accesible e inténtalo de nuevo</string>
+    <string name="cloud_backup_failed">No se pudo hacer la copia de este archivo. Inténtalo de nuevo</string>
     <string name="cloud_backup_notification_title">Haciendo copia de seguridad</string>
     <string name="cloud_backup_files_title">Copias de seguridad</string>
     <string name="cloud_backup_list_empty">Aún no hay copias</string>

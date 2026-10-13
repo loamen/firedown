@@ -542,6 +542,12 @@
     <string name="folder_backup_state_not_set_up">Niet ingesteld</string>
     <string name="folder_backup_transfer_lost">Back-upmap onbereikbaar. Kies hem opnieuw in Back-up</string>
     <string name="folder_backup_transfer_not_set_up">Back-up is nog niet ingesteld. Voltooi de instelling in Back-up</string>
+    <string name="folder_backup_state_file">Bestand onleesbaar</string>
+    <string name="folder_backup_transfer_file">Het bestand kon niet worden gelezen. Het is misschien verwijderd of verplaatst</string>
+    <string name="folder_backup_state_write">Schrijven mislukt</string>
+    <string name="folder_backup_transfer_write">Er kon niet naar de back-upmap worden geschreven. Controleer de vrije ruimte en probeer het opnieuw</string>
+    <string name="folder_backup_failed_notif_title">%1$s kon niet worden geback-upt</string>
+    <string name="folder_backup_failed_notif_title_noname">Een bestand kon niet worden geback-upt</string>
     <string name="folder_backup_choose_first">Kies eerst een back-upmap</string>
     <string name="cloud_backup_setup_title">Back-up instellen</string>
     <string name="cloud_backup_setup_message">Downloads worden versleuteld voordat ze naar een map naar keuze worden gekopieerd: op Google Drive, Dropbox, een SD-kaart of een andere plek die deze telefoon overleeft. Je krijgt een herstelcode, de enige sleutel, gedeeld met bladwijzersynchronisatie. Hij kan niet worden hersteld als je hem kwijtraakt.</string>
@@ -549,7 +555,7 @@
     <string name="cloud_backup_started">Back-up wordt gemaakt…</string>
     <string name="cloud_backup_none_eligible">Selecteer voltooide bestanden om te back-uppen</string>
     <string name="cloud_backup_safe_excluded">Bestanden in de kluismap blijven op dit apparaat en kunnen niet worden geback-upt</string>
-    <string name="cloud_backup_failed">Back-up mislukt. Controleer of de back-upmap bereikbaar is en probeer het opnieuw</string>
+    <string name="cloud_backup_failed">Dit bestand kon niet worden geback-upt. Probeer het opnieuw</string>
     <string name="cloud_backup_notification_title">Back-up wordt gemaakt</string>
     <string name="cloud_backup_files_title">Back-ups</string>
     <string name="cloud_backup_list_empty">Nog geen back-ups</string>

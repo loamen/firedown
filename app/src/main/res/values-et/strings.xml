@@ -442,6 +442,12 @@
     <string name="folder_backup_state_not_set_up">Seadistamata</string>
     <string name="folder_backup_transfer_lost">Varunduskaust pole kättesaadav. Vali see Varunduses uuesti</string>
     <string name="folder_backup_transfer_not_set_up">Varundus pole veel seadistatud. Lõpeta seadistamine Varunduses</string>
+    <string name="folder_backup_state_file">Faili ei saa lugeda</string>
+    <string name="folder_backup_transfer_file">Faili ei õnnestunud lugeda. See võib olla kustutatud või teisaldatud</string>
+    <string name="folder_backup_state_write">Kirjutamine ebaõnnestus</string>
+    <string name="folder_backup_transfer_write">Varukausta ei saa kirjutada. Kontrolli vaba ruumi ja proovi uuesti</string>
+    <string name="folder_backup_failed_notif_title">Faili %1$s ei õnnestunud varundada</string>
+    <string name="folder_backup_failed_notif_title_noname">Faili ei õnnestunud varundada</string>
     <string name="folder_backup_choose_first">Vali esmalt varunduskaust</string>
     <string name="cloud_backup_setup_title">Seadista varundus</string>
     <string name="cloud_backup_setup_message">Allalaadimised krüpteeritakse enne, kui need kopeeritakse sinu valitud kausta Google Drive\'is, Dropboxis, SD-kaardil või mujal, mis seda telefoni üle elab. Saad taastekoodi — ainsa võtme, mida jagatakse järjehoidjate sünkroonimisega. Kaotamise korral ei saa seda taastada.</string>
@@ -449,7 +455,7 @@
     <string name="cloud_backup_started">Varundamine…</string>
     <string name="cloud_backup_none_eligible">Varundamiseks vali lõpetatud failid</string>
     <string name="cloud_backup_safe_excluded">Turvakausta failid jäävad sellesse seadmesse ja neid ei saa varundada</string>
-    <string name="cloud_backup_failed">Varundamine ebaõnnestus. Kontrolli, kas varunduskaust on kättesaadav, ja proovi uuesti</string>
+    <string name="cloud_backup_failed">Seda faili ei õnnestunud varundada. Proovi uuesti</string>
     <string name="cloud_backup_notification_title">Varundamine</string>
     <string name="cloud_backup_files_title">Varundused</string>
     <string name="cloud_backup_list_empty">Varundusi veel pole</string>

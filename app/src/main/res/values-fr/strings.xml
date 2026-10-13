@@ -643,6 +643,12 @@
     <string name="folder_backup_state_not_set_up">Non configuré</string>
     <string name="folder_backup_transfer_lost">Dossier de sauvegarde inaccessible. Choisissez-le à nouveau dans Sauvegarde</string>
     <string name="folder_backup_transfer_not_set_up">La sauvegarde n\'est pas encore configurée. Terminez la configuration dans Sauvegarde</string>
+    <string name="folder_backup_state_file">Fichier illisible</string>
+    <string name="folder_backup_transfer_file">Impossible de lire le fichier. Il a peut-être été supprimé ou déplacé</string>
+    <string name="folder_backup_state_write">Écriture impossible</string>
+    <string name="folder_backup_transfer_write">Impossible d\'écrire dans le dossier de sauvegarde. Vérifiez l\'espace libre et réessayez</string>
+    <string name="folder_backup_failed_notif_title">Impossible de sauvegarder %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">Impossible de sauvegarder un fichier</string>
     <string name="folder_backup_choose_first">Choisissez d\'abord un dossier de sauvegarde</string>
     <string name="cloud_backup_setup_title">Configurer la sauvegarde</string>
     <string name="cloud_backup_setup_message">Les téléchargements sont chiffrés avant d\'être copiés dans un dossier de votre choix sur Google Drive, Dropbox, une carte SD ou un autre endroit qui survit à ce téléphone. Vous recevez un code de récupération, la seule clé, partagée avec la synchronisation des favoris. Il ne peut pas être récupéré si vous le perdez.</string>
@@ -650,7 +656,7 @@
     <string name="cloud_backup_started">Sauvegarde en cours…</string>
     <string name="cloud_backup_none_eligible">Sélectionnez des fichiers terminés à sauvegarder</string>
     <string name="cloud_backup_safe_excluded">Les fichiers du Dossier sécurisé restent sur cet appareil et ne peuvent pas être sauvegardés</string>
-    <string name="cloud_backup_failed">Sauvegarde impossible. Vérifiez que le dossier de sauvegarde est accessible et réessayez</string>
+    <string name="cloud_backup_failed">Impossible de sauvegarder ce fichier. Réessayez</string>
     <string name="cloud_backup_notification_title">Sauvegarde en cours</string>
     <string name="cloud_backup_files_title">Sauvegardes</string>
     <string name="cloud_backup_list_empty">Aucune sauvegarde pour l\'instant</string>

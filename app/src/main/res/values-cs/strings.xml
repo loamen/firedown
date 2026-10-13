@@ -517,6 +517,12 @@
     <string name="folder_backup_state_not_set_up">Nenastaveno</string>
     <string name="folder_backup_transfer_lost">Složka zálohy je nedostupná. Vyberte ji znovu v Záloze</string>
     <string name="folder_backup_transfer_not_set_up">Záloha ještě není nastavena. Dokončete nastavení v Záloze</string>
+    <string name="folder_backup_state_file">Soubor nelze přečíst</string>
+    <string name="folder_backup_transfer_file">Soubor nelze přečíst. Možná byl smazán nebo přesunut</string>
+    <string name="folder_backup_state_write">Zápis selhal</string>
+    <string name="folder_backup_transfer_write">Do složky zálohy nelze zapisovat. Zkontrolujte volné místo a zkuste to znovu</string>
+    <string name="folder_backup_failed_notif_title">Nepodařilo se zálohovat %1$s</string>
+    <string name="folder_backup_failed_notif_title_noname">Nepodařilo se zálohovat soubor</string>
     <string name="folder_backup_choose_first">Nejprve vyberte složku zálohy</string>
     <string name="cloud_backup_setup_title">Nastavit zálohu</string>
     <string name="cloud_backup_setup_message">Stažené soubory se zašifrují, než se zkopírují do složky podle vašeho výběru na Google Drive, Dropboxu, SD kartě nebo jiném místě, které tento telefon přežije. Dostanete kód pro obnovení — jediný klíč, sdílený se synchronizací záložek. Při ztrátě ho nelze obnovit.</string>
@@ -524,7 +530,7 @@
     <string name="cloud_backup_started">Zálohuje se…</string>
     <string name="cloud_backup_none_eligible">Vyberte dokončené soubory k zálohování</string>
     <string name="cloud_backup_safe_excluded">Soubory v Trezoru zůstávají v tomto zařízení a nelze je zálohovat</string>
-    <string name="cloud_backup_failed">Záloha se nezdařila. Zkontrolujte, že je složka zálohy dostupná, a zkuste to znovu</string>
+    <string name="cloud_backup_failed">Tento soubor se nepodařilo zálohovat. Zkuste to znovu</string>
     <string name="cloud_backup_notification_title">Zálohování</string>
     <string name="cloud_backup_files_title">Zálohy</string>
     <string name="cloud_backup_list_empty">Zatím žádné zálohy</string>
