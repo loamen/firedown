@@ -2492,12 +2492,30 @@ adoption stalling, not like a bug.
 Version bump and `status.json` (what the in-app update check reads) are Gradle
 tasks, not hand edits:
 
-- **`./gradlew bumpVersion`** — `versionCode` + 1 and the `versionName` patch
-  + 1 in `app/build.gradle`, plus an empty `## [x.y.z] - <today>` entry at the
-  top of `CHANGELOG.md`. `-Pfiredown.versionName=1.2.0` sets the name instead
-  (the code still only goes up by one — it is the mapping-upload and
-  update-check key, never derived from the name). Run it alone: it rewrites a
-  file Gradle already read.
+- **`./gradlew bumpVersion`** — `versionCode` + 1 in `app/build.gradle`, and
+  the `versionName` DERIVED from it: **the name IS the code written as
+  major.minor.patch with a two-digit patch** (1201 ↔ `1.2.01`, 1199 ↔
+  `1.1.99`, 1300 ↔ `1.3.00`), so the About screen, the F-Droid filename,
+  `status.json`'s release tag and the mapping upload all say one number;
+  plus an empty `## [x.y.zz] - <today>` entry at the top of `CHANGELOG.md`.
+  The hundredth patch rolls into the next minor by construction (`1.2.99` →
+  `1.3.00`); to start a minor or major earlier, `-Pfiredown.versionName=1.3.00`
+  and the CODE follows the name (→ 1300) — the code stays the mapping-upload
+  and update-check key, it just can no longer disagree with the name. A
+  `build.gradle` whose two values disagree FAILS both this task and
+  `releaseStatus` rather than being silently "fixed", so the scheme can't
+  drift by hand. The zero-padded patch is deliberate and not semver (which
+  forbids a leading zero): the mirror is what it buys, and its ceiling (a
+  one-digit minor, a hundred patches per minor) is far beyond the release
+  cadence. History: the task used to add one to the patch as an INTEGER, so
+  the first bump after `1.2.01` would have written `1.2.2` beside code 1202
+  and broken the mirror on the very next release. Pinned by
+  `sh scripts/release-harness/run.sh` — the REAL `app/release.gradle` under
+  a scratch Gradle project (no Android plugin, no SDK; `$GRADLE`, else
+  `gradle`, else the wrapper): the plain bump, both rollovers, the
+  explicit-name path and its refusals, a disagreeing file left untouched —
+  11 of its 12 checks fail on the integer-increment task. Run it alone: it
+  rewrites a file Gradle already read.
 - **`releaseStatus`** finalizes `assembleRelease` and writes `status.json` for
   the APK just built: versionCode, `"Firedown <name>"`, the GitHub release URL,
   the F-Droid fallback, the APK's sha256 and the "What's new" bullets from

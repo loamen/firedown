@@ -2,13 +2,20 @@
 // Applied from app/build.gradle. Two tasks, both in the `firedown` group:
 //
 //   ./gradlew bumpVersion
-//       versionCode + 1 and the versionName patch + 1 in app/build.gradle
-//       (1198 / "1.1.98" → 1199 / "1.1.99"), and opens a
-//       "## [1.1.99] - <today>" entry at the top of CHANGELOG.md. Pass
-//       -Pfiredown.versionName=1.2.0 to set the name instead of bumping the
-//       patch (versionCode still just goes up by one). Run it ON ITS OWN: the
-//       file is rewritten after Gradle has already read the old values, so a
-//       build in the same invocation would still produce the old version.
+//       versionCode + 1 in app/build.gradle, and the versionName DERIVED from
+//       it: the name IS the code written as major.minor.patch with a two-digit
+//       patch — 1201 ↔ "1.2.01", 1199 ↔ "1.1.99", 1300 ↔ "1.3.00" — so the
+//       About screen, the F-Droid filename, status.json's release tag and the
+//       mapping upload all say one number. Then it opens a
+//       "## [1.2.02] - <today>" entry at the top of CHANGELOG.md. The hundredth
+//       patch rolls into the next minor by construction (1.2.99 → 1.3.00); to
+//       start a minor or major earlier pass -Pfiredown.versionName=1.3.00 and
+//       the CODE follows the name (→ 1300). A build.gradle whose code and name
+//       disagree FAILS the task instead of being silently "fixed". Run it ON
+//       ITS OWN: the file is rewritten after Gradle has already read the old
+//       values, so a build in the same invocation would still produce the old
+//       version. Pinned by scripts/release-harness/run.sh, which drives this
+//       task under a scratch Gradle project.
 //
 //   releaseStatus   (runs by itself after every assembleRelease)
 //       Rewrites status.json — the file the in-app update check reads — for
@@ -72,8 +79,32 @@ def readLatestChangelog = { File changelog ->
     return [version: version, bullets: bullets]
 }
 
+// The versionName IS the versionCode, written out: code = major × 1000 +
+// minor × 100 + patch, the patch always two digits (1201 ↔ "1.2.01"). One
+// number everywhere a version is shown or keyed, at the cost of a one-digit
+// minor and a hundred patches per minor — both far beyond the release
+// cadence. The zero-padded patch is deliberately not semver (which forbids a
+// leading zero): the mirror is what it buys. bumpVersion and releaseStatus
+// both refuse a build.gradle whose two values disagree, so the scheme can't
+// drift by hand. History: bumpVersion used to add one to the patch as an
+// integer, so the first bump after 1.2.01 would have written "1.2.2" beside
+// code 1202 and broken the mirror on the very next release.
+def versionNameForCode = { int code ->
+    return String.format('%d.%d.%02d', code.intdiv(1000), code.intdiv(100) % 10, code % 100)
+}
+// The inverse, for an explicit -Pfiredown.versionName; null when the name is
+// not in the scheme (a one-digit patch, a two-digit minor, extra parts).
+Pattern versionNamePattern = Pattern.compile('^(\\d+)\\.(\\d)\\.(\\d{2})$')
+def versionCodeForName = { String name ->
+    Matcher m = versionNamePattern.matcher(name)
+    if (!m.find()) {
+        return null
+    }
+    return m.group(1).toInteger() * 1000 + m.group(2).toInteger() * 100 + m.group(3).toInteger()
+}
+
 tasks.register('bumpVersion') {
-    description = 'Bumps versionCode and the versionName patch number, and opens a CHANGELOG.md entry for the new version'
+    description = 'Bumps versionCode, derives versionName from it (1201 → "1.2.01"), and opens a CHANGELOG.md entry for the new version'
     group = 'firedown'
     def explicitName = project.findProperty('firedown.versionName')?.toString()
     doLast {
@@ -87,15 +118,29 @@ tasks.register('bumpVersion') {
         }
         int oldCode = code.group(2).toInteger()
         String oldName = "${name.group(2)}.${name.group(3)}.${name.group(4)}"
-        int newCode = oldCode + 1
+        String oldExpected = versionNameForCode(oldCode)
+        if (oldName != oldExpected) {
+            throw new GradleException("bumpVersion: versionCode ${oldCode} and versionName \"${oldName}\" disagree — " +
+                    "the name is the code written as major.minor.patch, so ${oldCode} is \"${oldExpected}\". " +
+                    "Fix ${releaseGradleFile} by hand first.")
+        }
+        int newCode
         String newName
         if (explicitName) {
-            if (!(explicitName ==~ /\d+\.\d+\.\d+/)) {
-                throw new GradleException("bumpVersion: -Pfiredown.versionName must look like 1.2.0, got '${explicitName}'")
+            Integer named = versionCodeForName(explicitName)
+            if (named == null) {
+                throw new GradleException("bumpVersion: -Pfiredown.versionName must be major.minor.patch with a one-digit minor " +
+                        "and a two-digit patch (1.3.00), got '${explicitName}'")
             }
+            if (named <= oldCode) {
+                throw new GradleException("bumpVersion: -Pfiredown.versionName=${explicitName} is versionCode ${named}, " +
+                        "not above the current ${oldCode} (\"${oldName}\")")
+            }
+            newCode = named
             newName = explicitName
         } else {
-            newName = "${name.group(2)}.${name.group(3)}.${name.group(4).toInteger() + 1}"
+            newCode = oldCode + 1
+            newName = versionNameForCode(newCode)
         }
 
         // Replace by the matched spans only, so nothing else in the file moves.
@@ -140,6 +185,13 @@ tasks.register('releaseStatus') {
         enabled && packagingOk
     }
     doLast {
+        String expectedName = versionNameForCode(versionCode as int)
+        if (versionName != expectedName) {
+            throw new GradleException("releaseStatus: versionCode ${versionCode} and versionName \"${versionName}\" disagree — " +
+                    "the name is the code written as major.minor.patch (\"${expectedName}\"); status.json keys the update " +
+                    "on the code and the download URL on the name, so they must agree. Fix app/build.gradle " +
+                    "(./gradlew bumpVersion keeps them in step).")
+        }
         def latest = readLatestChangelog(releaseChangelogFile)
         if (latest.version != versionName) {
             throw new GradleException("releaseStatus: CHANGELOG.md's newest entry is [${latest.version}] but this build is ${versionName}. " +
