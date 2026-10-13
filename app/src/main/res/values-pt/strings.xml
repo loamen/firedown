@@ -62,13 +62,13 @@
     <string name="downloading">Baixando…</string>
     <string name="edit">Editar</string>
     <string name="empty_learn_more">Saber mais</string>
-    <string name="restore_downloads_button">Restaurar transferências anteriores</string>
-    <string name="restore_downloads_settings_summary">Recupere a sua lista de transferências após reinstalar a aplicação</string>
-    <string name="settings_storage_summary">Quanto ocupam as suas transferências por tipo e o que pode ser libertado</string>
-    <string name="restore_downloads_message">Se reinstalou o Firedown, as suas transferências podem ainda estar na pasta Download/Firedown. Escolha essa pasta e o Firedown restaurará a sua lista de transferências.</string>
+    <string name="restore_downloads_button">Restaurar downloads anteriores</string>
+    <string name="restore_downloads_settings_summary">Recupere sua lista de downloads após reinstalar o aplicativo</string>
+    <string name="settings_storage_summary">Quanto seus downloads ocupam por tipo e o que pode ser liberado</string>
+    <string name="restore_downloads_message">Se você reinstalou o Firedown, seus downloads ainda podem estar na pasta Download/Firedown. Escolha essa pasta e o Firedown restaurará sua lista de downloads.</string>
     <string name="restore_downloads_choose">Escolher pasta</string>
     <string name="restore_downloads_progress">Restaurando downloads…</string>
-    <string name="restore_downloads_done">Transferências restauradas: %1$d</string>
+    <string name="restore_downloads_done">Downloads restaurados: %1$d</string>
     <string name="restore_downloads_none">Nenhuma cópia de segurança encontrada nesta pasta</string>
     <string name="restore_downloads_wrong_device">Esta cópia de segurança pertence a outro dispositivo</string>
     <string name="delete_needs_grant">É necessário acesso ao armazenamento para excluir os arquivos restaurados</string>
@@ -79,7 +79,7 @@
     <string name="empty_list_history">Seu histórico de downloads está vazio.</string>
     <string name="empty_list_query">Nenhum resultado encontrado</string>
     <string name="empty_list_type">Não há nada aqui.</string>
-    <string name="empty_list_vault">Ainda não há nada na Pasta segura.\n\nEm qualquer transferência, escolha «Mover para a Pasta segura» no menu ⋮ para a guardar aqui.</string>
+    <string name="empty_list_vault">Ainda não há nada na Pasta segura.\n\nEm qualquer download, escolha \"Mover para a Pasta segura\" no menu ⋮ para guardá-lo aqui.</string>
     <string name="empty_media_help">Alguns arquivos de mídia precisam ser reproduzidos antes que o Firedown possa detectá-los como arquivos para download.</string>
     <string name="empty_media_help_title">Reproduza a mídia antes de baixar</string>
     <string name="empty_media_subtitle_help">Reproduza a mídia normalmente. Ele deverá então aparecer com os outros arquivos de mídia, após pressionar o botão Fire.</string>
@@ -113,7 +113,7 @@
     <string name="finish_origin">Terminar</string>
     <string name="gif_maker_create">Criar GIF</string>
     <string name="gif_maker_invalid_range">Selecione um intervalo não vazio</string>
-    <string name="gif_maker_not_ready">A aguardar o carregamento do vídeo…</string>
+    <string name="gif_maker_not_ready">Aguardando o carregamento do vídeo…</string>
     <string name="gif_maker_speed_fast">Rápido</string>
     <string name="gif_maker_speed_label">Velocidade</string>
     <string name="gif_maker_speed_medium">Médio</string>
@@ -132,7 +132,7 @@
     <string name="lock_biometric">Desbloqueie usando suas credenciais biométricas</string>
     <string name="lock_cipher">Mover para a Pasta segura</string>
     <string name="lock_decipher">Retirar da Pasta segura</string>
-    <string name="lock_empty">A Pasta segura é um armazenamento bloqueado por biometria para ficheiros sensíveis, oculto da galeria e de outras apps.\n\nUsa as tuas credenciais biométricas ou do ecrã de bloqueio para a desbloquear.</string>
+    <string name="lock_empty">A Pasta segura é um armazenamento bloqueado por biometria para arquivos sensíveis, oculto da galeria e de outros aplicativos.\n\nUse sua biometria ou as credenciais da tela de bloqueio para desbloqueá-la.</string>
     <string name="lock_enroll_accept">Configurar agora</string>
     <string name="lock_enroll_cancel">Mais tarde</string>
     <string name="lock_enroll_message">Configure um padrão de bloqueio do dispositivo, PIN ou senha para proteger seus arquivos contra acesso se outra pessoa estiver com seu dispositivo.</string>
@@ -142,13 +142,13 @@
     <string name="login_host">URL do site</string>
     <string name="make_gif">Criar GIF</string>
     <string name="navigation_captured">Conteúdo capturado</string>
-    <string name="navigation_downloads">Transferências</string>
+    <string name="navigation_downloads">Downloads</string>
     <string name="navigation_settings">Configurações</string>
     <string name="navigation_tabs_archive">Guias fechadas recentemente</string>
     <string name="navigation_vault">Pasta segura</string>
     <string name="navigation_web_bookmarks">Favoritos</string>
     <string name="navigation_web_history">Histórico</string>
-    <string name="notifications_downloads_channel">Transferências</string>
+    <string name="notifications_downloads_channel">Downloads</string>
     <string name="open">Abrir</string>
     <string name="open_in_app_subtitle">Gostaria de sair do Firedown para visualizar este conteúdo?</string>
     <string name="open_in_app_title">Abra em outro aplicativo</string>
@@ -158,7 +158,7 @@
     <string name="permission_retry_phone">CONFIGURAÇÕES</string>
     <string name="popular_list_thumbnail">Criar miniatura</string>
     <string name="popup_clear_downloads">Limpar conteúdo</string>
-    <string name="popup_downloads">Transferências</string>
+    <string name="popup_downloads">Downloads</string>
     <string name="popup_settings">Configurações</string>
     <string name="popup_tabs_archive">Guias fechadas recentemente</string>
     <string name="popup_tabs_close">Fechar todas as guias</string>
@@ -290,11 +290,11 @@
     <string name="pip_pause">Pausar</string>
     <string name="player_error_unsupported_format">Este dispositivo não consegue decodificar o formato deste vídeo.</string>
     <plurals name="safe_folder_downloading">
-        <item quantity="one">%d a transferir</item>
-        <item quantity="other">%d a transferir</item>
+        <item quantity="one">%d baixando</item>
+        <item quantity="other">%d baixando</item>
     </plurals>
     <string name="home_vault_button">Pasta segura</string>
-    <string name="incognito_home_warning">A navegação privada não esconde a tua atividade da tua rede, do teu empregador ou dos sites que visitas.</string>
+    <string name="incognito_home_warning">A navegação privada não esconde sua atividade da sua rede, do seu empregador ou dos sites que você visita.</string>
 <string name="settings_theme_app_category">Tema do aplicativo</string>
     <string name="crash_sheet_title">Falha detectada</string>
     <string name="crash_sheet_report">Reportar</string>
@@ -304,7 +304,7 @@
     <string name="crash_sheet_open_failed">Não foi possível abrir o navegador. O relatório está na área de transferência. Cole-o em uma nova issue do GitHub.</string>
     <string name="crash_sheet_send">Enviar relatório</string>
     <string name="crash_sheet_sent">Relatório enviado</string>
-    <string name="crash_sheet_send_failed">Não foi possível enviar. Verifique a ligação ou use Copiar / Reportar.</string>
+    <string name="crash_sheet_send_failed">Não foi possível enviar. Verifique a conexão ou use Copiar / Reportar.</string>
     <string name="crash_sheet_send_note">Enviado anonimamente para o servidor do Firedown. Apenas o relatório acima, sem identificadores.</string>
     <string name="trackers_info_title">Rastreadores e anúncios bloqueados</string>
     <string name="trackers_info_idle">Proteção ativa</string>
@@ -380,7 +380,7 @@
     <string name="settings_search_custom_error_name">Introduza um nome</string>
     <string name="settings_search_custom_error_name_taken">Já existe um motor de busca com este nome</string>
     <string name="settings_search_custom_error_url" formatted="false">Introduza um URL válido que contenha %s</string>
-    <string name="settings_search_custom_delete_title">Eliminar o motor de busca personalizado?</string>
+    <string name="settings_search_custom_delete_title">Excluir o motor de busca personalizado?</string>
     <string name="settings_search_custom_delete_message">\"%1$s\" será removido</string>
     <string name="settings_theme">Tema</string>
     <string name="snackbar_deleted_undo">DESFAZER</string>
@@ -408,11 +408,11 @@
     <string name="task_extract_finished">Arquivo extraído</string>
     <string name="task_extract_failed">Não foi possível extrair o arquivo</string>
     <string name="task_extract_cancelled">Extração cancelada</string>
-    <string name="save_frame">Guardar fotograma</string>
-    <string name="download_saving_frame">A guardar o fotograma, aguarde…</string>
-    <string name="task_frame_finished">Fotograma guardado</string>
-    <string name="task_frame_failed">Não foi possível guardar o fotograma</string>
-    <string name="task_frame_cancelled">Gravação do fotograma cancelada</string>
+    <string name="save_frame">Salvar quadro</string>
+    <string name="download_saving_frame">Salvando o quadro, aguarde…</string>
+    <string name="task_frame_finished">Quadro salvo</string>
+    <string name="task_frame_failed">Não foi possível salvar o quadro</string>
+    <string name="task_frame_cancelled">Captura do quadro cancelada</string>
     <string name="capture_help_menu">Ajuda</string>
     <string name="capture_help_banner_title">Vídeo não listado?</string>
     <string name="capture_help_banner">Algumas mídias incorporadas precisam ser reproduzidas primeiro. Toque para saber como.</string>
@@ -424,7 +424,7 @@
     <!-- Bookmark sync: announce banner + server-delete + backend validation -->
     <string name="sync_banner_title">Sincronize seus favoritos entre dispositivos</string>
     <string name="sync_banner_subtitle">Criptografia de ponta a ponta. Só o seu código de recuperação pode lê-los. Sem conta, sem e-mail.</string>
-    <string name="cloud_banner_title">Mantenha as suas transferências se perder o telemóvel</string>
+    <string name="cloud_banner_title">Mantenha seus downloads se perder o celular</string>
     <string name="cloud_banner_subtitle">Faça backup criptografado para qualquer pasta: Google Drive, Dropbox, um cartão SD. Só o seu código de recuperação consegue lê-los.</string>
     <string name="settings_sync_delete_title">Excluir favoritos do servidor</string>
     <string name="settings_sync_delete_message">Isso apaga permanentemente seus favoritos criptografados do servidor e desativa a sincronização neste dispositivo. Os favoritos deste dispositivo são mantidos. Outros dispositivos não poderão mais restaurar do servidor.</string>
@@ -435,7 +435,7 @@
     <string name="settings_sync_help_title">Como funcionam a sincronização e a criptografia</string>
     <string name="settings_sync_code_saved_check">Salvei meu código de recuperação</string>
     <string name="settings_sync_export_title">Salvar o código de recuperação em um arquivo</string>
-    <string name="settings_sync_export_summary">Exporte o código como um arquivo de texto que você pode guardar</string>
+    <string name="settings_sync_export_summary">Exporte o código como um arquivo de texto que você pode salvar</string>
     <string name="settings_sync_export_caveat_message">Este arquivo é salvo sem criptografia. Importe o código para o seu gerenciador de senhas e depois exclua o arquivo.</string>
     <string name="settings_sync_export_continue">Continuar</string>
     <string name="settings_sync_export_file_body">Código de recuperação do Firedown\n\n%1$s\n\nA única chave para os seus favoritos e para o backup dos downloads. Não pode ser recuperada se for perdida.\n\nEste arquivo não está criptografado. Passe o código para o seu gerenciador de senhas e apague-o.</string>
@@ -489,7 +489,7 @@
     <string name="settings_sync_title">Sincronizar favoritos</string>
     <!-- Backup / Sync -->
     <string name="settings_account_title">Backup</string>
-    <string name="settings_account_summary">Backup criptografado dos downloads numa pasta à sua escolha, e sincronização de favoritos. Um só código de recuperação</string>
+    <string name="settings_account_summary">Backup criptografado dos downloads em uma pasta à sua escolha, e sincronização de favoritos. Um só código de recuperação</string>
     <string name="settings_sync_show_code_shared_summary">A única chave dos seus favoritos e backups</string>
     <string name="settings_sync_downloads_active">Fazendo backup dos seus downloads…</string>
     <string name="settings_cloud_backup_title">Backup</string>
@@ -571,12 +571,12 @@
     <string name="cloud_backup_delete_message">Remove os arquivos selecionados da sua pasta de backup. Os downloads neste dispositivo são mantidos.</string>
     <string name="cloud_backup_only_copy">Esta é a sua única cópia. Já não está neste dispositivo.</string>
     <plurals name="cloud_backup_delete_last_copies">
-        <item quantity="one">%d dos ficheiros selecionados é a sua única cópia.</item>
-        <item quantity="other">%d dos ficheiros selecionados são as suas únicas cópias.</item>
+        <item quantity="one">%d dos arquivos selecionados é a sua única cópia.</item>
+        <item quantity="other">%d dos arquivos selecionados são as suas únicas cópias.</item>
     </plurals>
     <plurals name="cloud_backup_delete_restoring">
-        <item quantity="one">%d dos ficheiros selecionados está a ser restaurado agora. Removê-lo cancela esse restauro.</item>
-        <item quantity="other">%d dos ficheiros selecionados estão a ser restaurados agora. Removê-los cancela esses restauros.</item>
+        <item quantity="one">%d dos arquivos selecionados está sendo restaurado agora. Removê-lo cancela essa restauração.</item>
+        <item quantity="other">%d dos arquivos selecionados estão sendo restaurados agora. Removê-los cancela essas restaurações.</item>
     </plurals>
     <string name="cloud_status_backed_up">em backup</string>
     <string name="cloud_backup_header_encrypted">criptografado de ponta a ponta</string>
@@ -611,7 +611,7 @@
     <string name="p2p_receive_title">Receber um arquivo</string>
     <string name="p2p_send_lead">Envie este arquivo direto para outro dispositivo com o Firedown. Criptografado, de dispositivo a dispositivo, sem nenhum servidor no meio.</string>
     <string name="p2p_receive_lead">Receba um arquivo direto de outro dispositivo com o Firedown.</string>
-    <string name="p2p_code_hint_send">Escaneie este código com o outro dispositivo, no Firedown, em Transferências → Receber um arquivo, ou simplesmente com a câmera dele. Na mesma rede, a transferência continua sozinha; se aparecer um código de resposta, escaneie-o de volta.</string>
+    <string name="p2p_code_hint_send">Escaneie este código com o outro dispositivo, no Firedown, em Downloads → Receber um arquivo, ou simplesmente com a câmera dele. Na mesma rede, a transferência continua sozinha; se aparecer um código de resposta, escaneie-o de volta.</string>
     <string name="p2p_code_hint_reply">Mostre esta resposta ao remetente, ou envie-a de volta pelo mesmo caminho por onde o código dele chegou.</string>
     <string name="p2p_share_code">Enviar código de outra forma</string>
     <string name="p2p_scan_reply">Escanear resposta</string>
@@ -626,10 +626,10 @@
     <string name="p2p_state_connected">Conectado</string>
     <string name="p2p_progress_of">%1$s de %2$s · %3$s/s</string>
     <string name="p2p_done_sent_detail">Enviado · %1$s</string>
-    <string name="p2p_done_received">Salvo em Transferências</string>
+    <string name="p2p_done_received">Salvo em Downloads</string>
     <string name="p2p_done">Concluído</string>
     <string name="p2p_error_no_path">Não foi possível alcançar o outro dispositivo diretamente. Tente a mesma rede Wi-Fi, com qualquer VPN desativada.</string>
-    <string name="p2p_error_no_path_vpn">Uma VPN neste dispositivo está a bloquear a ligação direta. Exclua o Firedown da VPN e tente novamente.</string>
+    <string name="p2p_error_no_path_vpn">Uma VPN neste dispositivo está bloqueando a conexão direta. Exclua o Firedown da VPN e tente novamente.</string>
     <string name="p2p_error_no_path_link">Não foi possível contactar quem envia. Pode ter fechado a partilha. Peça um novo link.</string>
     <string name="p2p_error_generic">A transferência falhou.</string>
     <string name="p2p_error_bad_code">Esse código não é válido. Tente novamente.</string>
@@ -683,16 +683,16 @@
     <string name="tracking_status_blocked">%1$s rastreadores bloqueados</string>
     <string name="tracking_status_since">Registrando desde %1$s</string>
     <plurals name="cloud_restore_started_many">
-        <item quantity="one">A restaurar %d ficheiro…</item>
-        <item quantity="other">A restaurar %d ficheiros…</item>
+        <item quantity="one">Restaurando %d arquivo…</item>
+        <item quantity="other">Restaurando %d arquivos…</item>
     </plurals>
-    <string name="cloud_restore_all">Restaurar tudo para este telemóvel</string>
+    <string name="cloud_restore_all">Restaurar tudo para este celular</string>
     <plurals name="cloud_restore_all_title">
-        <item quantity="one">Restaurar %d ficheiro para este telemóvel?</item>
-        <item quantity="other">Restaurar %d ficheiros para este telemóvel?</item>
+        <item quantity="one">Restaurar %d arquivo para este celular?</item>
+        <item quantity="other">Restaurar %d arquivos para este celular?</item>
     </plurals>
-    <string name="cloud_restore_all_message">Serão transferidos %1$s para Transferências. Este dispositivo tem %2$s livres.</string>
-    <string name="cloud_restore_all_message_no_free">Serão transferidos %1$s para Transferências.</string>
+    <string name="cloud_restore_all_message">Serão copiados %1$s para Downloads. Este dispositivo tem %2$s livres.</string>
+    <string name="cloud_restore_all_message_no_free">Serão copiados %1$s para Downloads.</string>
     <string name="cloud_restore_all_no_space">São precisos %1$s, mas este dispositivo só tem %2$s livres. Liberte espaço primeiro.</string>
     <string name="share_app_title">Compartilhar o Firedown</string>
     <string name="share_app_blurb">Um navegador e gerenciador de downloads privado. Salve vídeo, áudio e imagens de qualquer página, bloqueie anúncios e rastreadores, e tudo fica no seu dispositivo.</string>
@@ -771,9 +771,9 @@
     <!-- Storage screen (StorageFragment). storage_free: %1$s = a size, e.g. "41 GB". -->
     <string name="storage_title">Armazenamento</string>
     <string name="storage_free">%1$s livres neste dispositivo</string>
-    <string name="storage_review">Rever armazenamento</string>
+    <string name="storage_review">Revisar armazenamento</string>
     <string name="storage_other">Outros</string>
-    <string name="storage_vault_note">Os ficheiros da Pasta segura não são contados aqui.</string>
+    <string name="storage_vault_note">Os arquivos da Pasta segura não são contados aqui.</string>
 
     <!-- Storage screen "Free up space" (StorageFragment). %1$d = count, %2$s / %1$s = a size. -->
     <string name="storage_offload_title">Libertar espaço</string>
@@ -781,10 +781,10 @@
     <string name="storage_offload_confirm_message">Eles ficam na sua pasta de backup. Você pode reproduzi-los ou restaurá-los em Backups a qualquer momento.</string>
     <string name="storage_offload_confirm_message_on">Eles ficam na sua pasta de backup em %1$s. Você pode reproduzi-los ou restaurá-los em Backups a qualquer momento.</string>
     <string name="storage_offload_confirm_positive">Remover</string>
-    <string name="storage_offload_done">Removido do telemóvel · %1$s libertados</string>
+    <string name="storage_offload_done">Removido do celular · %1$s liberados</string>
     <string name="storage_offload_unverified">Não foi possível confirmar que ainda estão no backup, então nada foi removido. Verifique se a pasta de backup está acessível e tente novamente.</string>
     <string name="storage_upsell_title">Economize espaço com o backup</string>
-    <string name="storage_upsell_body">Faça backup criptografado dos downloads no Google Drive, Dropbox ou num cartão SD e depois libere o espaço deles neste telefone. Eles ficam no backup, prontos para restaurar.</string>
+    <string name="storage_upsell_body">Faça backup criptografado dos downloads no Google Drive, Dropbox ou em um cartão SD e depois libere o espaço deles neste telefone. Eles ficam no backup, prontos para restaurar.</string>
     <string name="storage_upsell_button">Configurar</string>
     <plurals name="storage_offload_summary">
         <item quantity="one">%1$d download (%2$s) já está na sua pasta de backup. Remova-o deste telefone e mantenha-o em Backups.</item>
@@ -792,22 +792,22 @@
         <item quantity="other">%1$d downloads (%2$s) já estão na sua pasta de backup. Remova-os deste telefone e mantenha-os em Backups.</item>
     </plurals>
     <plurals name="storage_offload_confirm_title">
-        <item quantity="one">Remover %d transferência do telemóvel?</item>
-        <item quantity="many">Remover %d transferências do telemóvel?</item>
-        <item quantity="other">Remover %d transferências do telemóvel?</item>
+        <item quantity="one">Remover %d download do celular?</item>
+        <item quantity="many">Remover %d downloads do celular?</item>
+        <item quantity="other">Remover %d downloads do celular?</item>
     </plurals>
-    <string name="storage_review_empty">Não há transferências concluídas neste telemóvel para rever.</string>
+    <string name="storage_review_empty">Não há downloads concluídos neste celular para revisar.</string>
     <string name="storage_review_row_selected">%1$s, selecionado</string>
     <string name="storage_review_row_unselected">%1$s, não selecionado</string>
-    <string name="storage_review_confirm_message">Serão libertados %1$s neste telemóvel. Isto não pode ser anulado.</string>
-    <string name="storage_review_done">Eliminado · %1$s libertados</string>
+    <string name="storage_review_confirm_message">Serão liberados %1$s neste celular. Isso não pode ser desfeito.</string>
+    <string name="storage_review_done">Excluído · %1$s liberados</string>
     <plurals name="storage_review_delete_button">
-        <item quantity="one">Eliminar %1$d ficheiro · %2$s</item>
-        <item quantity="other">Eliminar %1$d ficheiros · %2$s</item>
+        <item quantity="one">Excluir %1$d arquivo · %2$s</item>
+        <item quantity="other">Excluir %1$d arquivos · %2$s</item>
     </plurals>
     <plurals name="storage_review_confirm_title">
-        <item quantity="one">Eliminar %d ficheiro?</item>
-        <item quantity="other">Eliminar %d ficheiros?</item>
+        <item quantity="one">Excluir %d arquivo?</item>
+        <item quantity="other">Excluir %d arquivos?</item>
     </plurals>
     <plurals name="storage_review_confirm_backed">
         <item quantity="one">%d deles também está na sua pasta de backup e fica lá.</item>
