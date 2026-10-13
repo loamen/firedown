@@ -12,6 +12,7 @@ import android.content.pm.ServiceInfo;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -57,10 +58,11 @@ import dagger.assisted.AssistedInject;
  *
  * <p>This worker only loads the shared recovery-code identity, drives the
  * engine, and reports a terminal status the UI observes. The one failure it
- * NAMES is the folder being unreachable ({@link #SLUG_FOLDER}): terminal, and
- * told once as a notification (tap → the Backup screen, whose hero shows the
- * folder-lost state with "Choose the folder again"). No key/credential data is
- * ever logged.
+ * NAMES is the place being unreachable ({@link #SLUG_FOLDER}, or
+ * {@link #SLUG_SERVER} for a WebDAV server): terminal, and told once as a
+ * notification (tap → the Backup screen, whose hero shows the lost state with
+ * "Choose the folder again" / "Reconnect"). No key/credential data is ever
+ * logged.
  */
 @HiltWorker
 public class VaultBackupWorker extends Worker {
@@ -105,6 +107,10 @@ public class VaultBackupWorker extends Worker {
     /** The folder could not be reached (grant revoked, provider gone, card
      *  removed) — the one cause worth its own words. */
     public static final String SLUG_FOLDER = "folder";
+    /** The WebDAV server could not be reached or refused us (offline, the
+     *  password changed, its certificate changed). The folder's twin, with
+     *  the server's words: the remedy is "Reconnect", not "choose it again". */
+    public static final String SLUG_SERVER = "server";
     /** No backup folder has been chosen (a job queued by a build that still
      *  had one, or the folder was forgotten between enqueue and run). */
     public static final String SLUG_NOT_SET_UP = "not-set-up";
@@ -355,10 +361,11 @@ public class VaultBackupWorker extends Worker {
                 Log.e(TAG, "backup failed: folder unreachable", e);
             }
             awaitLastProgress();
+            boolean server = store instanceof WebDavStore;
             if (!isStopped()) {
-                notifyFolderLost(name);
+                notifyPlaceLost(store.providerLabel(), server);
             }
-            return failure(SLUG_FOLDER);
+            return failure(server ? SLUG_SERVER : SLUG_FOLDER);
         } catch (FileNotFoundException e) {
             // The file itself can't be opened (deleted mid-flight, or a foreign-
             // owned file whose grant vanished). PERMANENT.
@@ -415,7 +422,7 @@ public class VaultBackupWorker extends Worker {
     /**
      * A terminal failure that is NOT the folder's: told as the "couldn't back
      * up <file>" notification (the folder's own failure has its own, see
-     * {@link #notifyFolderLost}) and returned with its slug. A stopped worker
+     * {@link #notifyPlaceLost}) and returned with its slug. A stopped worker
      * announces nothing — the stop was the user's.
      */
     private Result failTerminal(@Nullable String name, @NonNull String slug) {
@@ -547,7 +554,7 @@ public class VaultBackupWorker extends Worker {
      * notifications are denied (the hero and the Backups header carry the
      * state regardless). Fixed id: a batch of failing backups replaces it.
      */
-    private void notifyFolderLost(@Nullable String name) {
+    private void notifyPlaceLost(@Nullable String place, boolean server) {
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -557,10 +564,21 @@ public class VaultBackupWorker extends Worker {
         if (nm == null) {
             return;
         }
-        String title = mContext.getString(R.string.folder_backup_lost_notif_title);
-        String text = name != null
-                ? mContext.getString(R.string.folder_backup_lost_notif_text, name)
-                : mContext.getString(R.string.folder_backup_lost_notif_text_noname);
+        // The PLACE is named, never the file: "Firedown can't reach Google
+        // Drive", not "can't reach video.mp4" (the file name used to be
+        // passed here, and the sentence named the wrong thing).
+        boolean named = !TextUtils.isEmpty(place);
+        String title = mContext.getString(server
+                ? R.string.webdav_lost_notif_title : R.string.folder_backup_lost_notif_title);
+        String text;
+        if (server) {
+            text = mContext.getString(R.string.webdav_lost_notif_text,
+                    named ? place : mContext.getString(R.string.folder_backup_place_webdav));
+        } else if (named) {
+            text = mContext.getString(R.string.folder_backup_lost_notif_text, place);
+        } else {
+            text = mContext.getString(R.string.folder_backup_lost_notif_text_noname);
+        }
         Notification notification = new NotificationCompat.Builder(
                 mContext, App.DOWNLOADS_NOTIFICATION_ID)
                 .setSmallIcon(R.drawable.cloud_off_24)
@@ -629,6 +647,8 @@ public class VaultBackupWorker extends Worker {
         switch (slug) {
             case SLUG_FOLDER:
                 return R.string.folder_backup_transfer_lost;
+            case SLUG_SERVER:
+                return R.string.webdav_transfer_lost;
             case SLUG_NOT_SET_UP:
                 return R.string.folder_backup_transfer_not_set_up;
             case SLUG_FILE:
@@ -650,6 +670,8 @@ public class VaultBackupWorker extends Worker {
         switch (slug) {
             case SLUG_FOLDER:
                 return R.string.folder_backup_state_lost;
+            case SLUG_SERVER:
+                return R.string.webdav_state_lost;
             case SLUG_NOT_SET_UP:
                 return R.string.folder_backup_state_not_set_up;
             case SLUG_FILE:
@@ -664,7 +686,8 @@ public class VaultBackupWorker extends Worker {
     /** True when the Backup screen is the remedy (choose the folder again,
      *  finish the setup) — the snackbar carries a door only then. */
     public static boolean failureFixedInBackupScreen(@Nullable String slug) {
-        return SLUG_FOLDER.equals(slug) || SLUG_NOT_SET_UP.equals(slug);
+        return SLUG_FOLDER.equals(slug) || SLUG_SERVER.equals(slug)
+                || SLUG_NOT_SET_UP.equals(slug);
     }
 
     /** PendingIntent that opens the Backup screen (the merged settings screen

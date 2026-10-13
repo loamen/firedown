@@ -338,6 +338,30 @@ public final class WebDavHarness {
             WebDavCheck.Result abs = WebDavCheck.run(BASE, s.url("/dav"), "alex", "secret", null);
             check("check: a server answering absolute hrefs", abs.kind == WebDavCheck.Kind.OK, String.valueOf(abs.kind));
         }
+        // A reconnect from the sign-in page: an empty password means the saved
+        // one, but only for the server and user it was saved for.
+        try (Server s = nextcloud(); Server other = nextcloud()) {
+            WebDavConfig saved = new WebDavConfig(s.url(DAV + "/"), "alex", "secret", null);
+            WebDavCheck.Result kept = WebDavCheck.runReusing(BASE, saved, s.url("/"), "alex", null, null);
+            check("reuse: an empty password on the saved server signs in with the saved one",
+                    kept.kind == WebDavCheck.Kind.OK && kept.config != null
+                            && "secret".equals(kept.config.password), String.valueOf(kept.kind));
+            WebDavCheck.Result typed = WebDavCheck.runReusing(BASE, saved, s.url("/"), "alex", "wrong", null);
+            check("reuse: a typed password wins over the saved one",
+                    typed.kind == WebDavCheck.Kind.AUTH_FAILED, String.valueOf(typed.kind));
+            int before = s.dav.log.size();
+            WebDavCheck.Result user = WebDavCheck.runReusing(BASE, saved, s.url("/"), "sam", null, null);
+            check("reuse: another user does not get the saved password",
+                    user.kind == WebDavCheck.Kind.AUTH_FAILED && s.dav.log.size() == before,
+                    user.kind + " " + (s.dav.log.size() - before));
+            WebDavCheck.Result elsewhere = WebDavCheck.runReusing(BASE, saved, other.url("/"), "alex", null, null);
+            check("reuse: the saved password is never sent to another server",
+                    elsewhere.kind == WebDavCheck.Kind.AUTH_FAILED && other.dav.log.isEmpty(),
+                    elsewhere.kind + " " + other.dav.log);
+            check("reuse: no saved sign-in, no password, is AUTH_FAILED",
+                    WebDavCheck.runReusing(BASE, null, s.url("/"), "alex", null, null).kind
+                            == WebDavCheck.Kind.AUTH_FAILED);
+        }
     }
 
     // ---- store ----
@@ -632,6 +656,12 @@ public final class WebDavHarness {
             check("tls: trusted by its fingerprint (and its name, which is not 127.0.0.1)",
                     pinned.kind == WebDavCheck.Kind.OK && pinned.config != null
                             && pinA.equals(pinned.config.pinSha256), pinned.kind + "");
+
+            WebDavCheck.Result again = WebDavCheck.runReusing(BASE, pinned.config, s.url("/dav"),
+                    "alex", null, null);
+            check("tls: a reconnect keeps the certificate already trusted (and the password)",
+                    again.kind == WebDavCheck.Kind.OK && again.config != null
+                            && pinA.equals(again.config.pinSha256), again.kind + "");
 
             WebDavStore store = new WebDavStore(pinned.config, BASE);
             VaultEngine engine = new VaultEngine(store, identity(5));

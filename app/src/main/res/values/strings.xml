@@ -330,6 +330,44 @@
     <string name="folder_backup_place_other">Somewhere else</string>
     <string name="folder_backup_place_other_sub">Any folder the picker can reach. One on this phone is lost with the phone.</string>
     <string name="folder_backup_place_signin">A cloud app appears in the picker\'s ☰ once you\'re signed in to it.</string>
+    <!-- WebDAV: a server the user signs in to, the third kind of place
+         (WebDavConnectFragment, canvas boards 5-8). -->
+    <string name="folder_backup_place_webdav">WebDAV server</string>
+    <string name="folder_backup_place_webdav_sub">Nextcloud, ownCloud, a home NAS or any WebDAV address. You sign in here; no app needed.</string>
+    <string name="webdav_intro">Sign in to the server that will keep your backups. Firedown makes a “Firedown Backup” folder there.</string>
+    <string name="webdav_address">Server address</string>
+    <string name="webdav_address_help">The WebDAV address, or just the server name for Nextcloud and ownCloud.</string>
+    <string name="webdav_user">User name</string>
+    <string name="webdav_password">Password</string>
+    <string name="webdav_password_help">An app password works best. It stays on this phone.</string>
+    <string name="webdav_password_keep">Leave it empty to keep the saved password.</string>
+    <string name="webdav_encrypted_note">Backups are encrypted on this phone before they\'re sent. The server only ever stores scrambled data.</string>
+    <string name="webdav_connect">Connect</string>
+    <string name="webdav_connect_anyway">Connect anyway</string>
+    <string name="webdav_checking">Checking the server…</string>
+    <string name="webdav_checking_note">Signing in, then writing and deleting a test file in Firedown Backup.</string>
+    <string name="webdav_insecure">This address isn\'t encrypted. Your backups still are, but your password travels in the open.</string>
+    <string name="webdav_error_auth">The server didn\'t accept this name and password.</string>
+    <string name="webdav_error_not_webdav">No WebDAV folder at this address. Use the WebDAV address your server shows in its settings.</string>
+    <string name="webdav_error_unreachable">Can\'t reach %1$s. Check the address and that this phone is online.</string>
+    <string name="webdav_error_read_only">Signed in, but %1$s can\'t write here. Backups need to create, write and delete files.</string>
+    <string name="webdav_error_full">The server is out of space. Free some up, then try again.</string>
+    <string name="webdav_error_bad_address">That isn\'t a server address.</string>
+    <string name="webdav_trust_title">Trust this server?</string>
+    <string name="webdav_trust_message">%1$s uses a certificate this phone doesn\'t recognise. Home servers often make their own. Trust it only if this is your server and the fingerprint matches the one it shows.</string>
+    <string name="webdav_trust_fingerprint">SHA-256 fingerprint</string>
+    <string name="webdav_trust_note">If it ever changes, backups stop until you check it again.</string>
+    <string name="webdav_trust_confirm">Trust</string>
+    <!-- The Backup folder row's summary for a server: the host, then the
+         protocol name, which no locale translates. -->
+    <string name="webdav_folder_row" translatable="false">%1$s · WebDAV</string>
+    <string name="webdav_reconnect_cta">Reconnect</string>
+    <string name="webdav_lost_title">Can\'t reach your backup server</string>
+    <string name="webdav_lost_body">It may be offline, or its password or certificate changed. Reconnect to keep backing up. Nothing on this phone is affected.</string>
+    <string name="webdav_lost_notif_title">Backup server unreachable</string>
+    <string name="webdav_lost_notif_text">Firedown can\'t reach %1$s. Open Backup to reconnect.</string>
+    <string name="webdav_state_lost">Server unreachable</string>
+    <string name="webdav_transfer_lost">Can\'t reach the backup server. Reconnect in Backup</string>
     <string name="folder_backup_hint_drawer">Tap ☰ in the picker to find your cloud apps</string>
     <string name="folder_backup_checking">Checking the folder…</string>
     <string name="folder_backup_unwritable_title">Can\'t back up here</string>

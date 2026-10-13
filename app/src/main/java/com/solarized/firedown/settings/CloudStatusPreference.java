@@ -62,6 +62,9 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
      *  until a read has named the folder), or empty when unknown — then the
      *  subtitle line is hidden. */
     private String mProvider = "";
+    /** The place is a WebDAV server: the lost state says "server" and the
+     *  remedy is Reconnect, not choosing a folder again. */
+    private boolean mServer;
 
     public CloudStatusPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -113,6 +116,14 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         if (mFileCount != fileCount || mTotalBytes != totalBytes) {
             mFileCount = fileCount;
             mTotalBytes = totalBytes;
+            notifyChanged();
+        }
+    }
+
+    /** The place is a WebDAV server rather than a picked folder. */
+    public void setServer(boolean server) {
+        if (mServer != server) {
+            mServer = server;
             notifyChanged();
         }
     }
@@ -169,9 +180,9 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
             alert.setVisibility(View.GONE);
         } else {
             glyph.setImageResource(R.drawable.cloud_off_24);
-            title.setText(R.string.folder_backup_lost_title);
+            title.setText(mServer ? R.string.webdav_lost_title : R.string.folder_backup_lost_title);
             title.setTextColor(error);
-            alert.setText(R.string.folder_backup_lost_body);
+            alert.setText(mServer ? R.string.webdav_lost_body : R.string.folder_backup_lost_body);
             alert.setVisibility(View.VISIBLE);
         }
         if (TextUtils.isEmpty(mProvider)) {

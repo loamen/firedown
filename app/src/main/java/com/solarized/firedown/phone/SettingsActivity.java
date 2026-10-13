@@ -172,6 +172,8 @@ public class SettingsActivity extends BaseActivity {
                 mToolbar.setTitle(R.string.share_app_title);
             else if(id == R.id.settings_feedback)
                 mToolbar.setTitle(R.string.feedback_title);
+            else if(id == R.id.settings_webdav)
+                mToolbar.setTitle(R.string.folder_backup_place_webdav);
         });
 
         ViewCompat.setOnApplyWindowInsetsListener(mToolbar, (v, windowInsets) -> {

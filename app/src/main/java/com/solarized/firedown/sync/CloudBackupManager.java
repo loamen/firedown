@@ -241,14 +241,19 @@ public class CloudBackupManager {
      * the main thread. Anything but {@link WebDavCheck.Kind#OK} saves nothing,
      * so the current place stays as it was. {@code pinSha256} is the leaf the
      * user chose to trust after an {@link WebDavCheck.Kind#UNTRUSTED_CERT}
-     * answer, else null.
+     * answer, else null. A reconnect may leave {@code password} null to use
+     * the saved one, and a null pin reuses a certificate already trusted for
+     * the same server ({@link WebDavCheck#runReusing}); the saved sign-in is
+     * unwrapped here, off the main thread.
      */
     public void checkAndAdoptWebDav(@NonNull String address, @NonNull String user,
-                                    @NonNull String password, @Nullable String pinSha256,
+                                    @Nullable String password, @Nullable String pinSha256,
                                     @NonNull Consumer<WebDavCheck.Result> onResult) {
         folderExecutor.execute(() -> {
-            WebDavCheck.Result result = WebDavCheck.run(NetworkModule.globalClient,
-                    address, user, password, pinSha256);
+            WebDavSettings settings = new WebDavSettings(context);
+            WebDavConfig saved = settings.isConfigured() ? settings.load() : null;
+            WebDavCheck.Result result = WebDavCheck.runReusing(NetworkModule.globalClient,
+                    saved, address, user, password, pinSha256);
             main.post(() -> {
                 if (result.kind == WebDavCheck.Kind.OK && result.config != null) {
                     adoptWebDav(result.config);

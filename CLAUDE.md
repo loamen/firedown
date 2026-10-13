@@ -4259,14 +4259,14 @@ WebDAV server the user signs in to: Nextcloud, ownCloud, a NAS).
   object, so a source that will not open costs no remote request; the
   cleanup delete runs only once an object may exist (`attempted`).
 
-### `WebDavStore` — backups on a server the user signs in to (backend only)
+### `WebDavStore` — backups on a server the user signs in to
 
 Built on 2026-10-13 behind the canvas boards 5–8 ("Where to back up" gains
 a "WebDAV server" row → sign in → trust a self-made certificate →
-connected). **The screen is NOT built yet**: no chooser row, no sign-in
-page, no trust prompt, no strings. `CloudBackupManager.checkAndAdoptWebDav
-(address, user, password, pin, onResult)` is the one entry point it will
-call; the result's `kind` maps 1:1 to the board's error states. Pieces:
+connected); the screen is described in the next section.
+`CloudBackupManager.checkAndAdoptWebDav(address, user, password, pin,
+onResult)` is its one entry point, and the result's `kind` maps 1:1 to the
+board's error states. Pieces:
 `WebDavClient` (the wire), `WebDavStore` (the layout on top), `WebDavCheck`
 (find and test a server before saving), `WebDavConfig`, `WebDavSettings`
 (the saved sign-in, in the backup-EXCLUDED `secret_shared_prefs` beside the
@@ -4345,6 +4345,45 @@ recovery code, the password sealed under the same keystore key through
 - Not supported, by decision for now: Digest, resumable/chunked uploads,
   client certificates, Nextcloud Login Flow v2 (the user types an app
   password).
+- **The screen** (canvas boards 5–8). "Where to back up" has a **"WebDAV
+  server"** row (`dns_24`, after Cloud storage) that opens
+  `WebDavConnectFragment` (`settings_webdav`, a full page for the feedback
+  page's reasons: three fields, wrapping helpers, the keyboard up the whole
+  time) with `WebDavConnectViewModel` holding the state across rotation.
+  Every failure lands on the field it is about: a refused sign-in under the
+  password, everything about the server (not found, not WebDAV, read-only,
+  full, not an address, unreachable) under the address. A plain `http://`
+  address swaps the address helper for "isn't encrypted" and the button for
+  "Connect anyway", in words, no warning colour. An `UNTRUSTED_CERT`
+  answer opens **"Trust this server?"** (`dialog_webdav_trust`: the host,
+  the SHA-256 in the colon form servers print, twelve bytes a line,
+  selectable, and "if it changes, backups stop"); Trust re-runs the check
+  with that pin. The view model keeps the certificate while the dialog is
+  torn down with the view, so a rotation asks again rather than dropping
+  the question. On OK the page pops back with the folder pick's own
+  snackbar. **A RECONNECT is one tap**: opened while a server is saved,
+  the page is prefilled with its address and user, and an empty password
+  means the saved one. That reuse is `WebDavCheck.runReusing`, and it is
+  bound: the saved password goes only to the same scheme + host + port AND
+  the same user (`sameServer`), anything else with no password is
+  `AUTH_FAILED` before a byte is sent; a null pin reuses the certificate
+  already trusted for that server, and a changed one comes back as a new
+  trust prompt. The saved sign-in is unwrapped on the folder pool, never on
+  main. The field watchers attach in `onViewStateRestored`, after the
+  fields get their text back: a restore is a setText, and an earlier
+  watcher wiped the error shown under a field on every rotation.
+- **The Backup screen speaks about a SERVER when the place is one.** The
+  folder row wears `dns_24` and reads "<host> · WebDAV"
+  (`webdav_folder_row`, untranslatable); the hero's lost state reads "Can't
+  reach your backup server" with a body naming offline / a changed password
+  or certificate (`CloudStatusPreference.setServer`); the CTA in that state
+  is **"Reconnect"** and opens the prefilled sign-in page directly, not
+  the chooser; the worker fails a server with **`SLUG_SERVER`** (its own
+  words on the row, the snackbar and the notification, and the Backups
+  header's lost line). The lost notification names the PLACE: it used to
+  be passed the FILE name, so the folder's "Firedown can't reach %1$s"
+  read "can't reach video.mp4"; it takes `store.providerLabel()` now, for
+  folders and servers alike.
 - **A server to test against: `scripts/webdav-server/DavServer.java`.** One
   file, JDK only (Android Studio's JBR runs it), no build:
   `java scripts/webdav-server/DavServer.java --root ~/dav-test` serves a
@@ -4404,7 +4443,8 @@ recovery code, the password sealed under the same keystore key through
   `isStopped()`, and the last `setProgressAsync` future DRAINED before every
   `Result` — WorkManager throws "must complete before a ListenableWorker
   signals completion" otherwise), and names EVERY terminal cause with a
-  slug on its output data: `SLUG_FOLDER` (above), `SLUG_NOT_SET_UP` (a job
+  slug on its output data: `SLUG_FOLDER` (above), `SLUG_SERVER` (the same
+  for a WebDAV server, with "Reconnect" wording), `SLUG_NOT_SET_UP` (a job
   queued before the folder was forgotten), `SLUG_FILE` (the file could not
   be read), `SLUG_WRITE` (a write on a reachable folder failed past the
   retry ceiling) and `SLUG_ERROR` (anything else). **The slug → words
@@ -5020,15 +5060,19 @@ children — the card edges do the grouping).
   found from host:port alone, read-only, a quota at the check and
   mid-backup, and the pinned certificate surviving a restart; and, when
   litmus is installed (`apt install litmus`), the server's basic, copymove
-  and http conformance suites. 131 checks with wsgidav and litmus, 115
-  without, ~2 min.
-  Teeth proven by mutation: each of eight planted bugs fails it (a refused
+  and http conformance suites; and the reconnect rules (`runReusing`: the
+  saved password reused only for the same server and user, never sent
+  elsewhere, a typed one winning, the trusted certificate kept). 137
+  checks with wsgidav and litmus, 121 without, ~2 min.
+  Teeth proven by mutation: each of nine planted bugs fails it (a
+  `sameServer` that always matches, which sends the saved password to
+  another server; a refused
   certificate not mapped to unreachable, a 401 treated as retryable, no
   sidecar cache, the 206 range unchecked, a vanished collection read as
   empty, the pin ignored, no preemptive sign-in, the sidecar written before
   the object). What it cannot prove: Android's trust manager and SAX
-  parser, and a real Nextcloud/NAS — on-device with both once the screen
-  exists.
+  parser, the screen itself, and a real Nextcloud/NAS — on-device, with
+  `DavServer.java` on a laptop as the first target.
 
 ## Browser chrome, pull-to-refresh & session recovery (Fenix-parity invariants)
 

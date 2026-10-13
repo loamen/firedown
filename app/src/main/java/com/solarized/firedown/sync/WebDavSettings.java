@@ -49,6 +49,12 @@ public final class WebDavSettings {
         return prefs.getString(KEY_URL, null);
     }
 
+    /** The saved user name, to prefill a reconnect (cheap: no keystore). */
+    @Nullable
+    public String user() {
+        return prefs.getString(KEY_USER, null);
+    }
+
     /** The saved sign-in, or null when none is saved or the password can no
      *  longer be unwrapped (the keystore key is gone). */
     @Nullable

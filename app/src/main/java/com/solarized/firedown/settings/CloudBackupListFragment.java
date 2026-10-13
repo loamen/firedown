@@ -639,7 +639,7 @@ public class CloudBackupListFragment extends Fragment
                             // flips to the lost wording instead of advertising a
                             // backup that cannot be written. Once per failed work
                             // id: this observer re-fires on every tick.
-                            if (SLUG_FOLDER.equals(slug)
+                            if ((SLUG_FOLDER.equals(slug) || SLUG_SERVER.equals(slug))
                                     && mReloadedTransferIds.add(wi.getId().toString())) {
                                 mViewModel.loadStatus();
                             }
@@ -891,7 +891,8 @@ public class CloudBackupListFragment extends Fragment
             return null;
         }
         if (!status.reachable) {
-            return getString(R.string.folder_backup_lost_title);
+            return getString(mCloudBackup.usesWebDav()
+                    ? R.string.webdav_lost_title : R.string.folder_backup_lost_title);
         }
         if (TextUtils.isEmpty(status.providerLabel)) {
             return getString(R.string.folder_backup_hero_title);
@@ -1176,6 +1177,7 @@ public class CloudBackupListFragment extends Fragment
     // other failure — a retry ceiling, a torn write — stays generic, which is
     // the honest answer when the reason is something we have not seen before.
     private static final String SLUG_FOLDER = VaultBackupWorker.SLUG_FOLDER;
+    private static final String SLUG_SERVER = VaultBackupWorker.SLUG_SERVER;
     private static final String SLUG_NOT_SET_UP = VaultBackupWorker.SLUG_NOT_SET_UP;
 
     /**

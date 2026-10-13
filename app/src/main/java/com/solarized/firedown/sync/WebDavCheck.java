@@ -83,6 +83,46 @@ public final class WebDavCheck {
     }
 
     /**
+     * {@link #run} for a reconnect from the sign-in page: a null
+     * {@code password} means the saved one, and a null {@code pinSha256} the
+     * certificate already trusted for the same server. Both come from
+     * {@code saved} only when it names the same scheme, host and port (and,
+     * for the password, the same user), so a saved password is never sent
+     * to a different server. A null password with nothing to reuse answers
+     * {@link Kind#AUTH_FAILED}: the form asks for one.
+     */
+    @NonNull
+    public static Result runReusing(@Nullable OkHttpClient base, @Nullable WebDavConfig saved,
+                                    @NonNull String address, @NonNull String user,
+                                    @Nullable String password, @Nullable String pinSha256) {
+        HttpUrl typed = normalize(address);
+        if (typed == null) {
+            return Result.of(Kind.BAD_ADDRESS);
+        }
+        boolean same = saved != null && sameServer(typed, HttpUrl.parse(saved.url));
+        String pass = password;
+        if (pass == null) {
+            if (!same || !saved.user.equals(user)) {
+                return Result.of(Kind.AUTH_FAILED);
+            }
+            pass = saved.password;
+        }
+        String pin = pinSha256;
+        if (pin == null && same) {
+            pin = saved.pinSha256;
+        }
+        return run(base, address, user, pass, pin);
+    }
+
+    /** Same scheme, host and port: what a saved password or pin is bound to. */
+    public static boolean sameServer(@Nullable HttpUrl a, @Nullable HttpUrl b) {
+        return a != null && b != null
+                && a.scheme().equals(b.scheme())
+                && a.host().equalsIgnoreCase(b.host())
+                && a.port() == b.port();
+    }
+
+    /**
      * Runs the whole check. {@code pinSha256} is a leaf certificate the user
      * chose to trust after an {@link Kind#UNTRUSTED_CERT} answer (null the
      * first time).

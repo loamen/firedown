@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,6 +32,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
@@ -335,11 +337,15 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                 // The MORPHING CTA: the next onboarding step. Pre-key it reads
                 // "Create recovery code" and runs the create flow (mandatory
                 // "I've saved it" gate); with a key the other labels — choose,
-                // choose again — open the "Where to back up" chooser.
-                if (mCloudBackup.hasAccount()) {
-                    showPlaceChooser();
-                } else {
+                // choose again — open the "Where to back up" chooser, and
+                // "Reconnect" (a WebDAV server that stopped answering) opens
+                // the sign-in page prefilled with the saved server.
+                if (!mCloudBackup.hasAccount()) {
                     createCode();
+                } else if (mCloudBackup.usesWebDav() && mCloudBackup.hasFolder()) {
+                    openWebDav();
+                } else {
+                    showPlaceChooser();
                 }
             }
             case Preferences.SETTINGS_CLOUD_BACKUP_FOLDER -> changeFolder();
@@ -437,6 +443,7 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         mStatus.setActive(mTransferActive);
         mStatus.setHasKey(hasKey);       // roadmap step ① check-off
         mStatus.setHasFolder(hasFolder); // roadmap step ② check-off
+        mStatus.setServer(mCloudBackup.usesWebDav());
         mStatus.setProvider(mCloudBackup.locationLabel());
         applyFolderRow(hasKey && hasFolder);
         CloudBackupManager.Status known = knownStatus();
@@ -483,14 +490,35 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * like the CTA (a restored install can carry a folder URI with no code;
      * the key-first gate must hold on this door too).
      */
+    /** Which glyph the folder row wears now (null = the XML's), so the icon
+     *  is swapped only when the place's kind changes. */
+    @Nullable
+    private Boolean mFolderRowServer;
+
     private void applyFolderRow(boolean hasFolder) {
         if (mFolderRow == null) {
             return;
         }
         mFolderRow.setVisible(hasFolder);
-        if (hasFolder) {
-            mFolderRow.setSummary(mCloudBackup.locationLabel());
+        if (!hasFolder) {
+            return;
         }
+        boolean server = mCloudBackup.usesWebDav();
+        if (mFolderRowServer == null || mFolderRowServer != server) {
+            // Only on a change: setIcon rebinds the row, and this runs twice
+            // per screen update. Tinted like every other settings icon
+            // (tintIcons ran at inflate, before this drawable existed).
+            mFolderRowServer = server;
+            mFolderRow.setIcon(server ? R.drawable.dns_24 : R.drawable.folder_24);
+            Drawable icon = mFolderRow.getIcon();
+            if (icon != null) {
+                DrawableCompat.setTint(icon, MaterialColors.getColor(requireContext(),
+                        android.R.attr.textColorSecondary, 0));
+            }
+        }
+        mFolderRow.setSummary(server
+                ? getString(R.string.webdav_folder_row, mCloudBackup.locationLabel())
+                : mCloudBackup.locationLabel());
     }
 
     /**
@@ -530,7 +558,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
         } else if (!hasFolder) {
             title = R.string.folder_backup_choose_cta;
         } else if (lost) {
-            title = R.string.folder_backup_rechoose_cta;
+            title = mCloudBackup.usesWebDav()
+                    ? R.string.webdav_reconnect_cta : R.string.folder_backup_rechoose_cta;
         } else {
             mCta.setVisible(false);
             return;
@@ -616,6 +645,15 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                     launchPicker(null, getString(R.string.folder_backup_hint_drawer));
                 });
         cloud.findViewById(R.id.place_picker_hint).setVisibility(View.VISIBLE);
+        // A server signed in to HERE, no app and no picker: the page asks for
+        // the address, a user and a password, and checks it before saving.
+        addPlaceRow(list, R.drawable.dns_24,
+                com.google.android.material.R.attr.colorOnSurfaceVariant,
+                getString(R.string.folder_backup_place_webdav),
+                getString(R.string.folder_backup_place_webdav_sub), v -> {
+                    dismissChooser(shown);
+                    openWebDav();
+                });
         BackupPlaces.Volume volume = BackupPlaces.removable(context);
         if (volume != null) {
             String volumeLabel = TextUtils.isEmpty(volume.label)
@@ -643,6 +681,11 @@ public class SyncSettingsFragment extends BasePreferenceFragment
                 .setView(content)
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    /** The WebDAV sign-in page; prefilled from the saved server, if any. */
+    private void openWebDav() {
+        NavigationUtils.navigateSafe(mNavController, R.id.action_sync_to_webdav);
     }
 
     private static void dismissChooser(AlertDialog[] shown) {
