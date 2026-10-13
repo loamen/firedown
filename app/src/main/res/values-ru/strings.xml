@@ -519,7 +519,7 @@
     <string name="folder_backup_place_other">В другом месте</string>
     <string name="folder_backup_place_other_sub">Любая папка, до которой дотягивается выбор. Папка на этом телефоне теряется вместе с ним.</string>
     <string name="folder_backup_place_signin">Облачное приложение появляется в ☰ выбора после входа в него.</string>
-    <string name="folder_backup_place_none">Не установлено ни одного облачного приложения с доступом к папкам. Google Диск, Dropbox и Nextcloud подходят; SD-карта тоже.</string>
+    <string name="folder_backup_place_none">Не установлено облачное приложение, о котором известно, что оно может хранить папку резервных копий. Google Диск и Nextcloud могут, SD-карта тоже. Другое приложение может работать через «В другом месте».</string>
     <string name="folder_backup_hint_drawer">Нажмите ☰ и выберите %1$s</string>
     <string name="folder_backup_guard_title">Это ваша папка загрузок</string>
     <string name="folder_backup_guard_message">Firedown уже хранит ваши загрузки в %1$s. Резервная копия там теряется вместе с телефоном. Выберите вместо этого папку в облачном приложении или на SD-карте.</string>

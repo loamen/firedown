@@ -586,8 +586,9 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * "Where to back up" — the chooser that replaced a two-paragraph dialog
      * ("the Android file picker opens next, tap ☰ in its top corner…" +
      * "Open picker"). It is built from what the phone HAS ({@link
-     * BackupPlaces}): one row per installed cloud app with its own icon, the
-     * mounted SD card / USB drive, and "Somewhere else" (the plain picker).
+     * BackupPlaces}): one row per installed cloud app KNOWN to take a folder
+     * pick, with its own icon, the mounted SD card / USB drive, and "Somewhere
+     * else" (the plain picker, where every other provider still is).
      * Nothing here can open the picker INSIDE a cloud app (roots are behind a
      * system permission — see BackupPlaces), so a cloud row's subtitle says
      * what to tap in the picker and the same line is toasted OVER the picker
@@ -595,8 +596,8 @@ public class SyncSettingsFragment extends BasePreferenceFragment
      * is not ours. The volume row opens the picker right on the card. No cloud
      * app at all is finally a statable fact — the note says so and the card /
      * plain-picker rows remain — where the paragraph could only list apps the
-     * phone might not have. Residual it cannot see: an app that hides from
-     * folder picks (Proton, CLAUDE.md) is listed and then absent from ☰.
+     * phone might not have. Detection alone listed Termux, System Tracing and
+     * Proton Drive as backup places; the allowlist is why it no longer does.
      */
     private void showPlaceChooser() {
         Context context = getContext();

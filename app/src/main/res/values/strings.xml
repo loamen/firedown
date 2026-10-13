@@ -328,7 +328,7 @@
     <string name="folder_backup_place_other">Somewhere else</string>
     <string name="folder_backup_place_other_sub">Any folder the picker can reach. One on this phone is lost with the phone.</string>
     <string name="folder_backup_place_signin">A cloud app appears in the picker\'s ☰ once you\'re signed in to it.</string>
-    <string name="folder_backup_place_none">No cloud app with folder access is installed. Google Drive, Dropbox and Nextcloud work; so does an SD card.</string>
+    <string name="folder_backup_place_none">No cloud app known to hold a backup folder is installed. Google Drive and Nextcloud can, and so can an SD card. Another app may still work under Somewhere else.</string>
     <string name="folder_backup_hint_drawer">Tap ☰ and choose %1$s</string>
     <string name="folder_backup_guard_title">That\'s your downloads folder</string>
     <string name="folder_backup_guard_message">Firedown already keeps your downloads in %1$s. A backup there is lost with the phone. Choose a folder on a cloud app or an SD card instead.</string>

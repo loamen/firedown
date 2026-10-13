@@ -451,7 +451,7 @@
     <string name="folder_backup_place_other">कहीं और</string>
     <string name="folder_backup_place_other_sub">कोई भी फ़ोल्डर जहाँ तक चयनकर्ता पहुँचता है। इस फ़ोन का फ़ोल्डर फ़ोन के साथ ही खो जाता है।</string>
     <string name="folder_backup_place_signin">क्लाउड ऐप में साइन इन करने के बाद ही वह चयनकर्ता के ☰ में दिखता है।</string>
-    <string name="folder_backup_place_none">फ़ोल्डर एक्सेस वाला कोई क्लाउड ऐप इंस्टॉल नहीं है। Google Drive, Dropbox और Nextcloud काम करते हैं; SD कार्ड भी।</string>
+    <string name="folder_backup_place_none">ऐसा कोई क्लाउड ऐप इंस्टॉल नहीं है जिसके बारे में पता हो कि वह बैकअप फ़ोल्डर रख सकता है। Google Drive और Nextcloud रख सकते हैं, SD कार्ड भी। कोई दूसरा ऐप “कहीं और” से काम कर सकता है।</string>
     <string name="folder_backup_hint_drawer">☰ पर टैप करके %1$s चुनें</string>
     <string name="folder_backup_guard_title">यह आपका डाउनलोड फ़ोल्डर है</string>
     <string name="folder_backup_guard_message">Firedown आपके डाउनलोड पहले से %1$s में रखता है। वहाँ का बैकअप फ़ोन के साथ ही खो जाता है। इसके बजाय किसी क्लाउड ऐप या SD कार्ड का फ़ोल्डर चुनें।</string>

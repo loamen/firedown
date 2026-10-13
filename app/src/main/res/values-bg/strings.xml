@@ -438,7 +438,7 @@
     <string name="folder_backup_place_other">Другаде</string>
     <string name="folder_backup_place_other_sub">Всяка папка, до която изборът стига. Папка на този телефон се губи с него.</string>
     <string name="folder_backup_place_signin">Облачно приложение се появява в ☰ на избора, след като влезете в него.</string>
-    <string name="folder_backup_place_none">Няма инсталирано облачно приложение с достъп до папки. Google Drive, Dropbox и Nextcloud работят; SD карта също.</string>
+    <string name="folder_backup_place_none">Не е инсталирано облачно приложение, за което знаем, че може да държи папка за резервни копия. Google Drive и Nextcloud могат, както и SD карта. Друго приложение може да работи през „Другаде“.</string>
     <string name="folder_backup_hint_drawer">Докоснете ☰ и изберете %1$s</string>
     <string name="folder_backup_guard_title">Това е папката с изтеглянията ви</string>
     <string name="folder_backup_guard_message">Firedown вече пази изтеглянията ви в %1$s. Архив там се губи заедно с телефона. Вместо това изберете папка в облачно приложение или на SD карта.</string>

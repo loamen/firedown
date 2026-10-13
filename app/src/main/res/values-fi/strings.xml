@@ -483,7 +483,7 @@
     <string name="folder_backup_place_other">Muualle</string>
     <string name="folder_backup_place_other_sub">Mikä tahansa kansio, johon valitsin yltää. Tällä puhelimella oleva kansio katoaa puhelimen mukana.</string>
     <string name="folder_backup_place_signin">Pilvisovellus näkyy valitsimen ☰-valikossa, kun olet kirjautunut siihen.</string>
-    <string name="folder_backup_place_none">Yhtään kansioihin pääsevää pilvisovellusta ei ole asennettu. Google Drive, Dropbox ja Nextcloud toimivat; SD-kortti myös.</string>
+    <string name="folder_backup_place_none">Asennettuna ei ole pilvisovellusta, jonka tiedetään pystyvän säilyttämään varmuuskopiokansion. Google Drive ja Nextcloud pystyvät, samoin SD-kortti. Jokin muu sovellus voi toimia kohdasta ”Muualle”.</string>
     <string name="folder_backup_hint_drawer">Napauta ☰ ja valitse %1$s</string>
     <string name="folder_backup_guard_title">Tämä on latauskansiosi</string>
     <string name="folder_backup_guard_message">Firedown tallentaa latauksesi jo kansioon %1$s. Sinne tehty varmuuskopio katoaa puhelimen mukana. Valitse sen sijaan kansio pilvisovelluksesta tai SD-kortilta.</string>

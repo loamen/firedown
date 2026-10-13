@@ -615,7 +615,7 @@
     <string name="folder_backup_place_other">En otro sitio</string>
     <string name="folder_backup_place_other_sub">Cualquier carpeta a la que llegue el selector. Una en este teléfono se pierde con él.</string>
     <string name="folder_backup_place_signin">Una app de nube aparece en el ☰ del selector cuando has iniciado sesión en ella.</string>
-    <string name="folder_backup_place_none">No hay instalada ninguna app de nube con acceso a carpetas. Google Drive, Dropbox y Nextcloud funcionan; una tarjeta SD también.</string>
+    <string name="folder_backup_place_none">No hay instalada ninguna app de nube que sepamos que admite una carpeta de copia. Google Drive y Nextcloud la admiten, y también una tarjeta SD. Otra app puede funcionar desde «En otro sitio».</string>
     <string name="folder_backup_hint_drawer">Toca ☰ y elige %1$s</string>
     <string name="folder_backup_guard_title">Esa es tu carpeta de descargas</string>
     <string name="folder_backup_guard_message">Firedown ya guarda tus descargas en %1$s. Una copia ahí se pierde con el teléfono. Elige en su lugar una carpeta en una app de nube o en una tarjeta SD.</string>

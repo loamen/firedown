@@ -515,7 +515,7 @@
     <string name="folder_backup_place_other">Outro lugar</string>
     <string name="folder_backup_place_other_sub">Qualquer pasta que o seletor alcance. Uma pasta neste celular se perde junto com ele.</string>
     <string name="folder_backup_place_signin">Um app de nuvem aparece no ☰ do seletor depois que você faz login nele.</string>
-    <string name="folder_backup_place_none">Nenhum app de nuvem com acesso a pastas está instalado. Google Drive, Dropbox e Nextcloud funcionam; um cartão SD também.</string>
+    <string name="folder_backup_place_none">Nenhum app de nuvem conhecido por aceitar uma pasta de backup está instalado. Google Drive e Nextcloud aceitam, e um cartão SD também. Outro app pode funcionar em “Outro lugar”.</string>
     <string name="folder_backup_hint_drawer">Toque em ☰ e escolha %1$s</string>
     <string name="folder_backup_guard_title">Essa é a sua pasta de downloads</string>
     <string name="folder_backup_guard_message">O Firedown já guarda seus downloads em %1$s. Um backup ali se perde junto com o celular. Escolha em vez disso uma pasta em um app de nuvem ou em um cartão SD.</string>

@@ -451,7 +451,7 @@
     <string name="folder_backup_place_other">В іншому місці</string>
     <string name="folder_backup_place_other_sub">Будь-яка тека, до якої дотягується вибір. Тека на цьому телефоні втрачається разом із ним.</string>
     <string name="folder_backup_place_signin">Хмарний застосунок з\'являється в ☰ вибору після входу в нього.</string>
-    <string name="folder_backup_place_none">Не встановлено жодного хмарного застосунку з доступом до тек. Google Диск, Dropbox і Nextcloud підходять; SD-картка теж.</string>
+    <string name="folder_backup_place_none">Не встановлено хмарного застосунку, про який відомо, що він може зберігати теку резервних копій. Google Диск і Nextcloud можуть, SD-картка теж. Інший застосунок може працювати через «В іншому місці».</string>
     <string name="folder_backup_hint_drawer">Торкніться ☰ і виберіть %1$s</string>
     <string name="folder_backup_guard_title">Це ваша тека завантажень</string>
     <string name="folder_backup_guard_message">Firedown уже зберігає ваші завантаження в %1$s. Резервна копія там втрачається разом із телефоном. Натомість виберіть теку в хмарному застосунку або на SD-картці.</string>

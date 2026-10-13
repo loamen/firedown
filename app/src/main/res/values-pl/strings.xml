@@ -517,7 +517,7 @@
     <string name="folder_backup_place_other">Gdzie indziej</string>
     <string name="folder_backup_place_other_sub">Dowolny folder, do którego sięga selektor. Folder na tym telefonie ginie razem z nim.</string>
     <string name="folder_backup_place_signin">Aplikacja chmurowa pojawia się w ☰ selektora dopiero po zalogowaniu się do niej.</string>
-    <string name="folder_backup_place_none">Nie zainstalowano żadnej aplikacji chmurowej z dostępem do folderów. Google Drive, Dropbox i Nextcloud działają; karta SD też.</string>
+    <string name="folder_backup_place_none">Nie zainstalowano aplikacji chmurowej, o której wiadomo, że pomieści folder kopii zapasowej. Google Drive i Nextcloud to potrafią, karta SD też. Inna aplikacja może działać przez „Gdzie indziej”.</string>
     <string name="folder_backup_hint_drawer">Dotknij ☰ i wybierz %1$s</string>
     <string name="folder_backup_guard_title">To folder z pobranymi plikami</string>
     <string name="folder_backup_guard_message">Firedown już przechowuje pobrane pliki w %1$s. Kopia zapasowa tam przepada razem z telefonem. Wybierz zamiast tego folder w aplikacji chmurowej lub na karcie SD.</string>

@@ -4095,8 +4095,9 @@ chip shown when the address bar gains focus) — both from one on-device episode
 
 The optional **Backup** feature backs a finished download up, encrypted, into
 a folder the user chose once through the system picker
-(`ACTION_OPEN_DOCUMENT_TREE`): Google Drive, Dropbox, Nextcloud, an SD card,
-the phone itself — anything with a `DocumentsProvider`. **There is no
+(`ACTION_OPEN_DOCUMENT_TREE`): Google Drive, Nextcloud, an SD card, the
+phone itself — any provider whose roots take a folder pick, which not every
+cloud app's do (see the picker bullets below). **There is no
 Firedown server in the path**: the folder IS the truth, the provider's own
 app does whatever syncing it does, and Firedown never learns whether a byte
 left the phone. It is a SEPARATE feature from the local **Safe Folder**
@@ -4577,13 +4578,30 @@ children — the card edges do the grouping).
   `SyncSettingsFragment`: (1) `showPlaceChooser` — the **"Where to back
   up" chooser** (`dialog_backup_places` / `item_backup_place`), built from
   what the phone HAS (`sync/BackupPlaces`): one row per installed app that
-  ships a DocumentsProvider, with its own icon
-  (`queryIntentContentProviders` on `DOCUMENTS_PROVIDER`, the manifest's
-  one `<queries>` entry for Android 11+ visibility, the system providers
-  and anything not protected by `MANAGE_DOCUMENTS` skipped), the mounted
+  ships a DocumentsProvider AND is in `KNOWN_CLOUD_PACKAGES`, with its own
+  icon (`queryIntentContentProviders` on `DOCUMENTS_PROVIDER`, the
+  manifest's one `<queries>` entry for Android 11+ visibility, the system
+  providers and anything not protected by `MANAGE_DOCUMENTS` skipped), the
+  mounted
   SD card / USB drive (`StorageVolume.createOpenDocumentTreeIntent()` on
   API 29+ opens the picker right on it), and "Somewhere else" (the plain
-  picker). It REPLACED a two-paragraph dialog ("the Android file picker
+  picker). **Detection alone is not enough, and the allowlist is not
+  optional.** The first build listed every provider and showed Files,
+  Proton Drive, System Tracing and Termux as places to back up (the
+  maintainer's phone, 2026-10-13): a provider of LOCAL content (a terminal's
+  home, trace files, a file manager) answers the same intent under the same
+  permission as a cloud, and the one fact that tells them apart, a root's
+  `FLAG_LOCAL_ONLY`, sits in the unreadable roots. So detection is AND-ed
+  with a package allowlist, and **every entry needs EVIDENCE that the app
+  takes a folder pick** — a wrong entry recreates the Proton dead end below.
+  Today: Google Drive (seen in the picker on the maintainer's phone once
+  signed in), Nextcloud, Seafile and Infomaniak kDrive (their open-source
+  providers set `FLAG_SUPPORTS_IS_CHILD` and implement `isChildDocument`).
+  Checked and left out: MEGA (root flags 0), ownCloud (no IS_CHILD),
+  Cryptomator and Filen (no provider in their source), Proton. Closed-source
+  apps nobody has seen in the folder picker (Dropbox, OneDrive, Box, pCloud…)
+  stay out until someone does; they keep working, if they can, through
+  "Somewhere else", which is where any unknown provider lands. It REPLACED a two-paragraph dialog ("the Android file picker
   opens next, tap ☰ in its top corner…" + an "Open picker" button) whose
   one job was to describe what this reads off the phone. What detection
   CANNOT do, so the copy never claims it: read a provider's roots
@@ -4596,8 +4614,9 @@ children — the card edges do the grouping).
   the same line TOASTED over the picker as it opens
   (`folder_backup_hint_drawer` — the one moment the instruction is needed,
   on a screen that is not ours); the chooser's note says a cloud app
-  appears in ☰ once signed in, or, with no provider installed, that none is
-  — a fact the paragraph could never state. Then `launchPicker` (the
+  appears in ☰ once signed in, or, with no known one installed, says so,
+  names the verified ones and points at "Somewhere else" — a fact the
+  paragraph could never state. Then `launchPicker` (the
   `ActivityNotFoundException` catch the restore picker has). (2)
   `onFolderPicked` runs `FolderStore.treeIsWithin(tree,
   StoragePaths.getDownloadPath())` — the external-storage provider's tree
@@ -4635,13 +4654,13 @@ children — the card edges do the grouping).
   (declare the flag and implement `isChildDocument`; their documents
   already carry `FLAG_DIR_SUPPORTS_CREATE`/`SUPPORTS_WRITE`/`DELETE`, so a
   tree would work) goes through Proton's feedback forum or support, not
-  GitHub. The chooser above lists Proton like any installed provider —
-  the flag lives in the roots, which an app cannot read — so its row says
-  "tap ☰ and choose Proton Drive" and Proton is not there; that residual
-  is accepted and recorded here, not papered over with an app allowlist
-  (stale the day Proton adds the flag). The chooser's no-provider note
-  names Drive, Dropbox and Nextcloud as the ones known to work; the
-  diagnostic for the next such report is the Import-picker test above.
+  GitHub. The flag lives in the roots, which an app cannot read, so the
+  chooser cannot see it either: Proton is kept OUT of `KNOWN_CLOUD_PACKAGES`
+  (the first build listed it, and its row said "tap ☰ and choose Proton
+  Drive" toward a ☰ Proton is absent from). Add it the day Proton ships the
+  flag and someone has seen it in the folder picker. The chooser's
+  no-provider note names only the verified apps; the diagnostic for the
+  next such report is the Import-picker test above.
 - **The KEY-FIRST GATE**: until a recovery code exists the CTA reads "Create
   recovery code" (not choose-a-folder), the Backups row is hidden and the
   Bookmarks switch is disabled — a folder can only be chosen once there is

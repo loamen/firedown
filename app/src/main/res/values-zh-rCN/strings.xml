@@ -613,7 +613,7 @@
     <string name="folder_backup_place_other">其他位置</string>
     <string name="folder_backup_place_other_sub">选择器能访问的任何文件夹。这部手机上的文件夹会随手机一起丢失。</string>
     <string name="folder_backup_place_signin">云应用在你登录后才会出现在选择器的 ☰ 中。</string>
-    <string name="folder_backup_place_none">没有安装可访问文件夹的云应用。Google 云端硬盘、Dropbox 和 Nextcloud 可用；SD 卡也可以。</string>
+    <string name="folder_backup_place_none">未安装已知可存放备份文件夹的云应用。Google 云端硬盘和 Nextcloud 可以，SD 卡也可以。其他应用或许可以通过“其他位置”使用。</string>
     <string name="folder_backup_hint_drawer">点按 ☰，然后选择 %1$s</string>
     <string name="folder_backup_guard_title">这是你的下载文件夹</string>
     <string name="folder_backup_guard_message">Firedown 已经把你的下载保存在 %1$s。备份到那里会随手机一起丢失。请改为选择云应用或 SD 卡中的文件夹。</string>

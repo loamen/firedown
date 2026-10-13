@@ -415,7 +415,7 @@
     <string name="folder_backup_place_other">Mujal</string>
     <string name="folder_backup_place_other_sub">Mis tahes kaust, kuhu valija ulatub. Selle telefoni kaust kaob koos telefoniga.</string>
     <string name="folder_backup_place_signin">Pilverakendus ilmub valija ☰ alla, kui oled sinna sisse loginud.</string>
-    <string name="folder_backup_place_none">Kaustadele ligipääsuga pilverakendust pole paigaldatud. Google Drive, Dropbox ja Nextcloud sobivad; SD-kaart samuti.</string>
+    <string name="folder_backup_place_none">Pole paigaldatud ühtki pilverakendust, mis teadaolevalt varukausta mahutab. Google Drive ja Nextcloud sobivad, samuti SD-kaart. Mõni muu rakendus võib töötada valiku „Mujal“ kaudu.</string>
     <string name="folder_backup_hint_drawer">Puuduta ☰ ja vali %1$s</string>
     <string name="folder_backup_guard_title">See on sinu allalaadimiste kaust</string>
     <string name="folder_backup_guard_message">Firedown hoiab sinu allalaadimisi juba kaustas %1$s. Sealne varukoopia kaob koos telefoniga. Vali selle asemel kaust pilverakenduses või SD-kaardil.</string>

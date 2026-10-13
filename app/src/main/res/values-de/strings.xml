@@ -615,7 +615,7 @@
     <string name="folder_backup_place_other">Woanders</string>
     <string name="folder_backup_place_other_sub">Jeder Ordner, den die Auswahl erreicht. Einer auf diesem Handy geht mit dem Handy verloren.</string>
     <string name="folder_backup_place_signin">Eine Cloud-App erscheint im ☰ der Auswahl, sobald du dort angemeldet bist.</string>
-    <string name="folder_backup_place_none">Keine Cloud-App mit Ordnerzugriff installiert. Google Drive, Dropbox und Nextcloud funktionieren; eine SD-Karte auch.</string>
+    <string name="folder_backup_place_none">Keine Cloud-App installiert, die bekanntermaßen einen Backup-Ordner aufnehmen kann. Google Drive und Nextcloud können es, eine SD-Karte auch. Eine andere App funktioniert vielleicht über „Woanders“.</string>
     <string name="folder_backup_hint_drawer">Tippe auf ☰ und wähle %1$s</string>
     <string name="folder_backup_guard_title">Das ist dein Downloads-Ordner</string>
     <string name="folder_backup_guard_message">Firedown speichert deine Downloads bereits in %1$s. Eine Sicherung dort geht mit dem Handy verloren. Wähle stattdessen einen Ordner in einer Cloud-App oder auf einer SD-Karte.</string>

@@ -615,7 +615,7 @@
     <string name="folder_backup_place_other">Ailleurs</string>
     <string name="folder_backup_place_other_sub">N\'importe quel dossier que le sélecteur atteint. Un dossier sur ce téléphone est perdu avec lui.</string>
     <string name="folder_backup_place_signin">Une appli cloud apparaît dans le ☰ du sélecteur une fois que vous y êtes connecté.</string>
-    <string name="folder_backup_place_none">Aucune appli cloud avec accès aux dossiers n\'est installée. Google Drive, Dropbox et Nextcloud fonctionnent ; une carte SD aussi.</string>
+    <string name="folder_backup_place_none">Aucune appli cloud connue pour accueillir un dossier de sauvegarde n\'est installée. Google Drive et Nextcloud le peuvent, une carte SD aussi. Une autre appli peut fonctionner via « Ailleurs ».</string>
     <string name="folder_backup_hint_drawer">Touchez ☰ et choisissez %1$s</string>
     <string name="folder_backup_guard_title">C\'est votre dossier de téléchargements</string>
     <string name="folder_backup_guard_message">Firedown garde déjà vos téléchargements dans %1$s. Une sauvegarde à cet endroit est perdue avec le téléphone. Choisissez plutôt un dossier dans une appli cloud ou sur une carte SD.</string>

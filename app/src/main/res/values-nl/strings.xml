@@ -515,7 +515,7 @@
     <string name="folder_backup_place_other">Ergens anders</string>
     <string name="folder_backup_place_other_sub">Elke map die de kiezer kan bereiken. Een map op deze telefoon gaat met de telefoon verloren.</string>
     <string name="folder_backup_place_signin">Een cloud-app verschijnt in de ☰ van de kiezer zodra je erin bent ingelogd.</string>
-    <string name="folder_backup_place_none">Er is geen cloud-app met maptoegang geïnstalleerd. Google Drive, Dropbox en Nextcloud werken; een SD-kaart ook.</string>
+    <string name="folder_backup_place_none">Er is geen cloud-app geïnstalleerd waarvan bekend is dat hij een back-upmap kan bevatten. Google Drive en Nextcloud kunnen het, een SD-kaart ook. Een andere app werkt misschien via ‘Ergens anders’.</string>
     <string name="folder_backup_hint_drawer">Tik op ☰ en kies %1$s</string>
     <string name="folder_backup_guard_title">Dat is je downloadmap</string>
     <string name="folder_backup_guard_message">Firedown bewaart je downloads al in %1$s. Een back-up daar gaat met de telefoon verloren. Kies in plaats daarvan een map in een cloud-app of op een SD-kaart.</string>
