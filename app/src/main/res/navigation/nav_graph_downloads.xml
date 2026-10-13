@@ -44,9 +44,10 @@
         android:name="com.solarized.firedown.phone.fragments.P2pReceiveFragment"
         android:label="fragment_p2p_receive"
         tools:layout="@layout/fragment_p2p_receive" />
-    <!-- A <dialog>, NOT a <fragment>: opening the scanner must not destroy the
-         send/receive fragment's view (which would stop the live WebRTC
-         session). See P2pScanFragment's class doc. -->
+    <!-- A <dialog>, NOT a <fragment>: the scanner shows OVER the send/receive
+         screen, whose view stays (the receiver's nearby visibility and the
+         scan-result handshake are the screen's; the session itself is the
+         controller's and would survive either way). See P2pScanFragment. -->
     <dialog
         android:id="@+id/p2p_scan"
         android:name="com.solarized.firedown.phone.fragments.P2pScanFragment"

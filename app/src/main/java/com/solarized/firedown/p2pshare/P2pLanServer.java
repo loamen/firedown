@@ -22,50 +22,74 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * One-shot LAN listener for the receiver's ANSWER code — what turns the share
- * into a SINGLE-scan flow. WebRTC needs an answer back (it carries the
- * receiver's candidates/fingerprint, which don't exist until Accept), and with
- * offline signaling that used to mean a second, human-relayed QR. But once the
- * receiver has scanned the offer it knows the sender's LAN address — so the
- * offer embeds {@code ans: http://<lan-ip>:<port>/answer?t=<token>} and the
- * receiver POSTs its answer straight back over the network. The reply QR
- * remains as the fallback when the POST can't reach (different networks, AP
- * isolation, VPN).
+ * The ONE thing Firedown ever listens for on a LAN interface, and it is
+ * deliberately tiny: two token-gated {@code POST}s of a ~1–2 KB signaling
+ * code, body-capped, no file bytes (those ride the WebRTC DataChannel; the
+ * loopback server stays 127.0.0.1-only). The token is 16 random bytes
+ * carried only inside the offer code / the NSD TXT record the peer was
+ * handed, and the server's lifetime is one share screen's.
  *
- * <p><b>Scope/security</b> — this is the ONLY thing Firedown ever listens for
- * on a LAN interface, and it is deliberately tiny: it accepts a single
- * {@code POST /answer?t=<token>} (token = 16 random bytes, carried only inside
- * the offer QR/code the user physically hands over), body-capped, first
- * delivery wins, and its lifetime is the sender's offer stage — started with
- * the offer, stopped the moment an answer is applied or the share screen
- * closes. It never serves file bytes (those ride the WebRTC DataChannel;
- * the loopback server stays 127.0.0.1-only).
+ * <ul>
+ *   <li><b>{@code /answer} — the SENDER's listener.</b> What turns a share
+ *       into a single-step flow: WebRTC needs an answer back (the receiver's
+ *       candidates + fingerprint don't exist until Accept), and once the
+ *       receiver has the offer it knows the sender's LAN address — the offer
+ *       embeds {@code ans: http://<lan-ip>:<port>/answer?t=<token>} and the
+ *       receiver POSTs its answer straight back. A body of {@code declined}
+ *       is the receiver saying no, so the sender can offer elsewhere instead
+ *       of waiting out the offer's lifetime.</li>
+ *   <li><b>{@code /offer} — the RECEIVER's listener.</b> Advertised over NSD
+ *       ({@link P2pNearbyAdvertiser}) while the Receive screen is open: a
+ *       nearby sender taps this device in its list and POSTs the whole
+ *       {@code FDS1.} offer here; the receiver previews it exactly as a
+ *       scanned code and the answer returns over {@code /answer} above.</li>
+ * </ul>
+ *
+ * <p>The {@link Handler} decides on the server's accept thread and answers
+ * synchronously — {@code true} = 204 (taken), {@code false} = 409 (a second
+ * answer after the first was applied; an offer while another transfer is
+ * live). Only the route its owner serves is wired; the other returns 404.
  *
  * <p>Interface pick: prefers a wlan* site-local IPv4 so an active VPN's tun
  * address (unreachable by the peer) isn't advertised.
  */
-public class P2pAnswerServer {
+public class P2pLanServer {
 
-    private static final String TAG = "P2pAnswerServer";
+    private static final String TAG = "P2pLanServer";
 
-    /** An answer code is ~1-2 KB; anything bigger is a protocol violation. */
+    /** A signaling code is ~1-2 KB; anything bigger is a protocol violation. */
     private static final int MAX_BODY = 16 * 1024;
 
-    /** First valid answer wins; later posts get 409. */
-    public interface Callback {
-        void onAnswer(@NonNull String code);
+    /** The receiver's decline, POSTed to the sender's {@code /answer}. */
+    public static final String DECLINED_BODY = "declined";
+
+    /** Route decisions, on the accept thread. A null handler = route not served. */
+    public interface Handler {
+        /** Sender: an {@code FDR1.} answer, or {@link #DECLINED_BODY}. */
+        boolean onAnswer(@NonNull String body);
+
+        /** Receiver: an {@code FDS1.} offer from a nearby sender. */
+        boolean onOffer(@NonNull String body);
     }
 
-    private final Callback mCallback;
+    private final Handler mHandler;
+    private final boolean mServeAnswer;
+    private final boolean mServeOffer;
     private final String mToken;
 
     private volatile ServerSocket mServerSocket;
     private volatile boolean mRunning;
-    private volatile boolean mDelivered;
-    private String mAnswerUrl;
+    private String mBaseUrl;
+    private int mPort;
 
-    public P2pAnswerServer(@NonNull Callback callback) {
-        mCallback = callback;
+    /**
+     * @param serveAnswer wire {@code /answer} (the sender's side)
+     * @param serveOffer  wire {@code /offer} (the receiver's side)
+     */
+    public P2pLanServer(@NonNull Handler handler, boolean serveAnswer, boolean serveOffer) {
+        mHandler = handler;
+        mServeAnswer = serveAnswer;
+        mServeOffer = serveOffer;
         byte[] tokenBytes = new byte[16];
         new SecureRandom().nextBytes(tokenBytes);
         StringBuilder token = new StringBuilder(tokenBytes.length * 2);
@@ -77,8 +101,8 @@ public class P2pAnswerServer {
 
     /**
      * Bind to the device's LAN address. Returns false (and stays inert) when
-     * there is no usable site-local IPv4 — the caller then simply omits the
-     * answer-return URL and the flow falls back to the reply QR.
+     * there is no usable site-local IPv4 — the sender then simply omits the
+     * answer-return URL; the receiver is not visible nearby.
      */
     public boolean start() {
         InetAddress lanAddress = findLanAddress();
@@ -86,24 +110,42 @@ public class P2pAnswerServer {
             return false;
         }
         try {
-            mServerSocket = new ServerSocket(0, 2, lanAddress);
+            mServerSocket = new ServerSocket(0, 4, lanAddress);
         } catch (IOException e) {
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "bind failed: " + e.getMessage());
             }
             return false;
         }
-        mAnswerUrl = "http://" + lanAddress.getHostAddress() + ":"
-                + mServerSocket.getLocalPort() + "/answer?t=" + mToken;
+        mPort = mServerSocket.getLocalPort();
+        mBaseUrl = "http://" + lanAddress.getHostAddress() + ":" + mPort;
         mRunning = true;
-        Thread acceptThread = new Thread(this::acceptLoop, "P2pAnswer");
+        Thread acceptThread = new Thread(this::acceptLoop, "P2pLan");
         acceptThread.start();
         return true;
     }
 
+    /** The sender's answer-return URL (embedded in the offer as {@code ans}). */
     @Nullable
     public String getAnswerUrl() {
-        return mAnswerUrl;
+        return mBaseUrl == null ? null : mBaseUrl + "/answer?t=" + mToken;
+    }
+
+    /** The per-session token the NSD TXT record carries for {@code /offer}. */
+    @NonNull
+    public String getToken() {
+        return mToken;
+    }
+
+    public int getPort() {
+        return mPort;
+    }
+
+    /** Build a peer's {@code /offer} URL from what NSD resolved. */
+    @NonNull
+    public static String offerUrl(@NonNull String host, int port, @NonNull String token) {
+        String h = host.contains(":") && !host.startsWith("[") ? "[" + host + "]" : host;
+        return "http://" + h + ":" + port + "/offer?t=" + token;
     }
 
     public void stop() {
@@ -132,13 +174,13 @@ public class P2pAnswerServer {
                 // Closed by stop(), or a teardown race — never crash the thread.
                 return;
             }
-            // Handled inline on this thread: bodies are ~1-2 KB and there is
-            // exactly one legitimate client, so no handler pool is warranted.
+            // Handled inline on this thread: bodies are ~1-2 KB and the
+            // legitimate clients are one or two phones, so no handler pool.
             try {
                 handleConnection(client);
             } catch (Exception e) {
                 if (BuildConfig.DEBUG) {
-                    Log.d(TAG, "answer connection: " + e.getMessage());
+                    Log.d(TAG, "lan connection: " + e.getMessage());
                 }
             }
         }
@@ -159,12 +201,10 @@ public class P2pAnswerServer {
                 P2pLoopbackServer.sendStatus(out, 403, "Forbidden");
                 return;
             }
-            if (!"POST".equals(head.method) || !"/answer".equals(head.path)) {
+            boolean answerRoute = mServeAnswer && "/answer".equals(head.path);
+            boolean offerRoute = mServeOffer && "/offer".equals(head.path);
+            if (!"POST".equals(head.method) || (!answerRoute && !offerRoute)) {
                 P2pLoopbackServer.sendStatus(out, 404, "Not Found");
-                return;
-            }
-            if (mDelivered) {
-                P2pLoopbackServer.sendStatus(out, 409, "Conflict");
                 return;
             }
             long declared;
@@ -186,10 +226,14 @@ public class P2pAnswerServer {
                 }
                 have += read;
             }
-            mDelivered = true;
-            P2pLoopbackServer.sendStatus(out, 204, "No Content");
+            String text = new String(body, StandardCharsets.UTF_8).trim();
+            boolean taken = answerRoute ? mHandler.onAnswer(text) : mHandler.onOffer(text);
+            if (taken) {
+                P2pLoopbackServer.sendStatus(out, 204, "No Content");
+            } else {
+                P2pLoopbackServer.sendStatus(out, 409, "Conflict");
+            }
             out.flush();
-            mCallback.onAnswer(new String(body, StandardCharsets.UTF_8).trim());
         } finally {
             try {
                 client.close();

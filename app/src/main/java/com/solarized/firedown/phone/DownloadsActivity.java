@@ -31,6 +31,14 @@ public class DownloadsActivity extends BaseActivity {
     private static final String TAG = DownloadsActivity.class.getSimpleName();
     /** Open with the Storage screen pushed over the list (Settings → Downloads → Storage). */
     public static final String EXTRA_OPEN_STORAGE = "com.solarized.firedown.extra.OPEN_STORAGE";
+    /**
+     * Open on the LIVE share screen (the P2pShareService notification's tap):
+     * value {@link #P2P_SEND} or {@link #P2P_RECEIVE}. The screen attaches to
+     * the controller's running session; nothing is started here.
+     */
+    public static final String EXTRA_OPEN_P2P = "com.solarized.firedown.extra.OPEN_P2P";
+    public static final String P2P_SEND = "send";
+    public static final String P2P_RECEIVE = "receive";
 
     /** Singleton share controller — a tapped REPLY link feeds the live send
      *  session here without touching navigation (the send screen is already
@@ -65,11 +73,39 @@ public class DownloadsActivity extends BaseActivity {
         if (savedInstanceState == null && intent.getBooleanExtra(EXTRA_OPEN_STORAGE, false)) {
             navController.navigate(R.id.storage);
         }
+        if (savedInstanceState == null) {
+            openLiveShare(navController, intent);
+        }
 
+    }
+
+    /**
+     * The share notification's tap: push the live screen unless it is already
+     * on top. Singletop, so a tap while the screen is showing lands in
+     * onNewIntent and must not stack a second copy.
+     */
+    private void openLiveShare(NavController navController, Intent intent) {
+        String which = intent.getStringExtra(EXTRA_OPEN_P2P);
+        if (which == null) {
+            return;
+        }
+        intent.removeExtra(EXTRA_OPEN_P2P);
+        int target = P2P_RECEIVE.equals(which) ? R.id.p2p_receive : R.id.p2p_send;
+        if (navController.getCurrentDestination() != null
+                && navController.getCurrentDestination().getId() == target) {
+            return;
+        }
+        navController.navigate(target);
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
+        if (intent != null && intent.hasExtra(EXTRA_OPEN_P2P) && mActivityContentFrame != null) {
+            setIntent(intent);
+            NavHostFragment navHostFragment = mActivityContentFrame.getFragment();
+            openLiveShare(navHostFragment.getNavController(), intent);
+            return;
+        }
         // singleTop: a share link tapped while Downloads is already open
         // arrives here — including the REPLY link a sender taps in a messenger
         // while their send screen waits underneath. Route it directly and do

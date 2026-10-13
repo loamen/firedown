@@ -3,19 +3,16 @@ package com.solarized.firedown.phone.fragments;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
+import android.text.format.Formatter;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TextView;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.Insets;
@@ -24,64 +21,58 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavBackStackEntry;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.R;
-import com.solarized.firedown.utils.QrCodes;
-import com.solarized.firedown.geckoview.GeckoRuntimeHelper;
 import com.solarized.firedown.p2pshare.P2pShareController;
+import com.solarized.firedown.p2pshare.P2pShareCopy;
+import com.solarized.firedown.p2pshare.ShareState;
 import com.solarized.firedown.utils.ClipboardHelper;
 import com.solarized.firedown.utils.NavigationUtils;
+import com.solarized.firedown.utils.QrCodes;
 
 import javax.inject.Inject;
 
 /**
- * Shared plumbing for the two P2P share screens (send / receive):
+ * Shared plumbing for the two P2P share screens (send / receive). Both are
+ * WINDOWS onto {@link P2pShareController}'s session, never its owner:
  *
  * <ul>
- *   <li><b>Session-scoped WebRTC enable.</b> The user's Settings toggle keeps
- *       {@code media.peerconnection.enabled} off by default (a browsing
- *       hardening). The share needs it, so the screen flips the RUNTIME pref
- *       on while it is open and restores the stored preference's value in
- *       onDestroyView — the persisted setting is never touched, and a small
- *       note on the screen discloses the temporary enable. Users who set
- *       WebRTC on globally see no note and no flip.</li>
- *   <li><b>Session lifetime = view lifetime</b> (the LAN-share contract this
- *       feature replaced kept): onDestroyView stops the engine session, the
- *       loopback server, and any partial file.</li>
+ *   <li><b>Render from the published snapshot.</b> The screen observes
+ *       {@link P2pShareController#getState()} and repaints the whole stage
+ *       from each {@link ShareState} ({@link #render}); it keeps no session
+ *       state of its own, so a screen opened onto a running session (the
+ *       notification's tap, a rotation) shows exactly what the one that
+ *       started it would. A one-shot {@link ShareState#notice} is shown once
+ *       per {@link ShareState#noticeSeq}.</li>
+ *   <li><b>Leaving the screen does not end a transfer</b> — the foreground
+ *       service carries it and the notification brings the user back. Back
+ *       and the toolbar's up simply leave; only the explicit Cancel (screen
+ *       or notification) stops a session, confirmed while bytes are moving.
+ *       What a screen MUST do on leaving is release the things that are
+ *       screen-scoped (the receiver's nearby visibility, a pre-accept
+ *       preview, a shown outcome) — each subclass's onDestroyView.</li>
  *   <li>QR encode, share-sheet/clipboard code exchange, scan-result
- *       observation, keep-screen-on.</li>
+ *       observation, keep-screen-on, the honest footer.</li>
  * </ul>
  *
- * <p>Hilt: the {@code @Inject} fields live here (unannotated-base pattern);
+ * <p>Hilt: the {@code @Inject} field lives here (unannotated-base pattern);
  * the concrete fragments carry {@code @AndroidEntryPoint}.
  */
 public abstract class P2pShareBaseFragment extends BaseFocusFragment {
 
-    private static final String TAG = P2pShareBaseFragment.class.getSimpleName();
-
     @Inject
     protected P2pShareController mP2pController;
 
-    @Inject
-    protected GeckoRuntimeHelper mGeckoRuntimeHelper;
-
-    private final Handler mMainHandler = new Handler(Looper.getMainLooper());
+    private int mShownNoticeSeq;
+    private boolean mVpnRelayHintShown;
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         if (mToolbar != null) {
-            mToolbar.setNavigationOnClickListener(v -> confirmThenClose());
+            mToolbar.setNavigationOnClickListener(v -> close());
         }
-        // Back-press confirms only while a transfer is actually moving bytes,
-        // so an accidental swipe-back mid-transfer doesn't silently discard it.
-        requireActivity().getOnBackPressedDispatcher().addCallback(
-                getViewLifecycleOwner(), new OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        confirmThenClose();
-                    }
-                });
         // The footer sits below the scroll area — pad it clear of the nav bar.
         View footer = view.findViewById(R.id.p2p_footer);
         if (footer != null) {
@@ -94,44 +85,52 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
             });
         }
         observeScanResult();
+        mP2pController.getState().observe(getViewLifecycleOwner(), this::onStateChanged);
+    }
 
-        // Session-scoped WebRTC prefs, applied BEFORE onEngineReady (which
-        // drives the controller to OPEN its fresh engine page) — a page loaded
-        // before the writes are visible sees the old values:
-        //  - media.peerconnection.enabled: ALWAYS on since the user toggle was
-        //    removed (boot sets it; see the Preferences note). The write here
-        //    is an idempotent belt-and-braces so a share can never race a
-        //    cold boot's async pref write.
-        //  - ice.obfuscate_host_addresses OFF: Firefox hides host candidates
-        //    behind mDNS .local names, which Android peers can't resolve (no
-        //    MulticastLock), so a same-LAN pair finds no host pair and ICE
-        //    fails outright ("add a TURN server"). Off, the QR carries the
-        //    real LAN IP — which the user is already physically handing to the
-        //    peer. Always restored to ON in onDestroyView.
-        mGeckoRuntimeHelper.setWebRTC(true)
-                .then(unused -> mGeckoRuntimeHelper.setWebRtcIceObfuscation(false))
-                .accept(unused ->
-                        mMainHandler.post(() -> {
-                            if (isAdded() && getView() != null) {
-                                onEngineReady();
-                            }
-                        }));
+    private void onStateChanged(@Nullable ShareState state) {
+        if (getView() == null) {
+            return;
+        }
+        if (state != null && state.notice != null && state.noticeSeq != mShownNoticeSeq) {
+            mShownNoticeSeq = state.noticeSeq;
+            showNotice(state);
+        }
+        render(state);
+    }
+
+    /** Repaint the whole screen from the snapshot ({@code null} = no session). */
+    protected abstract void render(@Nullable ShareState state);
+
+    private void showNotice(@NonNull ShareState state) {
+        String arg = state.noticeArg == null ? "" : state.noticeArg;
+        switch (state.notice == null ? "" : state.notice) {
+            case ShareState.NOTICE_DECLINED -> makeSnack(R.string.p2p_declined);
+            case ShareState.NOTICE_UNREACHABLE -> makeSnack(getString(R.string.p2p_nearby_unreachable, arg));
+            case ShareState.NOTICE_BUSY -> makeSnack(getString(R.string.p2p_nearby_busy, arg));
+            case ShareState.NOTICE_BAD_CODE -> makeSnack(R.string.p2p_error_bad_code);
+            default -> {
+            }
+        }
     }
 
     /**
-     * Called once the WebRTC pref is applied and it's safe to drive the
-     * engine. Send starts its offer here; receive waits for a scanned code.
+     * The explicit Cancel: confirmed while bytes are moving (an accidental
+     * tap must not silently discard a half-done transfer), immediate
+     * otherwise. Ends the session and leaves.
      */
-    protected abstract void onEngineReady();
-
-    protected void confirmThenClose() {
+    protected void confirmCancel() {
         if (mP2pController.isTransferActive()) {
             new MaterialAlertDialogBuilder(requireContext())
                     .setMessage(R.string.p2p_abandon_message)
-                    .setPositiveButton(R.string.p2p_abandon_confirm, (d, w) -> close())
+                    .setPositiveButton(R.string.p2p_abandon_confirm, (d, w) -> {
+                        mP2pController.stop();
+                        close();
+                    })
                     .setNegativeButton(R.string.cancel, null)
                     .show();
         } else {
+            mP2pController.stop();
             close();
         }
     }
@@ -139,8 +138,8 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Keep the screen on: the QR is being shown across the room and a
-        // transfer must not die to the lock screen.
+        // Keep the screen on: a QR may be shown across the room and a
+        // transfer's progress is being watched.
         if (mActivity != null) {
             mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
@@ -152,16 +151,6 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
             mActivity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
         super.onPause();
-    }
-
-    @Override
-    public void onDestroyView() {
-        mP2pController.stop();
-        // The share-session candidate exposure ends with the screen — browsing
-        // keeps mDNS obfuscation. (WebRTC itself is always on; nothing to
-        // restore since the toggle was removed.)
-        mGeckoRuntimeHelper.setWebRtcIceObfuscation(true);
-        super.onDestroyView();
     }
 
     /** The nav destination id of the concrete screen (for pop). */
@@ -257,19 +246,54 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
         }
     }
 
-    /** Map an engine error code onto the honest user-facing message. */
-    protected int errorText(@NonNull String code) {
-        if ("no-path".equals(code)) {
-            // When a VPN is up on THIS device it is almost certainly what killed
-            // the direct path (full-tunnel VPN = symmetric NAT the user doesn't
-            // control), and unlike CGNAT it has a user-actionable fix — say it.
-            return isVpnActive() ? R.string.p2p_error_no_path_vpn
-                    : R.string.p2p_error_no_path;
+    protected void makeSnack(@NonNull CharSequence text) {
+        View view = getView();
+        if (view != null) {
+            Snackbar.make(view, text, Snackbar.LENGTH_LONG).show();
         }
-        if ("bad-code".equals(code)) {
-            return R.string.p2p_error_bad_code;
+    }
+
+    /** The honest message for a terminal error (see {@link P2pShareCopy}). */
+    protected int errorText(@NonNull ShareState state) {
+        String code = state.errorCode == null ? ShareState.ERROR_ENGINE : state.errorCode;
+        return P2pShareCopy.errorText(code, isVpnActive(), state.arrivedRemote);
+    }
+
+    /**
+     * Honest footer: "never touches a server" is set ONLY once the engine has
+     * actually read the selected candidate pair ({@link ShareState#relayed}
+     * non-null). reportTransport is best-effort and stays silent when
+     * getStats is missing, its promise rejects, or no pair matches — with an
+     * optimistic default, every one of those left a RELAYED transfer claiming
+     * the file never touched a server. An unverified privacy claim degrades
+     * to the weaker statement, never to the stronger one.
+     */
+    protected void bindFooter(@NonNull View root, @Nullable ShareState state) {
+        TextView footer = root.findViewById(R.id.p2p_footer);
+        if (footer == null) {
+            return;
         }
-        return R.string.p2p_error_generic;
+        if (state == null || state.relayed == null) {
+            footer.setText(R.string.p2p_footer_connecting);
+        } else {
+            footer.setText(state.relayed ? R.string.p2p_footer_relayed : R.string.p2p_footer);
+            maybeHintVpnRelay(state.relayed);
+        }
+    }
+
+    /** The shared transfer card: bar, "x of y · rate", the reconnecting spinner. */
+    protected void bindProgress(@NonNull View root, @NonNull ShareState state) {
+        LinearProgressIndicator bar = root.findViewById(R.id.p2p_progress_bar);
+        if (state.total > 0) {
+            bar.setProgress((int) (state.done * 100 / state.total));
+        }
+        ((TextView) root.findViewById(R.id.p2p_progress_text)).setText(
+                getString(R.string.p2p_progress_of,
+                        Formatter.formatShortFileSize(requireContext(), state.done),
+                        Formatter.formatShortFileSize(requireContext(), state.total),
+                        Formatter.formatShortFileSize(requireContext(), state.rate)));
+        root.findViewById(R.id.p2p_reconnecting)
+                .setVisibility(state.reconnecting ? View.VISIBLE : View.GONE);
     }
 
     /**
@@ -303,13 +327,11 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
     /**
      * One-time hint when the transfer is running but RELAYED and a VPN is up:
      * the user can get a direct connection next time by excluding Firedown
-     * from the VPN (or pausing it). Called from both fragments' onTransport.
-     * Once per share screen — the transfer works, so one nudge is enough;
-     * repeating it on every transport event would be noise.
+     * from the VPN (or pausing it). Once per share screen — the transfer
+     * works, so one nudge is enough; repeating it on every repaint would be
+     * noise.
      */
-    private boolean mVpnRelayHintShown;
-
-    protected void maybeHintVpnRelay(boolean relayed) {
+    private void maybeHintVpnRelay(boolean relayed) {
         if (!relayed || mVpnRelayHintShown || !isVpnActive()) {
             return;
         }

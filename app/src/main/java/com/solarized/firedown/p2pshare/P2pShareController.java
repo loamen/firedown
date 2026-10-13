@@ -5,12 +5,16 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Base64;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
 import androidx.annotation.UiThread;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.Preferences;
@@ -29,6 +33,8 @@ import com.solarized.firedown.utils.GalleryPublisher;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.mozilla.geckoview.ExperimentalGeckoViewApi;
+import org.mozilla.geckoview.GeckoPreferenceController;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoSession;
 import org.mozilla.geckoview.GeckoSessionSettings;
@@ -61,7 +67,8 @@ import okhttp3.Response;
 
 /**
  * Java side of the P2P share engine — the bridge between the share screens
- * (P2pSendFragment / P2pReceiveFragment) and the WebRTC engine.
+ * (P2pSendFragment / P2pReceiveFragment), the foreground service that
+ * carries a transfer ({@link P2pShareService}) and the WebRTC engine.
  *
  * <p><b>Why a hidden GeckoSession, not a background page.</b>
  * {@code RTCPeerConnection.createOffer()} HANGS FOREVER in a WebExtension
@@ -73,25 +80,38 @@ import okhttp3.Response;
  * script ({@code content.js}) opens the native port and relays page↔Java. This
  * mirrors {@link PoTokenGenerator}'s hidden-session pattern.
  *
- * <p>Ownership split (mirrors PoTokenGenerator): this controller owns the
- * hidden engine {@link GeckoSession}, the native {@link WebExtension.Port}
- * (handed over by GeckoRuntimeHelper's onConnect once content.js connects),
- * the loopback byte server, and the post-transfer bookkeeping (verify + rename
- * the received file, insert the FINISHED download row). The page owns
- * RTCPeerConnection/DataChannel. The fragments own all UI and the
- * session-scoped WebRTC pref flip.
+ * <p><b>Ownership: the SESSION is this controller's, the screens are windows
+ * onto it.</b> The controller owns the hidden engine {@link GeckoSession},
+ * the native {@link WebExtension.Port} (handed over by GeckoRuntimeHelper's
+ * onConnect once content.js connects), the loopback byte server, the LAN
+ * listeners, the session-scoped WebRTC pref flips and the post-transfer
+ * bookkeeping (verify + rename the received file, insert the FINISHED
+ * download row). The page owns RTCPeerConnection/DataChannel. The screens
+ * own NO session state: they observe {@link #getState()} — a
+ * {@link ShareState} snapshot republished on every change — and render it,
+ * so a screen created while a session is already running (the sender came
+ * back through the notification, or rotated) paints the same thing the one
+ * that started it would. {@link P2pShareService} observes the same stream
+ * and keeps the process foreground with a progress notification from the
+ * moment a session must outlive its screen (the sender's offer is minted,
+ * the receiver accepted — {@link P2pShareService#start}).
+ * The old rule "session lifetime = view lifetime" is gone with this; what
+ * ends a session is the transfer finishing, a cancel (screen or
+ * notification), a failure, or an offer nobody accepted within
+ * {@link #OFFER_LIFETIME_MS}.
  *
- * <p>One session at a time by design — the share screens are modal
- * full-screen destinations, and the engine mirrors that with a single
- * session slot. Starting a new session tears down the previous one.
+ * <p>One session at a time by design: starting a new one tears down the
+ * previous. A terminal state (DONE / ERROR) keeps its snapshot — the engine
+ * and servers are already gone — until a screen dismisses it
+ * ({@link #dismissFinished()}) or a new session starts.
  *
  * <p><b>Readiness ordering.</b> RTCPeerConnection is pref-gated WebIDL
- * evaluated at page-global creation, so the fragment enables the WebRTC pref
- * and waits for it to APPLY before calling start. This controller then opens a
- * FRESH engine session, whose page therefore loads with the pref already on —
- * no reload dance needed (a fresh page-global sees the enabled pref). The
- * engine posts {@code {type:"ready", rtc:true}} once the page script is live;
- * the queued action runs on that event.
+ * evaluated at page-global creation, so the controller applies the WebRTC
+ * prefs and waits for them to APPLY before opening a FRESH engine session —
+ * its page therefore loads with the prefs already on, no reload dance (a
+ * fresh page-global sees the enabled pref). The engine posts
+ * {@code {type:"ready", rtc:true}} once the page script is live; the queued
+ * action runs on that event.
  */
 @Singleton
 public class P2pShareController {
@@ -195,6 +215,22 @@ public class P2pShareController {
     private static final long ENGINE_READY_TIMEOUT_MS = 8000;
 
     /**
+     * How long a minted offer waits for someone to accept before the session
+     * ends on its own with {@link ShareState#ERROR_TIMEOUT}. Mirrors the
+     * rendezvous mailbox's offer TTL and the answer poll's deadline
+     * (firedown-api {@code offerTTL} / {@code P2pSignalingClient.POLL_DEADLINE_MS},
+     * 15 min): past it a shared link no longer resolves and the poll has
+     * stopped, so the offer is dead whichever way it was handed over. Needed
+     * now that the sender can leave the screen — without a bound, a forgotten
+     * share would hold the foreground service, the hidden session and the
+     * LAN listener until the app died. Armed at onOfferReady, disarmed the
+     * moment an answer is applied. (The poll's own null callback is NOT the
+     * signal: it also fires at once when the mailbox answers an unexpected
+     * status, which would end a healthy LAN-only share.)
+     */
+    private static final long OFFER_LIFETIME_MS = 15 * 60 * 1000;
+
+    /**
      * Head-start the LAN answer return gets before the rendezvous mailbox is
      * ALSO tried (happy-eyeballs). A real same-LAN sender's listener answers in
      * a few ms, so the mailbox never fires and the answer stays on the LAN; a
@@ -229,39 +265,6 @@ public class P2pShareController {
 
     private static final SecureRandom ID_RANDOM = new SecureRandom();
 
-    /**
-     * UI-facing events. All callbacks arrive on the main thread.
-     */
-    public interface Listener {
-        /** A signaling code is ready to show (QR / share sheet). */
-        void onCode(@NonNull String role, @NonNull String code);
-
-        /** Receiver only: the scanned offer parsed — show the preview card. */
-        void onOfferParsed(@NonNull String name, long size, @NonNull String mime, @NonNull String device);
-
-        /** connecting | connected | closed */
-        void onConnectionState(@NonNull String state);
-
-        /**
-         * Reported once the live path is known (on every "connected"): true when
-         * it RELAYS through the TURN server (the file bytes pass through, still
-         * end-to-end encrypted), false when it's DIRECT peer-to-peer. Lets the UI
-         * say honestly whether the file touches a server.
-         */
-        void onTransport(boolean relayed);
-
-        void onProgress(long done, long total, long rate);
-
-        /** Transfer finished. For receive, the file row is already inserted. */
-        void onDone(@NonNull String role, long bytes);
-
-        /**
-         * Errors: "bad-code" is soft (the current step stays valid, user
-         * retries the scan/paste); everything else ends the session.
-         */
-        void onError(@NonNull String code, @NonNull String detail);
-    }
-
     private final Context mContext;
     private final SharedPreferences mSharedPreferences;
     private final DownloadDataRepository mDownloadDataRepository;
@@ -277,22 +280,33 @@ public class P2pShareController {
 
     // The hidden GeckoSession hosting the page-world WebRTC engine. Its
     // lifetime is one share session — recreated fresh each start so the page
-    // loads with the just-enabled WebRTC pref (see the readiness note above).
+    // loads with the just-applied WebRTC prefs (see the readiness note above).
     private GeckoSession mEngineSession;
     private WebExtension.Port mPort;
     private boolean mEngineReady;
+    private boolean mEngineOpening;
     private Runnable mPendingEngineAction;
     private final Runnable mEngineTimeout = this::onEngineTimeout;
+    private final Runnable mOfferTimeout = this::onOfferTimeout;
 
-    // Active session state. Main-thread only (all port + fragment traffic is
-    // UI-thread), except the finalize step which hops to the disk executor.
-    private Listener mListener;
-    private String mRole; // "send" | "receive" | null
+    // The published session snapshot (see ShareState) and the controller's
+    // own mutable copy of it. mState outlives the session's transport: after
+    // DONE/ERROR the engine/servers are gone but the snapshot stays for the
+    // screen. mSessionActive is the "transport belongs to a live session"
+    // flag — false from the first line of stopSession, so a port
+    // onDisconnect fired by our own close() can't post a spurious error.
+    private final MutableLiveData<ShareState> mStateLive = new MutableLiveData<>();
+    private ShareState mState;
+    private boolean mSessionActive;
+
+    // Active session transport. Main-thread only (all port + screen traffic
+    // is UI-thread), except the finalize step which hops to the disk executor.
     private P2pLoopbackServer mServer;
-    // Single-scan answer return. Sender: the LAN listener the offer's `ans`
-    // URL points at (null = no LAN address, reply-QR only). Receiver: the
-    // sender's `ans` URL from the parsed offer (empty = reply-QR only).
-    private P2pAnswerServer mAnswerServer;
+    // Sender: the LAN listener the offer's `ans` URL points at (null = no LAN
+    // address, mailbox / reply only). Receiver: the sender's `ans` URL from
+    // the parsed offer (empty = no LAN return).
+    private P2pLanServer mAnswerServer;
+    private volatile boolean mAnswerTaken;
     private String mRecvAnswerUrl;
     // Optional signaling relay (cross-network one-link, see P2pSignalingClient).
     // Sender: base + minted id, and the https share link once the offer is up.
@@ -317,6 +331,17 @@ public class P2pShareController {
     private File mRecvPartFile;
     private boolean mRecvFinalized;
 
+    // Nearby (the receiver's side): the /offer listener + its NSD record,
+    // alive only while the Receive screen says so (setNearbyListening).
+    // Independent of a session — a phone stays visible between transfers.
+    private final MutableLiveData<String> mVisibleAs = new MutableLiveData<>();
+    private P2pLanServer mNearbyServer;
+    private P2pNearbyAdvertiser mAdvertiser;
+    private boolean mNearbyListening;
+    // Read on the LAN server's accept thread: a second nearby sender while
+    // an offer/transfer is in flight is answered 409, never queued.
+    private volatile boolean mNearbyBusy;
+
     /**
      * Resume-tail window — MUST equal the engine's RESUME_TAIL: both sides
      * hash "the last min(64 KB, offset) bytes", and different window sizes
@@ -330,16 +355,11 @@ public class P2pShareController {
      * has long moved on, and unbounded partials would quietly eat storage.
      */
     private static final long PART_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000;
-    // Set once bytes are actually moving (first progress event), cleared on
-    // done/teardown — drives the "abandon transfer?" back-press confirm.
-    private boolean mTransferring;
-    // The finished download row, so the receiver's "Open" can act on it.
-    private DownloadEntity mReceivedEntity;
 
-    // Short-deadline client for the receiver's direct answer POST: a LAN peer
-    // answers in milliseconds or not at all, and the relay/reply fallback should
-    // kick in fast when it doesn't. Derived from the shared client (pool/DNS
-    // reused), tightened timeouts only.
+    // Short-deadline client for the receiver's direct answer POST and the
+    // sender's nearby offer POST: a LAN peer answers in milliseconds or not
+    // at all, and the fallback should kick in fast when it doesn't. Derived
+    // from the shared client (pool/DNS reused), tightened timeouts only.
     private final OkHttpClient mAnswerClient;
     // The shared client, kept so a P2pSignalingClient can be spun up per share.
     private final OkHttpClient mOkHttpClient;
@@ -393,6 +413,65 @@ public class P2pShareController {
         mSessionRegistrar = registrar;
     }
 
+    /* ── observable state ───────────────────────────────────────────────── */
+
+    /**
+     * The session as the screens and the service see it: a fresh
+     * {@link ShareState} snapshot on every change, {@code null} when there is
+     * no session (never started, cancelled, or dismissed after DONE/ERROR).
+     * LiveData replays the current value to a new observer, which is exactly
+     * what a screen attaching to a running session needs.
+     */
+    @NonNull
+    public LiveData<ShareState> getState() {
+        return mStateLive;
+    }
+
+    /** The current snapshot, or null — for a synchronous decision (attach vs start). */
+    @Nullable
+    @UiThread
+    public ShareState peekState() {
+        return mState == null ? null : mState.copy();
+    }
+
+    /**
+     * The name this phone is advertised under to nearby senders while
+     * {@link #setNearbyListening} is on; null = not visible (listening off,
+     * no Wi-Fi/LAN address, or NSD refused the registration).
+     */
+    @NonNull
+    public LiveData<String> getVisibleAs() {
+        return mVisibleAs;
+    }
+
+    private void publish() {
+        mStateLive.setValue(mState == null ? null : mState.copy());
+    }
+
+    private boolean isSend() {
+        return mSessionActive && mState != null && mState.role == ShareState.Role.SEND;
+    }
+
+    private boolean isReceive() {
+        return mSessionActive && mState != null && mState.role == ShareState.Role.RECEIVE;
+    }
+
+    private void setStage(@NonNull ShareState.Stage stage) {
+        if (mState != null && mState.stage != stage) {
+            mState.stage = stage;
+            publish();
+        }
+    }
+
+    private void notice(@NonNull String key, @Nullable String arg) {
+        if (mState != null) {
+            mState.notice = key;
+            mState.noticeArg = arg;
+            mState.noticeSeq++;
+            publish();
+        }
+    }
+
     /* ── port lifecycle (called from GeckoRuntimeHelper) ────────────────── */
 
     @UiThread
@@ -422,51 +501,67 @@ public class P2pShareController {
                     mPort = null;
                     mEngineReady = false;
                     // The page went away. If WE closed the session (stopSession
-                    // ran first, nulling mListener/mRole) this is the expected
+                    // ran first, clearing mSessionActive) this is the expected
                     // teardown and the guard below no-ops; otherwise the engine
                     // page crashed mid-share and the transfer can't survive it.
-                    if (mRole != null && mListener != null) {
-                        postError("engine", "engine disconnected");
+                    if (mSessionActive) {
+                        postError(ShareState.ERROR_ENGINE, "engine disconnected");
                     }
                 }
             }
         });
     }
 
-    /* ── session API (fragments, main thread) ───────────────────────────── */
+    /* ── session API (screens + service, main thread) ───────────────────── */
 
     /**
      * Sender: serve {@code entity}'s file on the loopback and ask the engine
-     * for an offer code. Events flow to {@code listener} until stop().
+     * for an offer code. From here the session is the controller's — the
+     * screen may be left; {@link P2pShareService} carries it.
      */
     @UiThread
-    public void startSend(@NonNull DownloadEntity entity, @NonNull Listener listener) {
+    public void startSend(@NonNull DownloadEntity entity) {
         stopSession(false);
-        mListener = listener;
-        mRole = "send";
+        mState = new ShareState(ShareState.Role.SEND);
+        mState.entity = entity;
+        mSessionActive = true;
+        mNearbyBusy = true;
 
         String path = entity.getFilePath();
         if (path == null) {
+            publish();
             postError("file", "file unreadable");
             return;
         }
         long size = RestoredFileAccess.length(mContext, path);
         if (size <= 0) {
+            publish();
             postError("file", "file unreadable");
             return;
         }
+        // Derive the mime from the file's OWN extension, not the entity's
+        // stored label — that label is Firedown's internal/UI value (an
+        // HLS capture muxed to .mp4 can carry a manifest mime) and would
+        // mis-bucket the received download's type/icon/viewer.
+        String fileName = new File(path).getName();
+        String mime = FileUriHelper.getMimeTypeFromFile(fileName);
+        mState.fileName = fileName;
+        mState.fileSize = size;
+        mState.mime = mime;
+        publish();
+
         if (!startLoopback()) {
-            postError("engine", "loopback start failed");
+            postError(ShareState.ERROR_ENGINE, "loopback start failed");
             return;
         }
         mServer.setReadFile(path);
 
-        // Single-scan flow: bind the LAN answer listener so the offer carries
+        // Single-step flow: bind the LAN answer listener so the offer carries
         // an answer-return URL and the receiver's Accept connects directly —
-        // no second QR. Binding can fail (no LAN address); the flow then
-        // simply falls back to the relay or the reply QR.
-        mAnswerServer = new P2pAnswerServer(code ->
-                mMainHandler.post(() -> onDirectAnswer(code)));
+        // no reply code. Binding can fail (no LAN address); the flow then
+        // simply falls back to the mailbox or the human-relayed reply.
+        mAnswerTaken = false;
+        mAnswerServer = new P2pLanServer(mSenderLanHandler, true, false);
         if (!mAnswerServer.start()) {
             mAnswerServer = null;
         }
@@ -498,27 +593,27 @@ public class P2pShareController {
             command.put("rendezvousUrl", rendezvousUrl);
             command.put("name", entity.getFileName());
             command.put("size", size);
-            // Derive the mime from the file's OWN extension, not the entity's
-            // stored label — that label is Firedown's internal/UI value (an
-            // HLS capture muxed to .mp4 can carry a manifest mime) and would
-            // mis-bucket the received download's type/icon/viewer.
-            command.put("mime", FileUriHelper.getMimeTypeFromFile(new File(path).getName()));
-            command.put("device", Build.MODEL);
+            command.put("mime", mime);
+            command.put("device", deviceName());
         } catch (JSONException e) {
-            postError("engine", "command build failed");
+            postError(ShareState.ERROR_ENGINE, "command build failed");
             return;
         }
+        // The transfer must outlive the screen from here on: the offer waits
+        // for an accept, then bytes move. The service observes the state and
+        // stops itself when the session ends.
+        P2pShareService.start(mContext);
         // The relay-creds fetch gates the command (iceServers are fixed at
         // RTCPeerConnection construction); its short timeouts bound the wait
         // and a failure just means a relay-less share — see withRelayCreds.
         withRelayCreds(creds -> {
-            if (!"send".equals(mRole) || mServer == null) {
+            if (!isSend() || mServer == null) {
                 return; // torn down while fetching
             }
             try {
                 putIceServers(command, creds);
             } catch (JSONException e) {
-                postError("engine", "command build failed");
+                postError(ShareState.ERROR_ENGINE, "command build failed");
                 return;
             }
             ensureEngineSession(() -> postCommand(command));
@@ -701,10 +796,13 @@ public class P2pShareController {
     }
 
     /**
-     * Sender: the scanned/pasted FDR1. reply code.
+     * Sender: the scanned/pasted/pushed FDR1. reply code.
      */
     @UiThread
     public void provideAnswer(@NonNull String code) {
+        if (!isSend()) {
+            return;
+        }
         JSONObject command = new JSONObject();
         try {
             command.put("type", "send-answer");
@@ -713,9 +811,11 @@ public class P2pShareController {
             return;
         }
         postCommand(command);
-        // The answer is in (whichever way it arrived) — the LAN listener and
-        // relay poll have done their job; don't keep sockets open through the
-        // transfer. (The engine ignores a second answer, so a race is benign.)
+        // The answer is in (whichever way it arrived) — the LAN listener, the
+        // offer lifetime and the relay poll have done their job; don't keep
+        // sockets open through the transfer. (The engine ignores a second
+        // answer, so a race is benign.)
+        mMainHandler.removeCallbacks(mOfferTimeout);
         if (mAnswerServer != null) {
             mAnswerServer.stop();
             mAnswerServer = null;
@@ -726,13 +826,17 @@ public class P2pShareController {
         if (mSignaling != null) {
             mSignaling.cancel();
         }
+        if (mState.stage == ShareState.Stage.READY) {
+            setStage(ShareState.Stage.CONNECTING);
+        }
     }
 
     /**
-     * Sender: the engine minted the offer. Show it (QR) and, if a relay is
-     * configured, upload it and long-poll for the answer so a shared LINK
-     * completes across networks. The LAN answer listener runs in parallel; the
-     * first answer to arrive wins.
+     * Sender: the engine minted the offer. Publish it (the nearby list, the
+     * link and the QR all act on it), start the rendezvous long-poll so a
+     * shared LINK completes across networks, and arm the offer's lifetime.
+     * The LAN answer listener runs in parallel; the first answer to arrive
+     * wins.
      */
     private void onOfferReady(@NonNull String code) {
         mOfferCode = code;
@@ -755,7 +859,7 @@ public class P2pShareController {
             final String base = mSignalingBase;
             final String id = mSignalingId;
             mSignaling.uploadOffer(base, id, code, ok -> mMainHandler.post(() -> {
-                if (!"send".equals(mRole)) {
+                if (!isSend()) {
                     return;
                 }
                 if (ok != null) {
@@ -765,8 +869,19 @@ public class P2pShareController {
                 }
             }));
         }
-        if (mListener != null) {
-            mListener.onCode("offer", code);
+        mMainHandler.removeCallbacks(mOfferTimeout);
+        mMainHandler.postDelayed(mOfferTimeout, OFFER_LIFETIME_MS);
+        if (mState != null) {
+            mState.offerCode = code;
+            mState.stage = ShareState.Stage.READY;
+            publish();
+        }
+    }
+
+    /** The offer outlived its window with no accept — end the session honestly. */
+    private void onOfferTimeout() {
+        if (isSend() && mState.stage == ShareState.Stage.READY) {
+            postError(ShareState.ERROR_TIMEOUT, "no accept within the offer lifetime");
         }
     }
 
@@ -781,7 +896,7 @@ public class P2pShareController {
      */
     @UiThread
     public void resolveShortLink(@NonNull Consumer<String> cb) {
-        if (!"send".equals(mRole) || mOfferCode == null) {
+        if (!isSend() || mOfferCode == null) {
             cb.accept(null);
             return;
         }
@@ -809,7 +924,7 @@ public class P2pShareController {
         mMainHandler.postDelayed(timeout, SHORT_LINK_BROKER_TIMEOUT_MS);
         mRendezvous.uploadOffer(Preferences.P2P_RENDEZVOUS_URL, id, full, ok ->
                 mMainHandler.post(() -> {
-                    if (ok != null && "send".equals(mRole)) {
+                    if (ok != null && isSend()) {
                         mShareLink = toHttpsLink(OFFER_REF_PREFIX + id);
                     }
                     if (done[0]) {
@@ -822,6 +937,81 @@ public class P2pShareController {
     }
 
     /**
+     * Sender: a link went out through the share sheet. Recorded on the state
+     * (not the screen) so a sender who leaves and comes back sees the waiting
+     * card, not the share buttons again. {@code privateMode} is what "Send
+     * link again" re-shares.
+     */
+    @UiThread
+    public void markLinkShared(boolean privateMode) {
+        if (isSend()) {
+            mState.linkShared = true;
+            mState.linkPrivate = privateMode;
+            publish();
+        }
+    }
+
+    /**
+     * Sender: hand the offer to a phone from the nearby list — POST the whole
+     * {@code FDS1.} code to its advertised {@code /offer}. The receiver then
+     * previews it like a scanned code; its Accept comes back over this
+     * session's {@code /answer} (same LAN, so the LAN return is what carries
+     * it). 204 = delivered (the state names the device and waits); 409 = the
+     * phone is busy with another transfer; anything else = unreachable. The
+     * offer stays valid through all three — the user picks another phone or
+     * sends a link.
+     */
+    @UiThread
+    public void sendOfferToNearby(@NonNull P2pNearbyDiscovery.Device device) {
+        if (!isSend() || mOfferCode == null || mState.stage != ShareState.Stage.READY) {
+            return;
+        }
+        final String name = device.name;
+        mState.peerDevice = name;
+        publish();
+        Request request = new Request.Builder()
+                .url(device.offerUrl())
+                .post(RequestBody.create(mOfferCode, MediaType.parse("text/plain; charset=utf-8")))
+                .build();
+        mAnswerClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "nearby offer push failed: " + e.getMessage());
+                }
+                mMainHandler.post(() -> onNearbyOfferResult(name, false, false));
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) {
+                int code = response.code();
+                response.close();
+                mMainHandler.post(() -> onNearbyOfferResult(name,
+                        code >= 200 && code < 300, code == 409));
+            }
+        });
+    }
+
+    private void onNearbyOfferResult(@NonNull String name, boolean delivered, boolean busy) {
+        if (!isSend() || !name.equals(mState.peerDevice)) {
+            return; // torn down, or the user already picked another phone
+        }
+        if (delivered) {
+            return; // waiting for that phone's Accept (its answer lands on /answer)
+        }
+        mState.peerDevice = null;
+        notice(busy ? ShareState.NOTICE_BUSY : ShareState.NOTICE_UNREACHABLE, name);
+    }
+
+    /** The receiver of a nearby/LAN offer said no — back to choosing. */
+    private void onPeerDeclined() {
+        if (isSend() && mState.stage == ShareState.Stage.READY) {
+            mState.peerDevice = null;
+            notice(ShareState.NOTICE_DECLINED, null);
+        }
+    }
+
+    /**
      * Sender: an ANSWER arrived from OUTSIDE the share screen — the receiver's
      * reply link tapped in a messenger (deep link via DownloadsActivity), on
      * this same phone. Applied like a scanned reply when a send session is
@@ -830,7 +1020,7 @@ public class P2pShareController {
      */
     @UiThread
     public boolean provideExternalAnswer(@NonNull String raw) {
-        if (!"send".equals(mRole)) {
+        if (!isSend()) {
             return false;
         }
         applyIncomingAnswer(raw, "deep link");
@@ -861,7 +1051,7 @@ public class P2pShareController {
     }
 
     private void applyIncomingAnswer(@Nullable String raw, String via) {
-        if (!"send".equals(mRole) || raw == null) {
+        if (!isSend() || raw == null) {
             return;
         }
         String code = stripDeepLink(raw);
@@ -877,15 +1067,39 @@ public class P2pShareController {
         provideAnswer(code);
     }
 
+    /** The sender's LAN routes: a receiver's answer, or its decline. */
+    private final P2pLanServer.Handler mSenderLanHandler = new P2pLanServer.Handler() {
+        @Override
+        public boolean onAnswer(@NonNull String body) {
+            if (P2pLanServer.DECLINED_BODY.equals(body)) {
+                mMainHandler.post(() -> onPeerDeclined());
+                return true;
+            }
+            // First valid answer wins; a later one is 409 (the engine would
+            // ignore it anyway, but say so on the wire).
+            if (mAnswerTaken) {
+                return false;
+            }
+            mAnswerTaken = true;
+            mMainHandler.post(() -> onDirectAnswer(body));
+            return true;
+        }
+
+        @Override
+        public boolean onOffer(@NonNull String body) {
+            return false; // the sender serves no /offer
+        }
+    };
+
     /**
-     * Receiver: parse a scanned/pasted FDS1. offer code. onOfferParsed fires
-     * with the preview metadata; nothing connects until acceptOffer().
+     * Receiver: parse a scanned/pasted/pushed FDS1. offer code. The state
+     * moves to OFFERED with the preview metadata; nothing connects until
+     * {@link #acceptOffer()}. {@code arrivedRemote} = via link or paste (the
+     * phones are apart), which shapes the error copy.
      */
     @UiThread
-    public void startReceive(@NonNull String code, @NonNull Listener listener) {
-        stopSession(false);
-        mListener = listener;
-        mRole = "receive";
+    public void startReceive(@NonNull String code, boolean arrivedRemote) {
+        beginReceiveSession(arrivedRemote, false);
         beginReceive(code);
     }
 
@@ -896,25 +1110,19 @@ public class P2pShareController {
      * reply code. {@code base} is the relay origin the link was opened with.
      */
     @UiThread
-    public void startReceiveFromRelay(@NonNull String base, @NonNull String id,
-                                      @NonNull Listener listener) {
-        stopSession(false);
-        mListener = listener;
-        mRole = "receive";
+    public void startReceiveFromRelay(@NonNull String base, @NonNull String id) {
+        beginReceiveSession(true, false);
         mRecvSignalingBase = base;
         mRecvSignalingId = id;
         mSignaling = new P2pSignalingClient(mOkHttpClient);
         mSignaling.fetchOffer(base, id, offer -> mMainHandler.post(() -> {
-            if (!"receive".equals(mRole)) {
+            if (!isReceive()) {
                 return; // torn down while fetching
             }
             if (offer == null) {
-                // Soft: the link is expired or wrong — let the UI show "bad code"
-                // and keep the scan/paste entry usable.
-                if (mListener != null) {
-                    mListener.onError("bad-code", "link expired");
-                }
-                stopSession(false);
+                // The link is expired or wrong — a terminal "bad code" the
+                // screen dismisses back to its idle state.
+                postError(ShareState.NOTICE_BAD_CODE, "link expired");
                 return;
             }
             beginReceive(offer);
@@ -930,27 +1138,33 @@ public class P2pShareController {
      * so teardown can cancel the in-flight fetch.
      */
     @UiThread
-    public void startReceiveFromOfferRef(@NonNull String id, @NonNull Listener listener) {
-        stopSession(false);
-        mListener = listener;
-        mRole = "receive";
+    public void startReceiveFromOfferRef(@NonNull String id) {
+        beginReceiveSession(true, false);
         mSignaling = new P2pSignalingClient(mOkHttpClient);
         mSignaling.fetchOffer(Preferences.P2P_RENDEZVOUS_URL, id, offer ->
                 mMainHandler.post(() -> {
-                    if (!"receive".equals(mRole)) {
+                    if (!isReceive()) {
                         return; // torn down while fetching
                     }
                     if (offer == null || !offer.startsWith(OFFER_PREFIX)) {
-                        // 204/expired or a garbage body — soft, so scan/paste stays
-                        // usable and the UI says the link is no longer valid.
-                        if (mListener != null) {
-                            mListener.onError("bad-code", "link expired");
-                        }
-                        stopSession(false);
+                        // 204/expired or a garbage body — the link is no longer
+                        // valid; say so and let the screen go idle.
+                        postError(ShareState.NOTICE_BAD_CODE, "link expired");
                         return;
                     }
                     beginReceive(offer);
                 }));
+    }
+
+    /** Tear down whatever ran before and open a fresh RECEIVE snapshot. */
+    private void beginReceiveSession(boolean arrivedRemote, boolean arrivedNearby) {
+        stopSession(false);
+        mState = new ShareState(ShareState.Role.RECEIVE);
+        mState.arrivedRemote = arrivedRemote;
+        mState.arrivedNearby = arrivedNearby;
+        mSessionActive = true;
+        mNearbyBusy = true;
+        publish();
     }
 
     /** Shared receive kickoff: start the loopback + engine and hand it the offer. */
@@ -958,7 +1172,7 @@ public class P2pShareController {
         // The loopback must exist now to host the engine page; the write
         // target is armed later in acceptOffer() on this same server.
         if (mServer == null && !startLoopback()) {
-            postError("engine", "loopback start failed");
+            postError(ShareState.ERROR_ENGINE, "loopback start failed");
             return;
         }
 
@@ -967,19 +1181,19 @@ public class P2pShareController {
             command.put("type", "recv-start");
             command.put("code", code);
         } catch (JSONException e) {
-            postError("engine", "command build failed");
+            postError(ShareState.ERROR_ENGINE, "command build failed");
             return;
         }
         // Same relay-creds gating as startSend; a failed fetch just means a
         // relay-less receive.
         withRelayCreds(creds -> {
-            if (!"receive".equals(mRole) || mServer == null) {
+            if (!isReceive() || mServer == null) {
                 return; // torn down while fetching
             }
             try {
                 putIceServers(command, creds);
             } catch (JSONException e) {
-                postError("engine", "command build failed");
+                postError(ShareState.ERROR_ENGINE, "command build failed");
                 return;
             }
             ensureEngineSession(() -> postCommand(command));
@@ -988,13 +1202,16 @@ public class P2pShareController {
 
     /**
      * Receiver: user accepted the preview — create the target file, arm the
-     * loopback write side, and let the engine answer.
+     * loopback write side, and let the engine answer. From here the session
+     * outlives the screen (the service carries it).
      */
     @UiThread
     public void acceptOffer() {
-        if (!"receive".equals(mRole) || mRecvName == null || mServer == null) {
+        if (!isReceive() || mRecvName == null || mServer == null
+                || mState.stage != ShareState.Stage.OFFERED) {
             return;
         }
+        setStage(ShareState.Stage.CONNECTING);
         // The target-file work (buildTargetFile → findByFilePath) hits Room,
         // which fatally rejects a main-thread query, plus disk I/O — so it MUST
         // run off the UI thread (same disk executor finalizeReceivedFile uses).
@@ -1047,7 +1264,7 @@ public class P2pShareController {
             final String recvResumeTail = resumeTail;
             mMainHandler.post(() -> {
                 // The session may have been torn down while we hopped threads
-                // (Decline / back-press) — don't resurrect a dead one. We already
+                // (Decline / cancel) — don't resurrect a dead one. We already
                 // opened the write target on the disk thread, so UNDO it here:
                 // close the RandomAccessFile (else its FD leaks — stopSession's
                 // closeWriteTarget ran before mWriteFile existed) and delete the
@@ -1057,7 +1274,7 @@ public class P2pShareController {
                 // torn-down attempt never touched. closeWriteTarget is
                 // synchronized, safe on the stopped server; the file delete is
                 // disk I/O, off-main.
-                if (!"receive".equals(mRole) || mServer != server) {
+                if (!isReceive() || mServer != server) {
                     server.closeWriteTarget();
                     mDiskExecutor.execute(() -> deletePartIfEmpty(partFile));
                     return;
@@ -1072,25 +1289,46 @@ public class P2pShareController {
                         command.put("resumeTail", recvResumeTail);
                     }
                 } catch (JSONException e) {
-                    postError("engine", "command build failed");
+                    postError(ShareState.ERROR_ENGINE, "command build failed");
                     return;
                 }
+                // Accepted: the transfer now outlives the screen.
+                P2pShareService.start(mContext);
                 postCommand(command);
             });
         });
     }
 
     /**
-     * End the session: tells the engine to close the peer connection, stops
-     * the loopback, deletes an unfinished .part. Called by the fragments in
-     * onDestroyView — screen lifetime IS session lifetime.
+     * Receiver: say no to the offer being previewed (or still being read).
+     * A LAN offer's sender is told at once (its {@code /answer} takes
+     * {@code declined}) so it can pick another phone instead of waiting out
+     * the offer's lifetime; a link/QR offer's sender is told too when its
+     * {@code ans} is reachable, best-effort. Then the session is gone.
+     */
+    @UiThread
+    public void declineOffer() {
+        if (!isReceive() || (mState.stage != ShareState.Stage.OFFERED
+                && mState.stage != ShareState.Stage.PREPARING)) {
+            return;
+        }
+        if (mRecvAnswerUrl != null && !mRecvAnswerUrl.isEmpty()) {
+            postAnswer(mRecvAnswerUrl, P2pLanServer.DECLINED_BODY, ok -> { });
+        }
+        stop();
+    }
+
+    /**
+     * End the session from the screen's Cancel, the notification's Cancel,
+     * or a screen leaving a pre-accept receive: tells the engine to close the
+     * peer connection, stops the loopback, deletes an unfinished EMPTY .part,
+     * and clears the published state.
      */
     @UiThread
     public void stop() {
         // Best-effort tell the engine to close; NEVER route through postCommand
-        // (its no-port path posts a fatal onError back into a fragment that is
-        // being torn down — e.g. Decline during the reload window flashed the
-        // error card). Teardown proceeds regardless of the port state.
+        // (its no-port path posts a fatal error back into a screen that is
+        // being torn down). Teardown proceeds regardless of the port state.
         if (mPort != null) {
             try {
                 JSONObject command = new JSONObject();
@@ -1101,6 +1339,124 @@ public class P2pShareController {
             }
         }
         stopSession(true);
+        mState = null;
+        publish();
+    }
+
+    /**
+     * A screen is done showing a DONE/ERROR outcome — drop the snapshot so the
+     * next Send/Receive opens clean. No-op on a live session (a screen that
+     * is merely being left must NOT end a running transfer).
+     */
+    @UiThread
+    public void dismissFinished() {
+        if (mState != null && !mState.isLive()) {
+            mState = null;
+            publish();
+        }
+    }
+
+    /**
+     * The foreground service was timed out by the system (the dataSync
+     * 6-hour cap, {@code Service.onTimeout}) — the transfer cannot be kept
+     * honest without it, so it ends as an error the user can retry.
+     */
+    @UiThread
+    public void failForSystemTimeout() {
+        if (mSessionActive) {
+            postError("system", "foreground limit");
+        }
+    }
+
+    /* ── nearby (the receiver's visibility) ─────────────────────────────── */
+
+    /**
+     * Receiver: be discoverable by nearby senders — bind the {@code /offer}
+     * LAN listener and advertise it over NSD under this phone's name. On only
+     * while the Receive screen is open AND idle (the screen toggles it);
+     * {@link #getVisibleAs()} reports the registered name, or null when the
+     * phone could not be made visible. Idempotent.
+     */
+    @UiThread
+    public void setNearbyListening(boolean on) {
+        if (on == mNearbyListening) {
+            return;
+        }
+        mNearbyListening = on;
+        if (!on) {
+            if (mAdvertiser != null) {
+                mAdvertiser.stop();
+                mAdvertiser = null;
+            }
+            if (mNearbyServer != null) {
+                mNearbyServer.stop();
+                mNearbyServer = null;
+            }
+            mVisibleAs.setValue(null);
+            return;
+        }
+        mNearbyServer = new P2pLanServer(mReceiverLanHandler, false, true);
+        if (!mNearbyServer.start()) {
+            // No LAN address (no Wi-Fi) — nothing to advertise.
+            mNearbyServer = null;
+            mVisibleAs.setValue(null);
+            return;
+        }
+        mAdvertiser = new P2pNearbyAdvertiser(mContext, deviceName(),
+                mNearbyServer.getPort(), mNearbyServer.getToken(), name -> {
+            if (mNearbyListening) {
+                mVisibleAs.setValue(name);
+            }
+        });
+        mAdvertiser.start();
+    }
+
+    /** The receiver's LAN route: a nearby sender's offer. */
+    private final P2pLanServer.Handler mReceiverLanHandler = new P2pLanServer.Handler() {
+        @Override
+        public boolean onAnswer(@NonNull String body) {
+            return false; // the receiver serves no /answer
+        }
+
+        @Override
+        public boolean onOffer(@NonNull String body) {
+            if (!body.startsWith(OFFER_PREFIX) || mNearbyBusy) {
+                return false; // garbage, or already previewing/transferring
+            }
+            mNearbyBusy = true;
+            mMainHandler.post(() -> onNearbyOffer(body));
+            return true;
+        }
+    };
+
+    private void onNearbyOffer(@NonNull String code) {
+        if (!mNearbyListening || (mState != null && mState.isLive())) {
+            mNearbyBusy = false;
+            return; // the screen closed, or a session slipped in first
+        }
+        beginReceiveSession(false, true);
+        beginReceive(code);
+    }
+
+    /**
+     * What the other phone sees this one as: the user's device name
+     * (Settings → About → Device name), else the model. Also the offer's
+     * {@code dev} field, so the receiver's "from X" and the sender's list
+     * entry agree.
+     */
+    @NonNull
+    private String deviceName() {
+        String name = null;
+        try {
+            name = Settings.Global.getString(mContext.getContentResolver(),
+                    Settings.Global.DEVICE_NAME);
+        } catch (RuntimeException e) {
+            // A settings provider hiccup is never worth more than the model.
+        }
+        if (name == null || name.trim().isEmpty()) {
+            name = Build.MODEL;
+        }
+        return name == null || name.trim().isEmpty() ? "Firedown" : name.trim();
     }
 
     /* ── engine events ──────────────────────────────────────────────────── */
@@ -1110,6 +1466,9 @@ public class P2pShareController {
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "engine event: " + type);
         }
+        if (!mSessionActive) {
+            return; // a late event from a session already torn down
+        }
         switch (type) {
             case "ready" -> {
                 mEngineReady = json.optBoolean("rtc", false);
@@ -1118,9 +1477,9 @@ public class P2pShareController {
                 } else {
                     // The page has a real docShell but no RTCPeerConnection —
                     // the WebRTC pref didn't apply before the page loaded.
-                    // Nothing to retry (the fragment owns the pref); fail so the
-                    // UI shows an error instead of hanging on "preparing".
-                    postError("engine", "webrtc unavailable");
+                    // Fail so the UI shows an error instead of hanging on
+                    // "preparing".
+                    postError(ShareState.ERROR_ENGINE, "webrtc unavailable");
                 }
             }
             case "code" -> {
@@ -1138,35 +1497,39 @@ public class P2pShareController {
                 mRecvSize = json.optLong("size", 0);
                 mRecvAnswerUrl = json.optString("ans", "");
                 mRecvRendezvousUrl = json.optString("rvz", "");
-                if (mListener != null) {
-                    mListener.onOfferParsed(mRecvName, json.optLong("size", 0), mRecvMime,
-                            json.optString("device", ""));
+                if (mState != null) {
+                    mState.fileName = mRecvName;
+                    mState.mime = mRecvMime;
+                    mState.fileSize = mRecvSize;
+                    mState.peerDevice = json.optString("device", "");
+                    mState.stage = ShareState.Stage.OFFERED;
+                    publish();
                 }
             }
-            case "state" -> {
-                if (mListener != null) {
-                    mListener.onConnectionState(json.optString("state", ""));
-                }
-            }
+            case "state" -> onConnectionState(json.optString("state", ""));
             case "transport" -> {
-                if (mListener != null) {
-                    mListener.onTransport(json.optBoolean("relayed", false));
+                if (mState != null) {
+                    mState.relayed = json.optBoolean("relayed", false);
+                    publish();
                 }
             }
             case "progress" -> {
-                mTransferring = true;
-                if (mListener != null) {
-                    mListener.onProgress(json.optLong("done", 0), json.optLong("total", 0), json.optLong("rate", 0));
+                if (mState != null) {
+                    mState.stage = ShareState.Stage.TRANSFERRING;
+                    mState.done = json.optLong("done", 0);
+                    mState.total = json.optLong("total", 0);
+                    mState.rate = json.optLong("rate", 0);
+                    mState.reconnecting = false;
+                    publish();
                 }
             }
             case "done" -> handleDone(json);
             case "error" -> {
-                String code = json.optString("code", "engine");
-                if ("bad-code".equals(code)) {
-                    // Soft: the session (and the shown QR) stays valid.
-                    if (mListener != null) {
-                        mListener.onError(code, json.optString("detail", ""));
-                    }
+                String code = json.optString("code", ShareState.ERROR_ENGINE);
+                if (ShareState.NOTICE_BAD_CODE.equals(code) && isSend()) {
+                    // Soft on the sender: the offer stays valid, the user just
+                    // re-pastes or re-scans the reply.
+                    notice(ShareState.NOTICE_BAD_CODE, null);
                 } else {
                     postError(code, json.optString("detail", ""));
                 }
@@ -1179,20 +1542,40 @@ public class P2pShareController {
         }
     }
 
+    /**
+     * connecting | connected | disconnected | closed. Once bytes are flowing,
+     * a state change NEVER leaves TRANSFERRING — a lossy/VPN path flaps
+     * connected↔disconnected repeatedly, and reverting the screen to a
+     * "Connected" card each time made the progress bar vanish and reappear.
+     * The snapshot instead carries {@code reconnecting} (bar frozen, spinner
+     * shown) until progress or "connected" clears it.
+     */
+    private void onConnectionState(@NonNull String state) {
+        if (mState == null) {
+            return;
+        }
+        if (mState.stage == ShareState.Stage.TRANSFERRING) {
+            mState.reconnecting = !"connected".equals(state);
+            publish();
+            return;
+        }
+        if ("connecting".equals(state)) {
+            setStage(ShareState.Stage.CONNECTING);
+        } else if ("connected".equals(state)) {
+            setStage(ShareState.Stage.CONNECTED);
+        }
+    }
+
     private void handleDone(JSONObject json) {
         String role = json.optString("role", "");
         long bytes = json.optLong("bytes", 0);
-        mTransferring = false; // completed — no "abandon?" confirm past here
         if ("send".equals(role)) {
-            if (mListener != null) {
-                mListener.onDone(role, bytes);
-            }
+            finish(ShareState.Stage.DONE, null, bytes, null);
             return;
         }
         // Receive: verify + rename off the main thread, insert the FINISHED
         // row (Room invalidation refreshes the Downloads list on its own),
         // and make the file visible to gallery apps.
-        final Listener listener = mListener;
         final File partFile = mRecvPartFile;
         final String name = mRecvName;
         final String mime = mRecvMime;
@@ -1203,13 +1586,13 @@ public class P2pShareController {
         mDiskExecutor.execute(() -> {
             DownloadEntity entity = finalizeReceivedFile(partFile, name, mime, bytes);
             mMainHandler.post(() -> {
-                mReceivedEntity = entity;
+                if (!isReceive()) {
+                    return; // cancelled while finalizing
+                }
                 if (entity == null) {
-                    if (listener != null) {
-                        listener.onError("file", "finalize failed");
-                    }
-                } else if (listener != null) {
-                    listener.onDone(role, bytes);
+                    postError("file", "finalize failed");
+                } else {
+                    finish(ShareState.Stage.DONE, null, bytes, entity);
                 }
             });
         });
@@ -1366,18 +1749,18 @@ public class P2pShareController {
     /**
      * Ensure the hidden engine session is open and RTC-ready, then run
      * {@code action}. The session hosts the page-world WebRTC engine (see the
-     * class doc); it's opened fresh per share so the page picks up the
-     * just-enabled WebRTC pref. {@code action} runs once the engine posts a
-     * {@code ready} event with {@code rtc:true}; a timeout backstops a page
-     * that never comes up.
+     * class doc); it's opened fresh per share, AFTER the session-scoped WebRTC
+     * prefs are applied ({@link #applyWebRtcPrefs}), so the page picks them
+     * up. {@code action} runs once the engine posts a {@code ready} event with
+     * {@code rtc:true}; a timeout backstops a page that never comes up.
      */
     private void ensureEngineSession(Runnable action) {
         if (mRuntime == null || mSessionRegistrar == null) {
-            postError("engine", "engine unavailable");
+            postError(ShareState.ERROR_ENGINE, "engine unavailable");
             return;
         }
         if (mServer == null) {
-            postError("engine", "loopback not started");
+            postError(ShareState.ERROR_ENGINE, "loopback not started");
             return;
         }
         if (mEngineReady && mPort != null) {
@@ -1385,11 +1768,64 @@ public class P2pShareController {
             return;
         }
         mPendingEngineAction = action;
-        if (mEngineSession == null) {
-            openEngineSession();
+        if (mEngineSession == null && !mEngineOpening) {
+            mEngineOpening = true;
+            applyWebRtcPrefs(() -> {
+                mEngineOpening = false;
+                if (!mSessionActive || mServer == null || mEngineSession != null) {
+                    return; // torn down (or re-opened) while the prefs applied
+                }
+                openEngineSession();
+            });
         }
         mMainHandler.removeCallbacks(mEngineTimeout);
         mMainHandler.postDelayed(mEngineTimeout, ENGINE_READY_TIMEOUT_MS);
+    }
+
+    /**
+     * The session-scoped WebRTC prefs, applied BEFORE the engine page opens —
+     * a page loaded before the writes are visible sees the old values, and
+     * RTCPeerConnection is pref-gated WebIDL evaluated at page-global creation:
+     * <ul>
+     *   <li>{@code media.peerconnection.enabled}: ALWAYS on since the user
+     *       toggle was removed (boot sets it). The write here is an idempotent
+     *       belt-and-braces so a share can never race a cold boot's async
+     *       pref write.</li>
+     *   <li>{@code ice.obfuscate_host_addresses} OFF: Firefox hides host ICE
+     *       candidates behind mDNS {@code <uuid>.local} names (a
+     *       browsing-privacy feature — pages can't read the LAN IP).
+     *       Resolving a peer's .local candidate needs multicast DNS, which on
+     *       Android generally fails (receiving multicast requires a
+     *       MulticastLock the app never takes), so with obfuscation on a
+     *       same-LAN pair finds NO working host pair and ICE dies with "add a
+     *       TURN server". Off for the session's lifetime — the LAN IP travels
+     *       only inside the code the user hands over or the LAN POST to a
+     *       phone they tapped — and restored ON in stopSession, so browsing
+     *       keeps the privacy feature. It used to be the SCREEN's flip and
+     *       restore; with the session outliving the screen it has to be the
+     *       session's.</li>
+     * </ul>
+     * {@code then} runs on the main thread, applied or not (a refused write
+     * surfaces as the engine's {@code rtc:false} ready event, which fails the
+     * session honestly instead of hanging it).
+     */
+    @OptIn(markerClass = ExperimentalGeckoViewApi.class)
+    private void applyWebRtcPrefs(@NonNull Runnable then) {
+        GeckoPreferenceController
+                .setGeckoPref("media.peerconnection.enabled", true,
+                        GeckoPreferenceController.PREF_BRANCH_USER)
+                .then(unused -> GeckoPreferenceController
+                        .setGeckoPref("media.peerconnection.ice.obfuscate_host_addresses", false,
+                                GeckoPreferenceController.PREF_BRANCH_USER))
+                .accept(unused -> then.run(), error -> then.run());
+    }
+
+    /** Browsing gets its mDNS candidate obfuscation back once no share session runs. */
+    @OptIn(markerClass = ExperimentalGeckoViewApi.class)
+    private void restoreWebRtcPrefs() {
+        GeckoPreferenceController
+                .setGeckoPref("media.peerconnection.ice.obfuscate_host_addresses", true,
+                        GeckoPreferenceController.PREF_BRANCH_USER);
     }
 
     /**
@@ -1433,7 +1869,7 @@ public class P2pShareController {
      * Receiver: get the answer back to the sender. Tries, in order of best UX:
      * (1) the LAN answer listener (serverless, same-network, instant),
      * (2) the signaling relay (cross-network, if the receiver opened a relay
-     *     link), (3) the reply QR/code (last resort — the sender scans it).
+     *     link), (3) the reply code (last resort — a human carries it).
      * Each step falls through to the next on failure.
      */
     private void deliverAnswer(@NonNull String code) {
@@ -1478,7 +1914,7 @@ public class P2pShareController {
         });
         if (hasRvz) {
             mMainHandler.postDelayed(() -> {
-                if (settled[0] || !"receive".equals(mRole)) {
+                if (settled[0] || !isReceive()) {
                     return;                     // LAN already won (stays local), or session gone
                 }
                 postAnswer(mRecvRendezvousUrl, code, ok -> {
@@ -1511,7 +1947,7 @@ public class P2pShareController {
         }
     }
 
-    /** POST the answer to one return endpoint (the sender's LAN listener or the
+    /** POST a body to one return endpoint (the sender's LAN listener or the
      *  rendezvous mailbox — same shape); report delivery to {@code done} on the
      *  main thread (true = the sender got it). */
     private void postAnswer(@NonNull String answerUrl, @NonNull String code,
@@ -1543,9 +1979,10 @@ public class P2pShareController {
 
     private void deliverReplyFallback(@NonNull String code) {
         // The session may have moved on (connected anyway, or torn down).
-        if ("receive".equals(mRole) && mListener != null) {
+        if (isReceive()) {
             mRecvAnswerUrl = null; // don't re-attempt LAN on a re-emit
-            mListener.onCode("answer", code);
+            mState.answerCode = code;
+            publish();
         }
     }
 
@@ -1561,13 +1998,13 @@ public class P2pShareController {
     private void onEngineTimeout() {
         if (mPendingEngineAction != null) {
             mPendingEngineAction = null;
-            postError("engine", "engine unavailable");
+            postError(ShareState.ERROR_ENGINE, "engine unavailable");
         }
     }
 
     private void postCommand(JSONObject command) {
         if (mPort == null) {
-            postError("engine", "engine not connected");
+            postError(ShareState.ERROR_ENGINE, "engine not connected");
             return;
         }
         mPort.postMessage(command);
@@ -1577,23 +2014,56 @@ public class P2pShareController {
         if (BuildConfig.DEBUG) {
             Log.d(TAG, "error: " + code + " " + detail);
         }
-        Listener listener = mListener;
-        stopSession(true);
-        if (listener != null) {
-            listener.onError(code, detail);
+        if (mState == null) {
+            stopSession(true);
+            return;
+        }
+        finish(ShareState.Stage.ERROR, code, 0, null);
+    }
+
+    /**
+     * End the transport and publish the TERMINAL snapshot: the engine, the
+     * servers and the polls go now, the state stays (with the outcome) until a
+     * screen dismisses it. An ERROR drops an EMPTY partial; DONE keeps the
+     * (already renamed) file.
+     */
+    private void finish(@NonNull ShareState.Stage stage, @Nullable String errorCode,
+                        long bytes, @Nullable DownloadEntity received) {
+        ShareState snapshot = mState;
+        stopSession(stage == ShareState.Stage.ERROR);
+        mState = snapshot;
+        if (mState != null) {
+            mState.stage = stage;
+            mState.errorCode = errorCode;
+            mState.bytes = bytes;
+            mState.received = received;
+            mState.reconnecting = false;
+            mState.answerCode = null;
+            publish();
         }
     }
 
+    /**
+     * Drop the session's TRANSPORT (engine session, loopback, LAN listener,
+     * polls, timers, per-session fields). Deliberately does NOT touch
+     * {@link #mState}: callers decide whether the snapshot survives
+     * ({@link #finish} keeps it as the outcome, {@link #stop} clears it, a
+     * new start replaces it).
+     */
     private void stopSession(boolean deletePartial) {
+        // The transport is dead from this line: a port onDisconnect fired by
+        // our own close() below, or a late engine event, must see a torn-down
+        // session and not post a spurious error.
+        mSessionActive = false;
+        mNearbyBusy = false;
+        mAnswerTaken = false;
+        mEngineOpening = false;
         mMainHandler.removeCallbacks(mEngineTimeout);
+        mMainHandler.removeCallbacks(mOfferTimeout);
         mPendingEngineAction = null;
         mEngineReady = false;
-        // Null the listener/role BEFORE closing the session so the port's
-        // onDisconnect (fired by close()) sees a torn-down session and doesn't
-        // post a spurious "engine disconnected" error.
-        mListener = null;
-        mRole = null;
         closeEngineSession();
+        restoreWebRtcPrefs();
         if (mServer != null) {
             mServer.stop();
             mServer = null;
@@ -1638,24 +2108,22 @@ public class P2pShareController {
         mRecvMime = null;
         mRecvSize = 0;
         mRecvFinalized = false;
-        mTransferring = false;
-        mReceivedEntity = null;
     }
 
     /**
      * True while bytes are actively moving (a progress event has fired and the
-     * transfer hasn't completed) — used to confirm before a back-press
-     * abandons an in-flight transfer.
+     * transfer hasn't completed) — the screens confirm an explicit Cancel on
+     * it.
      */
     @UiThread
     public boolean isTransferActive() {
-        return mTransferring;
+        return mState != null && mState.isTransferring();
     }
 
     /** The finished download row from the last completed receive, or null. */
     @Nullable
     @UiThread
     public DownloadEntity getReceivedEntity() {
-        return mReceivedEntity;
+        return mState == null ? null : mState.received;
     }
 }

@@ -420,7 +420,7 @@ public class P2pLoopbackServer {
     /**
      * Minimal HTTP request-head parser — request line + headers, query split.
      * The only clients are our own extension fetch() calls (and the peer's
-     * answer POST — see P2pAnswerServer, which shares this parser), so this
+     * signaling POSTs — see P2pLanServer, which shares this parser), so this
      * stays deliberately small (no chunked bodies, no keep-alive).
      *
      * <p><b>Reads raw bytes up to and INCLUDING the terminating {@code \r\n\r\n},

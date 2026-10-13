@@ -3002,6 +3002,93 @@ scanner added `CAMERA` (runtime-requested ONLY on the scan screen,
 `uses-feature android.hardware.camera.any required=false`, paste fallback
 covers camera-less devices).
 
+**The 2026-10 redo (direction A of `sketches/p2p-share-redo.html`): the
+SESSION is the controller's and a foreground service carries it; the
+screens are windows onto it; nearby is a LIST of phones, not a QR.** Two
+things the first design got wrong on-device: the sender had to sit on the
+share screen for the whole transfer ("session lifetime = view lifetime"),
+and the in-person path was a QR to aim across a table. Now:
+- **`P2pShareController` owns the session and publishes it as a
+  `ShareState` snapshot** (`getState()`, a LiveData republished on every
+  change: role, stage `PREPARING → READY/OFFERED → CONNECTING → CONNECTED →
+  TRANSFERRING → DONE/ERROR`, the file, the peer's device name, the offer
+  code + link-shared flag, the receiver's fallback reply code, progress,
+  the relayed/direct fact, the error, the received row, a one-shot
+  `notice`). `P2pSendFragment` / `P2pReceiveFragment` keep NO session state:
+  they `render(state)` the whole stage from each snapshot, so a screen
+  opened onto a running session (the notification's tap, a rotation) paints
+  what the one that started it would. The Send screen ATTACHES when a live
+  SEND state names the same file path, else starts; the Receive screen's
+  deep-link args start a receive only when `savedInstanceState == null`.
+  A terminal DONE/ERROR snapshot stays (engine and servers already gone)
+  until a screen dismisses it (`dismissFinished`) or a new start replaces it.
+- **`P2pShareService` (`dataSync` FGS, the `RunnableManager` shape)** is
+  started by the controller the moment a session must outlive its screen —
+  `startSend` (the offer waits for an accept) and `acceptOffer` — observes
+  the same state, repaints a progress notification on every stage/peer/
+  whole-percent change (via `startForeground`, exempt from the
+  POST_NOTIFICATIONS grant), carries a Cancel action (`ACTION_CANCEL` →
+  `controller.stop()`), and stops ITSELF when the state goes null or
+  terminal (the final outcome stays, detached). Its tap reopens the live
+  screen through `DownloadsActivity.EXTRA_OPEN_P2P` (`openLiveShare` — no
+  second copy if the screen is already on top). `onTimeout` (the Android 15
+  6 h cap) fails the share honestly (`failForSystemTimeout`); a refused
+  `startForeground` never crashes — the share keeps running for as long as
+  its screen is open, the pre-service behaviour. Leaving a screen ends
+  NOTHING that is running; what a screen releases on leaving is its own:
+  the receiver's nearby visibility, a pre-accept preview (declined), a
+  shown outcome. Back and the toolbar's up simply leave; only the explicit
+  Cancel (screen — confirmed while bytes move — or notification) stops a
+  session.
+- **A minted offer lives `OFFER_LIFETIME_MS` (15 min, the mailbox's offer
+  TTL and the poll's deadline) and then ends the session with
+  `ERROR_TIMEOUT`** — needed now that nobody has to be on the screen; a
+  forgotten share would otherwise hold the service, the hidden session and
+  the LAN listener until the app died. The poll's own null callback is NOT
+  the signal: it also fires at once on an unexpected mailbox status, which
+  would end a healthy LAN-only share.
+- **NEARBY = NSD.** While the Receive screen is open and idle the controller
+  binds the `/offer` route of `P2pLanServer` (the generalised
+  `P2pAnswerServer`: two token-gated POSTs, `/answer` for the sender,
+  `/offer` for the receiver, 16 KB bodies, 204/409) and advertises it as
+  DNS-SD `_firedown._tcp` through the SYSTEM `NsdManager`
+  (`P2pNearbyAdvertiser`: name = the user's device name from
+  `Settings.Global.DEVICE_NAME`, else `Build.MODEL`; TXT `t` = the
+  per-session token, `d` = the name, `v` = 1; Android may rename on a
+  conflict and the registered name is what `getVisibleAs()` reports —
+  "Visible as <name>" on the screen, null = not visible). No new
+  permission: the system responder does the mDNS, so no MulticastLock, no
+  `CHANGE_WIFI_MULTICAST_STATE`, and NSD is not in the `NEARBY_WIFI_DEVICES`
+  set (Wi-Fi Aware/Direct are) — a device check still owed on Android 13+.
+  The Send screen's `P2pNearbyDiscovery` lists found services (resolves
+  SERIALISED — a second concurrent `resolveService` fails with
+  `FAILURE_ALREADY_ACTIVE`; IPv4 preferred, the receiver binds site-local
+  v4) in first-seen order; a tap `sendOfferToNearby` POSTs the whole
+  `FDS1.` code to `http://<host>:<port>/offer?t=<token>` and the state
+  names the device ("Sent · waiting"). The receiver previews it exactly
+  like a scanned code (`arrivedNearby`) and its Accept returns over the
+  offer's own `ans`, i.e. the sender's `/answer` — the same LAN. 409 =
+  that phone is busy with another transfer (`mNearbyBusy`, set for any
+  live session), connect failure = unreachable; both are one-shot
+  `notice`s and the offer stays valid for another phone or a link. A
+  Decline POSTs `declined` to `/answer` (`P2pLanServer.DECLINED_BODY`) so
+  the sender goes back to choosing instead of waiting out the lifetime;
+  leaving the Receive screen with a request pending declines it. Nothing is
+  ever advertised without the screen saying so, and visibility stops
+  (`setNearbyListening(false)`) the moment a session is live — a phone in
+  a transfer vanishes from senders' lists rather than answering 409.
+- **Screens:** Send = the file card, NEARBY (the device rows, inflated
+  from `item_p2p_device.xml`, with the empty line "No one yet. On the other
+  phone, open Downloads → Receive a file"), then ANYWHERE (Send link,
+  Private link, and the QR folded under "Show QR" with the scan/paste
+  reply fallbacks). Receive = the "Visible as <name>" card and a "Got a
+  code or link?" fold (Scan · Paste); the request card (Accept/Decline);
+  the human-relayed reply only when both push paths failed
+  (`ShareState.answerCode`). Both carry "You can leave this screen. The
+  transfer continues in the background." on the progress card. The old
+  "Nearby? Show the QR" fold, the scan/paste entry card and the reply
+  stage's "One step left" copy are retired (base + every `values-*`).
+
 **Transport: Gecko's own WebRTC DataChannel — deliberately NO libwebrtc
 dependency** (~10 MB/ABI to duplicate what GeckoView ships).
 
@@ -3022,7 +3109,8 @@ script has no `browser.runtime`, so a thin bridge **content script**
 native port (`"p2pshare"`) and relays page↔Java over `window.postMessage`
 (events out = `{p2p:"evt"}`, commands in = `{p2p:"cmd"}`). `GeckoRuntimeHelper.
 onConnect` hands that port to **`P2pShareController`** (the PoTokenGenerator
-ownership pattern — the port never lands in `mPorts`). Java owns all UI, the
+ownership pattern — the port never lands in `mPorts`). Java owns the
+session (the controller) and all UI (the screens render its snapshots), the
 byte endpoints, the hidden session's lifecycle, and the post-transfer
 bookkeeping; the page owns only WebRTC. Verify engine changes with
 `node scripts/p2pshare-smoke.mjs` (vm-loads `engine-page.js` under a stubbed
@@ -3052,20 +3140,22 @@ through a messenger — with two wrapper forms for each code:**
   the firedown:// form.
 - **QR / in-person form: `firedown://p2p/<code>`** (`toDeepLink`) — what the
   QR encodes, so any scanner (system camera included) offers "open in
-  Firedown". The QR lives COLLAPSED behind a "Nearby? Show the QR" row on both
-  screens — remote is the default, in-person the shortcut.
+  Firedown". The QR is folded under "Show QR" in the sender's ANYWHERE card
+  — the in-person path that needs NO network at all; two phones on one
+  Wi-Fi use the nearby list instead (the redo note above).
 `handleP2pDeepLink` routes both forms by prefix: an **FDS1 offer** →
 `p2p_receive` (`ARG_OFFER_CODE`); an **FDR1 reply** → the LIVE send session
 (`provideExternalAnswer`; no session → an honest "share no longer open"
 snackbar). So the remote round trip is share link → Accept → send reply →
 sender TAPS the reply in the chat — no scanning, no pasting. The sender's
-screen flips to a WAITING sub-stage after sharing (what-happens-next copy),
-auto-picks an FDR1 reply off the CLIPBOARD on resume (each clip value tried
-once, so a soft bad-code can't loop; Android's paste toast keeps the read
-visible), and keeps Paste as the manual fallback. The receive REPLY stage is
-shaped by HOW the offer arrived (`mArrivedRemote`): link/paste → "Send reply"
-share-sheet primary + folded QR; in-app scan → QR expanded, remote widgets
-hidden. `P2pShareController.stripDeepLink` unwraps both forms and bare codes
+screen shows a WAITING card after sharing (`ShareState.linkShared`, kept on
+the state so a sender who leaves and returns still sees it), auto-picks an
+FDR1 reply off the CLIPBOARD on window focus (each clip value tried once, so
+a soft bad-code can't loop; Android's paste toast keeps the read visible),
+and keeps Paste as the manual fallback. The receiver shows a reply ONLY
+when both push paths (LAN return, mailbox) failed (`ShareState.answerCode`):
+"Send reply" for a sender reached by link plus the QR for one standing
+there; `arrivedRemote` still shapes the no-path error copy. `P2pShareController.stripDeepLink` unwraps both forms and bare codes
 everywhere codes are read. The
 only external party is **one STUN server** (address echo, no bytes),
 user-chosen in Settings → Downloads: `settings_p2p_stun_entries/values` in
@@ -3170,6 +3260,8 @@ answer path was dead from minute 2.5 to minute 15 — the link previewed fine
 and Accept no-pathed even with the sender sitting on the share screen. A poll
 that gives up is a silent no-op on the sender (LAN return and the
 human-relayed reply still stand), which is why extending it changed no UI.
+Since the redo the offer's own `OFFER_LIFETIME_MS` (same 15 min) ends a
+session nobody accepted — the one bound a screen-less sender needs.
 
 **Failing FAST on a dead link (rather than merely honestly) was DECIDED
 AGAINST — but for TWO reasons, not the four first written down.** The two
@@ -3280,11 +3372,13 @@ hides host ICE candidates behind mDNS `.local` names
 (`media.peerconnection.ice.obfuscate_host_addresses`); Android peers
 generally can't resolve those (no MulticastLock), so with obfuscation on a
 same-LAN pair finds NO host pair and ICE fails outright ("add a TURN
-server" — observed on-device). `P2pShareBaseFragment` flips it OFF for the
-share session (`setWebRtcIceObfuscation(false)`, chained after `setWebRTC`
-before `onEngineReady`) and restores ON in `onDestroyView` — browsing keeps
-the privacy feature; the share QR already hands the LAN IP to the peer
-physically. Don't remove the flip or the restore.
+server" — observed on-device). `P2pShareController.applyWebRtcPrefs` flips
+it OFF before the engine page opens (chained after the `setWebRTC(true)`
+belt, both awaited) and `restoreWebRtcPrefs` turns it back ON in
+`stopSession` — browsing keeps the privacy feature; the LAN IP travels only
+inside the code the user hands over or the LAN POST to a phone they tapped.
+It used to be the SCREEN's flip and restore; with the session outliving the
+screen it had to become the session's. Don't remove the flip or the restore.
 
 **WebRTC is ALWAYS ON — the user toggle was REMOVED** (maintainer decision):
 the off-default broke real sites (Meet/Discord/WhatsApp calls) and forced the
@@ -3300,12 +3394,12 @@ created** — a page loaded with the pref off has NO constructor even after it
 flips on), which is why the machinery below stays even though the pref never
 changes anymore:
 1. **Start the engine only AFTER the pref write is applied.**
-   `P2pShareBaseFragment` still writes `setWebRTC(true)` (idempotent
-   belt-and-braces so a share can't race a cold boot's async pref write),
-   chains the mDNS-obfuscation flip, and fires `onEngineReady()` on
-   `.accept(...)` — `onEngineReady` drives the controller to
-   `openEngineSession()`. Firing that synchronously after the writes would
-   race them and load the page before the values are visible.
+   `ensureEngineSession` runs `applyWebRtcPrefs` — `setGeckoPref(webrtc,
+   true)` (idempotent belt-and-braces so a share can't race a cold boot's
+   async pref write) chained with the mDNS-obfuscation flip — and opens
+   `openEngineSession()` only on the chain's `.accept(...)`. Opening
+   synchronously after the writes would race them and load the page before
+   the values are visible.
 2. **A fresh session per share, torn down in `stopSession`.** `startSend`/
    `startReceive` call `stopSession` first (closing any prior engine session),
    then `ensureEngineSession` opens a new one loading `getEnginePageUrl()`. The
@@ -3321,8 +3415,8 @@ there — see the transport note above).
 
 **Bytes never cross the native-messaging bridge** (that would be
 base64-in-JSON per chunk). `P2pLoopbackServer` (127.0.0.1, ephemeral port,
-16-byte token, lifetime = share screen, same "nothing listens when the
-screen isn't open" contract as LAN share): the sender-side engine
+16-byte token, lifetime = the share SESSION — stopped in `stopSession`
+whether or not a screen is open): the sender-side engine
 `fetch()`es `GET /read` and pumps the stream into the DataChannel (64 KB
 chunks, `bufferedAmountLow` backpressure, 4 MB high-water); the
 receiver-side engine batches ~4 MB and `POST /write?off=` — offsets are
@@ -3416,13 +3510,14 @@ every old↔new APK pairing keeps working:
   shared wire format the "SECOND IMPLEMENTATION" warning below records.
 
 **Scanner is a full-screen `DialogFragment` (`<dialog>` destination), NOT a
-`<fragment>` — load-bearing.** A `<fragment>` scanner destination would
-destroy the send/receive fragment's view on navigate →
-`P2pShareBaseFragment.onDestroyView` → `controller.stop()`, killing the live
-WebRTC session mid-handshake; the returning fragment mints a fresh offer the
-scanned answer can never match (the QR-reply path would ALWAYS fail, only paste
-worked). A dialog shows on top, leaving the caller's view — and its session —
-intact. `P2pScanFragment` uses CameraX (`camera-core/camera2/lifecycle/view`,
+`<fragment>`.** History: a `<fragment>` scanner destination destroyed the
+send/receive fragment's view on navigate, and when the session still died
+with the view that killed the live WebRTC session mid-handshake (the
+returning fragment minted a fresh offer the scanned answer could never
+match — the QR-reply path ALWAYS failed, only paste worked). The session is
+the controller's now and would survive, but the dialog stays: the Receive
+screen's nearby visibility and the scan-result handshake are the SCREEN's,
+and a dialog shows on top, leaving the caller's view intact. `P2pScanFragment` uses CameraX (`camera-core/camera2/lifecycle/view`,
 the app's only camera use) + **zxing decode** of the Y plane (rowStride-
 compacted into a REUSED buffer — a fresh ~1-2 MB array per frame at 15-30 fps
 is needless GC churn; NO ML Kit / Play Services — de-Googled devices stay
@@ -3432,11 +3527,13 @@ CancelOperationDialogFragment pattern), validated against the expected
 `FDS1.`/`FDR1.` prefix before delivery. **Don't turn it back into a
 `<fragment>`.**
 
-**Session lifetime = view lifetime, but a back-press mid-transfer confirms
-first** (`P2pShareBaseFragment` `OnBackPressedCallback` + toolbar nav both go
-through `confirmThenClose`, gated on `controller.isTransferActive()` — set on
-the first `progress` event) so an accidental swipe-back doesn't silently
-discard an in-flight transfer. Clipboard paste goes through the shared
+**Session lifetime is the CONTROLLER's, not the view's (the redo note at
+the top of this section); the explicit Cancel confirms mid-transfer**
+(`P2pShareBaseFragment.confirmCancel`, gated on
+`controller.isTransferActive()` — true while the state is TRANSFERRING) so
+an accidental tap doesn't silently discard an in-flight transfer, while back
+and the toolbar's up just leave (the notification carries the transfer and
+brings the user back). Clipboard paste goes through the shared
 `ClipboardHelper.readTrimmedText` (single `getPrimaryClip` + `coerceToText` —
 NOT a multi-call `getText` chain, which fires the Android-13 paste toast per
 call and reads empty for `text/uri-list` clips from Chromium browsers). The

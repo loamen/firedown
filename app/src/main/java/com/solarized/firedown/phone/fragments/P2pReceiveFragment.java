@@ -12,10 +12,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.solarized.firedown.R;
-import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.p2pshare.P2pShareController;
+import com.solarized.firedown.p2pshare.ShareState;
 import com.solarized.firedown.utils.FileUriHelper;
 
 import java.util.Locale;
@@ -23,17 +22,21 @@ import java.util.Locale;
 import dagger.hilt.android.AndroidEntryPoint;
 
 /**
- * "Receive a file" — the receiver side of the P2P share. Scans (or pastes)
- * the sender's offer code, previews what's offered BEFORE anything connects,
- * and on Accept shows the reply code the sender scans back; then the file
- * streams in and lands as a normal FINISHED entry in Downloads.
+ * "Receive a file" — the receiver side of the P2P share. While this screen
+ * is open and idle the phone is VISIBLE to nearby senders (NSD + the LAN
+ * {@code /offer} listener, see {@link P2pShareController#setNearbyListening});
+ * a sender's tap lands here as a request to Accept or Decline, exactly like
+ * a scanned or pasted code would. Accept, and the file streams in and lands
+ * as a normal FINISHED entry in Downloads — the session then outlives this
+ * screen (the service carries it).
  *
- * <p>Screen walk: ENTRY (scan/paste) → PREVIEW (accept/decline) → REPLY
- * (answer QR) → CONNECTING → TRANSFER → DONE (Open) / ERROR (Try again).
+ * <p>Screen walk: IDLE (visible card + the code/link fold) → PREVIEW
+ * (accept/decline) → CONNECTING (with the human-relayed reply only when both
+ * push paths failed) → TRANSFER → DONE (Open) / ERROR (Try again). Rendered
+ * from the controller's {@link ShareState}.
  */
 @AndroidEntryPoint
-public class P2pReceiveFragment extends P2pShareBaseFragment
-        implements P2pShareController.Listener {
+public class P2pReceiveFragment extends P2pShareBaseFragment {
 
     /** Nav arg: an offer code delivered by the firedown://p2p/ deep link. */
     public static final String ARG_OFFER_CODE = "p2p.offer.code";
@@ -52,24 +55,10 @@ public class P2pReceiveFragment extends P2pShareBaseFragment
     public static final String ARG_SIGNALING_ID = "p2p.sig.id";
 
     private View mView;
-    private String mReplyCode;
-    private String mLastCode;
-    // HOW the offer arrived decides the reply stage's shape: via link/paste
-    // (phones apart) -> "Send reply" share button primary, QR folded; via the
-    // in-app scanner (phones adjacent) -> QR expanded, remote widgets hidden.
-    private boolean mArrivedRemote;
-    private boolean mReplyNearbyExpanded;
-    // Set once bytes start flowing; keeps the UI on the progress stage across
-    // connection blips instead of flipping to "Connected".
-    private boolean mTransferStarted;
-    // A relay link's rendezvous coordinates, when the deep link was a relay
-    // link rather than a self-contained offer. Both null = no relay.
-    private String mSignalingBase;
-    private String mSignalingId;
-    // A short offer link's rendezvous id ({@code FDO1.<id>}) — the receiver
-    // fetches the full offer from the offer mailbox. Null = not a short link.
-    private String mOfferRefId;
-    private DownloadEntity mReceived;
+    private boolean mCodeExpanded;
+    private String mRenderedReplyCode;
+    private String mVisibleAs;
+    private ShareState mLast;
 
     @Nullable
     @Override
@@ -80,14 +69,17 @@ public class P2pReceiveFragment extends P2pShareBaseFragment
         mView = inflater.inflate(R.layout.fragment_p2p_receive, container, false);
         mToolbar = mView.findViewById(R.id.toolbar);
 
+        mView.findViewById(R.id.p2p_code_toggle).setOnClickListener(v -> {
+            mCodeExpanded = !mCodeExpanded;
+            updateCodeFold();
+        });
         mView.findViewById(R.id.p2p_scan_code).setOnClickListener(v ->
                 navigateToScanner(P2pShareController.OFFER_PREFIX, false));
         mView.findViewById(R.id.p2p_paste_code).setOnClickListener(v -> {
             String code = readCodeFromClipboard(P2pShareController.OFFER_PREFIX);
             if (code != null) {
-                mLastCode = code;
-                mArrivedRemote = true; // pasted from a messenger = phones apart
-                mP2pController.startReceive(code, this);
+                // Pasted from a messenger = phones apart.
+                mP2pController.startReceive(code, true);
             }
         });
         mView.findViewById(R.id.p2p_accept).setOnClickListener(v -> {
@@ -95,82 +87,74 @@ public class P2pReceiveFragment extends P2pShareBaseFragment
             v.setEnabled(false);
             mView.findViewById(R.id.p2p_decline).setEnabled(false);
         });
-        mView.findViewById(R.id.p2p_decline).setOnClickListener(v -> {
-            mP2pController.stop();
-            showEntry();
-        });
-        mView.findViewById(R.id.p2p_share_reply).setOnClickListener(v -> {
-            if (mReplyCode != null) {
-                shareCode(P2pShareController.toHttpsLink(mReplyCode));
-            }
-        });
+        mView.findViewById(R.id.p2p_decline).setOnClickListener(v -> mP2pController.declineOffer());
         mView.findViewById(R.id.p2p_send_reply).setOnClickListener(v -> {
             // The https form — the sender just taps it in the chat and their
             // waiting session connects (answer deep link via DownloadsActivity).
-            if (mReplyCode != null) {
-                shareCode(P2pShareController.toHttpsLink(mReplyCode));
+            if (mLast != null && mLast.answerCode != null) {
+                shareCode(P2pShareController.toHttpsLink(mLast.answerCode));
             }
-        });
-        mView.findViewById(R.id.p2p_reply_nearby_toggle).setOnClickListener(v -> {
-            mReplyNearbyExpanded = !mReplyNearbyExpanded;
-            updateReplyNearby();
         });
         mView.findViewById(R.id.p2p_open).setOnClickListener(v -> openReceived());
-        // Mid-transfer this is "Cancel" (confirmed, like back); on done, "Done".
-        mView.findViewById(R.id.p2p_stop).setOnClickListener(v -> confirmThenClose());
-        mView.findViewById(R.id.p2p_retry).setOnClickListener(v -> showEntry());
-
-        // Arrived via the firedown://p2p/ deep link (scanned with any scanner)?
-        // Either a self-contained offer (ARG_OFFER_CODE) or a relay link
-        // (ARG_SIGNALING_BASE/ID, offer fetched from the relay). Stash it so
-        // onEngineReady kicks off once the WebRTC pref applies — same replay
-        // path as a code scanned before ready.
-        Bundle args = getArguments();
-        if (args != null) {
-            String offer = args.getString(ARG_OFFER_CODE);
-            if (offer != null && !offer.isEmpty()) {
-                mLastCode = offer;
-                mArrivedRemote = true; // tapped link = phones (likely) apart
-            }
-            String base = args.getString(ARG_SIGNALING_BASE);
-            String id = args.getString(ARG_SIGNALING_ID);
-            if (base != null && !base.isEmpty() && id != null && !id.isEmpty()) {
-                mSignalingBase = base;
-                mSignalingId = id;
-                mArrivedRemote = true; // a relay link is inherently remote
-            }
-            String offerRef = args.getString(ARG_OFFER_REF);
-            if (offerRef != null && !offerRef.isEmpty()) {
-                mOfferRefId = offerRef;
-                mArrivedRemote = true; // a short offer link is inherently remote
-            }
-        }
-
-        // A code/relay/offer link is already in hand (deep-link arrival) → show
-        // the working state right away, NOT the scan/paste entry. A plain open
-        // with nothing in hand shows the entry so the user can scan.
-        if (mLastCode != null || mSignalingBase != null || mOfferRefId != null) {
-            showReading();
-        } else {
-            setStage(R.id.p2p_entry_group);
-        }
+        mView.findViewById(R.id.p2p_stop).setOnClickListener(v -> onStopTapped());
+        // Try again after a failure: drop the outcome; the idle screen (and
+        // nearby visibility) comes back through render.
+        mView.findViewById(R.id.p2p_retry).setOnClickListener(v -> mP2pController.dismissFinished());
 
         return mView;
     }
 
     @Override
-    protected void onEngineReady() {
-        // Nothing to start unless a code/relay link arrived — otherwise receive
-        // waits for a scanned/pasted offer. Replayed here so it runs only after
-        // the WebRTC pref applied. A relay link takes precedence: it fetches the
-        // offer from the relay, then proceeds as a normal receive.
-        if (mSignalingBase != null && mSignalingId != null) {
-            mP2pController.startReceiveFromRelay(mSignalingBase, mSignalingId, this);
-        } else if (mOfferRefId != null) {
-            mP2pController.startReceiveFromOfferRef(mOfferRefId, this);
-        } else if (mLastCode != null) {
-            mP2pController.startReceive(mLastCode, this);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        mP2pController.getVisibleAs().observe(getViewLifecycleOwner(), name -> {
+            mVisibleAs = name;
+            renderVisible();
+        });
+        // A deep-link arrival: a self-contained offer (ARG_OFFER_CODE), a
+        // short offer link (ARG_OFFER_REF) or a relay link (ARG_SIGNALING_*).
+        // Started ONCE — the nav args are re-delivered on a configuration
+        // change, and a running session must not be restarted by a rotation
+        // (it is attached to through the state instead).
+        if (savedInstanceState != null) {
+            return;
         }
+        Bundle args = getArguments();
+        if (args == null) {
+            return;
+        }
+        String base = args.getString(ARG_SIGNALING_BASE);
+        String id = args.getString(ARG_SIGNALING_ID);
+        String offerRef = args.getString(ARG_OFFER_REF);
+        String offer = args.getString(ARG_OFFER_CODE);
+        if (base != null && !base.isEmpty() && id != null && !id.isEmpty()) {
+            mP2pController.startReceiveFromRelay(base, id);
+        } else if (offerRef != null && !offerRef.isEmpty()) {
+            mP2pController.startReceiveFromOfferRef(offerRef);
+        } else if (offer != null && !offer.isEmpty()) {
+            mP2pController.startReceive(offer, true); // tapped link = phones (likely) apart
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        // Visibility is this SCREEN's: nobody can send to a phone that isn't
+        // showing it is ready to receive.
+        mP2pController.setNearbyListening(false);
+        ShareState state = mP2pController.peekState();
+        if (state != null && state.role == ShareState.Role.RECEIVE) {
+            if (state.stage == ShareState.Stage.PREPARING
+                    || state.stage == ShareState.Stage.OFFERED) {
+                // A request nobody answered is a no — the sender is told so it
+                // can offer elsewhere, and nothing is left half-open.
+                mP2pController.declineOffer();
+            } else if (!state.isLive()) {
+                mP2pController.dismissFinished();
+            }
+            // CONNECTING / TRANSFERRING keep running: the service carries them.
+        }
+        mView = null;
+        super.onDestroyView();
     }
 
     @Override
@@ -180,220 +164,164 @@ public class P2pReceiveFragment extends P2pShareBaseFragment
 
     @Override
     protected void onCodeScanned(@NonNull String code) {
-        mLastCode = code;
-        mArrivedRemote = false; // scanned in person = phones adjacent
-        mP2pController.startReceive(code, this);
+        mP2pController.startReceive(code, false); // scanned in person = phones adjacent
     }
 
-    private void showEntry() {
-        mTransferStarted = false;
-        setStage(R.id.p2p_entry_group);
-        mView.findViewById(R.id.p2p_accept).setEnabled(true);
-        mView.findViewById(R.id.p2p_decline).setEnabled(true);
-        mView.findViewById(R.id.p2p_stop).setVisibility(View.GONE);
+    private void onStopTapped() {
+        if (mLast != null && !mLast.isLive()) {
+            mP2pController.dismissFinished();
+            close();
+        } else {
+            confirmCancel();
+        }
     }
 
     private void openReceived() {
-        if (mReceived != null) {
+        if (mLast != null && mLast.received != null) {
             // BaseFocusFragment's shared "open with" path — same as the
             // Downloads options sheet's Open action.
-            openItemWith(mReceived);
+            openItemWith(mLast.received);
         }
     }
 
-    /** Reading/decoding the scanned offer, before the preview appears. */
-    private void showReading() {
-        setStage(R.id.p2p_status_group);
-        ((TextView) mView.findViewById(R.id.p2p_status)).setText(R.string.p2p_preparing);
-        // Path-neutral footer until onTransport reports the live path. NOT the
-        // "never touches a server" copy — see onTransport.
-        ((TextView) mView.findViewById(R.id.p2p_footer)).setText(R.string.p2p_footer_connecting);
-    }
+    /* ── rendering ──────────────────────────────────────────────────────── */
 
     @Override
-    public void onTransport(boolean relayed) {
+    protected void render(@Nullable ShareState state) {
         if (mView == null) {
             return;
         }
-        // Honest footer: relayed through firedown.app (still E2E encrypted) vs
-        // a direct peer-to-peer path that never touches a server.
-        //
-        // "Never touches a server" is only ever set HERE, because it is only
-        // true once the engine has actually read the selected candidate pair.
-        // The stages default to p2p_footer_connecting instead: reportTransport
-        // is best-effort and stays silent when getStats is missing, its promise
-        // rejects, or no pair matches — and with the old optimistic default,
-        // every one of those left a RELAYED transfer claiming the file never
-        // touched a server. An unverified privacy claim must degrade to the
-        // weaker statement, never to the stronger one.
-        ((TextView) mView.findViewById(R.id.p2p_footer)).setText(
-                relayed ? R.string.p2p_footer_relayed : R.string.p2p_footer);
-        maybeHintVpnRelay(relayed);
-    }
-
-    private void setStage(int visibleId) {
-        int[] stages = {R.id.p2p_entry_group, R.id.p2p_preview_group, R.id.p2p_status_group,
-                R.id.p2p_reply_group, R.id.p2p_progress_group, R.id.p2p_done_group,
-                R.id.p2p_error_group};
-        for (int id : stages) {
-            mView.findViewById(id).setVisibility(id == visibleId ? View.VISIBLE : View.GONE);
-        }
-    }
-
-    /* ── engine events (main thread) ────────────────────────────────────── */
-
-    @Override
-    public void onCode(@NonNull String role, @NonNull String code) {
-        if (mView == null || !"answer".equals(role)) {
+        boolean mine = state != null && state.role == ShareState.Role.RECEIVE;
+        // Visible to nearby senders exactly while there is nothing of ours in
+        // flight: idle, or showing an outcome.
+        mP2pController.setNearbyListening(!mine || !state.isLive());
+        if (!mine) {
+            mLast = null;
+            showStage(R.id.p2p_idle_group);
+            renderVisible();
+            updateCodeFold();
+            mView.findViewById(R.id.p2p_stop).setVisibility(View.GONE);
+            bindFooter(mView, null);
             return;
         }
-        mReplyCode = code;
-        setStage(R.id.p2p_reply_group);
-        boolean rendered = setQr(mView.findViewById(R.id.p2p_reply_qr), code);
-        mView.findViewById(R.id.p2p_reply_qr_card).setVisibility(rendered ? View.VISIBLE : View.GONE);
-        ((TextView) mView.findViewById(R.id.p2p_reply_hint)).setText(
-                rendered ? R.string.p2p_code_hint_reply : R.string.p2p_qr_too_large);
-        // Remote arrival: "Send reply" is the primary, QR folded. Scan
-        // arrival: the phones are adjacent — QR expanded, remote widgets gone.
-        mView.findViewById(R.id.p2p_reply_remote_group)
-                .setVisibility(mArrivedRemote ? View.VISIBLE : View.GONE);
-        mReplyNearbyExpanded = !mArrivedRemote;
-        updateReplyNearby();
-    }
-
-    private void updateReplyNearby() {
-        mView.findViewById(R.id.p2p_reply_nearby_group)
-                .setVisibility(mReplyNearbyExpanded ? View.VISIBLE : View.GONE);
-        ((ImageView) mView.findViewById(R.id.p2p_reply_nearby_chevron))
-                .setRotation(mReplyNearbyExpanded ? 180f : 0f);
-    }
-
-    @Override
-    public void onOfferParsed(@NonNull String name, long size, @NonNull String mime, @NonNull String device) {
-        if (mView == null) {
-            return;
+        mLast = state;
+        MaterialButton stop = mView.findViewById(R.id.p2p_stop);
+        TextView status = mView.findViewById(R.id.p2p_status);
+        switch (state.stage) {
+            case PREPARING, READY -> {
+                showStage(R.id.p2p_status_group);
+                status.setText(R.string.p2p_preparing);
+                mView.findViewById(R.id.p2p_reply_group).setVisibility(View.GONE);
+                stop.setText(R.string.cancel);
+                stop.setVisibility(View.VISIBLE);
+            }
+            case OFFERED -> {
+                showStage(R.id.p2p_preview_group);
+                bindPreview(state);
+                stop.setVisibility(View.GONE);
+            }
+            case CONNECTING, CONNECTED -> {
+                showStage(R.id.p2p_status_group);
+                status.setText(state.stage == ShareState.Stage.CONNECTED
+                        ? R.string.p2p_state_connected : R.string.p2p_state_connecting);
+                bindReplyFallback(state);
+                stop.setText(R.string.cancel);
+                stop.setVisibility(View.VISIBLE);
+            }
+            case TRANSFERRING -> {
+                showStage(R.id.p2p_progress_group);
+                bindProgress(mView, state);
+                stop.setText(R.string.cancel);
+                stop.setVisibility(View.VISIBLE);
+            }
+            case DONE -> {
+                showStage(R.id.p2p_done_group);
+                // Open is only useful if we actually have the entity handle.
+                mView.findViewById(R.id.p2p_open)
+                        .setVisibility(state.received != null ? View.VISIBLE : View.GONE);
+                stop.setText(R.string.p2p_done);
+                stop.setVisibility(View.VISIBLE);
+            }
+            case ERROR -> {
+                showStage(R.id.p2p_error_group);
+                ((TextView) mView.findViewById(R.id.p2p_error)).setText(errorText(state));
+                stop.setVisibility(View.GONE);
+            }
         }
-        setStage(R.id.p2p_preview_group);
-        ((TextView) mView.findViewById(R.id.p2p_preview_name)).setText(name);
-        String sizeText = Formatter.formatShortFileSize(requireContext(), size);
+        bindFooter(mView, state);
+    }
+
+    private void bindPreview(@NonNull ShareState state) {
+        mView.findViewById(R.id.p2p_accept).setEnabled(true);
+        mView.findViewById(R.id.p2p_decline).setEnabled(true);
+        ((TextView) mView.findViewById(R.id.p2p_preview_name)).setText(
+                state.fileName == null ? "" : state.fileName);
+        String sizeText = Formatter.formatShortFileSize(requireContext(), state.fileSize);
+        String device = state.peerDevice == null ? "" : state.peerDevice;
         String tag = device.isEmpty()
                 ? sizeText
                 : String.format(Locale.ROOT, "%s · %s", sizeText,
                         getString(R.string.p2p_receive_from, device));
         ((TextView) mView.findViewById(R.id.p2p_preview_tag)).setText(tag);
         ((ImageView) mView.findViewById(R.id.p2p_preview_icon)).setImageResource(
-                FileUriHelper.getMimeTypeIcon(mime));
-    }
-
-    @Override
-    public void onConnectionState(@NonNull String state) {
-        if (mView == null) {
-            return;
-        }
-        // Once bytes are flowing, stay on the progress stage across the
-        // connected↔disconnected flapping of a lossy/VPN path — toggle a small
-        // "Reconnecting…" spinner instead of dropping the progress bar back to
-        // the "Connected" status card (see the send fragment for the rationale).
-        if (mTransferStarted) {
-            mView.findViewById(R.id.p2p_reconnecting)
-                    .setVisibility("connected".equals(state) ? View.GONE : View.VISIBLE);
-            return;
-        }
-        if ("connecting".equals(state) || "connected".equals(state)) {
-            setStage(R.id.p2p_status_group);
-            TextView status = mView.findViewById(R.id.p2p_status);
-            status.setText("connected".equals(state)
-                    ? R.string.p2p_state_connected : R.string.p2p_state_connecting);
-        }
-    }
-
-    @Override
-    public void onProgress(long done, long total, long rate) {
-        if (mView == null) {
-            return;
-        }
-        mTransferStarted = true;
-        setStage(R.id.p2p_progress_group);
-        mView.findViewById(R.id.p2p_reconnecting).setVisibility(View.GONE);
-        // Mid-transfer, an explicit Cancel is warranted (it goes through the
-        // same abandon confirm as back). Hidden on the scan/reply stages.
-        MaterialButton stop = mView.findViewById(R.id.p2p_stop);
-        stop.setText(R.string.cancel);
-        stop.setVisibility(View.VISIBLE);
-        LinearProgressIndicator bar = mView.findViewById(R.id.p2p_progress_bar);
-        if (total > 0) {
-            bar.setProgress((int) (done * 100 / total));
-        }
-        ((TextView) mView.findViewById(R.id.p2p_progress_text)).setText(
-                getString(R.string.p2p_progress_of,
-                        Formatter.formatShortFileSize(requireContext(), done),
-                        Formatter.formatShortFileSize(requireContext(), total),
-                        Formatter.formatShortFileSize(requireContext(), rate)));
-    }
-
-    @Override
-    public void onDone(@NonNull String role, long bytes) {
-        if (mView == null) {
-            return;
-        }
-        setStage(R.id.p2p_done_group);
-        mReceived = mP2pController.getReceivedEntity();
-        // Open is only useful if we actually have the entity handle.
-        mView.findViewById(R.id.p2p_open).setVisibility(mReceived != null ? View.VISIBLE : View.GONE);
-        // The bottom button exists only for this stage (hidden in the layout):
-        // a standing Cancel would duplicate back/toolbar-up.
-        MaterialButton done = mView.findViewById(R.id.p2p_stop);
-        done.setText(R.string.p2p_done);
-        done.setVisibility(View.VISIBLE);
+                FileUriHelper.getMimeTypeIcon(state.mime == null ? "" : state.mime));
     }
 
     /**
-     * A no-path on a LINK-delivered offer is usually a DEAD SENDER, not a
-     * network topology problem, and the generic copy sent the user to fix the
-     * wrong thing.
-     *
-     * The offer code is self-contained — name, size, mime, and the sender's ICE
-     * candidates + DTLS fingerprint, all minted when the share screen was open.
-     * The offer mailbox then serves it for its whole TTL with a NON-destructive
-     * read, so a link keeps producing a full, convincing preview long after the
-     * sender closed the share and released those ports. Accept therefore
-     * succeeds, connectivity checks go to nothing, and 30s later the user is
-     * told to try the same Wi-Fi with the VPN off — advice for a live peer they
-     * can't reach, when the peer isn't there at all.
-     *
-     * Scoped to {@code mArrivedRemote} because the QR path is the opposite
-     * case: the sender is standing right there with the share screen open, so a
-     * no-path really is about the network and the existing copy is correct.
-     *
-     * The wording asserts no cause it hasn't verified ("may have closed") —
-     * a genuine CGNAT↔CGNAT pair still lands here, and the actionable step is
-     * the same either way. Same rule as the transfer footer: an unverified
-     * claim degrades to the weaker statement.
-     *
-     * A VPN on THIS device still wins, being both more specific and directly
-     * actionable.
+     * The human-relayed reply, ONLY when the controller fell all the way back
+     * to it ({@link ShareState#answerCode}): "Send reply" (a link the sender
+     * taps) plus the QR for a sender standing here. A scan arrival shows the
+     * QR first; a link arrival the share button — both are present either
+     * way, the order is the only difference worth making.
      */
-    @Override
-    protected int errorText(@NonNull String code) {
-        if ("no-path".equals(code) && mArrivedRemote && !isVpnActive()) {
-            return R.string.p2p_error_no_path_link;
+    private void bindReplyFallback(@NonNull ShareState state) {
+        View group = mView.findViewById(R.id.p2p_reply_group);
+        if (state.answerCode == null) {
+            group.setVisibility(View.GONE);
+            return;
         }
-        return super.errorText(code);
+        group.setVisibility(View.VISIBLE);
+        if (state.answerCode.equals(mRenderedReplyCode)) {
+            return;
+        }
+        mRenderedReplyCode = state.answerCode;
+        boolean rendered = setQr(mView.findViewById(R.id.p2p_reply_qr), state.answerCode);
+        mView.findViewById(R.id.p2p_reply_qr_card).setVisibility(rendered ? View.VISIBLE : View.GONE);
+        ((TextView) mView.findViewById(R.id.p2p_reply_hint)).setText(
+                rendered ? R.string.p2p_code_hint_reply : R.string.p2p_qr_too_large);
     }
 
-    @Override
-    public void onError(@NonNull String code, @NonNull String detail) {
+    /** The idle card: "Visible as <name>" with the live dot, or not visible. */
+    private void renderVisible() {
         if (mView == null) {
             return;
         }
-        if ("bad-code".equals(code)) {
-            // Soft: stay on entry, let the user retry the scan/paste.
-            makeSnack(R.string.p2p_error_bad_code);
-            showEntry();
-            return;
+        TextView text = mView.findViewById(R.id.p2p_visible_text);
+        TextView hint = mView.findViewById(R.id.p2p_visible_hint);
+        View dot = mView.findViewById(R.id.p2p_visible_dot);
+        if (mVisibleAs != null && !mVisibleAs.isEmpty()) {
+            text.setText(getString(R.string.p2p_visible_as, mVisibleAs));
+            hint.setText(R.string.p2p_visible_hint);
+            dot.setVisibility(View.VISIBLE);
+        } else {
+            text.setText(R.string.p2p_not_visible);
+            hint.setText(R.string.p2p_visible_hint);
+            dot.setVisibility(View.GONE);
         }
-        setStage(R.id.p2p_error_group);
-        mView.findViewById(R.id.p2p_stop).setVisibility(View.GONE);
-        ((TextView) mView.findViewById(R.id.p2p_error)).setText(errorText(code));
+    }
+
+    private void updateCodeFold() {
+        mView.findViewById(R.id.p2p_code_group)
+                .setVisibility(mCodeExpanded ? View.VISIBLE : View.GONE);
+        ((ImageView) mView.findViewById(R.id.p2p_code_chevron))
+                .setRotation(mCodeExpanded ? 180f : 0f);
+    }
+
+    private void showStage(int visibleId) {
+        int[] stages = {R.id.p2p_idle_group, R.id.p2p_preview_group, R.id.p2p_status_group,
+                R.id.p2p_progress_group, R.id.p2p_done_group, R.id.p2p_error_group};
+        for (int id : stages) {
+            mView.findViewById(id).setVisibility(id == visibleId ? View.VISIBLE : View.GONE);
+        }
     }
 }

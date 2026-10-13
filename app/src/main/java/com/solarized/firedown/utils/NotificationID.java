@@ -20,6 +20,12 @@ public class NotificationID {
      */
     public static final int PLAYER_MEDIA_ID = 103;
 
+    /**
+     * "Send directly" transfer (P2pShareService): the ongoing progress
+     * notification and, detached at the end, the outcome.
+     */
+    public static final int P2P_SHARE_ID = 104;
+
     public static final int PERMISSIONS = 101;
 
     public static final int RUNNABLE_ID = 1000;

@@ -247,6 +247,14 @@
             android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
 
+        <!-- "Send directly" (P2P share): keeps a transfer alive after its
+             screen is left, with a progress notification. dataSync like the
+             download service; see P2pShareService for the onTimeout stance. -->
+        <service
+            android:name="com.solarized.firedown.p2pshare.P2pShareService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
         <!-- WorkManager's own foreground service ships WITHOUT a
              foregroundServiceType, so a worker that calls setForeground with
              TYPE_DATA_SYNC (the Cloud Backup up/download workers) crashes on
