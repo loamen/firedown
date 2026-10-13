@@ -3615,7 +3615,7 @@ every old↔new APK pairing keeps working:
 **The 2026-10 review of the redo (`5ca54f3` + `2fe6759`) — invariants, each
 closing a bug that review found in shipped code.** Pinned where they can run
 off-device: the JDK harness above and `node scripts/p2pshare-smoke.mjs`
-(the oid binding and the early-failure classification), teeth proven by
+(the oid binding, the queued second answer and the early-failure classification), teeth proven by
 mutation (each reintroduced bug fails at least one check). The rest lives in
 the controller and needs a device.
 - **Every async callback is pinned to its SESSION by a generation**
@@ -3687,6 +3687,23 @@ the controller and needs a device.
   loopback page would otherwise hand over a port. The loopback server's
   write target is an `AtomicReference`, so closing it never waits on a
   write in flight.
+- **A share link tapped while the Receive screen is ON TOP is handed to
+  that screen** (`DownloadsActivity.receiveScreenOnTop` →
+  `P2pReceiveFragment.onArrival`), never navigated to as a second copy. The
+  copy used to stack, and FragmentManager brings the new fragment up before
+  taking the old one down, so the old one's `onDestroyView` saw the session
+  the link had just started (PREPARING/OFFERED) and DECLINED it, and its
+  `onStop` took the phone off the nearby list after the new screen's
+  `onStart`. Found by the Fable re-review of the fix commit; the same
+  no-second-copy rule the notification's `openLiveShare` already followed.
+- **No answer is ever dropped, and no answer path stays consumed by
+  garbage.** The engine queues an answer that arrives while another is
+  still being checked (`queuedAnswer`, tried if the first is refused,
+  discarded if it applies) — it used to be dropped, so a stale clipboard
+  reply racing the real LAN answer lost the real one for good. A body that
+  is not an `FDR1.` code at all reopens the LAN listener and the mailbox
+  poll the same way an engine refusal does (`reopenAnswerPaths`), without a
+  notice (the user handed in nothing).
 - **The share notification refreshes at most once a second** (a monotonic
   clock, `SystemClock.elapsedRealtime`) and `P2pShareService.start` is
   guarded like the rest of the app's FGS starts.

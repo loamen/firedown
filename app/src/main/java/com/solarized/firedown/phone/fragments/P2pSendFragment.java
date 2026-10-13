@@ -214,6 +214,10 @@ public class P2pSendFragment extends P2pShareBaseFragment {
     }
 
     private void restart() {
+        if (mP2pController.isBusyWithTransfer()) {
+            makeSnack(R.string.p2p_busy_other_transfer); // startSend would refuse silently
+            return;
+        }
         mQrShown = false;
         mRenderedQrCode = null;
         mLastClipTried = null;

@@ -1034,9 +1034,18 @@ public class P2pShareController {
      * it, and a rendezvous poll that returned this answer polls again.
      */
     private void onSenderBadCode() {
+        reopenAnswerPaths();
+        notice(ShareState.NOTICE_BAD_CODE, null);
+    }
+
+    /**
+     * An answer that arrived was not usable: let the LAN listener take the
+     * next one instead of 409ing it, and watch the mailbox again (a poll
+     * hands back one answer per call, so the one that returned it is done).
+     */
+    private void reopenAnswerPaths() {
         mAnswerTaken.set(false);
         startRendezvousPoll(mSessionGen);
-        notice(ShareState.NOTICE_BAD_CODE, null);
     }
 
     /** One long-poll at a time on the rendezvous mailbox, for session {@code gen}. */
@@ -1313,6 +1322,13 @@ public class P2pShareController {
         if (!code.startsWith(ANSWER_PREFIX)) {
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "answer rejected (bad prefix) via " + via);
+            }
+            // Not an answer at all: the path that delivered it must not stay
+            // consumed (the LAN listener would 409 the real one, the mailbox
+            // would never be polled again). No notice — the user handed in
+            // nothing.
+            if (!mAnswerApplied) {
+                reopenAnswerPaths();
             }
             return;
         }

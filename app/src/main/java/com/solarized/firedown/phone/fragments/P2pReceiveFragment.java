@@ -120,9 +120,22 @@ public class P2pReceiveFragment extends P2pShareBaseFragment {
             return;
         }
         Bundle args = getArguments();
-        if (args == null) {
-            return;
+        if (args != null) {
+            onArrival(args);
         }
+    }
+
+    /**
+     * Start a receive from a deep-link arrival. Called for this screen's own
+     * nav args, and by DownloadsActivity for a link tapped while this screen
+     * is ALREADY on top: that link used to stack a second Receive screen, and
+     * the first one's onDestroyView, running after the new one had started
+     * its session (FragmentManager brings the new fragment up before taking
+     * the old one down), saw that session PREPARING/OFFERED and declined it,
+     * leaving an idle screen with nothing to accept. Its onStop also landed
+     * after the new screen's onStart and took the phone off the nearby list.
+     */
+    public void onArrival(@NonNull Bundle args) {
         String base = args.getString(ARG_SIGNALING_BASE);
         String id = args.getString(ARG_SIGNALING_ID);
         String offerRef = args.getString(ARG_OFFER_REF);

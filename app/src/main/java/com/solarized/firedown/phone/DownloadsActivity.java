@@ -4,7 +4,10 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -207,9 +210,33 @@ public class DownloadsActivity extends BaseActivity {
             args.putString(P2pReceiveFragment.ARG_SIGNALING_BASE, base);
             args.putString(P2pReceiveFragment.ARG_SIGNALING_ID, segs.get(1));
         }
-        if (!args.isEmpty()) {
+        if (args.isEmpty()) {
+            return;
+        }
+        // Already on the Receive screen: hand it the link instead of stacking
+        // a second copy, whose predecessor's teardown would decline the very
+        // session the link starts (see P2pReceiveFragment.onArrival).
+        P2pReceiveFragment showing = receiveScreenOnTop(navController);
+        if (showing != null) {
+            showing.onArrival(args);
+        } else {
             navController.navigate(R.id.p2p_receive, args);
         }
+    }
+
+    /** The Receive screen when it is the current destination with a live view, else null. */
+    @Nullable
+    private P2pReceiveFragment receiveScreenOnTop(NavController navController) {
+        NavDestination current = navController.getCurrentDestination();
+        if (current == null || current.getId() != R.id.p2p_receive || mActivityContentFrame == null) {
+            return null;
+        }
+        NavHostFragment navHostFragment = mActivityContentFrame.getFragment();
+        Fragment top = navHostFragment.getChildFragmentManager().getPrimaryNavigationFragment();
+        if (top instanceof P2pReceiveFragment receive && receive.getView() != null) {
+            return receive;
+        }
+        return null;
     }
 
     /**

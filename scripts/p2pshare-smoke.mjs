@@ -651,6 +651,38 @@ check("data before begin fails the transfer",
   check("a second answer after the first applied is a quiet no-op",
       pcC.remoteDescriptions.length === 1 && postedEvents.length === 0);
   vm.runInContext("closeSession(session)", context);
+
+  // Two answers back to back (a stale clipboard reply racing the real LAN
+  // answer): the second arrives while the first is still being decoded. It
+  // used to be dropped silently, so when the first was refused the real one
+  // was lost and nothing re-sent it.
+  const offerD = await mintOffer();
+  const payloadD = await decode("OFFER_PREFIX", offerD);
+  const pcD = vm.runInContext("session && session.pc", context);
+  const good = await vm.runInContext(`encodeCode(ANSWER_PREFIX,
+      { v: 1, sdp: "v=0\\r\\na=real\\r\\n", oid: ${JSON.stringify(payloadD.oid)} })`, context);
+  postedEvents.length = 0;
+  sendCommand({ type: "send-answer", code: answerEv.code }); // offer A's reply: stale
+  sendCommand({ type: "send-answer", code: good });          // same tick: the real one
+  await sleep(80);
+  check("a good answer queued behind a refused one is applied, not dropped",
+      postedEvents.some((e) => e.type === "error" && e.code === "bad-code")
+          && pcD.remoteDescriptions.length === 1 && pcD.remoteDescriptions[0].sdp.includes("a=real")
+          && postedEvents.some((e) => e.type === "state" && e.state === "connecting"));
+  // Good first, stale second: the stale one is never tried.
+  const offerE = await mintOffer();
+  const payloadE = await decode("OFFER_PREFIX", offerE);
+  const pcE = vm.runInContext("session && session.pc", context);
+  const goodE = await vm.runInContext(`encodeCode(ANSWER_PREFIX,
+      { v: 1, sdp: "v=0\\r\\na=first\\r\\n", oid: ${JSON.stringify(payloadE.oid)} })`, context);
+  postedEvents.length = 0;
+  sendCommand({ type: "send-answer", code: goodE });
+  sendCommand({ type: "send-answer", code: answerEv.code });
+  await sleep(80);
+  check("an answer queued behind one that applies is discarded quietly",
+      pcE.remoteDescriptions.length === 1 && pcE.remoteDescriptions[0].sdp.includes("a=first")
+          && !postedEvents.some((e) => e.type === "error"));
+  vm.runInContext("closeSession(session)", context);
   delete context.RTCPeerConnection;
 }
 

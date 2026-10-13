@@ -759,7 +759,12 @@ async function acceptAnswer(msg) {
   // the first is still pre-setRemoteDescription. First one wins; reset on the
   // soft-error paths so a bad paste doesn't block a good re-paste.
   if (s.answering) {
-    log("ignoring concurrent answer");
+    // A second answer while the first is still being checked (the tail-hash
+    // fetch widens the window): keep the newest and try it if the first is
+    // refused. It used to be dropped, so a stale clipboard reply racing the
+    // real LAN answer lost the real one, and nothing re-sent it.
+    log("answer queued behind the one in progress");
+    s.queuedAnswer = msg;
     return;
   }
   s.answering = true;
@@ -772,8 +777,7 @@ async function acceptAnswer(msg) {
     // Any unreadable code is soft — the offer QR is still valid, re-scan.
     log("answer decode threw: " + (e && e.message) + " (len=" + raw.length
         + " head=" + raw.slice(0, 14) + ")");
-    s.answering = false;
-    softError("answer code unreadable");
+    answerRefused(s, "answer code unreadable");
     return;
   }
   if (s !== session || s.stopped) { return; }
@@ -781,8 +785,7 @@ async function acceptAnswer(msg) {
   // oid and is accepted as before; one carrying ANOTHER offer's id is soft.
   if (typeof payload.oid === "string" && payload.oid !== s.oid) {
     log("answer is for another offer");
-    s.answering = false;
-    softError("answer is for another share");
+    answerRefused(s, "answer is for another share");
     return;
   }
   // Resume request: decide the begin offset BEFORE setRemoteDescription — the
@@ -804,12 +807,24 @@ async function acceptAnswer(msg) {
   }
   try {
     await s.pc.setRemoteDescription({ type: "answer", sdp: payload.sdp });
+    s.queuedAnswer = null; // applied: a queued one can only be a duplicate
     post({ type: "state", state: "connecting" });
   } catch (e) {
     // A decodable-but-unapplicable answer (mismatched/corrupt SDP) before we
     // ever connect is still recoverable: the offer stands, treat as soft.
-    s.answering = false;
-    softError("answer not applicable");
+    answerRefused(s, "answer not applicable");
+  }
+}
+
+// The answer in progress was refused softly: report it (Java reopens its
+// answer paths), then try the one that queued up behind it, if any.
+function answerRefused(s, detail) {
+  s.answering = false;
+  softError(detail);
+  const next = s.queuedAnswer;
+  s.queuedAnswer = null;
+  if (next && s === session && !s.stopped) {
+    acceptAnswer(next);
   }
 }
 
