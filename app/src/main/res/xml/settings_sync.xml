@@ -128,7 +128,7 @@
             android:title="@string/cloud_backup_files_title"
             android:summary="@string/settings_cloud_backup_files_summary"
             app:singleLineTitle="false"
-            app:icon="@drawable/ic_folder_upload_24" />
+            app:icon="@drawable/cloud_upload_24" />
 
         <!-- Bookmarks are deliberately SECONDARY on this screen: ONE inline switch
              (sync is automatic once on — change-triggered + on-toggle — so the old

@@ -141,7 +141,7 @@
             <TextView
                 style="@style/Firedown.Widget.SheetRowText"
                 android:text="@string/settings_account_title"
-                app:drawableStartCompat="@drawable/ic_folder_upload_24" />
+                app:drawableStartCompat="@drawable/cloud_upload_24" />
 
         </com.google.android.material.card.MaterialCardView>
 

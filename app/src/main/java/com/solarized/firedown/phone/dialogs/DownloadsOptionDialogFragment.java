@@ -185,7 +185,7 @@ public class DownloadsOptionDialogFragment extends BaseBottomSheetDialogFragment
                 // signal it opens a sub-list rather than firing an action.
                 if (iconResId == R.drawable.ic_movie_24) {
                     items.add(new OptionItem(labels[i], iconResId, 0, R.drawable.ic_chevron_right_24));
-                } else if (iconResId == R.drawable.ic_folder_upload_24) {
+                } else if (iconResId == R.drawable.cloud_upload_24) {
                     items.add(new OptionItem(backupLabel(labels[i]), iconResId));
                 } else {
                     items.add(new OptionItem(labels[i], iconResId));

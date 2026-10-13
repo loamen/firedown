@@ -23,7 +23,7 @@ import com.solarized.firedown.settings.ui.FlatPreference;
  * {@code preference_cloud_status.xml}). One card, three states:
  *
  * <ul>
- *   <li><b>Set up, folder reachable</b> — the folder glyph, "Firedown Backup"
+ *   <li><b>Set up, folder reachable</b> — the cloud-upload glyph, "Firedown Backup"
  *       over "On &lt;provider&gt;" (the folder's own name, and whose storage
  *       it sits in — Google Drive, Dropbox, Nextcloud, this phone…), the
  *       backed-up size headline and a caption with the file count. While
@@ -161,7 +161,7 @@ public class CloudStatusPreference extends Preference implements FlatPreference 
         int error = MaterialColors.getColor(title,
                 androidx.appcompat.R.attr.colorError);
         if (mReachable) {
-            glyph.setImageResource(R.drawable.ic_folder_upload_24);
+            glyph.setImageResource(R.drawable.cloud_upload_24);
             title.setText(R.string.folder_backup_hero_title);
             title.setTextColor(onSurface);
             alert.setVisibility(View.GONE);

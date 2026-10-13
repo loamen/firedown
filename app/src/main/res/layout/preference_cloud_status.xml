@@ -3,7 +3,7 @@
   The Backup status hero (custom Preference layout, bound by
   CloudStatusPreference). One card, three states:
 
-    A · set up, folder reachable — folder glyph, "Firedown Backup" over
+    A · set up, folder reachable — cloud-upload glyph, "Firedown Backup" over
                                    "On <provider>" (the folder's own name and
                                    whose storage it sits in), the backed-up
                                    size headline, and a caption with the file
@@ -48,7 +48,7 @@
                 android:id="@+id/cb_glyph"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
-                android:src="@drawable/ic_folder_upload_24"
+                android:src="@drawable/cloud_upload_24"
                 app:tint="?attr/colorOnSurfaceVariant"
                 android:importantForAccessibility="no" />
 
@@ -154,7 +154,7 @@
             <ImageView
                 android:layout_width="28dp"
                 android:layout_height="28dp"
-                android:src="@drawable/ic_folder_upload_24"
+                android:src="@drawable/cloud_upload_24"
                 app:tint="?attr/colorOnSurfaceVariant"
                 android:importantForAccessibility="no" />
 

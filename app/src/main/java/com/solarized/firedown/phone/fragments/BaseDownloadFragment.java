@@ -431,7 +431,7 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
             // (same pattern as gif_maker/frame_grabber). The engine session's
             // lifetime is the fragment's view lifetime.
             NavigationUtils.navigateSafe(mNavController, R.id.p2p_send, bundle);
-        } else if (iconId == R.drawable.ic_folder_upload_24) {
+        } else if (iconId == R.drawable.cloud_upload_24) {
             // "Back up to <folder>" — encrypt + copy this finished download
             // into the backup folder. Action-driven: sets up the (shared)
             // recovery code and the folder on demand if either is missing.

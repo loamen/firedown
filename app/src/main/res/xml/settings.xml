@@ -78,7 +78,7 @@
             android:title="@string/settings_account_title"
             android:summary="@string/settings_account_summary"
             app:singleLineTitle="false"
-            app:icon="@drawable/ic_folder_upload_24"/>
+            app:icon="@drawable/cloud_upload_24"/>
 
         <Preference
             android:key="com.solarized.firedown.preferences.browser.quit"

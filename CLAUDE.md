@@ -4198,7 +4198,9 @@ set up — groups, not rows, so each card stays whole. NO category labels
 children — the card edges do the grouping).
 
 - **The hero has THREE states** (`CloudStatusPreference`): set up + folder
-  reachable (folder glyph, "Firedown Backup" over "On <provider>", the
+  reachable (the cloud-upload glyph, `cloud_upload_24` — THE backup glyph
+  on every door and notification, the maintainer's pick over the earlier
+  folder — "Firedown Backup" over "On <provider>", the
   backed-up size headline, a file-count caption; the ⋮-menu hint while
   nothing is backed up yet; "Transfer in progress…" while a worker runs);
   set up + folder LOST (the folder-off glyph, "Can't reach your backup

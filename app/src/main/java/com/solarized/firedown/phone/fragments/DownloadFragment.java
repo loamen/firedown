@@ -248,7 +248,7 @@ public class DownloadFragment extends BaseDownloadFragment implements
         mSafeFolderAdapter = new SafeFolderHeaderAdapter(() ->
                 startActivity(new Intent(requireContext(), VaultActivity.class)));
         mCloudBannerAdapter = new SyncBannerAdapter(this, R.string.cloud_banner_title,
-                R.string.cloud_banner_subtitle, R.drawable.ic_folder_upload_24);
+                R.string.cloud_banner_subtitle, R.drawable.cloud_upload_24);
         // ConcatAdapter stacks at most TWO cards above the first section:
         // the Safe Folder row (furniture — permanent on the unfiltered list,
         // carrying the live incognito-download state when there is any) and

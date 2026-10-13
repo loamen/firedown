@@ -446,7 +446,7 @@ public class VaultBackupWorker extends Worker {
         String title = mContext.getString(R.string.cloud_backup_notification_title);
         Notification notification = new NotificationCompat.Builder(
                 mContext, App.DOWNLOADS_NOTIFICATION_ID)
-                .setSmallIcon(R.drawable.ic_folder_upload_24)
+                .setSmallIcon(R.drawable.cloud_upload_24)
                 .setLargeIcon(BitmapFactory.decodeResource(
                         mContext.getResources(), R.mipmap.ic_launcher_round))
                 .setContentTitle(title)
@@ -525,7 +525,7 @@ public class VaultBackupWorker extends Worker {
         String text = mContext.getString(failureSummaryRes(slug));
         Notification notification = new NotificationCompat.Builder(
                 mContext, App.DOWNLOADS_NOTIFICATION_ID)
-                .setSmallIcon(R.drawable.ic_folder_upload_24)
+                .setSmallIcon(R.drawable.cloud_upload_24)
                 .setLargeIcon(BitmapFactory.decodeResource(
                         mContext.getResources(), R.mipmap.ic_launcher_round))
                 .setContentTitle(title)

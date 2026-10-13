@@ -283,7 +283,7 @@ public class RunnableManager extends Service implements DownloadEngine.Host {
 			PendingIntent backupPending = PendingIntent.getBroadcast(
 					this, runnableTask.getFileId(), backupIntent,
 					PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-			mBuilder.addAction(R.drawable.ic_folder_upload_24,
+			mBuilder.addAction(R.drawable.cloud_upload_24,
 					getString(R.string.cloud_backup_action), backupPending);
 		}
 		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

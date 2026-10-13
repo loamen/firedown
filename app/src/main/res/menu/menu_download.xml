@@ -56,7 +56,7 @@
          here in addition to Settings → Backup). -->
     <item
         android:id="@+id/action_cloud_backup"
-        android:icon="@drawable/ic_folder_upload_24"
+        android:icon="@drawable/cloud_upload_24"
         app:iconTint="?attr/colorOnSurface"
         app:showAsAction="never"
         android:title="@string/cloud_backup_files_title"/>
