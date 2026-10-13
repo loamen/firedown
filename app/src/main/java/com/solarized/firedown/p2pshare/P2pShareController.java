@@ -2,6 +2,10 @@ package com.solarized.firedown.p2pshare;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -262,6 +266,14 @@ public class P2pShareController {
      * response, so treat it as "no relay" rather than spin the CPU.
      */
     private static final int RELAY_POW_MAX_BITS = 26;
+    /**
+     * The whole relay-credential acquisition (challenge → PoW → creds, one
+     * retry of a transiently failed step) must settle within this, because
+     * it gates the start command. Beyond it the share proceeds relay-less —
+     * but SAYS so (ShareState.relayAvailable) instead of blaming the network
+     * later. A phone with no validated internet skips the fetch outright.
+     */
+    private static final long RELAY_CREDS_BUDGET_MS = 20_000;
 
     private static final SecureRandom ID_RANDOM = new SecureRandom();
 
@@ -372,6 +384,8 @@ public class P2pShareController {
     // cache survives stopSession on purpose — back-to-back shares reuse it.
     private JSONObject mRelayCreds;
     private long mRelayCredsExpiryMs;
+    // Held for the session's life (startLoopback → stopSession), see acquireWifiLock.
+    private WifiManager.WifiLock mWifiLock;
 
     @Inject
     public P2pShareController(
@@ -391,10 +405,13 @@ public class P2pShareController {
                 .readTimeout(4, TimeUnit.SECONDS)
                 .callTimeout(8, TimeUnit.SECONDS)
                 .build();
+        // Generous enough for a cold cellular TLS handshake through the edge
+        // (the old 3 s connect / 4 s call lost the relay on exactly the
+        // networks that need it), bounded as a whole by RELAY_CREDS_BUDGET_MS.
         mRelayClient = okHttpClient.newBuilder()
-                .connectTimeout(3, TimeUnit.SECONDS)
-                .readTimeout(3, TimeUnit.SECONDS)
-                .callTimeout(4, TimeUnit.SECONDS)
+                .connectTimeout(6, TimeUnit.SECONDS)
+                .readTimeout(8, TimeUnit.SECONDS)
+                .callTimeout(10, TimeUnit.SECONDS)
                 .build();
     }
 
@@ -604,11 +621,15 @@ public class P2pShareController {
         // stops itself when the session ends.
         P2pShareService.start(mContext);
         // The relay-creds fetch gates the command (iceServers are fixed at
-        // RTCPeerConnection construction); its short timeouts bound the wait
-        // and a failure just means a relay-less share — see withRelayCreds.
+        // RTCPeerConnection construction); its budget bounds the wait and a
+        // failure just means a relay-less share — see withRelayCreds. The
+        // loopback server is per session, so its identity tells THIS session
+        // from one started after a cancel inside the fetch window (a role
+        // check alone would post this command into the new session's engine).
+        final P2pLoopbackServer startedOn = mServer;
         withRelayCreds(creds -> {
-            if (!isSend() || mServer == null) {
-                return; // torn down while fetching
+            if (!isSend() || mServer == null || mServer != startedOn) {
+                return; // torn down (or replaced) while fetching
             }
             try {
                 putIceServers(command, creds);
@@ -677,12 +698,36 @@ public class P2pShareController {
      * shares instant.
      */
     private void withRelayCreds(@NonNull Consumer<JSONObject> action) {
-        if (mRelayCreds != null && System.currentTimeMillis() < mRelayCredsExpiryMs) {
+        long now = System.currentTimeMillis();
+        if (mRelayCreds != null && RelayCredsPolicy.reusable(now, mRelayCredsExpiryMs)) {
+            if (mState != null) {
+                mState.relayAvailable = true;
+                publish();
+            }
             action.accept(mRelayCreds);
             return;
         }
-        // Step 1: fetch a PoW challenge. 404 = relay/PoW not deployed → skip
-        // straight to a relay-less share. Any other failure degrades the same.
+        if (!hasValidatedInternet()) {
+            // No internet = no STUN and no relay either; don't spend the
+            // budget timing out against an unreachable API before a LAN
+            // share can even mint its offer.
+            deliverRelayCreds(null, action);
+            return;
+        }
+        fetchRelayChallenge(action, now + RELAY_CREDS_BUDGET_MS, 1);
+    }
+
+    /**
+     * Step 1: fetch a PoW challenge. 404 = relay/PoW not deployed → skip
+     * straight to a relay-less share. A TRANSIENT failure (I/O) retries once
+     * while the budget allows; anything else degrades the same way.
+     */
+    private void fetchRelayChallenge(@NonNull Consumer<JSONObject> action,
+                                     long deadlineMs, int retriesLeft) {
+        if (System.currentTimeMillis() >= deadlineMs) {
+            deliverRelayCreds(null, action);
+            return;
+        }
         Request challengeReq = new Request.Builder()
                 .url(Preferences.P2P_RELAY_CHALLENGE_URL)
                 .get()
@@ -693,35 +738,77 @@ public class P2pShareController {
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "relay challenge fetch failed: " + e.getMessage());
                 }
-                deliverRelayCreds(null, action);
+                if (retriesLeft > 0) {
+                    fetchRelayChallenge(action, deadlineMs, retriesLeft - 1);
+                } else {
+                    deliverRelayCreds(null, action);
+                }
             }
 
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 String challengeB64 = null;
                 int bits = 0;
+                boolean transient5xx = false;
                 try (Response r = response) {
                     if (r.isSuccessful() && r.body() != null) {
                         JSONObject json = new JSONObject(r.body().string());
                         challengeB64 = json.optString("challenge", "");
                         bits = json.optInt("pow_bits", 0);
+                    } else {
+                        transient5xx = r.code() >= 500;
                     }
                 } catch (IOException | JSONException e) {
                     if (BuildConfig.DEBUG) {
                         Log.d(TAG, "relay challenge parse failed: " + e.getMessage());
                     }
                 }
+                if (challengeB64 == null || challengeB64.isEmpty()) {
+                    if (transient5xx && retriesLeft > 0) {
+                        fetchRelayChallenge(action, deadlineMs, retriesLeft - 1);
+                    } else {
+                        deliverRelayCreds(null, action);
+                    }
+                    return;
+                }
                 // A hostile/spoofed difficulty must not spin the solver forever
                 // (HTTPS to api.firedown.app makes this unlikely, but cheap to
                 // bound). Above the cap, treat as "no relay".
-                if (challengeB64 == null || challengeB64.isEmpty()
-                        || bits <= 0 || bits > RELAY_POW_MAX_BITS) {
+                if (bits <= 0 || bits > RELAY_POW_MAX_BITS) {
                     deliverRelayCreds(null, action);
                     return;
                 }
-                fetchRelayCredsWithPoW(challengeB64, bits, action);
+                fetchRelayCredsWithPoW(challengeB64, bits, action, deadlineMs, retriesLeft);
             }
         });
+    }
+
+    /**
+     * The device's active network has VALIDATED internet access (Android
+     * confirmed a captive-portal-free path). Best-effort: any failure reads
+     * as "has internet" so the check can only ever skip a fetch that would
+     * have failed anyway, never one that would have worked.
+     */
+    private boolean hasValidatedInternet() {
+        try {
+            ConnectivityManager manager =
+                    (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (manager == null) {
+                return true;
+            }
+            Network network = manager.getActiveNetwork();
+            if (network == null) {
+                return false;
+            }
+            NetworkCapabilities caps = manager.getNetworkCapabilities(network);
+            if (caps == null) {
+                return true;
+            }
+            return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (RuntimeException e) {
+            return true;
+        }
     }
 
     /**
@@ -731,7 +818,8 @@ public class P2pShareController {
      * adaptive climb only bites a mass-minter, never a single share.
      */
     private void fetchRelayCredsWithPoW(@NonNull String challengeB64, int bits,
-                                        @NonNull Consumer<JSONObject> action) {
+                                        @NonNull Consumer<JSONObject> action,
+                                        long deadlineMs, int retriesLeft) {
         String nonceB64;
         try {
             byte[] challenge = Base64.decode(
@@ -753,7 +841,13 @@ public class P2pShareController {
                 if (BuildConfig.DEBUG) {
                     Log.d(TAG, "relay creds fetch failed: " + e.getMessage());
                 }
-                deliverRelayCreds(null, action);
+                // A solved challenge is single-use server-side, so a retry
+                // starts over from a fresh challenge (budget permitting).
+                if (retriesLeft > 0 && System.currentTimeMillis() < deadlineMs) {
+                    fetchRelayChallenge(action, deadlineMs, retriesLeft - 1);
+                } else {
+                    deliverRelayCreds(null, action);
+                }
             }
 
             @Override
@@ -783,15 +877,26 @@ public class P2pShareController {
     private void deliverRelayCreds(@Nullable JSONObject creds,
                                    @NonNull Consumer<JSONObject> action) {
         mMainHandler.post(() -> {
+            long now = System.currentTimeMillis();
+            JSONObject handed = creds;
             if (creds != null) {
                 mRelayCreds = creds;
-                // Refresh a minute before coturn stops honoring the credential
-                // (an expired cred also breaks allocation REFRESHES mid-share).
-                long ttlSeconds = creds.optLong("ttl_seconds", 600);
-                mRelayCredsExpiryMs = System.currentTimeMillis()
-                        + Math.max(0, ttlSeconds - 60) * 1000;
+                // The policy's margin keeps the refresh off an expiring
+                // credential (an expired one also breaks allocation REFRESHES
+                // mid-share, see RelayCredsPolicy).
+                mRelayCredsExpiryMs = RelayCredsPolicy.expiryFor(now,
+                        creds.optLong("ttl_seconds", 600));
+            } else if (mRelayCreds != null
+                    && RelayCredsPolicy.stillValid(now, mRelayCredsExpiryMs)) {
+                // The fresh fetch failed but the cached credential is still
+                // honoured: a short relay life beats no relay at all.
+                handed = mRelayCreds;
             }
-            action.accept(creds);
+            if (mState != null) {
+                mState.relayAvailable = handed != null;
+                publish();
+            }
+            action.accept(handed);
         });
     }
 
@@ -1185,10 +1290,12 @@ public class P2pShareController {
             return;
         }
         // Same relay-creds gating as startSend; a failed fetch just means a
-        // relay-less receive.
+        // relay-less receive, and the server identity pins the callback to
+        // this session (see startSend).
+        final P2pLoopbackServer startedOn = mServer;
         withRelayCreds(creds -> {
-            if (!isReceive() || mServer == null) {
-                return; // torn down while fetching
+            if (!isReceive() || mServer == null || mServer != startedOn) {
+                return; // torn down (or replaced) while fetching
             }
             try {
                 putIceServers(command, creds);
@@ -1737,12 +1844,57 @@ public class P2pShareController {
         try {
             mServer = new P2pLoopbackServer(mContext);
             mServer.start();
+            acquireWifiLock();
             return true;
         } catch (IOException e) {
             if (BuildConfig.DEBUG) {
                 Log.d(TAG, "loopback start failed: " + e.getMessage());
             }
             return false;
+        }
+    }
+
+    /**
+     * Hold Wi-Fi out of power-save for the session's life. With the screen
+     * off and the transfer carried by the service, Wi-Fi power save (and on
+     * some OEMs a full Wi-Fi sleep) is what turned a background transfer
+     * into a crawl or a "lost" connection. FULL_HIGH_PERF, not LOW_LATENCY:
+     * the latter only takes effect while the app is in the foreground with
+     * the screen on, which is exactly the case that does not need it.
+     * Reference-counting off so a double acquire/release can't strand it.
+     */
+    @SuppressWarnings("deprecation")
+    private void acquireWifiLock() {
+        if (mWifiLock != null && mWifiLock.isHeld()) {
+            return;
+        }
+        try {
+            WifiManager manager = (WifiManager) mContext.getSystemService(Context.WIFI_SERVICE);
+            if (manager == null) {
+                return;
+            }
+            if (mWifiLock == null) {
+                mWifiLock = manager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF,
+                        "firedown:p2pshare");
+                mWifiLock.setReferenceCounted(false);
+            }
+            mWifiLock.acquire();
+        } catch (RuntimeException e) {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "wifi lock: " + e.getMessage());
+            }
+        }
+    }
+
+    private void releaseWifiLock() {
+        if (mWifiLock != null && mWifiLock.isHeld()) {
+            try {
+                mWifiLock.release();
+            } catch (RuntimeException e) {
+                if (BuildConfig.DEBUG) {
+                    Log.d(TAG, "wifi unlock: " + e.getMessage());
+                }
+            }
         }
     }
 
@@ -1844,8 +1996,13 @@ public class P2pShareController {
         mSessionRegistrar.accept(session);
         session.open(mRuntime);
         // Mark active so GeckoView treats it as a live tab for content-script
-        // injection and doesn't background-throttle the engine's timers.
+        // injection and doesn't background-throttle the engine's timers, and
+        // ask for process priority: with the screen gone (the service carries
+        // the transfer) this hidden session's content process is otherwise
+        // the first thing Android trims under memory pressure, which ended a
+        // transfer as "engine disconnected".
         session.setActive(true);
+        session.setPriorityHint(GeckoSession.PRIORITY_HIGH);
         session.loadUri(mServer.getEnginePageUrl());
     }
 
@@ -2068,6 +2225,7 @@ public class P2pShareController {
             mServer.stop();
             mServer = null;
         }
+        releaseWifiLock();
         if (mAnswerServer != null) {
             mAnswerServer.stop();
             mAnswerServer = null;

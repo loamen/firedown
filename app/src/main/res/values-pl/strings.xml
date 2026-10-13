@@ -656,6 +656,9 @@
     <string name="p2p_got_code">Masz kod lub link?</string>
     <string name="p2p_background_note">Możesz opuścić ten ekran. Transfer trwa w tle.</string>
     <string name="p2p_error_timeout">Nikt nie zaakceptował pliku na czas.</string>
+    <string name="p2p_error_stalled">Transfer przestał postępować. Udostępnij ten sam plik ponownie, aby kontynuować od miejsca, w którym się zatrzymał.</string>
+    <string name="p2p_error_lost">Połączenie zostało utracone. Udostępnij ten sam plik ponownie, aby kontynuować od miejsca, w którym się zatrzymało.</string>
+    <string name="p2p_error_no_path_norelay">Nie można było połączyć się z drugim urządzeniem ani z serwerem przekaźnikowym. Spróbuj ponownie, gdy oba telefony będą online.</string>
     <string name="p2p_notif_sending">Wysyłanie: %1$s</string>
     <string name="p2p_notif_receiving">Odbieranie: %1$s</string>
     <string name="p2p_notif_waiting">Oczekiwanie, aż ktoś zaakceptuje</string>

@@ -47,12 +47,21 @@ const windowStub = {
   },
 };
 
+// Tune the engine's wall-clock timers to milliseconds for the watchdog
+// checks below (read once by the engine at load, from window.__p2pTuning).
+windowStub.__p2pTuning = {
+  connectTimeoutMs: 400, ackTimeoutMs: 120, drainPollMs: 15,
+  stallTimeoutMs: 150, lostTimeoutMs: 150, watchTickMs: 25,
+};
+
 const context = vm.createContext({
   window: windowStub,
   location,
   console,
   setTimeout,
   clearTimeout,
+  setInterval,
+  clearInterval,
   TextEncoder,
   TextDecoder,
   Blob,
@@ -281,6 +290,204 @@ check("data before begin fails the transfer",
   await sleep(30);
   check("closeSession releases a parked pump", settled === true);
   check("released pump sends nothing more", context.__sendDc.sent === 1);
+}
+
+// ── ack timer arms only once the eof has DRAINED, then bounds the ack ──────
+// The sender's eof is queued behind up to BUFFER_HIGH of data; arming the
+// ack timer at the moment eof is QUEUED failed slow transfers at 100 % with
+// "no delivery confirmation" while the bytes were still leaving the buffer.
+{
+  context.__ackDc = { bufferedAmount: 4096, sent: [], send(m) { this.sent.push(m); },
+                      close() {}, addEventListener() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 10, readUrl: "http://x/read?t=1",
+        progress: makeProgress(10), stopped: false, acked: false, dc: __ackDc };
+    armAckAfterDrain(session);
+  `, context);
+  postedEvents.length = 0;
+  await sleep(300); // > 2 × ackTimeoutMs
+  check("ack timer not armed while the eof is still buffered",
+      postedEvents.length === 0 && vm.runInContext("session && session.awaitingAck !== true", context));
+  context.__ackDc.bufferedAmount = 0;
+  await sleep(60); // a few drain polls
+  check("ack phase starts once the buffer drained",
+      vm.runInContext("session && session.awaitingAck === true", context) && postedEvents.length === 0);
+  await sleep(200); // > ackTimeoutMs
+  check("drained + unacked fails honestly (transfer / no delivery confirmation)",
+      postedEvents.some((e) => e.type === "error" && e.code === "transfer"
+          && /no delivery confirmation/.test(e.detail))
+      && vm.runInContext("session === null", context));
+  // An ack landing inside the window disarms it.
+  context.__ackDc.bufferedAmount = 0;
+  vm.runInContext(`
+    session = { role: "send", size: 10, readUrl: "http://x/read?t=1",
+        progress: makeProgress(10), stopped: false, acked: false, dc: __ackDc };
+    armAckAfterDrain(session);
+  `, context);
+  postedEvents.length = 0;
+  await sleep(40);
+  vm.runInContext("session.acked = true", context);
+  await sleep(250);
+  check("an ack inside the window disarms the timer", postedEvents.length === 0);
+  vm.runInContext("closeSession(session)", context);
+}
+
+// ── stall watchdog (receiver) — flow resets it, silence fails it ──────────
+{
+  const writes = [];
+  context.fetch = async (url, opts) => { writes.push(url); return { ok: true }; };
+  const dc = fakeDc();
+  context.__dc = dc;
+  vm.runInContext(`
+    session = { role: "receive", offer: { size: 1 << 20 }, resumeOff: 0,
+        writeUrl: "http://x/write?t=1", progress: makeProgress(1 << 20), stopped: false };
+    bindReceiveChannel(session, __dc);
+  `, context);
+  postedEvents.length = 0;
+  // Steady flow for 2 × stallTimeoutMs: never stalls.
+  for (let i = 0; i < 8; i++) {
+    await vm.runInContext("session && session.dc.onmessage(__ev)",
+        Object.assign(context, { __ev: { data: new ArrayBuffer(1024) } }));
+    await sleep(40);
+  }
+  check("watchdog: steady flow never stalls",
+      !postedEvents.some((e) => e.type === "error") && vm.runInContext("session !== null", context));
+  vm.runInContext("__stalling = session", context);
+  await sleep(260); // silence > stallTimeoutMs
+  check("watchdog: no progress for STALL_TIMEOUT fails as stalled",
+      postedEvents.some((e) => e.type === "error" && e.code === "stalled")
+      && vm.runInContext("session === null", context));
+  check("watchdog: the tick is cleared with the session",
+      vm.runInContext("__stalling.stopped === true && __stalling.watchTimer === null", context));
+}
+
+// ── lost watchdog — a disconnected pc past LOST_TIMEOUT is "lost" ──────────
+{
+  context.__pc = { connectionState: "disconnected", addEventListener() {}, close() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 100, progress: makeProgress(100), stopped: false,
+        awaitingAck: true, pc: __pc, dc: null, disconnectedSince: Date.now() };
+    startWatchdog(session);
+  `, context);
+  postedEvents.length = 0;
+  await sleep(260);
+  check("watchdog: disconnected past LOST_TIMEOUT fails as lost",
+      postedEvents.some((e) => e.type === "error" && e.code === "lost")
+      && vm.runInContext("session === null", context));
+  // A connected pc in the ack phase: neither lost nor stalled.
+  context.__pc = { connectionState: "connected", addEventListener() {}, close() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 100, progress: makeProgress(100), stopped: false,
+        awaitingAck: true, pc: __pc, dc: null, disconnectedSince: 0 };
+    startWatchdog(session);
+  `, context);
+  postedEvents.length = 0;
+  await sleep(260);
+  check("watchdog: a connected pc awaiting the ack is left alone",
+      postedEvents.length === 0 && vm.runInContext("session !== null", context));
+  vm.runInContext("closeSession(session)", context);
+  check("watchdog: closeSession drops the tick",
+      vm.runInContext("session === null", context));
+  postedEvents.length = 0;
+  await sleep(200);
+  check("watchdog: nothing fires after close", postedEvents.length === 0);
+}
+
+// ── "failed" after bytes moved is LOST, before any is NO-PATH ──────────────
+{
+  const listeners = {};
+  context.__pc = { connectionState: "new",
+      addEventListener(type, fn) { listeners[type] = fn; }, close() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 100, progress: makeProgress(100), stopped: false,
+        pc: __pc, flowStarted: true };
+    watchConnection(session);
+  `, context);
+  postedEvents.length = 0;
+  context.__pc.connectionState = "failed";
+  listeners.connectionstatechange();
+  check("connection failed after flow → lost",
+      postedEvents.some((e) => e.type === "error" && e.code === "lost"));
+  const listeners2 = {};
+  context.__pc = { connectionState: "new",
+      addEventListener(type, fn) { listeners2[type] = fn; }, close() {} };
+  vm.runInContext(`
+    session = { role: "send", size: 100, progress: makeProgress(100), stopped: false,
+        pc: __pc, flowStarted: false };
+    watchConnection(session);
+  `, context);
+  postedEvents.length = 0;
+  context.__pc.connectionState = "failed";
+  listeners2.connectionstatechange();
+  check("connection failed before any flow → no-path",
+      postedEvents.some((e) => e.type === "error" && e.code === "no-path"));
+  // "connected" clears the disconnect clock the lost watchdog reads.
+  const listeners3 = {};
+  context.__pc = { connectionState: "disconnected",
+      addEventListener(type, fn) { listeners3[type] = fn; }, close() {}, getStats: undefined };
+  vm.runInContext(`
+    session = { role: "send", size: 100, progress: makeProgress(100), stopped: false,
+        pc: __pc, disconnectedSince: 0 };
+    watchConnection(session);
+  `, context);
+  listeners3.connectionstatechange();
+  const since = vm.runInContext("session.disconnectedSince", context);
+  context.__pc.connectionState = "connected";
+  listeners3.connectionstatechange();
+  check("disconnected stamps the clock, connected clears it",
+      since > 0 && vm.runInContext("session.disconnectedSince === 0", context));
+  vm.runInContext("closeSession(session)", context);
+}
+
+// ── receiver backlog cap — unflushed bytes are bounded ──────────────────────
+{
+  let release;
+  context.fetch = () => new Promise((resolve) => { release = () => resolve({ ok: true }); });
+  const dc = fakeDc();
+  context.__dc = dc;
+  const cap = vm.runInContext("RECV_BACKLOG_MAX", context);
+  vm.runInContext(`
+    session = { role: "receive", offer: { size: 1e12 }, resumeOff: 0,
+        writeUrl: "http://x/write?t=1", progress: makeProgress(1e12), stopped: false };
+    bindReceiveChannel(session, __dc);
+  `, context);
+  postedEvents.length = 0;
+  // A flush that never completes (the loopback POST is parked) keeps its
+  // bytes counted as pending — simulate a parked backlog at the cap.
+  vm.runInContext(`session.pendingBytes = ${cap}`, context);
+  await vm.runInContext("session.dc.onmessage(__ev)",
+      Object.assign(context, { __ev: { data: new ArrayBuffer(16) } }));
+  check("backlog over RECV_BACKLOG_MAX fails the transfer",
+      postedEvents.some((e) => e.type === "error" && e.code === "transfer" && /backlog/.test(e.detail)));
+  // Accounting: a flushed batch leaves pendingBytes at 0.
+  context.fetch = async () => ({ ok: true });
+  vm.runInContext(`
+    session = { role: "receive", offer: { size: 1e9 }, resumeOff: 0,
+        writeUrl: "http://x/write?t=1", progress: makeProgress(1e9), stopped: false };
+    bindReceiveChannel(session, __dc);
+  `, context);
+  await vm.runInContext("session.dc.onmessage(__ev)",
+      Object.assign(context, { __ev: { data: new ArrayBuffer(64) } }));
+  vm.runInContext("scheduleFlush(session, false)", context);
+  const pendingDuring = vm.runInContext("session.pendingBytes", context);
+  await sleep(20);
+  check("pending bytes track a batch from schedule to POST completion",
+      pendingDuring === 64 && vm.runInContext("session.pendingBytes === 0 && session.written === 64", context));
+  vm.runInContext("closeSession(session)", context);
+}
+
+// ── wantsRelay: turn: and turns:, any case; never stun: ────────────────────
+{
+  const relay = vm.runInContext(`({
+    turn: wantsRelay([{ urls: "turn:relay.example:3478" }]),
+    turns: wantsRelay([{ urls: ["turns:relay.example:443?transport=tcp"] }]),
+    upper: wantsRelay([{ urls: "TURN:relay.example" }]),
+    stun: wantsRelay([{ urls: "stun:stun.example" }, { urls: ["stun:a", "stun:b"] }]),
+    none: wantsRelay([]),
+    junk: wantsRelay([{ urls: null }, {}, { urls: 7 }]),
+  })`, context);
+  check("wantsRelay sees turn: and turns: in any case, never stun:",
+      relay.turn && relay.turns && relay.upper && !relay.stun && !relay.none && !relay.junk);
 }
 
 // ── stop is safe with no session ────────────────────────────────────────────

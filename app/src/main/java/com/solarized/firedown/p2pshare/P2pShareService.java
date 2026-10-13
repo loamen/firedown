@@ -260,7 +260,8 @@ public class P2pShareService extends Service {
         } else {
             String code = state.errorCode == null ? ShareState.ERROR_ENGINE : state.errorCode;
             builder.setContentText(getString(
-                    P2pShareCopy.errorText(code, false, state.arrivedRemote)));
+                    P2pShareCopy.errorText(code, false, state.arrivedRemote,
+                            Boolean.FALSE.equals(state.relayAvailable))));
         }
         return builder;
     }

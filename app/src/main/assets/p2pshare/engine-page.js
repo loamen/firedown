@@ -35,7 +35,9 @@
  * (evt -> Java):
  *   {type:"ready", rtc} · {type:"code", role, code} · {type:"offer-parsed", …}
  *   {type:"state", state} · {type:"progress", …} · {type:"done", role, bytes}
- *   {type:"error", code, detail}   ("bad-code" is soft — session survives)
+ *   {type:"error", code, detail}   ("bad-code" is soft — session survives;
+*       "no-path" never connected, "lost" a path that carried bytes died,
+*       "stalled" no flow for STALL_TIMEOUT_MS, "transfer" everything else)
  *
  * RESUME (all fields optional — every old<->new pairing keeps working):
  *   The offer carries res:1 (this sender can serve ranged reads and verify a
@@ -78,11 +80,15 @@ function log(...args) {
  * OVERRUN_SLACK: the receiver refuses to write materially more than the size
  * the user accepted (a malicious sender can't fill the disk past the preview).
  */
+// Test hook ONLY: scripts/p2pshare-smoke.mjs shortens the timers through a
+// page-world global so the watchdogs can be driven in milliseconds. Nothing
+// on-device sets it (the engine page is ours and loads no other script).
+const TUNING = (typeof window !== "undefined" && window.__p2pTuning) || {};
 const CHUNK = 64 * 1024;
 const BUFFER_HIGH = 4 * 1024 * 1024;
 const BUFFER_LOW = 512 * 1024;
 const FLUSH_BYTES = 4 * 1024 * 1024;
-const CONNECT_TIMEOUT_MS = 30000;
+const CONNECT_TIMEOUT_MS = TUNING.connectTimeoutMs || 30000;
 const GATHER_TIMEOUT_MS = 5000;
 // When TURN is configured, hold gathering longer than the soft cap: behind a
 // full-tunnel VPN the only viable pair is relay<->relay, and the relay candidate
@@ -95,9 +101,33 @@ const RELAY_GATHER_TIMEOUT_MS = 15000;
 // doesn't strobe on every blip.
 const RECONNECT_DEBOUNCE_MS = 2000;
 const PROGRESS_INTERVAL_MS = 400;
-const ACK_TIMEOUT_MS = 30000;
+// Armed only once the sender's "eof" has actually LEFT its buffer (see
+// armAckAfterDrain) — it used to start the moment eof was queued behind up
+// to BUFFER_HIGH of data, so on a slow relayed/cellular path (< ~140 KB/s)
+// the 4 MB took longer than this and the sender failed with "no delivery
+// confirmation" at 100 % while the receiver finished normally.
+const ACK_TIMEOUT_MS = TUNING.ackTimeoutMs || 30000;
 const DRAIN_TIMEOUT_MS = 5000;
+const DRAIN_POLL_MS = TUNING.drainPollMs || 500;
+// Stall + lost watchdogs (watchdogTick), the answer to "the bar froze and I
+// had to cancel". flowMark(s) is bytes that genuinely MOVED — the receiver's
+// arrived bytes; the sender's sent bytes minus what still sits in its SCTP
+// buffer, so a parked pump on a draining link still counts as flow and a dead
+// link doesn't. No flow for STALL_TIMEOUT_MS while the channel is open fails
+// the transfer with "stalled"; "disconnected" persisting LOST_TIMEOUT_MS
+// fails it with "lost" (Firefox can sit in "disconnected" a long time before
+// ever reporting "failed"). Both end honestly — with resume in place a fast
+// failure plus "re-share to continue" beats an eternal spinner.
+const STALL_TIMEOUT_MS = TUNING.stallTimeoutMs || 60000;
+const LOST_TIMEOUT_MS = TUNING.lostTimeoutMs || 60000;
+const WATCH_TICK_MS = TUNING.watchTickMs || 5000;
 const OVERRUN_SLACK = 1024 * 1024;
+// The receiver cannot pause SCTP delivery (DataChannel has no app-level
+// backpressure), so bytes that arrive faster than the loopback writes them
+// queue in memory. Bound that backlog and fail honestly past it instead of
+// letting the hidden content process grow until Android kills it (which
+// surfaced as "engine disconnected" with no cause).
+const RECV_BACKLOG_MAX = 256 * 1024 * 1024;
 
 // How much of the partial's tail the resume handshake hashes. Enough that a
 // coincidental match across different files is not a real-world event, small
@@ -238,7 +268,7 @@ function wantsRelay(servers) {
     const urls = servers[i] && servers[i].urls;
     const list = Array.isArray(urls) ? urls : [urls];
     for (let j = 0; j < list.length; j++) {
-      if (typeof list[j] === "string" && list[j].indexOf("turn:") === 0) {
+      if (typeof list[j] === "string" && /^turns?:/i.test(list[j])) {
         return true;
       }
     }
@@ -315,11 +345,16 @@ function watchConnection(s) {
       s.connectTimer = null;
       clearTimeout(s.disconnectTimer);
       s.disconnectTimer = null;
+      s.disconnectedSince = 0;
       post({ type: "state", state: "connected" });
       reportTransport(s, pc);
     } else if (pc.connectionState === "failed") {
-      fail(s, "no-path", "connection failed");
+      // A path that carried bytes and then died is a LOST connection (the
+      // network changed under a long transfer), not a no-path — the copy
+      // differs: re-share the same file to resume, not "try the same Wi-Fi".
+      fail(s, s.flowStarted ? "lost" : "no-path", "connection failed");
     } else if (pc.connectionState === "disconnected") {
+      if (!s.disconnectedSince) { s.disconnectedSince = Date.now(); }
       // Transient (NOT terminal — "failed" is): ICE consent checks are missing
       // on a lossy path (common when a peer is on a slow/full-tunnel VPN), and
       // it usually recovers to "connected". A relayed VPN path flaps this
@@ -423,6 +458,80 @@ function waitBufferedDrain(dc) {
   });
 }
 
+/* ── stall / lost watchdog ─────────────────────────────────────────────── */
+
+// Bytes that genuinely moved so far (see STALL_TIMEOUT_MS). Sender: what left
+// the SCTP buffer; receiver: what arrived. Resume offsets are included on both
+// sides, which is fine — only CHANGE is judged.
+function flowMark(s) {
+  const done = s.progress ? s.progress.done : 0;
+  if (s.role === "send") {
+    const buffered = s.dc ? s.dc.bufferedAmount : 0;
+    return Math.max(0, done - buffered);
+  }
+  return done;
+}
+
+// Started when the DataChannel opens (both roles), cleared by closeSession.
+// Before that the connect timer bounds the ICE phase and Java's offer
+// lifetime bounds the wait for an accept — this covers the TRANSFER only.
+function startWatchdog(s) {
+  if (s.watchTimer) { return; }
+  s.lastFlow = flowMark(s);
+  s.lastFlowAt = Date.now();
+  s.flowStarted = false;
+  s.watchTimer = setInterval(() => watchdogTick(s), WATCH_TICK_MS);
+}
+
+function watchdogTick(s) {
+  if (s !== session || s.stopped) {
+    clearInterval(s.watchTimer);
+    s.watchTimer = null;
+    return;
+  }
+  const now = Date.now();
+  const mark = flowMark(s);
+  if (mark !== s.lastFlow) {
+    s.lastFlow = mark;
+    s.lastFlowAt = now;
+    s.flowStarted = true;
+  }
+  if (s.pc && s.pc.connectionState === "disconnected" && s.disconnectedSince
+      && now - s.disconnectedSince >= LOST_TIMEOUT_MS) {
+    fail(s, "lost", "disconnected for " + (now - s.disconnectedSince) + " ms");
+    return;
+  }
+  // The ack phase (eof drained, waiting for the receiver's disk ack) has its
+  // own, shorter bound; flow is legitimately zero there.
+  if (s.awaitingAck) { return; }
+  if (now - s.lastFlowAt >= STALL_TIMEOUT_MS) {
+    fail(s, "stalled", "no progress for " + (now - s.lastFlowAt) + " ms");
+  }
+}
+
+// Sender, after "eof": wait until the eof has actually left the SCTP buffer
+// (it is queued behind up to BUFFER_HIGH of data, which on a slow path takes
+// longer than ACK_TIMEOUT_MS), THEN bound the wait for the receiver's ack. A
+// buffer that never drains is the watchdog's case (flow stops), not this one.
+function armAckAfterDrain(s) {
+  const poll = () => {
+    s.drainTimer = null;
+    if (s !== session || s.stopped || s.acked) { return; }
+    if (s.dc && s.dc.bufferedAmount > 0) {
+      s.drainTimer = setTimeout(poll, DRAIN_POLL_MS);
+      return;
+    }
+    s.awaitingAck = true;
+    log("eof drained, awaiting receiver ack");
+    s.ackTimer = setTimeout(() => {
+      if (s === session && !s.acked) {
+        fail(s, "transfer", "no delivery confirmation");
+      }
+    }, ACK_TIMEOUT_MS);
+  };
+  poll();
+}
+
 /* ── progress ──────────────────────────────────────────────────────────── */
 
 function makeProgress(total) {
@@ -449,6 +558,9 @@ function closeSession(s) {
   clearTimeout(s.connectTimer);
   clearTimeout(s.ackTimer);
   clearTimeout(s.disconnectTimer);
+  clearTimeout(s.drainTimer);
+  clearInterval(s.watchTimer);
+  s.watchTimer = null;
   if (s.wakePump) {
     // Release a pump parked on backpressure; its loop sees `stopped` and returns.
     const wake = s.wakePump;
@@ -506,7 +618,10 @@ async function startSend(msg) {
     s.dc = s.pc.createDataChannel("file");
     s.dc.binaryType = "arraybuffer";
     s.dc.bufferedAmountLowThreshold = BUFFER_LOW;
-    s.dc.onopen = () => { pumpFile(s); };
+    s.dc.onopen = () => {
+      startWatchdog(s);
+      pumpFile(s);
+    };
     s.dc.onmessage = (ev) => {
       // The receiver's flush-complete ack — the only control message the
       // sender expects. "done" only after the ack: bufferedAmount hitting 0
@@ -694,13 +809,10 @@ async function pumpFile(s) {
     if (s !== session || s.stopped) { return; }
     s.dc.send(JSON.stringify({ t: "eof", bytes: s.progress.done }));
     postProgress(s, true);
-    log("eof sent, awaiting receiver ack");
-    // Bound the wait for the disk-write ack so a dropped ack can't hang.
-    s.ackTimer = setTimeout(() => {
-      if (s === session && !s.acked) {
-        fail(s, "transfer", "no delivery confirmation");
-      }
-    }, ACK_TIMEOUT_MS);
+    log("eof queued, draining");
+    // Bound the wait for the disk-write ack so a dropped ack can't hang —
+    // but only from the moment the eof has actually left (see the helper).
+    armAckAfterDrain(s);
   } catch (e) {
     fail(s, "transfer", e);
   }
@@ -823,7 +935,9 @@ function bindReceiveChannel(s, dc) {
   s.queuedBytes = 0;
   s.written = 0;
   s.flushing = Promise.resolve();
+  s.pendingBytes = 0;
   s.eofBytes = -1;
+  startWatchdog(s);
   // Resume: when we requested one (off/tail in the answer), NOTHING may land
   // before the sender's "begin" says where the stream starts — the verified
   // resume offset, or 0 when the sender's tail didn't match (its first POST at
@@ -867,6 +981,10 @@ function bindReceiveChannel(s, dc) {
     }
     s.queue.push(ev.data);
     s.queuedBytes += ev.data.byteLength;
+    if (s.queuedBytes + s.pendingBytes > RECV_BACKLOG_MAX) {
+      fail(s, "transfer", "receiver backlog " + (s.queuedBytes + s.pendingBytes));
+      return;
+    }
     postProgress(s, false);
     if (s.queuedBytes >= FLUSH_BYTES) {
       scheduleFlush(s, false);
@@ -881,6 +999,7 @@ function scheduleFlush(s, isFinal) {
   const batchBytes = s.queuedBytes;
   s.queue = [];
   s.queuedBytes = 0;
+  s.pendingBytes += batchBytes;
   s.flushing = s.flushing.then(async () => {
     if (s.stopped) { return; }
     if (batchBytes > 0) {
@@ -891,6 +1010,7 @@ function scheduleFlush(s, isFinal) {
         throw new Error("loopback write " + response.status);
       }
       s.written += batchBytes;
+      s.pendingBytes -= batchBytes;
     }
     if (isFinal) {
       if (s.eofBytes !== s.written) {

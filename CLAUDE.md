@@ -3180,12 +3180,26 @@ candidates without touching any of them. The entries:
   from `Preferences.P2P_RELAY_CREDS_URL` (`api.firedown.app/v1/relay/creds` —
   an anonymous GET, no identifiers; server half + the coturn abuse rails live
   in firedown-api `handler_relay.go` + `deploy/turn-provision.sh`). The fetch
-  is cached until near expiry, bounded by short timeouts, and **failure
+  is bounded (`RELAY_CREDS_BUDGET_MS`, 20 s, with one retry of a transient
+  step and a skip when the phone has no VALIDATED internet) and **failure
   degrades gracefully** — the share proceeds direct+STUN-only, which is
-  exactly the pre-relay behavior. Privacy delta, stated honestly: starting a
-  share now touches api.firedown.app once (an unauthenticated creds GET); the
-  relay itself carries only DTLS ciphertext, and ICE uses it only when no
-  direct path exists.
+  exactly the pre-relay behavior — but it SAYS so: `ShareState.relayAvailable`
+  carries whether credentials were in hand, and a `no-path` without them
+  reads `p2p_error_no_path_norelay` instead of "try the same Wi-Fi". **A
+  cached credential is reused only with `RelayCredsPolicy.MIN_REMAINING_MS`
+  (30 min) of life left** (`expiryFor` = TTL minus a 60 s margin; a fresh
+  fetch otherwise, with the still-valid old one as the fallback when that
+  fetch fails). It used to be reused until a minute before expiry, and coturn
+  checks the credential's timestamp on allocation REFRESHES too, so a share
+  started late in a one-hour credential lost its relay mid-transfer — "fails
+  even with the TURN server" — and with a minted offer now waiting up to 15
+  min for an accept the allocation could expire before the receiver accepted.
+  The server's `FIREDOWN_TURN_TTL_SECONDS` (default 3600) is what bounds a
+  relayed transfer's length (a credential cannot be swapped under a live
+  allocation); raise it there for hour-plus relayed transfers. Privacy delta,
+  stated honestly: starting a share now touches api.firedown.app once (an
+  unauthenticated creds GET); the relay itself carries only DTLS ciphertext,
+  and ICE uses it only when no direct path exists.
 All three are threaded into the start command by `putIceServers` and
 assembled by the engine's `newPeerConnection(ice)` (`sanitizeIceServers`
 guards the ctor). A genuinely-unreachable pair with the relay fetch failed —
@@ -3433,9 +3447,12 @@ The sender's `done` fires only on the receiver's `{"t":"rcvd"}` ack (sent
 AFTER the last loopback write) — `bufferedAmount` hitting 0 proves nothing
 about the far end. The receiver must **`waitBufferedDrain(dc)` before
 `pc.close()`** — `pc.close()` aborts SCTP immediately and would drop a
-still-buffered ack, hanging the sender; the sender also arms an
-`ACK_TIMEOUT_MS` after eof so a genuinely lost ack fails honestly instead of
-spinning forever. The receiver enforces the **accepted size**
+still-buffered ack, hanging the sender; the sender arms `ACK_TIMEOUT_MS`
+(`armAckAfterDrain`) only once the eof has actually LEFT its SCTP buffer —
+it is queued behind up to `BUFFER_HIGH` of data, which on a slow path takes
+longer than the ack window, and arming at the moment eof was queued failed
+slow transfers at 100 % with "no delivery confirmation" — so a genuinely
+lost ack still fails honestly instead of spinning forever. The receiver enforces the **accepted size**
 (`offer.size + OVERRUN_SLACK`): a modified sender that advertised "2 MB" can't
 stream tens of GB to fill the disk. The receiver writes to `<name>.part`, then
 `P2pShareController.finalizeReceivedFile` (disk executor) verifies the byte
@@ -3450,6 +3467,50 @@ capital, see below. **A bad scanned/pasted answer is SOFT** (`bad-code`): the
 engine keys softness on `signalingState` and treats every decode/apply failure
 before connect as recoverable (the offer QR stays valid) — never `fail()` the
 session on a mangled paste.
+
+**The transfer is WATCHED, and every way it can die has a name — the
+2026-10 fragility pass ("transfers fail or stall even with the TURN
+server").** Four things the engine lacked, each pinned by
+`node scripts/p2pshare-smoke.mjs` with ms-scale timers (`window.__p2pTuning`,
+read once at load; teeth proven by mutation — an ack armed without the drain
+wait fails two checks, a no-op `startWatchdog` three, a `failed` that always
+says no-path one, a dropped backlog cap one):
+- **A stall/lost WATCHDOG from DataChannel open to close** (`startWatchdog`,
+  `WATCH_TICK_MS` 5 s): `flowMark` is the bytes that genuinely moved — the
+  receiver's `done`, the sender's `done` minus `bufferedAmount` — and no
+  change for `STALL_TIMEOUT_MS` (60 s) fails the session as `stalled`;
+  a pc `disconnected` for `LOST_TIMEOUT_MS` (60 s) fails it as `lost`. The
+  ack phase (eof drained, waiting for the receiver's disk ack) is exempt —
+  flow is legitimately zero there and `ACK_TIMEOUT_MS` owns it. Before, a
+  transfer whose path died quietly (ICE consent kept passing, bytes stopped)
+  sat at the same percent forever with the service notification up.
+- **`failed` after bytes moved is `lost`, before any is `no-path`**
+  (`watchConnection`, `s.flowStarted`): the copy differs — re-share the same
+  file to RESUME (the `.part` is kept), not "try the same Wi-Fi". Both codes
+  are `ShareState.ERROR_LOST` / `ERROR_STALLED` → `P2pShareCopy.errorText`.
+- **The receiver's unflushed backlog is bounded** (`RECV_BACKLOG_MAX`,
+  256 MB: queued + in-flight loopback POST bytes) — a loopback write that
+  wedged used to let SCTP deliver the whole file into page-world memory.
+- **The ack timer arms after the DRAIN** (the completion paragraph above).
+On the Java side of the same pass: `GeckoSession.setPriorityHint(PRIORITY_HIGH)`
+on the hidden engine session (with the screen gone its content process was
+the first thing Android trimmed under pressure — "engine disconnected" at
+some percent) and a `WifiManager.WifiLock` (`WIFI_MODE_FULL_HIGH_PERF`,
+held from `startLoopback` to `stopSession`; Wi-Fi power save with the
+screen off is what turned a background transfer into a crawl). The LAN
+plumbing has its own JDK harness, **`sh scripts/p2p-harness/run.sh`** (the
+REAL `P2pHttp` request-head parser shared by both tiny servers, `P2pLanServer`
+bound on the loopback through its package-private `start(InetAddress)` door
+— token/method/route gates, the 16 KB body cap, first-answer-wins, the
+`declined` body, a busy receiver's 409, exact body bytes, a slow client —
+and `RelayCredsPolicy`'s boundaries; 66 checks, seconds). Known residual:
+non-trickle ICE means a receiver that accepts a 10-minute-old link answers
+candidates minted 10 minutes ago; a NAT binding that expired meanwhile
+shows as `no-path` on an otherwise fine network — the relay candidate is
+what survives it, which is one more reason the credential policy above
+matters. And coturn's `external-ip` is set only when `turn-provision.sh`
+is given `PUBLIC_IP`; on a NATed VPS without it every relay candidate
+carries the private address and the relay is silently unusable.
 
 **Transfers RESUME across a dropped connection — re-share the same file,
 re-accept, and only the remainder streams.** No new UI: the receiver's kept

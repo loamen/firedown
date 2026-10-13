@@ -554,6 +554,9 @@
     <string name="p2p_got_code">Kas sul on kood või link?</string>
     <string name="p2p_background_note">Võid sellelt ekraanilt lahkuda. Ülekanne jätkub taustal.</string>
     <string name="p2p_error_timeout">Keegi ei võtnud faili õigel ajal vastu.</string>
+    <string name="p2p_error_stalled">Ülekanne ei edenenud enam. Jaga sama faili uuesti, et jätkata sealt, kus pooleli jäi.</string>
+    <string name="p2p_error_lost">Ühendus katkes. Jaga sama faili uuesti, et jätkata sealt, kus pooleli jäi.</string>
+    <string name="p2p_error_no_path_norelay">Teist seadet ei õnnestunud kätte saada ja ka releeserver ei vastanud. Proovi uuesti, kui mõlemad telefonid on võrgus.</string>
     <string name="p2p_notif_sending">Saadetakse: %1$s</string>
     <string name="p2p_notif_receiving">Võetakse vastu: %1$s</string>
     <string name="p2p_notif_waiting">Ootab, et keegi vastu võtaks</string>

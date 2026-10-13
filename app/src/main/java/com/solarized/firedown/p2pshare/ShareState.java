@@ -47,6 +47,10 @@ public final class ShareState {
     public static final String ERROR_TIMEOUT = "timeout";
     /** Error code for an engine that failed to come up or died mid-share. */
     public static final String ERROR_ENGINE = "engine";
+    /** Engine: a path that carried bytes died (the network changed under it). */
+    public static final String ERROR_LOST = "lost";
+    /** Engine: the channel stayed open but nothing moved for the watchdog's window. */
+    public static final String ERROR_STALLED = "stalled";
 
     @NonNull public Role role;
     @NonNull public Stage stage = Stage.PREPARING;
@@ -90,6 +94,13 @@ public final class ShareState {
     public boolean reconnecting;
     /** The selected path, once known: TRUE relayed, FALSE direct, null unknown. */
     @Nullable public Boolean relayed;
+    /**
+     * Whether this session got relay (TURN) credentials: FALSE = the share
+     * runs direct+STUN only (offline, the API unreachable, the relay not
+     * deployed), so a later no-path names that instead of blaming the
+     * network; null until the fetch settled.
+     */
+    @Nullable public Boolean relayAvailable;
 
     /** ERROR stage: the engine/controller error code. */
     @Nullable public String errorCode;
@@ -137,6 +148,7 @@ public final class ShareState {
         s.rate = rate;
         s.reconnecting = reconnecting;
         s.relayed = relayed;
+        s.relayAvailable = relayAvailable;
         s.errorCode = errorCode;
         s.bytes = bytes;
         s.received = received;

@@ -7,9 +7,9 @@ import android.util.Log;
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.data.RestoredFileAccess;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,7 +19,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -230,9 +229,9 @@ public class P2pLoopbackServer {
             InputStream in = client.getInputStream();
             OutputStream out = client.getOutputStream();
 
-            RequestHead head = readHead(in);
+            P2pHttp.RequestHead head = P2pHttp.readHead(in);
             if (head == null) {
-                sendStatus(out, 400, "Bad Request");
+                P2pHttp.sendStatus(out, 400, "Bad Request");
                 return;
             }
 
@@ -244,13 +243,13 @@ public class P2pLoopbackServer {
             } else if ("GET".equals(head.method) && "/engine-page.js".equals(head.path)) {
                 sendAsset(out, "engine-page.js", "application/javascript; charset=utf-8");
             } else if (!mToken.equals(head.query.get("t"))) {
-                sendStatus(out, 403, "Forbidden");
+                P2pHttp.sendStatus(out, 403, "Forbidden");
             } else if ("GET".equals(head.method) && "/read".equals(head.path)) {
                 handleRead(head, out);
             } else if ("POST".equals(head.method) && "/write".equals(head.path)) {
                 handleWrite(head, in, out);
             } else {
-                sendStatus(out, 404, "Not Found");
+                P2pHttp.sendStatus(out, 404, "Not Found");
             }
             out.flush();
         } catch (IOException e) {
@@ -281,10 +280,10 @@ public class P2pLoopbackServer {
         out.write(body);
     }
 
-    private void handleRead(RequestHead head, OutputStream out) throws IOException {
+    private void handleRead(P2pHttp.RequestHead head, OutputStream out) throws IOException {
         String path = mReadPath;
         if (path == null) {
-            sendStatus(out, 404, "Not Found");
+            P2pHttp.sendStatus(out, 404, "Not Found");
             return;
         }
         long from;
@@ -293,25 +292,25 @@ public class P2pLoopbackServer {
             from = Long.parseLong(head.query.getOrDefault("from", "0"));
             lenCap = Long.parseLong(head.query.getOrDefault("len", "-1"));
         } catch (NumberFormatException e) {
-            sendStatus(out, 400, "Bad Request");
+            P2pHttp.sendStatus(out, 400, "Bad Request");
             return;
         }
         if (from < 0) {
-            sendStatus(out, 400, "Bad Request");
+            P2pHttp.sendStatus(out, 400, "Bad Request");
             return;
         }
         // RestoredFileAccess: a restored (foreign-owned) download opens via
         // the persisted SAF grant where a plain FileInputStream would EACCES.
         ParcelFileDescriptor pfd = RestoredFileAccess.openReadOnly(mContext, path);
         if (pfd == null) {
-            sendStatus(out, 404, "Not Found");
+            P2pHttp.sendStatus(out, 404, "Not Found");
             return;
         }
         try (ParcelFileDescriptor held = pfd;
              FileInputStream stream = new FileInputStream(held.getFileDescriptor())) {
             long total = held.getStatSize();
             if (from > total) {
-                sendStatus(out, 400, "Bad Request");
+                P2pHttp.sendStatus(out, 400, "Bad Request");
                 return;
             }
             long length = total - from;
@@ -319,7 +318,7 @@ public class P2pLoopbackServer {
                 length = lenCap;
             }
             if (!skipFully(stream, from)) {
-                sendStatus(out, 500, "Seek Failed");
+                P2pHttp.sendStatus(out, 500, "Seek Failed");
                 return;
             }
             String header = "HTTP/1.1 200 OK\r\n"
@@ -360,23 +359,23 @@ public class P2pLoopbackServer {
         return true;
     }
 
-    private void handleWrite(RequestHead head, InputStream in, OutputStream out) throws IOException {
+    private void handleWrite(P2pHttp.RequestHead head, InputStream in, OutputStream out) throws IOException {
         long offset;
         long declared;
         try {
             offset = Long.parseLong(head.query.getOrDefault("off", "-1"));
             declared = Long.parseLong(head.headers.getOrDefault("content-length", "-1"));
         } catch (NumberFormatException e) {
-            sendStatus(out, 400, "Bad Request");
+            P2pHttp.sendStatus(out, 400, "Bad Request");
             return;
         }
         if (offset < 0 || declared < 0 || declared > MAX_WRITE_BODY) {
-            sendStatus(out, 400, "Bad Request");
+            P2pHttp.sendStatus(out, 400, "Bad Request");
             return;
         }
         synchronized (mWriteLock) {
             if (mWriteFile == null) {
-                sendStatus(out, 409, "Conflict");
+                P2pHttp.sendStatus(out, 409, "Conflict");
                 return;
             }
             // The offset check makes writes idempotent-safe: a duplicated or
@@ -394,7 +393,7 @@ public class P2pLoopbackServer {
                     mWriteFile.seek(0);
                     mWritten = 0;
                 } else {
-                    sendStatus(out, 409, "Conflict");
+                    P2pHttp.sendStatus(out, 409, "Conflict");
                     return;
                 }
             }
@@ -411,97 +410,7 @@ public class P2pLoopbackServer {
             }
             mWritten += declared;
         }
-        sendStatus(out, 204, "No Content");
-    }
-
-    /** Cap the request head so a malformed client can't grow it unbounded. */
-    private static final int MAX_HEAD_BYTES = 16 * 1024;
-
-    /**
-     * Minimal HTTP request-head parser — request line + headers, query split.
-     * The only clients are our own extension fetch() calls (and the peer's
-     * signaling POSTs — see P2pLanServer, which shares this parser), so this
-     * stays deliberately small (no chunked bodies, no keep-alive).
-     *
-     * <p><b>Reads raw bytes up to and INCLUDING the terminating {@code \r\n\r\n},
-     * and no further</b>, so {@code in} is left positioned EXACTLY at the first
-     * body byte. This is load-bearing: a {@code BufferedReader}/{@code readLine}
-     * approach leaves the blank line's final {@code \n} unconsumed (readLine
-     * consumes the {@code \r}, sets an internal {@code skipLF}, and returns
-     * before eating the {@code \n}), so a subsequent raw body read starts one
-     * byte early — it takes the stray {@code \n} as {@code body[0]} and DROPS
-     * the last real byte. For a deflate-compressed answer/chunk that one lost
-     * byte corrupts the whole stream ("operation aborted" on decode). Parsing
-     * the head as bytes and stopping at the exact terminator avoids it.
-     */
-    static RequestHead readHead(InputStream in) throws IOException {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        // Match the CRLFCRLF terminator; `match` is the index into it.
-        final byte[] term = {'\r', '\n', '\r', '\n'};
-        int match = 0;
-        int b;
-        while ((b = in.read()) >= 0) {
-            buffer.write(b);
-            if (b == term[match]) {
-                match++;
-                if (match == term.length) {
-                    break;
-                }
-            } else {
-                // A stray '\r' can still begin a fresh terminator.
-                match = (b == '\r') ? 1 : 0;
-            }
-            if (buffer.size() > MAX_HEAD_BYTES) {
-                return null;
-            }
-        }
-        if (buffer.size() == 0) {
-            return null;
-        }
-        String[] lines = new String(buffer.toByteArray(), StandardCharsets.US_ASCII)
-                .split("\r\n");
-        if (lines.length == 0 || lines[0].isEmpty()) {
-            return null;
-        }
-        String[] parts = lines[0].split(" ");
-        if (parts.length < 2) {
-            return null;
-        }
-        RequestHead head = new RequestHead();
-        head.method = parts[0];
-        String target = parts[1];
-        int queryStart = target.indexOf('?');
-        if (queryStart >= 0) {
-            head.path = target.substring(0, queryStart);
-            for (String pair : target.substring(queryStart + 1).split("&")) {
-                int eq = pair.indexOf('=');
-                if (eq > 0) {
-                    head.query.put(pair.substring(0, eq), pair.substring(eq + 1));
-                }
-            }
-        } else {
-            head.path = target;
-        }
-        for (int i = 1; i < lines.length; i++) {
-            String line = lines[i];
-            if (line.isEmpty()) {
-                continue;
-            }
-            int colon = line.indexOf(':');
-            if (colon > 0) {
-                head.headers.put(
-                        line.substring(0, colon).trim().toLowerCase(Locale.US),
-                        line.substring(colon + 1).trim());
-            }
-        }
-        return head;
-    }
-
-    static void sendStatus(OutputStream out, int code, String reason) throws IOException {
-        String response = "HTTP/1.1 " + code + " " + reason + "\r\n"
-                + "Content-Length: 0\r\n"
-                + "Connection: close\r\n\r\n";
-        out.write(response.getBytes(StandardCharsets.US_ASCII));
+        P2pHttp.sendStatus(out, 204, "No Content");
     }
 
     private static void closeQuietly(Socket socket) {
@@ -510,12 +419,5 @@ public class P2pLoopbackServer {
         } catch (IOException e) {
             // Best-effort.
         }
-    }
-
-    static final class RequestHead {
-        String method;
-        String path;
-        final HashMap<String, String> query = new HashMap<>();
-        final HashMap<String, String> headers = new HashMap<>();
     }
 }

@@ -658,6 +658,9 @@
     <string name="p2p_got_code">Есть код или ссылка?</string>
     <string name="p2p_background_note">Можно покинуть этот экран. Передача продолжится в фоне.</string>
     <string name="p2p_error_timeout">Никто не принял файл вовремя.</string>
+    <string name="p2p_error_stalled">Передача перестала продвигаться. Поделитесь тем же файлом ещё раз, чтобы продолжить с того места, где она остановилась.</string>
+    <string name="p2p_error_lost">Соединение потеряно. Поделитесь тем же файлом ещё раз, чтобы продолжить с того места, где оно оборвалось.</string>
+    <string name="p2p_error_no_path_norelay">Не удалось связаться с другим устройством, а также с ретранслирующим сервером. Повторите попытку, когда оба телефона будут в сети.</string>
     <string name="p2p_notif_sending">Отправка: %1$s</string>
     <string name="p2p_notif_receiving">Получение: %1$s</string>
     <string name="p2p_notif_waiting">Ожидание, пока кто-нибудь примет</string>

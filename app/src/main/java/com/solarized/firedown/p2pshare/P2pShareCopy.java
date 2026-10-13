@@ -20,6 +20,8 @@ public final class P2pShareCopy {
      *                      what killed the direct path (full-tunnel VPN =
      *                      symmetric NAT the user doesn't control) and, unlike
      *                      CGNAT, has a user-actionable fix, so it is named
+     * @param relayMissing  the session had no relay credentials
+     *                      ({@link ShareState#relayAvailable} FALSE)
      * @param arrivedRemote receiver only: the offer came by link/paste. A
      *                      no-path there is usually a DEAD SENDER, not a
      *                      topology problem: the offer code is self-contained
@@ -31,12 +33,25 @@ public final class P2pShareCopy {
      *                      this device still wins — more specific, actionable.
      */
     @StringRes
-    public static int errorText(@NonNull String code, boolean vpnActive, boolean arrivedRemote) {
+    public static int errorText(@NonNull String code, boolean vpnActive, boolean arrivedRemote,
+                                boolean relayMissing) {
         if ("no-path".equals(code)) {
             if (vpnActive) {
                 return R.string.p2p_error_no_path_vpn;
             }
+            if (relayMissing) {
+                // The share ran without the relay (no credentials came back):
+                // a cross-network pair had no path to try. Say that, not
+                // "try the same Wi-Fi".
+                return R.string.p2p_error_no_path_norelay;
+            }
             return arrivedRemote ? R.string.p2p_error_no_path_link : R.string.p2p_error_no_path;
+        }
+        if (ShareState.ERROR_LOST.equals(code)) {
+            return R.string.p2p_error_lost;
+        }
+        if (ShareState.ERROR_STALLED.equals(code)) {
+            return R.string.p2p_error_stalled;
         }
         if (ShareState.NOTICE_BAD_CODE.equals(code)) {
             return R.string.p2p_error_bad_code;

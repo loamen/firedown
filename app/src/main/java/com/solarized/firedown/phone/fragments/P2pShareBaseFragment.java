@@ -256,7 +256,8 @@ public abstract class P2pShareBaseFragment extends BaseFocusFragment {
     /** The honest message for a terminal error (see {@link P2pShareCopy}). */
     protected int errorText(@NonNull ShareState state) {
         String code = state.errorCode == null ? ShareState.ERROR_ENGINE : state.errorCode;
-        return P2pShareCopy.errorText(code, isVpnActive(), state.arrivedRemote);
+        return P2pShareCopy.errorText(code, isVpnActive(), state.arrivedRemote,
+                Boolean.FALSE.equals(state.relayAvailable));
     }
 
     /**

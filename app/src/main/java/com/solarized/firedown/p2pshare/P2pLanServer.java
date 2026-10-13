@@ -105,7 +105,14 @@ public class P2pLanServer {
      * answer-return URL; the receiver is not visible nearby.
      */
     public boolean start() {
-        InetAddress lanAddress = findLanAddress();
+        return start(findLanAddress());
+    }
+
+    /**
+     * Bind to {@code lanAddress} (the harness's door — it binds the loopback;
+     * production goes through {@link #start()} and the LAN pick).
+     */
+    boolean start(@Nullable InetAddress lanAddress) {
         if (lanAddress == null) {
             return false;
         }
@@ -192,46 +199,32 @@ public class P2pLanServer {
             InputStream in = client.getInputStream();
             OutputStream out = client.getOutputStream();
 
-            P2pLoopbackServer.RequestHead head = P2pLoopbackServer.readHead(in);
+            P2pHttp.RequestHead head = P2pHttp.readHead(in);
             if (head == null) {
-                P2pLoopbackServer.sendStatus(out, 400, "Bad Request");
+                P2pHttp.sendStatus(out, 400, "Bad Request");
                 return;
             }
             if (!mToken.equals(head.query.get("t"))) {
-                P2pLoopbackServer.sendStatus(out, 403, "Forbidden");
+                P2pHttp.sendStatus(out, 403, "Forbidden");
                 return;
             }
             boolean answerRoute = mServeAnswer && "/answer".equals(head.path);
             boolean offerRoute = mServeOffer && "/offer".equals(head.path);
             if (!"POST".equals(head.method) || (!answerRoute && !offerRoute)) {
-                P2pLoopbackServer.sendStatus(out, 404, "Not Found");
+                P2pHttp.sendStatus(out, 404, "Not Found");
                 return;
             }
-            long declared;
-            try {
-                declared = Long.parseLong(head.headers.getOrDefault("content-length", "-1"));
-            } catch (NumberFormatException e) {
-                declared = -1;
-            }
-            if (declared <= 0 || declared > MAX_BODY) {
-                P2pLoopbackServer.sendStatus(out, 400, "Bad Request");
+            byte[] body = P2pHttp.readBody(in, P2pHttp.contentLength(head), MAX_BODY);
+            if (body == null) {
+                P2pHttp.sendStatus(out, 400, "Bad Request");
                 return;
-            }
-            byte[] body = new byte[(int) declared];
-            int have = 0;
-            while (have < body.length) {
-                int read = in.read(body, have, body.length - have);
-                if (read < 0) {
-                    throw new IOException("body truncated");
-                }
-                have += read;
             }
             String text = new String(body, StandardCharsets.UTF_8).trim();
             boolean taken = answerRoute ? mHandler.onAnswer(text) : mHandler.onOffer(text);
             if (taken) {
-                P2pLoopbackServer.sendStatus(out, 204, "No Content");
+                P2pHttp.sendStatus(out, 204, "No Content");
             } else {
-                P2pLoopbackServer.sendStatus(out, 409, "Conflict");
+                P2pHttp.sendStatus(out, 409, "Conflict");
             }
             out.flush();
         } finally {

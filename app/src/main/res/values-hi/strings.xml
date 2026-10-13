@@ -590,6 +590,9 @@
     <string name="p2p_got_code">कोड या लिंक मिला है?</string>
     <string name="p2p_background_note">आप इस स्क्रीन से बाहर जा सकते हैं। ट्रांसफ़र पृष्ठभूमि में जारी रहेगा।</string>
     <string name="p2p_error_timeout">किसी ने समय पर फ़ाइल स्वीकार नहीं की।</string>
+    <string name="p2p_error_stalled">ट्रांसफ़र आगे नहीं बढ़ा। वहीं से जारी रखने के लिए वही फ़ाइल फिर से शेयर करें।</string>
+    <string name="p2p_error_lost">कनेक्शन टूट गया। वहीं से जारी रखने के लिए वही फ़ाइल फिर से शेयर करें।</string>
+    <string name="p2p_error_no_path_norelay">दूसरे डिवाइस से संपर्क नहीं हो सका, और रिले सर्वर से भी नहीं। जब दोनों फ़ोन ऑनलाइन हों, तब फिर से कोशिश करें।</string>
     <string name="p2p_notif_sending">%1$s भेजा जा रहा है</string>
     <string name="p2p_notif_receiving">%1$s प्राप्त हो रहा है</string>
     <string name="p2p_notif_waiting">किसी के स्वीकार करने की प्रतीक्षा</string>

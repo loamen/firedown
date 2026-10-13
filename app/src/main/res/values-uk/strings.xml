@@ -590,6 +590,9 @@
     <string name="p2p_got_code">Є код або посилання?</string>
     <string name="p2p_background_note">Можете вийти з цього екрана. Передавання триватиме у фоні.</string>
     <string name="p2p_error_timeout">Ніхто не прийняв файл вчасно.</string>
+    <string name="p2p_error_stalled">Передавання перестало просуватися. Поділіться тим самим файлом ще раз, щоб продовжити з того місця, де воно зупинилося.</string>
+    <string name="p2p_error_lost">З\'єднання втрачено. Поділіться тим самим файлом ще раз, щоб продовжити з того місця, де воно обірвалося.</string>
+    <string name="p2p_error_no_path_norelay">Не вдалося зв\'язатися з іншим пристроєм, а також із ретрансляційним сервером. Спробуйте ще раз, коли обидва телефони будуть онлайн.</string>
     <string name="p2p_notif_sending">Надсилання: %1$s</string>
     <string name="p2p_notif_receiving">Отримання: %1$s</string>
     <string name="p2p_notif_waiting">Очікування, поки хтось прийме</string>
