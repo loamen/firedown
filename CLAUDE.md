@@ -713,11 +713,44 @@ manifests and tokenized/extensionless URLs are **always** enriched
   **embedded player in a cross-origin iframe** (a "listen to this article" /
   podcast embed) answers for ITS OWN audio — its MediaSession, its `<audio>`
   binding, its og — which the top-frame responder could never see. `data.frameId`
-  is the real webRequest frame on the wire path and `0` on the synthetic
-  content-script path. Frame-targeting is what makes the all-frames responder
-  safe (no cross-frame title contamination). Do **not** re-add a "subframe audio
-  inherits the TOP page's og:title" heuristic — it stamped every clip on a page
-  with one shared title (the thing this replaced).
+  is the real webRequest frame on the wire path and the scrape's OWN frame on
+  the content-script path (`sender.frameId`, since 2026-09; it used to be a
+  hardcoded `0`), and a scan-reported clip's metadata is built in that same
+  frame (`reportedMetaFor`). Frame-targeting is what makes the all-frames
+  responder safe (no cross-frame title contamination). Do **not** re-add a
+  "subframe audio inherits the TOP page's og:title" heuristic — it stamped every
+  clip on a page with one shared title (the thing this replaced).
+- **PER-URL declarations are the one thing a frame reads from its parents**
+  (`declaringDocs` in `content-script.js`): the `application/firedown+json`
+  block, a VideoObject whose `contentUrl` IS the captured URL, and the same for
+  an AudioObject — this frame's document first, then each SAME-ORIGIN ancestor
+  (explicit `window.origin` match; a cross-origin ancestor is skipped and the
+  walk climbs past it; a sandboxed frame's opaque origin never matches; four
+  levels at most). A relative `contentUrl` or thumbnail resolves against the
+  DECLARING document's base, not the frame's. Exact-URL only, so it can never
+  name the wrong clip; page-level fields (`<title>`, og:, the first
+  VideoObject, og:audio) stay strictly per frame per the bullet above. Why:
+  frame-targeting silently broke the case the block was built for. firedown.app
+  declares its showcase clips in the HOMEPAGE head while they play inside the
+  `/demo` iframe; the block reader was written top-frame-only (2026-06-26),
+  the wire query moved to the owning frame a day later (`0dc1bc7e`, 1.1.81) and
+  the scrape followed (`1bef447e`, 1.1.93), after which every demo clip was
+  captured as "Firedown · demo" (HAR 26-10-14). The website now also declares
+  the clips inside the demo itself, which fixes installed builds; this rule is
+  what makes a parent's declaration count at all. Every block in a document is
+  read (it used to take the first, so a malformed block hid a valid one).
+  **Verify with `node scripts/frame-meta-harness.mjs`** — the real content
+  script in real Chromium frames (Playwright; SKIPs without it): same-origin
+  parent, nested, srcdoc, cross-origin parent and middle frame, sandbox,
+  relative URLs, own-frame precedence, page-level fields staying put, the
+  scan-report path. On the pre-fix script 10 of its 16 checks fail. Chromium
+  runs it as a page script; the Firefox content script reads the parent
+  through Xray, which only a device confirms. Residuals, not fixed: the
+  page-state bridge's emits (`page-state-progressive`/`-hls`) are titled by the
+  bridge and never consult declarations, so a recognised player (Video.js,
+  Plyr, JW…) on a declaring page wins the URL dedup with the page title; and on
+  a multi-video frame the page-level first VideoObject still names every
+  undeclared clip.
 - **News Over Audio** (`js/parsers/newsoveraudio.js`) is the dedicated case: a
   syndicated "listen to this article" widget embedded across publishers (IEEE
   Spectrum, …). Its audio + title live ONLY in `api.newsoveraudio.com/v1/player/

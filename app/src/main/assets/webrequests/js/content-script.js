@@ -218,24 +218,83 @@ let collectMediaMeta = null;
   // <audio> behind their own React/JS controls, so requiring controls misses
   // them. The genuinely-incidental case has no DOM element at all, so the mere
   // presence of a bound element is itself the content signal.
-  // Top-frame only, like the rest of this responder; an audio element inside a
-  // cross-origin iframe is not inspected (rare for article audio).
-  const absUrl = (u) => {
-    try { return new URL(u, location.href).href; } catch (_) { return ''; }
+  // Computed in the frame that owns the media (the query is frame-targeted);
+  // only an AudioObject DECLARATION may come from a same-origin parent, see
+  // declaringDocs below.
+  // `base` is the document a relative URL belongs to: a declaration read from
+  // a parent frame resolves against THAT document, not this frame's location.
+  const absUrl = (u, base) => {
+    try { return new URL(u, base || location.href).href; } catch (_) { return ''; }
   };
   // Compare two URLs ignoring the #fragment (signed URLs differ only there).
-  const sameUrl = (a, b) => {
-    const x = absUrl(a);
+  // `base` resolves a relative `a` (a declared contentUrl); `b` is the
+  // captured media URL, already absolute.
+  const sameUrl = (a, b, base) => {
+    const x = absUrl(a, base);
     const y = absUrl(b);
     if (!x || !y) return false;
     return x.split('#')[0] === y.split('#')[0];
+  };
+  // A declared thumbnail made absolute against its declaring document, so a
+  // relative one is fetchable by the native side. Empty stays empty (a bare
+  // `new URL('', base)` would turn "no thumbnail" into the page URL).
+  const absThumb = (u, base) => (u ? (absUrl(u, base) || u) : '');
+
+  // The documents that may DECLARE a clip played in this frame, most specific
+  // first: this frame's own, then each SAME-ORIGIN ancestor's. A gallery that
+  // shows its clips inside an iframe declares them in the page that embeds
+  // the iframe — firedown.app's own homepage lists the /demo showcase clips in
+  // its firedown+json block — and since the metadata query became
+  // frame-targeted (every frame answers for its own media), the frame that
+  // holds the <video> is the one asked, so a top-frame-only read titled every
+  // demo clip with the iframe's own <title> ("Firedown · demo").
+  // Only PER-URL declarations read these (a contentUrl that IS the captured
+  // URL — exact, so it cannot be another clip's). Page-level fields (og:title,
+  // <title>, the first VideoObject) stay this frame's: a parent's headline is
+  // NOT the clip's, the shared-page-title bug the frame-targeting removed.
+  // Same origin only, checked explicitly rather than trusted to the engine's
+  // access check: a cross-origin ancestor is skipped (its document throws or
+  // is refused) and the walk climbs past it, so a same-origin top page behind
+  // a cross-origin middle frame still counts — the page itself could read it.
+  // A sandboxed frame's origin is opaque ("null") and never matches.
+  const MAX_DECLARING_ANCESTORS = 4;
+  const originOf = (w) => {
+    let o = '';
+    try { o = w.origin; } catch (_) { o = ''; }
+    if (!o) {
+      try { o = w.location.origin; } catch (_) { o = ''; }
+    }
+    return (typeof o === 'string') ? o : '';
+  };
+  const declaringDocs = () => {
+    const out = [{ doc: document, base: document.baseURI || location.href }];
+    const selfOrigin = originOf(window);
+    if (!selfOrigin || selfOrigin === 'null') return out;
+    let w = window;
+    for (let i = 0; i < MAX_DECLARING_ANCESTORS; i++) {
+      let parent = null;
+      try { parent = w.parent; } catch (_) { parent = null; }
+      if (!parent || parent === w) break;
+      w = parent;
+      if (originOf(w) !== selfOrigin) continue;
+      let doc = null;
+      let base = '';
+      try {
+        doc = w.document;
+        base = doc.baseURI;
+      } catch (_) {
+        doc = null;
+      }
+      if (doc && base) out.push({ doc, base });
+    }
+    return out;
   };
 
   // Generic depth/breadth-bounded JSON-LD tree walk: calls visit(node) on every
   // object node and returns the first truthy result (shares the caps the video
   // walk above uses; budget is per-call). Used by the audio reader below.
-  const eachJsonLdNode = (visit) => {
-    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  const eachJsonLdNode = (visit, doc) => {
+    const scripts = (doc || document).querySelectorAll('script[type="application/ld+json"]');
     let budget = MAX_LD_NODES;
     const walk = (root) => {
       const stack = [{ node: root, depth: 0 }];
@@ -283,21 +342,27 @@ let collectMediaMeta = null;
   // videos) collapses to one shared title/thumbnail. Matching contentUrl to the
   // captured URL instead gives each clip its OWN name + thumbnail. Returns
   // {name, description, thumbnail} or null if no VideoObject points at this URL.
-  // Top-frame only like the rest of this responder — but that still covers a
-  // clip captured from a same-origin iframe, because the background passes the
-  // captured media URL and the top frame's JSON-LD can declare it.
+  // Read from this frame's document first, then same-origin ancestors
+  // (declaringDocs): a clip played in an iframe is often declared by the page
+  // that embeds it.
   const readVideoJsonLdByUrl = (mediaUrl) => {
     if (!mediaUrl) return null;
-    return eachJsonLdNode((node) => {
-      if (!isVideoType(node['@type'])) return null;
-      const contentUrl = ldString(node.contentUrl) || ldString(node.url);
-      if (!contentUrl || !sameUrl(contentUrl, mediaUrl)) return null;
-      return {
-        name: ldString(node.name),
-        description: ldString(node.description),
-        thumbnail: ldImage(node.thumbnailUrl) || ldImage(node.thumbnail),
-      };
-    });
+    const docs = declaringDocs();
+    for (let i = 0; i < docs.length; i++) {
+      const { doc, base } = docs[i];
+      const hit = eachJsonLdNode((node) => {
+        if (!isVideoType(node['@type'])) return null;
+        const contentUrl = ldString(node.contentUrl) || ldString(node.url);
+        if (!contentUrl || !sameUrl(contentUrl, mediaUrl, base)) return null;
+        return {
+          name: ldString(node.name),
+          description: ldString(node.description),
+          thumbnail: absThumb(ldImage(node.thumbnailUrl) || ldImage(node.thumbnail), base),
+        };
+      }, doc);
+      if (hit) return hit;
+    }
+    return null;
   };
 
   // Per-URL clip metadata a page declares in a Firedown-specific JSON block
@@ -309,32 +374,44 @@ let collectMediaMeta = null;
   // and is crawler-visible (a gallery's demo clips become indexable site video).
   // The custom MIME is inert to both — invisible to search engines and to the
   // page-level reader — while we read it here by contentUrl, so each clip on a
-  // multi-clip page (firedown.app's own /demo showcase) gets its own title +
-  // thumbnail. Top-frame only like the rest of this responder, which still
-  // covers a clip captured from a same-origin iframe (the background passes the
-  // captured URL and the top frame declares it). Returns {name, description,
-  // thumbnail} or null.
+  // multi-clip page gets its own title + thumbnail. firedown.app's /demo
+  // showcase is the case it exists for, and there the clips play inside an
+  // IFRAME while the block sits in the embedding homepage — so this reads
+  // this frame's document first, then same-origin ancestors (declaringDocs).
+  // Every block in a document is read (a page may carry more than one), each
+  // parsed in isolation so one malformed block can't hide the rest. Returns
+  // {name, description, thumbnail} or null.
   const readDeclaredMediaByUrl = (mediaUrl) => {
     if (!mediaUrl) return null;
-    let list;
-    try {
-      const el = document.querySelector('script[type="application/firedown+json"]');
-      if (!el) return null;
-      list = JSON.parse(el.textContent);
-    } catch (_) {
-      return null;
-    }
-    if (!Array.isArray(list)) return null;
-    for (let i = 0; i < list.length; i++) {
-      const item = list[i];
-      if (!item || typeof item !== 'object') continue;
-      const contentUrl = ldString(item.contentUrl) || ldString(item.url);
-      if (!contentUrl || !sameUrl(contentUrl, mediaUrl)) continue;
-      return {
-        name: ldString(item.name),
-        description: ldString(item.description),
-        thumbnail: ldImage(item.thumbnail) || ldImage(item.thumbnailUrl),
-      };
+    const docs = declaringDocs();
+    for (let d = 0; d < docs.length; d++) {
+      const { doc, base } = docs[d];
+      let blocks;
+      try {
+        blocks = doc.querySelectorAll('script[type="application/firedown+json"]');
+      } catch (_) {
+        continue;
+      }
+      for (let b = 0; b < blocks.length; b++) {
+        let list;
+        try {
+          list = JSON.parse(blocks[b].textContent);
+        } catch (_) {
+          continue;
+        }
+        if (!Array.isArray(list)) continue;
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i];
+          if (!item || typeof item !== 'object') continue;
+          const contentUrl = ldString(item.contentUrl) || ldString(item.url);
+          if (!contentUrl || !sameUrl(contentUrl, mediaUrl, base)) continue;
+          return {
+            name: ldString(item.name),
+            description: ldString(item.description),
+            thumbnail: absThumb(ldImage(item.thumbnail) || ldImage(item.thumbnailUrl), base),
+          };
+        }
+      }
     }
     return null;
   };
@@ -346,16 +423,26 @@ let collectMediaMeta = null;
   // the page declaring "this URL is the audio content". Returns its
   // {name, description, thumbnail} so the consumer can prefer it over the
   // generic page title; null if no AudioObject points at this URL.
-  const readAudioJsonLd = (mediaUrl) => eachJsonLdNode((node) => {
-    if (!isAudioType(node['@type'])) return null;
-    const contentUrl = ldString(node.contentUrl) || ldString(node.url);
-    if (!contentUrl || !sameUrl(contentUrl, mediaUrl)) return null;
-    return {
-      name: ldString(node.name),
-      description: ldString(node.description),
-      thumbnail: ldImage(node.thumbnailUrl) || ldImage(node.thumbnail),
-    };
-  });
+  // Like the video reader: this frame first, then same-origin ancestors (an
+  // article declaring the audio its embedded player plays).
+  const readAudioJsonLd = (mediaUrl) => {
+    const docs = declaringDocs();
+    for (let i = 0; i < docs.length; i++) {
+      const { doc, base } = docs[i];
+      const hit = eachJsonLdNode((node) => {
+        if (!isAudioType(node['@type'])) return null;
+        const contentUrl = ldString(node.contentUrl) || ldString(node.url);
+        if (!contentUrl || !sameUrl(contentUrl, mediaUrl, base)) return null;
+        return {
+          name: ldString(node.name),
+          description: ldString(node.description),
+          thumbnail: absThumb(ldImage(node.thumbnailUrl) || ldImage(node.thumbnail), base),
+        };
+      }, doc);
+      if (hit) return hit;
+    }
+    return null;
+  };
 
   // og:audio / og:audio:url / og:audio:secure_url pointing at the captured URL.
   const ogAudioMatches = (mediaUrl) => {
