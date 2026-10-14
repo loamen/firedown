@@ -93,6 +93,8 @@
 -keep class com.solarized.firedown.ffmpegutils.FFmpegStreamInfo
 -keep class com.solarized.firedown.ffmpegutils.FFmpegSVGDecoder
 -keep class com.solarized.firedown.ffmpegutils.FFmpegOkhttp
+# Called only from native (libavformat/fdxml.c, by name) — R8 would strip it.
+-keep class com.solarized.firedown.ffmpegutils.FFmpegXml
 
 -keepclassmembers class com.solarized.firedown.ffmpegutils.FFmpegStreamInfo {
 	private <methods>;
@@ -146,5 +148,6 @@
 	public <init>(...);
 }
 
-
-
+-keepclassmembers class com.solarized.firedown.ffmpegutils.FFmpegXml {
+	public static byte[] parse(java.nio.ByteBuffer);
+}
