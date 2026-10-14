@@ -59,6 +59,10 @@ import java.util.ArrayList;
  * A DOCTYPE is refused (the WebDAV PROPFIND rule): no MPD carries one, and
  * it is the door to entity expansion. libxml2 with the options dashdec used
  * would have accepted it; refusing is the one deliberate difference.
+ *
+ * Verify any change with firedown-ffmpeg's scripts/dashxml-harness/run.sh: it
+ * runs this class in a JVM behind dashdec.c's real parse code and diffs the
+ * result against libxml2 over ~120 manifests.
  */
 public final class FFmpegXml {
 

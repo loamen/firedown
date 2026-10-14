@@ -6281,6 +6281,46 @@ Headers (incl. any backfilled `Referer`) flow from the capture layer
 (`webrequests/requests.js` for the generic catcher, or a parser's
 `requestHeaders`) into both paths via `context.getHeaders()`.
 
+### DASH manifests are parsed in Java (`FFmpegXml`) — the fork has no libxml2
+
+FFmpeg's DASH demuxer (`dashdec.c`) reads an MPD as a small DOM, and in the
+fork that tree comes from `ffmpegutils/FFmpegXml.parse(ByteBuffer)`, not from
+libxml2: the fork's `libavformat/fdxml.c` gives `dashdec.c` libxml2's names
+and makes ONE JNI call per manifest — on the probe, the download, and every
+live `refresh_manifest`. Native hands the manifest (already fetched through
+`FFmpegOkhttp`) as a direct ByteBuffer over its own memory; `parse()` reads it
+with `Xml.newPullParser()` (KXmlParser) and returns the tree as one `byte[]`
+in the `FDX1` wire format its javadoc documents, which `fdxml.c` rebuilds.
+Why, the libxml2 semantics it reproduces, and the build side are in
+firedown-ffmpeg's CLAUDE.md ("DASH manifests: XML from Java (fdxml)"). The
+app-side rules:
+
+- **Called only from native, by name** — `proguard-rules.pro` keeps the class
+  and `parse(ByteBuffer)`. A rename or a dropped keep rule fails no build: R8
+  strips it, `FindClass` fails in `fdxml.c`, and every DASH manifest is
+  refused (`fdxml: jfields init failed` in a debug log).
+- **It never throws back into native code.** Any failure, an
+  `OutOfMemoryError` included, is a `null` return, which `dashdec.c` reports
+  as invalid data (as it did when libxml2 failed): a pending exception on
+  those attached threads is a CheckJNI abort, the `http.c` rule.
+- **The wire format and the name rule are shared with `fdxml.c`** — change
+  one side, change the other, and run firedown-ffmpeg's
+  `sh scripts/dashxml-harness/run.sh` (it compiles THIS file into its JVM side
+  and diffs `dashdec.c`'s parse results against libxml2 over ~120 manifests).
+  Prefixes are resolved here, with the parser's namespace processing OFF,
+  because KXmlParser's namespace mode rejects a whole manifest over an
+  undeclared prefix (PlayReady `mspr:pro`) that libxml2 only warns about.
+  A DOCTYPE is refused on purpose.
+- **Release ordering:** an FFmpeg `.so` built with fdxml needs this class; an
+  app carrying it works with either `.so`. Ship the app side first or with
+  the `.so` — never a `firedown.ffmpegRelease` pin ahead of it.
+- **What exercises it on a device:** the generic catcher's DASH captures
+  (`.mpd` URLs and `<MPD` body sniffs, then `FFmpegMuxStrategy`) and RTVE (the
+  `rtveCdn` rewrite in `requests.js`). The big sites never reach `dashdec.c`
+  — YouTube is SABR, Instagram reads its own MPD, Bilibili emits track pairs,
+  Vimeo/Twitch/Kick are HLS — so a DASH regression shows on the long tail
+  first.
+
 ### Cancel must evict idle pooled connections — the HTTP/2 discard loop
 
 Cancelling a download/probe mid-stream only closes the response body, which on
