@@ -9,6 +9,7 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Transaction;
 
+import com.solarized.firedown.data.entity.CaptureDownloadState;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.entity.MimeUsageEntity;
 import java.util.List;
@@ -198,6 +199,18 @@ public interface DownloadDao {
     @Query("SELECT file_mime_type AS mime, IFNULL(SUM(file_size), 0) AS bytes, COUNT(*) AS files " +
             "FROM download WHERE file_safe = 0 AND file_status = 1 GROUP BY file_mime_type")
     LiveData<List<MimeUsageEntity>> getRegularUsageByMimeLive();
+
+    /** Live download state of every download that came from one of the given
+     *  pages, in one store (vault or regular) — the Captured sheet's per-item
+     *  marks. Matched to captures by URL in Java (CaptureSections). Keyed on
+     *  the origin because a capture's variants make its URL set large, while
+     *  its page is one value; the caller caps the list under SQLite's bound
+     *  variable limit. @Transaction per the 1.1.93 rule (unbounded read). */
+    @Transaction
+    @Query("SELECT file_url AS url, file_status AS status, file_progress AS progress, " +
+            "file_live AS live, file_error_message AS error_type FROM download " +
+            "WHERE file_safe = :safe AND file_origin_url IN (:origins)")
+    LiveData<List<CaptureDownloadState>> getCaptureStatesLive(boolean safe, List<String> origins);
 
     /** Finished regular (non-vault) downloads — the Storage screen's "Free up
      *  space" candidates, intersected in Java with the cloud manifest's

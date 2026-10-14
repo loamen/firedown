@@ -77,7 +77,6 @@ public class Preferences {
 
     public static final String SORT_LOCAL = "com.solarized.firedown.preferences.sort.local";
 
-    public static final String SORT_LIST = "com.solarized.firedown.preferences.sort.list";
 
     public static final String SORT_TABS_LIST = "com.solarized.firedown.preferences.sort.tabs.list";
 

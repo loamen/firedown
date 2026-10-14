@@ -892,4 +892,27 @@
     <string name="feedback_failed">Nie udało się wysłać. Sprawdź połączenie i spróbuj ponownie.</string>
     <string name="settings_address_bar_host_only_title">Pokazuj w pasku adresu tylko nazwę witryny</string>
     <string name="settings_address_bar_host_only_summary">Pełny adres pojawia się po dotknięciu paska.</string>
+    <string name="capture_earlier_in_tab">Wcześniej w tej karcie</string>
+    <string name="capture_status_saved">Zapisano</string>
+    <string name="capture_status_failed">Nie udało się pobrać</string>
+    <string name="capture_status_downloading">Pobieranie · %1$d%%</string>
+    <string name="capture_batch_saved">Zapisano %1$d z %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d pobierany</item>
+        <item quantity="few">%d pobierane</item>
+        <item quantity="many">%d pobieranych</item>
+        <item quantity="other">%d pobieranych</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d oczekujący</item>
+        <item quantity="few">%d oczekujące</item>
+        <item quantity="many">%d oczekujących</item>
+        <item quantity="other">%d oczekujących</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d nieudany</item>
+        <item quantity="few">%d nieudane</item>
+        <item quantity="many">%d nieudanych</item>
+        <item quantity="other">%d nieudanych</item>
+    </plurals>
 </resources>

@@ -46,6 +46,9 @@
     <dimen name="list_download_image_height">64dp</dimen>
     <dimen name="list_download_image_height_grid">110dp</dimen>
     <dimen name="list_margin">8dp</dimen>
+    <!-- The type label (VIDEO, AUDIO…) inside a Captured row's meta line:
+         MimePrimaryLabel's size, applied as a span. -->
+    <dimen name="capture_type_label_size">11sp</dimen>
     <dimen name="list_web_image_height">28dp</dimen>
     <dimen name="list_web_empty_height">37dp</dimen>
     <dimen name="list_item_margin">6dp</dimen>

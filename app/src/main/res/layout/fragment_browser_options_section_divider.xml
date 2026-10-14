@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The boundary between the page the tab shows now and the captures from its
+  earlier pages, in the Captured sheet. A hairline and a label, no card: it
+  separates two groups, it is not an item. Horizontal inset comes from
+  CaptureSpacingDecoration.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="20dp"
+    android:paddingBottom="6dp">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorOutlineVariant" />
+
+    <TextView
+        android:id="@+id/section_title"
+        style="@style/TextAppearance.Material3.LabelLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/capture_earlier_in_tab"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+</LinearLayout>

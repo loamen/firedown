@@ -1,3 +1,7 @@
+## [1.2.02] - 2026-10-14
+
+- Captured content: one list instead of a grid/list switch. Videos, audio and subtitles are rows, images are squares under an "Images" header (with their size, and GIF marked), and captures from earlier pages of the tab sit under "Earlier in this tab". Each capture shows whether it is already saved, waiting, downloading (with its progress) or failed, and downloading several at once shows a card above the list counting them down ("Saved 3 of 20 · 4 downloading · 13 pending"); tap it to open Downloads
+
 ## [1.2.01] - 2026-10-12
 
 - Backup: the hosted Cloud Backup is replaced by backing up to a folder of your choice — Google Drive, Nextcloud, an SD card or the phone itself, anything the system folder picker offers. Files are encrypted on the phone before they are written, under the same recovery code bookmark sync uses; the Backups list, restore, open-without-restoring, "Free up space" and the download menu's "Back up" all work against the folder. Nothing goes through a Firedown server. Choosing the folder asks where: cloud storage (with a picture of the picker's ☰ button, where Android keeps your cloud apps), the SD card when one is in, or somewhere else. Firedown then checks that it can actually save files in the folder you pick before using it, and warns if you pick the phone's own Download/Firedown folder. A backup that fails says why, in the Backups list and as a notification

@@ -12,6 +12,7 @@ import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.data.DownloadDatabase;
 import com.solarized.firedown.data.RestoredFileAccess;
 import com.solarized.firedown.data.di.Qualifiers;
+import com.solarized.firedown.data.entity.CaptureDownloadState;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.data.entity.MimeUsageEntity;
 import com.solarized.firedown.ffmpegutils.FFmpegMetaData;
@@ -155,6 +156,13 @@ public class DownloadDataRepository {
 
     public LiveData<List<DownloadEntity>> getAllSafeLive() {
         return mDatabase.downloadDao().getAllSafeLive();
+    }
+
+    /** Live download state of the downloads that came from the given pages —
+     *  the Captured sheet's per-item marks. See
+     *  {@link com.solarized.firedown.data.dao.DownloadDao#getCaptureStatesLive}. */
+    public LiveData<List<CaptureDownloadState>> getCaptureStatesLive(boolean safe, List<String> origins) {
+        return mDatabase.downloadDao().getCaptureStatesLive(safe, origins);
     }
 
     // --- Standard Queries ---

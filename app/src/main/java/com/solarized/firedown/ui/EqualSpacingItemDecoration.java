@@ -42,7 +42,7 @@ public class EqualSpacingItemDecoration extends RecyclerView.ItemDecoration {
         // cache them across layouts. The old once-only cache
         // (if (spanCount == -1) …) went stale when the span changed on a
         // LIVE RecyclerView without recreating the decoration: the
-        // images-filter dense mosaic flips the Captured grid 2 → 3 via
+        // images-filter dense mosaic flipped the old Captured grid 2 → 3 via
         // setSpanCount(), and the decoration kept computing column edges
         // for 2 columns — every other tile got the left-edge inset and
         // right-edge detection misfired, producing visibly uneven gutters.

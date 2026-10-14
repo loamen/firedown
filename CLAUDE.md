@@ -1577,7 +1577,7 @@ drives the REAL recorded listeners with a stubbed `filterResponseData`).
   `cdn.jwplayer.com/strips/<id>-120.vtt` answers 301 → `assets-jpcust.jwpsrv.com`,
   the target was unreachable on-device, and the 301 URL alone landed as a
   SUBTITLE capture — the caption badge is keyed by ORIGIN
-  (`BrowserOptionAdapter.bindCaptionBadge`), so every clip in that iframe
+  (`CaptureSections.captionCounts`), so every clip in that iframe
   read "CC 1". Only the redirect statuses are gated: Gecko folds a 304 into
   the cached 200, and a 4xx media answer can still be a real stream behind a
   Range-only endpoint (the krakencloud 404 case).
@@ -1830,6 +1830,79 @@ history delete. Zero new strings: the row reuses
 `browser_menu_bookmark_this_page_2` and the `browser_bookmark_saved_toast`
 snackbar.
 
+### Captured sheet — rows for media, squares for images, marks from Downloads
+
+The sheet is ONE mixed list since the 2026-10 redesign (canvas "Captured
+Content sheet", option A): video, audio, subtitle and other captures are
+full-width ROWS; images (GIF and SVG included) are SQUARES,
+`capture_columns` to a line (3 on a phone), under an "Images N" header; and
+captures from earlier pages of the tab sit below an "Earlier in this tab"
+divider. The grid/list toggle, the 16:10 grid tile, the images-chip "dense
+mosaic" and `Preferences.SORT_LIST` are GONE: the layout follows each
+capture's type, not a mode.
+
+- **The VIEW MODEL builds the items** (`CaptureSections.build` →
+  `CaptureItem`): the sections, the header counts, each item's type-label
+  and domain flags, the CC count and the download mark all ride inside the
+  items, so they land in ONE submit with the list they belong to. This
+  replaced the adapter-side presentation flags and the
+  `submitWithPresentation` commit-callback dance (with its
+  `mPresentationDirty`), which existed so a chip tap couldn't paint the old
+  list in the new presentation; that bug class is now structurally gone.
+  Don't put presentation state back on the adapter.
+- **Order inside each group**: video, audio, subtitle, other, then images
+  (`CaptureSections.typeRank`, for both groups now), then most recent first.
+  The images must be contiguous for the header. The header's count is the
+  whole group's BEFORE the list limit, so it doesn't climb 15 → 25 as the
+  user scrolls in more. Under a chip: no headers (the chip names the type)
+  and no type labels; the divider stays.
+- **A ROW** is a title plus ONE meta line built as a spannable:
+  `[status] · [TYPE] · facts · [domain]`. The status shows only when the
+  capture has a download mark, the type only while unfiltered, the domain
+  only on earlier-page rows (on the current page it is the address bar's).
+  While a download runs, its status ("Downloading · 42%", "Finishing…",
+  "Downloading…" for a live stream) replaces the type label, and a 3dp
+  progress line runs along the card's bottom edge.
+- **A SQUARE** shows the dimensions bottom-left (led by GIF / SVG while
+  unfiltered, and kept under a chip, the maintainer's call: it is the one
+  fact a picture's thumbnail doesn't show) and the mark bottom-right.
+  **Text over a picture follows the app's photo-tile convention, never a
+  pill**: `bottom_scrim` plus white text with the grid caption's shadow, and
+  self-coloured badge glyphs with a baked shadow
+  (`capture_badge_saved` / `_pending` / `_failed`, built like
+  `cloud_badge`). The canvas sketches drew black rounded pills behind the
+  labels; that shape exists nowhere in the app and was not built. On the
+  mime placeholder the scrim drops and FallbackInks take over (the
+  `applySquareGround` rule, as on every grid tile).
+- **Download marks**: `DownloadDao.getCaptureStatesLive(safe, origins)` (a
+  projection, `@Transaction`) returns every download that came from the
+  shown pages, and `CaptureSections` ties a download to a capture by URL:
+  the capture's own, or ANY of its variants' (`DownloadRequest.from` swaps
+  the picked variant's URL in; a YouTube download keeps the capture URL).
+  When several match, downloading > pending > saved > failed (the user
+  retried). A private tab matches vault rows only (`file_safe`), since its
+  downloads go to the Safe Folder. An ERROR row with `FILE_NOT_FOUND` gets
+  NO mark: that is a finished file deleted elsewhere, not a failed download.
+  Origins are capped at `MAX_ORIGINS` (900), under SQLite's 999
+  bound-variable limit on Android below 11. A mark-only change is a
+  `PAYLOAD_MARK` rebind, so a progress tick never reloads a thumbnail.
+- **Batch card** (above the chips): after a multi-select download of two or
+  more captures, "Saved 3 of 20 · 4 downloading · 13 pending (· 2 failed)",
+  with the overall progress along its bottom edge; a tap opens Downloads
+  (the Safe Folder in a private tab). The batch is held in the VIEW MODEL as
+  entities, because a chip or the list limit can hide a member and it must
+  still count. A member with no row yet is pending; one whose row was seen
+  and is now gone was deleted from Downloads and leaves the batch. It lives
+  as long as the sheet.
+- **Spacing** is `CaptureSpacingDecoration`: 16dp gutter, 6dp between rows,
+  4dp between squares, and every square the same width
+  (`EqualSpacingItemDecoration` gives the edge columns less width).
+- Verify with `sh scripts/capture-harness/run.sh` (the REAL
+  `CaptureSections` / `CaptureMark` / `CaptureItem` /
+  `CaptureItemDiffCallback`; 27 checks; mutants on the mark ranking, the
+  divider and the `FILE_NOT_FOUND` exemption each fail it). On-device
+  unverified at write time.
+
 ### Captured row action slot — the ⋮ only; Copy is multi-select; Share/Open DECIDED AGAINST
 
 The Captured row has ONE action slot (`BrowserOptionAdapter` +
@@ -1840,7 +1913,7 @@ the root/page URL, never the highlighted tile, which on a "Download quality"
 sheet read as "copy this rendition", and on YouTube it copied the watch-page
 link already in the address bar). Every other row shows NO button. **Copy URL
 is long-press → multi-select** (`menu_capture_action`, every selected URL one
-per line), list and grid alike; the URL is `CaptureUrlActions.externalUrl` —
+per line), rows and squares alike; the URL is `CaptureUrlActions.externalUrl` —
 the ROOT manifest / page URL, never the highlighted tile (bitrate belongs to
 whatever the URL is handed to). History, two rounds: issue #302 (an
 internet-radio user pasting a stream into VLC) first got a per-row COPY
@@ -1871,7 +1944,7 @@ this sheet's job.
 (`getInFlight()` — incremented at submit, decremented in the run `finally` so
 aborts count too). `BrowserOptionFragment` observes it via
 `BrowserDownloadViewModel.getInflight()` and shows a small brand-orange spinner
-next to the grid/list toggle whenever busy — debounced (show-now + ~500 ms
+in the toolbar whenever busy — debounced (show-now + ~500 ms
 hide-linger so it doesn't strobe; decoupled from the filter chips, so filtering
 to an empty type doesn't hide it). The empty list uses the LCEE loading spinner.
 Fills the gap where a slow capture (e.g. an HLS-master fetch) makes the sheet
@@ -7900,8 +7973,8 @@ here:
   ground state, never assume the photo case. A selected LIST row needs no
   special case at all: its card takes the wash and its placeholder slot IS
   the wash, so the two merge by construction (the glyph floats on the row,
-  the check sits at the far end). Captured
-  (`BrowserOptionAdapter.applyGridGround`): this adapter cannot know up
+  the check sits at the far end). Captured squares
+  (`BrowserOptionAdapter.applySquareGround`): this adapter cannot know up
   front whether a capture's poster/frame will load, so the bind starts in
   the photo state and `GlideHelper.load(entity, options, image,
   FallbackCallback)` flips it from the Glide outcome — synchronously on the
@@ -7997,7 +8070,7 @@ here:
   rewrites. **It lives in `DateUtils`, shared, and must stay there** — the two
   surfaces read a duration from DIFFERENT sources (Downloads from the entity
   field via `secondaryMetaLabel`, Captured from a persisted `FFmpegTagEntity`
-  via `BrowserOptionAdapter.bindSingleTag`), so a private copy in one adapter
+  via `BrowserOptionAdapter.durationFact`), so a private copy in one adapter
   is exactly how they drifted apart the first time this shipped.
 - **A selected FILTER CHIP and a selected SEGMENT of a segmented toggle need
   DIFFERENT tones — same visual role, opposite constraint.** (The buy
@@ -8256,41 +8329,45 @@ here:
   floor of the scale and has to survive a user's font-scale setting, so if a
   tile reads as crowded the fix is **fewer facts** (as dropping size under an
   active chip did), never smaller type. **The peer grid tiles are kept in
-  lockstep** — Captured (`fragment_browser_options_item`), Backups file
-  and transfer tiles all snapped off the off-scale 11.5sp with it.
-- **Grid tile title: hidden for self-identifying image tiles in BOTH Downloads
-  and Captured.** The rule is *not* "images are clutter" — it's
+  lockstep** — Backups file and transfer tiles snapped off the off-scale
+  11.5sp with it (the Captured grid tile did too, before the sheet's
+  redesign replaced it with rows and squares).
+- **Grid tile title: hidden for self-identifying image tiles** (Downloads; the
+  Captured sheet's image squares carry no title at all since its redesign,
+  the same reasoning). The rule is *not* "images are clutter" — it's
   "drop the title only for the one type whose thumbnail fully identifies it."
-  Both `DownloadItemAdapter` and `BrowserOptionAdapter` (Captured) hide
+  `DownloadItemAdapter` hides
   `file_name` in the grid **iff** `isGrid && FileUriHelper.isImage(mimeType)`
   (covers GIF/SVG) — image thumbnails *are* the content and their names are
   almost always junk slugs, so the title is ink over the picture. Everything
   else keeps it: **audio is the load-bearing case** (no real thumbnail — hiding
   the title leaves an unidentifiable mime tile), and video/subtitle/doc
   thumbnails are too weak (black frames, generic glyphs) to discriminate without
-  the name. The list always shows the title (both adapters). Keep this keyed on
+  the name. The list always shows the title. Keep this keyed on
   the **mime** (`isImage`), not on a filename-content heuristic: the old
   "name has no spaces ⇒ junk" test was removed because it misclassifies
   space-less scripts (CJK/Thai) and silently drops real titles. The mime chip
   labels the type in the UNFILTERED grid (where it varies row to row), incl.
   when the title is hidden — but it is **suppressed while a single-type filter
-  chip is active** in BOTH surfaces (`setMimeSuppressed` in both adapters,
-  wired to the chip rails): stamping "VIDEO" on every tile under an active
+  chip is active** (`setMimeSuppressed`, wired to the chip rail; the Captured
+  sheet drops its type labels the same way): stamping "VIDEO" on every tile under an active
   Video filter merely repeats the checked chip. **Presentation flips
   (suppression/density/span) must land WITH the new list, never on the chip
   tap** — the requery is async, and an eager flip re-renders the OLD list in
   the NEW presentation first (on-device: the images mosaic collapsed to
-  normal span-2 image tiles for a beat before the videos arrived). Captured
-  sets the flags silently (`setPresentation`) and applies span+rebind in
-  `submitList`'s commit callback (`submitWithPresentation`); Downloads defers
+  normal span-2 image tiles for a beat before the videos arrived). The
+  Captured sheet now builds the presentation INTO its items in the view model
+  (see "Captured sheet — rows for media, squares for images"), so it lands
+  with the list by construction; Downloads defers
   to the paging load-state listener (`applyPendingPresentation` on refresh
   NotLoading). The rebind-on-change is still required either way: the differ
   won't rebind items that survived a filter flip unchanged. (Captured used to *always* show the title as a pre-download
   decision surface; that was changed to match Downloads — an image tile's slug
   name is noise on the decision surface too.)
-- **Images/GIF filter + grid = the dense bare mosaic.** When the images or GIF
-  chip is the active filter in grid mode, both surfaces switch to a denser
-  span (`image_grid_dense_number`/`browser_grid_dense_number`, 1.5x) of square
+- **Images/GIF filter + grid = the dense bare mosaic** (Downloads; the
+  Captured sheet's equivalent is its always-on image squares). When the images or GIF
+  chip is the active filter in grid mode, Downloads switches to a denser
+  span (`image_grid_dense_number`, 1.5x) of square
   tiles with NO text/chrome at all (dedicated dense layouts + view types —
   `*_GRID_DENSE`/`TYPE_GRID_DENSE`, distinct types because the
   RecycledViewPool keys holders by view type). Images are the one type whose
@@ -8350,10 +8427,10 @@ here:
   banner was added — fixed by switching `WebBookmarkAdapter` to
   `getBindingAdapterPosition()` (the binding position is relative to the row
   adapter, immune to the header offset) + a `NO_POSITION` guard. `DownloadItemAdapter`
-  already does this (it's banner-wrapped). `WebHistoryAdapter` and
-  `BrowserOptionAdapter` still use `getAbsoluteAdapterPosition()` — that's only
-  safe because their fragments set the adapter DIRECTLY (no `ConcatAdapter`); if
-  you ever wrap one in a banner, switch it to the binding position FIRST.
+  already does this (it's banner-wrapped), and so does `BrowserOptionAdapter`.
+  `WebHistoryAdapter` still uses `getAbsoluteAdapterPosition()` — that's only
+  safe because its fragment sets the adapter DIRECTLY (no `ConcatAdapter`); if
+  you ever wrap it in a banner, switch it to the binding position FIRST.
 - **List-row selection chrome is shared across Downloads / Bookmarks / History /
   Captured / Backups / the tab ARCHIVE — keep them identical.** The pattern
   (Files-by-Google): the
@@ -8423,7 +8500,7 @@ here:
     non-incognito context on purpose so the purple grid keeps its coral
     border), `CloudBackupFileAdapter` (the stroke; its two layouts carry
     `app:tint="?attr/brandInk"` on the check because it calls bare
-    `setImageResource`), and the Captured grid/dense layouts' check
+    `setImageResource`), and the Captured square layout's check
     (`app:tint="?attr/brandInk"` — a layout tint OVERRIDES a pre-tinted
     drawable, which is why the adapter-only swap had silently not taken on
     the grid). **A new theme must define `brandInk`** (a layout reading

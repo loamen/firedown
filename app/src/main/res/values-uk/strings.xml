@@ -827,4 +827,27 @@
     <string name="settings_address_bar_host_only_title">Показувати в адресному рядку лише назву сайту</string>
     <string name="settings_address_bar_host_only_summary">Повна адреса з\'являється при натисканні на рядок.</string>
     <string name="security_block_ads_trackers">Блокувати рекламу та трекери</string>
+    <string name="capture_earlier_in_tab">Раніше в цій вкладці</string>
+    <string name="capture_status_saved">Збережено</string>
+    <string name="capture_status_failed">Не вдалося завантажити</string>
+    <string name="capture_status_downloading">Завантаження · %1$d%%</string>
+    <string name="capture_batch_saved">Збережено %1$d з %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d завантажується</item>
+        <item quantity="few">%d завантажуються</item>
+        <item quantity="many">%d завантажуються</item>
+        <item quantity="other">%d завантажуються</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d очікує</item>
+        <item quantity="few">%d очікують</item>
+        <item quantity="many">%d очікують</item>
+        <item quantity="other">%d очікують</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d з помилкою</item>
+        <item quantity="few">%d з помилкою</item>
+        <item quantity="many">%d з помилкою</item>
+        <item quantity="other">%d з помилкою</item>
+    </plurals>
 </resources>

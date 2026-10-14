@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <integer name="browser_list_number">1</integer>
-    <integer name="browser_grid_number">2</integer>
+    <!-- Captured sheet: image squares per line (rows always span the line). -->
+    <integer name="capture_columns">3</integer>
     <integer name="image_grid_number">2</integer>
     <integer name="image_list_number">1</integer>
-    <integer name="browser_grid_dense_number">3</integer>
     <integer name="image_grid_dense_number">3</integer>
 </resources>

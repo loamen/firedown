@@ -1,9 +1,14 @@
 package com.solarized.firedown.ui.adapters;
 
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Typeface;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,506 +18,501 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
 import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.DiffUtil;
+import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.solarized.firedown.GlideHelper;
 import com.solarized.firedown.GlideRequestOptions;
 import com.solarized.firedown.R;
+import com.solarized.firedown.data.capture.CaptureItem;
+import com.solarized.firedown.data.capture.CaptureMark;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.entity.FFmpegTagEntity;
 import com.solarized.firedown.ui.FallbackInks;
 import com.solarized.firedown.ui.OnItemClickListener;
+import com.solarized.firedown.ui.diffs.CaptureItemDiffCallback;
 import com.solarized.firedown.utils.DateUtils;
 import com.solarized.firedown.utils.FileUriHelper;
 import com.solarized.firedown.utils.SelectionStyling;
 import com.solarized.firedown.utils.Utils;
 import com.solarized.firedown.utils.WebUtils;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
+/**
+ * The Captured sheet's adapter: ROWS for media, subtitles and other files,
+ * SQUARES for images, plus the group HEADER and the "Earlier in this tab"
+ * DIVIDER. The view model builds the item list (see {@link CaptureItem});
+ * this class only renders it. Selection is keyed by capture uid, so it
+ * survives the list re-sorting under it.
+ */
+public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.ViewHolder> {
 
-public class BrowserOptionAdapter extends GridListBaseAdapter<BrowserDownloadEntity, BrowserOptionAdapter.ViewHolder> {
+    /** A selection or action-mode change: rebind the selection chrome only. */
+    private static final Object PAYLOAD_SELECTION = new Object();
 
-    private static final String TAG = BrowserOptionAdapter.class.getName();
+    /** Square text shadow, the grid caption's value (DownloadItemAdapter). */
+    private static final int PHOTO_TEXT_SHADOW = 0x80000000;
+    /** Square progress track over a picture: the white of the caption, faint. */
+    private static final int PHOTO_TRACK = 0x4DFFFFFF;
 
-    /** Grid photo-tile text shadow — same value as DownloadItemAdapter's. */
-    private static final int GRID_TEXT_SHADOW = 0x80000000;
-    private static final ColorStateList PHOTO_ACTION_TINT = ColorStateList.valueOf(Color.WHITE);
-    /** Resolved on the first grid bind (needs a Context); see applyGridGround. */
-    @Nullable private FallbackInks mFallbackInks;
     private final OnItemClickListener mOnItemClickListener;
-
     private final HashSet<Integer> mSelected = new HashSet<>();
-
-    private final RequestOptions mRequestOptions;
-
+    private final RequestOptions mRowOptions;
+    private final RequestOptions mSquareOptions;
+    private final int mProgressInk;
+    private final int mProgressTrack;
     private boolean mActionMode;
+    /** Resolved on the first square bind (needs a themed Context). */
+    @Nullable private FallbackInks mFallbackInks;
 
-    /** origin → number of subtitle tracks captured for that video. Supplied by
-     *  the fragment from the unfiltered repository so the CC badge is correct
-     *  regardless of the active chip filter. Empty until set. */
-    private Map<String, Integer> mSubtitleCounts = Collections.emptyMap();
-
-    /** When true, the mime chip is hidden — set while a single-type filter
-     *  chip is active (e.g. the Images view), where stamping "IMAGE" on every
-     *  tile is pure redundancy with the chip rail. */
-    private boolean mSuppressMime;
-
-
-    public BrowserOptionAdapter(Context context, @NonNull DiffUtil.ItemCallback<BrowserDownloadEntity> diffCallback,
-                                OnItemClickListener onItemClickListener, boolean list) {
-        super(diffCallback);
+    public BrowserOptionAdapter(@NonNull Context context, @NonNull OnItemClickListener onItemClickListener) {
+        super(new CaptureItemDiffCallback());
         mOnItemClickListener = onItemClickListener;
-        mList = list;
-        RoundedCorners roundedCorners = new RoundedCorners(
-                context.getResources().getDimensionPixelOffset(R.dimen.card_radius));
-        mRequestOptions = new RequestOptions().apply(RequestOptions.bitmapTransform(roundedCorners));
+        int radius = context.getResources().getDimensionPixelOffset(R.dimen.card_radius);
+        mRowOptions = new RequestOptions().apply(RequestOptions.bitmapTransform(new RoundedCorners(radius)));
+        // A square crops to its own (square) size BEFORE rounding: rounding the
+        // decoded bitmap and letting the ImageView crop it would cut the
+        // rounded corners off any picture that isn't square.
+        mSquareOptions = new RequestOptions().transform(new CenterCrop(), new RoundedCorners(radius));
+        mProgressInk = ContextCompat.getColor(context, R.color.progress_indicator);
+        mProgressTrack = ColorUtils.setAlphaComponent(
+                MaterialColors.getColor(context, android.R.attr.colorPrimary, Color.BLACK), 0x33);
     }
 
+    /** The span a position takes on the sheet's 3-column grid. */
+    public int spanSize(int position, int spanCount) {
+        if (position < 0 || position >= getItemCount()) return spanCount;
+        return getItem(position).type == CaptureItem.TYPE_SQUARE ? 1 : spanCount;
+    }
 
-    /**
-     * Supply the origin → subtitle-count map. Call before/alongside
-     * {@link #submitList} so the CC badge binds with fresh counts. A null
-     * argument clears the map.
-     */
-    public void setSubtitleCounts(@Nullable Map<String, Integer> counts) {
-        mSubtitleCounts = counts != null ? counts : Collections.emptyMap();
+    @Nullable
+    public CaptureItem getItemAt(int position) {
+        if (position < 0 || position >= getItemCount()) return null;
+        return getItem(position);
+    }
+
+    /** The capture at a position, or null for a header, the divider or a
+     *  stale position. */
+    @Nullable
+    public BrowserDownloadEntity getEntityAt(int position) {
+        CaptureItem item = getItemAt(position);
+        return item != null ? item.entity : null;
     }
 
     /**
-     * SILENT combined setter for the filter-driven presentation flags
-     * (mime suppression + dense mosaic). Used by the downloads observer so
-     * the flags flip together with the NEW list's commit rather than
-     * instantly: the chip tap's requery is async, and a notifying setter
-     * fired from the tap rebinds the OLD list in the new presentation
-     * first (the images briefly re-render as normal span-2 tiles before
-     * the videos arrive). The caller owns the rebind — when this returns
-     * true, submit the new list with a commit callback that updates the
-     * span count and calls notifyDataSetChanged, so items that survived
-     * the diff take the new presentation too.
-     *
-     * @return whether either flag actually changed.
+     * Glide options for a capture's thumbnail, shared by the bind and the
+     * fragment's preloader so the preload-warmed bitmap and the bind-time
+     * request resolve to the same cache key. A clone every time: RequestOptions
+     * mutates in place, and the shared base would otherwise carry the last
+     * capture's metadata into the next request.
      */
-    public boolean setPresentation(boolean suppressMime, boolean dense) {
-        boolean changed = mSuppressMime != suppressMime || mDense != dense;
-        mSuppressMime = suppressMime;
-        mDense = dense;
-        return changed;
+    @NonNull
+    public RequestOptions optionsFor(@NonNull BrowserDownloadEntity entity, boolean square) {
+        String fileUrl = entity.getFileUrl();
+        return (square ? mSquareOptions : mRowOptions).clone()
+                .set(GlideRequestOptions.MIMETYPE, resolveMimeType(entity.getMimeType(), fileUrl))
+                .set(GlideRequestOptions.FILEPATH, fileUrl)
+                .set(GlideRequestOptions.HEADERS, entity.getFileHeaders())
+                .set(GlideRequestOptions.KEY, String.valueOf(entity.getUid()));
     }
 
     @Override
-    public void onViewRecycled(@NonNull ViewHolder holder) {
+    public int getItemViewType(int position) {
+        return getItem(position).type;
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
         super.onViewRecycled(holder);
-        GlideHelper.clearSafe(holder.image);
+        if (holder instanceof CaptureHolder capture) {
+            GlideHelper.clearSafe(capture.image);
+        }
     }
 
     // ── ViewHolder creation ──────────────────────────────────────────────
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        int layoutRes;
-        if (viewType == TYPE_LIST) {
-            layoutRes = R.layout.fragment_browser_options_item_list;
-        } else if (viewType == TYPE_GRID_DENSE) {
-            // Images-only filter active: square bare tile (thumbnail +
-            // selection checkmark only) — see the layout's header comment.
-            layoutRes = R.layout.fragment_browser_options_item_dense;
-        } else {
-            layoutRes = R.layout.fragment_browser_options_item;
-        }
-        View view = LayoutInflater.from(parent.getContext()).inflate(layoutRes, parent, false);
-        return new ViewHolder(view, mOnItemClickListener, viewType == TYPE_LIST);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        return switch (viewType) {
+            case CaptureItem.TYPE_SQUARE -> new SquareHolder(
+                    inflater.inflate(R.layout.fragment_browser_options_square, parent, false),
+                    mOnItemClickListener);
+            case CaptureItem.TYPE_HEADER -> new HeaderHolder(
+                    inflater.inflate(R.layout.fragment_browser_options_section_header, parent, false));
+            case CaptureItem.TYPE_DIVIDER -> new DividerHolder(
+                    inflater.inflate(R.layout.fragment_browser_options_section_divider, parent, false));
+            default -> new RowHolder(
+                    inflater.inflate(R.layout.fragment_browser_options_item_list, parent, false),
+                    mOnItemClickListener);
+        };
     }
-
 
     // ── Binding ──────────────────────────────────────────────────────────
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        BrowserDownloadEntity entity = getItem(position);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position,
+                                 @NonNull List<Object> payloads) {
+        if (payloads.isEmpty() || !(holder instanceof CaptureHolder capture)) {
+            onBindViewHolder(holder, position);
+            return;
+        }
+        CaptureItem item = getItem(position);
+        for (Object payload : payloads) {
+            if (payload != CaptureItemDiffCallback.PAYLOAD_MARK && payload != PAYLOAD_SELECTION) {
+                onBindViewHolder(holder, position);
+                return;
+            }
+        }
+        if (payloads.contains(PAYLOAD_SELECTION)) {
+            bindSelection(capture, item);
+        }
+        if (payloads.contains(CaptureItemDiffCallback.PAYLOAD_MARK)) {
+            if (capture instanceof RowHolder row) {
+                bindRowMark(row, item);
+            } else if (capture instanceof SquareHolder square) {
+                bindSquareMark(square, item);
+            }
+        }
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        CaptureItem item = getItem(position);
+        if (holder instanceof RowHolder row) {
+            bindRow(row, item);
+        } else if (holder instanceof SquareHolder square) {
+            bindSquare(square, item);
+        } else if (holder instanceof HeaderHolder header) {
+            header.count.setText(String.format(Locale.getDefault(), "%d", item.count));
+        }
+    }
+
+    private void bindRow(@NonNull RowHolder holder, @NonNull CaptureItem item) {
+        BrowserDownloadEntity entity = item.entity;
+        if (entity == null) return;
         Context context = holder.itemView.getContext();
 
-        String fileOrigin = entity.getFileOrigin();
-        String fileUrl = entity.getFileUrl();
-        String mimeType = resolveMimeType(entity.getMimeType(), fileUrl);
-        String domain = WebUtils.getDomainName(TextUtils.isEmpty(fileOrigin) ? fileUrl : fileOrigin);
-        String key = String.valueOf(entity.getUid());
+        holder.boundUid = entity.getUid();
+        holder.setTextOrHide(holder.fileName, entity.getFileName());
 
-        boolean selected = mSelected.contains(entity.getUid());
         // The row's ONE action slot carries the ⋮ of a multi-variant capture
-        // (→ the quality picker) and NOTHING else. It used to show a COPY
-        // glyph on every other list row (issue #302's one-tap copy); removed
-        // at the maintainer's request — a glyph on every row of a sheet
-        // where most rows are page images nobody copies was noise, the same
-        // call the grid had already made. Copy URL lives behind long-press →
-        // multi-select (menu_capture_action), for list and grid alike. The
-        // in-sheet Copy/Share/Open menu page that once sat between the ⋮ and
-        // the picker is gone too (see CaptureUrlActions). The glyph +
-        // accessible name are set in EVERY bind (the holder recycles — the
-        // one-sided-set trap); the screen reader once announced the button
-        // as a bare "Button", so the contentDescription is load-bearing.
-        boolean hasVariants = entity.getHasVariants();
-        boolean hasActions = hasVariants;
-        if (holder.more != null && hasActions) {
-            holder.more.setIconResource(R.drawable.ic_baseline_more_vert_24);
-            holder.more.setContentDescription(context.getString(R.string.capture_show_variants));
+        // (→ the quality picker) and nothing else; see BrowserOptionFragment's
+        // onItemClick. Copy URL lives behind long-press → multi-select. The
+        // accessible name is set in every bind (the holder recycles) — the
+        // screen reader once announced the button as a bare "Button".
+        holder.hasVariants = entity.getHasVariants();
+        holder.more.setIconResource(R.drawable.ic_baseline_more_vert_24);
+        holder.more.setContentDescription(context.getString(R.string.capture_show_variants));
+
+        GlideHelper.load(entity, optionsFor(entity, false), holder.image);
+        bindSelection(holder, item);
+        bindRowMark(holder, item);
+    }
+
+    /** The meta line and the progress bar: everything a mark changes. */
+    private void bindRowMark(@NonNull RowHolder holder, @NonNull CaptureItem item) {
+        Context context = holder.itemView.getContext();
+        holder.meta.setText(rowMeta(context, item));
+        holder.meta.setVisibility(holder.meta.length() > 0 ? View.VISIBLE : View.GONE);
+        bindProgress(holder.progress, item.mark, mProgressTrack);
+    }
+
+    /**
+     * "[status] · [TYPE] · facts · [domain]" — one line, one spannable.
+     * The status leads because it is the one thing on the line that changes;
+     * while a download runs it replaces the type label (the line is about the
+     * download then, and "Downloading · 42% · VIDEO · 720p" would wrap).
+     */
+    @NonNull
+    private CharSequence rowMeta(@NonNull Context context, @NonNull CaptureItem item) {
+        BrowserDownloadEntity entity = item.entity;
+        SpannableStringBuilder text = new SpannableStringBuilder();
+        if (entity == null) return text;
+        CaptureMark mark = item.mark;
+        boolean downloading = mark != null && mark.state == CaptureMark.PROGRESS;
+        if (mark != null) {
+            appendStyled(text, statusText(context, mark), statusColor(context, mark), Typeface.BOLD, 0);
+        }
+        if (item.showType && !downloading) {
+            String label = FileUriHelper.getLongMimeText(context, entity.getMimeType());
+            if (!TextUtils.isEmpty(label)) {
+                // MimePrimaryLabel's look, as spans: 11sp bold caps in onSurface.
+                appendStyled(text, label.toUpperCase(Locale.getDefault()),
+                        MaterialColors.getColor(context,
+                                com.google.android.material.R.attr.colorOnSurface, Color.BLACK),
+                        Typeface.BOLD,
+                        context.getResources().getDimensionPixelSize(R.dimen.capture_type_label_size));
+            }
+        }
+        appendFact(text, primaryFact(entity));
+        appendFact(text, durationFact(entity));
+        if (item.captionCount > 0) {
+            appendStyled(text, context.getString(R.string.caption_count_badge, item.captionCount),
+                    MaterialColors.getColor(context, android.R.attr.colorPrimary, Color.BLACK),
+                    Typeface.NORMAL, 0);
+        }
+        if (item.showDomain) {
+            String origin = entity.getFileOrigin();
+            appendFact(text, WebUtils.getDomainName(TextUtils.isEmpty(origin) ? entity.getFileUrl() : origin));
+        }
+        return text;
+    }
+
+    private void bindSquare(@NonNull SquareHolder holder, @NonNull CaptureItem item) {
+        BrowserDownloadEntity entity = item.entity;
+        if (entity == null) return;
+        Context context = holder.itemView.getContext();
+        if (mFallbackInks == null) {
+            mFallbackInks = FallbackInks.resolve(context);
         }
 
-        // ── Selection state ──────────────────────────────────────────────
-        // List mirrors Downloads/Bookmarks/History: a tonal WASH on the card
-        // root (no stroke, no row reflow) plus the check overlaid in the
-        // more-button's slot (swapped for the button in action mode — see the
-        // more-button handling below). Grid/dense keep their corner check +
-        // 2dp stroke: their tiles have no more-button slot to borrow and a
-        // full-tile wash would fight the thumbnail.
-        // Ink, not a fill: this paints the grid tile's stroke and corner check
-        // over arbitrary artwork, so it takes colorPrimary rather than
-        // colorPrimaryContainer (now a proper container tone that would vanish
-        // there). The LIST branch below washes via SelectionStyling, which
-        // resolves the same accent.
-        // The shared selection chrome — check, radio, the grid tile's stroke —
-        // in the theme's brandInk (SelectionStyling). Resolved off THIS
-        // context on purpose: the sheet inflates under the incognito overlay
-        // in a private tab, whose brandInk is its own primary.
-        int colorSelected = SelectionStyling.selectionInk(context);
-        boolean washSelected = mActionMode && selected;
+        // Dimensions, led by GIF / SVG while unfiltered: under the "Images"
+        // header a plain image needs no label, but a GIF among them is worth
+        // knowing. The resolution stays under a chip too (it's the one fact a
+        // picture's thumbnail doesn't show).
+        String mime = entity.getMimeType();
+        String label = item.showType && (FileUriHelper.isGIF(mime) || FileUriHelper.isSVG(mime))
+                ? FileUriHelper.getLongMimeText(context, mime).toUpperCase(Locale.getDefault())
+                : null;
+        String caption = joinFacts(label, primaryFact(entity));
+        holder.setTextOrHide(holder.caption, caption);
+        holder.item.setContentDescription(entity.getFileName());
 
-        if (holder.isList) {
-            // Wash layered over surfaceContainerLow (this row's resting bg,
-            // unlike Downloads' transparent card) so the selected tint reads
-            // the same against the bottom sheet.
-            holder.item.setCardBackgroundColor(washSelected
+        final int boundUid = entity.getUid();
+        holder.boundUid = boundUid;
+        holder.photo = true;
+        applySquareGround(holder);
+        GlideHelper.load(entity, optionsFor(entity, true), holder.image, fallback -> {
+            if (holder.boundUid == boundUid) {
+                holder.photo = !fallback;
+                applySquareGround(holder);
+            }
+        });
+        bindSelection(holder, item);
+        bindSquareMark(holder, item);
+    }
+
+    private void bindSquareMark(@NonNull SquareHolder holder, @NonNull CaptureItem item) {
+        Context context = holder.itemView.getContext();
+        CaptureMark mark = item.mark;
+        int badge = 0;
+        if (mark != null) {
+            badge = switch (mark.state) {
+                case CaptureMark.SAVED -> R.drawable.capture_badge_saved;
+                case CaptureMark.PENDING -> R.drawable.capture_badge_pending;
+                case CaptureMark.FAILED -> R.drawable.capture_badge_failed;
+                default -> 0;
+            };
+        }
+        if (badge != 0) {
+            holder.badge.setImageResource(badge);
+            holder.badge.setContentDescription(statusText(context, mark));
+            holder.badge.setVisibility(View.VISIBLE);
+        } else {
+            holder.badge.setImageDrawable(null);
+            holder.badge.setContentDescription(null);
+            holder.badge.setVisibility(View.GONE);
+        }
+        bindProgress(holder.progress, mark, holder.photo ? PHOTO_TRACK : mProgressTrack);
+        holder.bottomBlock.setVisibility(
+                holder.caption.getVisibility() == View.VISIBLE || badge != 0 ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * The square's caption ink follows what the slot ends up showing: white
+     * with a shadow over the scrim on a picture, FallbackInks on the mime
+     * placeholder (dark on the light theme's wash), with no scrim there — a
+     * gradient over a flat colour is a smudge. The badge glyph carries its own
+     * baked shadow, which reads on both. Same rule as the grid tiles'
+     * applyGridGround.
+     */
+    private void applySquareGround(@NonNull SquareHolder holder) {
+        if (mFallbackInks == null) return;
+        if (holder.photo) {
+            holder.bottomBlock.setBackgroundResource(R.drawable.bottom_scrim);
+            holder.caption.setTextColor(Color.WHITE);
+            holder.caption.setShadowLayer(2f, 0f, 1f, PHOTO_TEXT_SHADOW);
+        } else {
+            holder.bottomBlock.setBackground(null);
+            holder.caption.setTextColor(mFallbackInks.label);
+            holder.caption.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT);
+        }
+        if (holder.progress.getVisibility() == View.VISIBLE) {
+            holder.progress.setTrackColor(holder.photo ? PHOTO_TRACK : mProgressTrack);
+        }
+    }
+
+    private void bindProgress(@NonNull LinearProgressIndicator progress, @Nullable CaptureMark mark,
+                              int track) {
+        if (mark == null || mark.state != CaptureMark.PROGRESS) {
+            progress.setVisibility(View.GONE);
+            return;
+        }
+        progress.setIndicatorColor(mProgressInk);
+        progress.setTrackColor(track);
+        // Only on a real change: re-setting it restarts the indeterminate
+        // animation, and a mark payload arrives on every progress tick.
+        if (progress.isIndeterminate() != mark.indeterminate) {
+            progress.setIndeterminate(mark.indeterminate);
+        }
+        if (!mark.indeterminate) {
+            progress.setProgressCompat(mark.percent, progress.getVisibility() == View.VISIBLE);
+        }
+        progress.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * Selection chrome, matching Downloads/Bookmarks/History: a ROW gets the
+     * tonal wash on its card plus the check in the ⋮'s slot (the ⋮ goes
+     * INVISIBLE, holding the width, so nothing reflows); a SQUARE gets the 2dp
+     * stroke plus the corner check — no slot to borrow, and a wash would fight
+     * the picture. Ink is brandInk (SelectionStyling), resolved off the holder's
+     * own context: in a private tab the sheet inflates under the incognito
+     * overlay, whose brandInk is its own.
+     */
+    private void bindSelection(@NonNull CaptureHolder holder, @NonNull CaptureItem item) {
+        Context context = holder.itemView.getContext();
+        boolean selected = mActionMode && mSelected.contains(item.uid());
+        holder.checkedView.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
+        holder.checkedView.setImageDrawable(!mActionMode ? null
+                : selected ? SelectionStyling.checkedDrawable(context)
+                : SelectionStyling.uncheckedDrawable(context));
+        if (holder instanceof RowHolder row) {
+            row.item.setCardBackgroundColor(selected
                     ? SelectionStyling.selectedCardWashOver(context,
                             com.google.android.material.R.attr.colorSurfaceContainerLow)
                     : MaterialColors.getColor(context,
                             com.google.android.material.R.attr.colorSurfaceContainerLow,
                             Color.TRANSPARENT));
+            row.more.setVisibility(mActionMode ? View.INVISIBLE
+                    : (row.hasVariants ? View.VISIBLE : View.GONE));
         } else {
-            holder.item.setStrokeColor(washSelected ? colorSelected : Color.TRANSPARENT);
-        }
-        holder.checkedView.setVisibility(mActionMode ? View.VISIBLE : View.GONE);
-
-        if (mActionMode) {
-            holder.checkedView.setImageDrawable(selected
-                    ? SelectionStyling.checkedDrawable(context)
-                    : SelectionStyling.uncheckedDrawable(context));
-        } else {
-            holder.checkedView.setImageDrawable(null);
-        }
-
-        // ── Common bindings ──────────────────────────────────────────────
-        // List mode renders mime as a text label that prefixes the
-        // domain ('VÍDEO · m.youtube.com'); grid renders it as a filled
-        // chip in the bottom metadata row. Hide the view entirely if the
-        // mime resolves to empty so the row doesn't render a stray ' · '.
-        // The dense tile carries no mime view at all (null-guarded — the
-        // active images filter already states the type).
-        if (holder.mimeText != null) {
-            String mimeLabel = FileUriHelper.getLongMimeText(context, entity.getMimeType());
-            if (mSuppressMime || TextUtils.isEmpty(mimeLabel)) {
-                // Suppressed while a single-type filter is active (chip rail
-                // already states the type), or when the mime resolves to empty.
-                holder.mimeText.setVisibility(View.GONE);
-            } else {
-                holder.mimeText.setVisibility(View.VISIBLE);
-                holder.mimeText.setText(holder.isList ? mimeLabel + " · " : mimeLabel);
-            }
-        }
-
-        RequestOptions options = mRequestOptions
-                .set(GlideRequestOptions.MIMETYPE, mimeType)
-                .set(GlideRequestOptions.FILEPATH, fileUrl)
-                .set(GlideRequestOptions.HEADERS, entity.getFileHeaders())
-                .set(GlideRequestOptions.KEY, key);
-        // The grid tile's caption ink follows what the slot ends up showing:
-        // white over the scrim for a photo, FallbackInks on the mime
-        // placeholder (dark on the light theme's cream). Unlike Downloads,
-        // this adapter cannot know up front — a capture's poster fetch or
-        // frame decode can fail — so the bind starts in the photo state and
-        // Glide's outcome flips it, guarded on the holder still binding the
-        // same capture (the callback lands after a recycle otherwise).
-        final long boundUid = entity.getUid();
-        holder.boundUid = boundUid;
-        applyGridGround(holder, false);
-        GlideHelper.load(entity, options, holder.image, fallback -> {
-            if (holder.boundUid == boundUid) {
-                applyGridGround(holder, fallback);
-            }
-        });
-
-        // ── Tags ─────────────────────────────────────────────────────────
-        bindTags(context, holder, entity);
-
-        // Title: list shows it as the primary row text; grid as a one-line
-        // overlay in the bottom scrim. In the GRID, hide it for self-identifying
-        // image tiles (incl. GIF/SVG) — same rule as Downloads: the thumbnail IS
-        // the content and the name is almost always a junk slug, so the title is
-        // just ink over the picture. Everything else (audio/video/docs/subs) and
-        // the list always keep it; a non-empty real title in a space-less script
-        // is still shown (we don't junk-test the name itself).
-        if (!holder.isList && FileUriHelper.isImage(mimeType)) {
-            holder.setTextOrHide(holder.fileName, null);
-        } else {
-            holder.setTextOrHide(holder.fileName, entity.getFileName());
-        }
-
-        // ── Layout-specific bindings ─────────────────────────────────────
-        // The dense tile has no variants/more button (null-guarded): images
-        // carry no variants, and the per-item affordances live behind tap
-        // (download) and long-press (selection).
-        if (holder.isList) {
-            holder.setTextOrHide(holder.fileUrl, domain);
-            if (holder.more != null) {
-                // In action mode the check overlays the more-button slot, so
-                // keep the button present-but-INVISIBLE: it holds the slot
-                // width so the check lands in place and the row doesn't
-                // reflow (mirrors fragment_download_item's action-button swap).
-                // Outside action mode it shows whenever the slot has an
-                // action (see hasActions above).
-                holder.more.setVisibility(mActionMode ? View.INVISIBLE
-                        : (hasActions ? View.VISIBLE : View.GONE));
-            }
-        } else if (holder.more != null) {
-            int actionVisibility = !mActionMode && hasActions ? View.VISIBLE : View.GONE;
-            holder.more.setEnabled(!mActionMode);
-            holder.more.setVisibility(actionVisibility);
-            // The tint is owned by applyGridGround (photo → white, placeholder
-            // → FallbackInks.action), which runs from the Glide outcome.
+            holder.item.setStrokeColor(selected ? SelectionStyling.selectionInk(context) : Color.TRANSPARENT);
         }
     }
+
+    // ── Facts ────────────────────────────────────────────────────────────
 
     /**
-     * The Captured grid tile's dim + caption ink, keyed on whether the slot
-     * shows a real picture or the mime placeholder — the same rule as
-     * {@code DownloadItemAdapter.applyGridTileGround}, see its javadoc. A
-     * photo keeps the layout's own white set + the bottom_scrim + the text
-     * shadow; the placeholder drops the scrim and shadow (a gradient over a
-     * flat colour is a smudge) and takes {@link FallbackInks} — a no-op by
-     * value in dark theme, dark ink on the cream in light. The list row and
-     * the dense mosaic tile have no caption block (null-guarded).
+     * The capture's leading fact: video quality ("1080p"), image dimensions,
+     * or a subtitle's language — whichever tag the parser set, the last one
+     * winning as it always did; an untyped tag only when none of those exist.
      */
-    private void applyGridGround(@NonNull ViewHolder holder, boolean fallback) {
-        if (holder.isList || holder.bottomBlock == null) return;
-        if (mFallbackInks == null) {
-            mFallbackInks = FallbackInks.resolve(holder.itemView.getContext());
-        }
-        boolean photo = !fallback;
-        if (photo) {
-            holder.bottomBlock.setBackgroundResource(R.drawable.bottom_scrim);
-        } else {
-            holder.bottomBlock.setBackground(null);
-        }
-        float radius = photo ? 2f : 0f;
-        int shadow = photo ? GRID_TEXT_SHADOW : Color.TRANSPARENT;
-        setInk(holder.fileName, photo ? holder.photoTitle : mFallbackInks.title, radius, shadow);
-        setInk(holder.mimeText, photo ? holder.photoLabel : mFallbackInks.label, radius, shadow);
-        setInk(holder.tagQuality, photo ? holder.photoFact : mFallbackInks.meta, radius, shadow);
-        setInk(holder.tagDuration, photo ? holder.photoFact : mFallbackInks.meta, radius, shadow);
-        setInk(holder.tagCc, photo ? holder.photoCc : mFallbackInks.status, radius, shadow);
-        setInk(holder.mimeSeparator, photo ? holder.photoSeparator : mFallbackInks.meta, radius, shadow);
-        setInk(holder.tagSeparator, photo ? holder.photoSeparator : mFallbackInks.meta, radius, shadow);
-        setInk(holder.tagCcSeparator, photo ? holder.photoSeparator : mFallbackInks.meta, radius, shadow);
-        if (holder.more != null) {
-            holder.more.setIconTint(photo ? PHOTO_ACTION_TINT : mFallbackInks.action);
-        }
-    }
-
-    private static void setInk(@Nullable View view, int color, float radius, int shadow) {
-        if (view instanceof TextView tv) {
-            tv.setTextColor(color);
-            tv.setShadowLayer(radius, 0f, 1f, shadow);
-        }
-    }
-
-
-    // ── Tag binding (works for both grid and list) ───────────────────────
-
-    /**
-     * Routes each typed tag to the correct static TextView. Both layouts expose
-     * the same tag_quality / tag_duration IDs. All tag labels are the tag's
-     * pre-resolved persisted text.
-     */
-    private void bindTags(@NonNull Context context,
-                          @NonNull ViewHolder holder,
-                          @NonNull BrowserDownloadEntity entity) {
-        // tagDuration is the one slot present in both layouts; tagQuality is
-        // omitted from the grid tile (no room beside the title), so it's
-        // null-checked everywhere below rather than required up front.
-        if (holder.tagDuration == null) return;
-
-        // Reset
-        if (holder.mimeSeparator != null) {
-            holder.mimeSeparator.setVisibility(View.GONE);
-        }
-        if (holder.tagQuality != null) {
-            holder.tagQuality.setVisibility(View.GONE);
-        }
-        holder.tagDuration.setVisibility(View.GONE);
-        if (holder.tagSeparator != null) {
-            holder.tagSeparator.setVisibility(View.GONE);
-        }
-        if (holder.tagCc != null) {
-            holder.tagCc.setVisibility(View.GONE);
-        }
-        if (holder.tagCcSeparator != null) {
-            holder.tagCcSeparator.setVisibility(View.GONE);
-        }
-
+    @Nullable
+    private static String primaryFact(@NonNull BrowserDownloadEntity entity) {
         List<FFmpegTagEntity> tags = entity.getTags();
-        if (tags != null && !tags.isEmpty()) {
-            for (FFmpegTagEntity tag : tags) {
-                bindSingleTag(context, holder, tag);
-            }
-
-            // Show separator only when both slots are visible
-            if (holder.tagSeparator != null
-                    && holder.tagQuality != null
-                    && holder.tagQuality.getVisibility() == View.VISIBLE
-                    && holder.tagDuration.getVisibility() == View.VISIBLE) {
-                holder.tagSeparator.setVisibility(View.VISIBLE);
+        if (tags == null) return null;
+        String primary = null;
+        String untyped = null;
+        for (FFmpegTagEntity tag : tags) {
+            if (tag == null || TextUtils.isEmpty(tag.getText())) continue;
+            switch (tag.getType()) {
+                case FFmpegTagEntity.TYPE_QUALITY, FFmpegTagEntity.TYPE_RESOLUTION,
+                     FFmpegTagEntity.TYPE_LANGUAGE -> primary = tag.getText();
+                case FFmpegTagEntity.TYPE_DURATION -> { }
+                default -> {
+                    if (untyped == null) untyped = tag.getText();
+                }
             }
         }
+        return primary != null ? primary : untyped;
+    }
 
-        bindCaptionBadge(context, holder, entity);
+    /** Duration, trimmed at render exactly as Downloads does
+     *  (DateUtils.compactDuration: "00:00:11" → "0:11"). */
+    @Nullable
+    private static String durationFact(@NonNull BrowserDownloadEntity entity) {
+        List<FFmpegTagEntity> tags = entity.getTags();
+        if (tags == null) return null;
+        for (FFmpegTagEntity tag : tags) {
+            if (tag != null && tag.getType() == FFmpegTagEntity.TYPE_DURATION
+                    && !TextUtils.isEmpty(tag.getText())) {
+                return DateUtils.compactDuration(tag.getText());
+            }
+        }
+        return null;
+    }
 
-        // The mime is plain text now (the chip and its marginEnd are gone — see
-        // the MimePrimary style header), so the gap to the first fact comes from
-        // this separator, shown only when BOTH sides are visible. Runs last:
-        // every fact slot has settled by here, including the CC badge.
-        if (holder.mimeSeparator != null && holder.mimeText != null) {
-            boolean anyFact = (holder.tagQuality != null
-                            && holder.tagQuality.getVisibility() == View.VISIBLE)
-                    || holder.tagDuration.getVisibility() == View.VISIBLE
-                    || (holder.tagCc != null && holder.tagCc.getVisibility() == View.VISIBLE);
-            boolean mimeShown = holder.mimeText.getVisibility() == View.VISIBLE;
-            holder.mimeSeparator.setVisibility(anyFact && mimeShown ? View.VISIBLE : View.GONE);
+    @NonNull
+    private static String statusText(@NonNull Context context, @NonNull CaptureMark mark) {
+        return switch (mark.state) {
+            case CaptureMark.PROGRESS -> mark.finishing
+                    ? context.getString(R.string.download_finishing)
+                    : mark.indeterminate
+                            ? context.getString(R.string.downloading)
+                            : context.getString(R.string.capture_status_downloading, mark.percent);
+            case CaptureMark.PENDING -> context.getString(R.string.download_queued);
+            case CaptureMark.SAVED -> context.getString(R.string.capture_status_saved);
+            default -> context.getString(R.string.capture_status_failed);
+        };
+    }
+
+    /** Progress in the progress ink (the bar's own colour), a failure in the
+     *  error colour, saved and pending in plain onSurface — the bold weight
+     *  already sets them apart from the facts. */
+    private int statusColor(@NonNull Context context, @NonNull CaptureMark mark) {
+        return switch (mark.state) {
+            case CaptureMark.PROGRESS -> mProgressInk;
+            case CaptureMark.FAILED -> MaterialColors.getColor(context,
+                    androidx.appcompat.R.attr.colorError, Color.RED);
+            default -> MaterialColors.getColor(context,
+                    com.google.android.material.R.attr.colorOnSurface, Color.BLACK);
+        };
+    }
+
+    private static void appendFact(@NonNull SpannableStringBuilder text, @Nullable String fact) {
+        if (TextUtils.isEmpty(fact)) return;
+        if (text.length() > 0) text.append(" · ");
+        text.append(fact);
+    }
+
+    private static void appendStyled(@NonNull SpannableStringBuilder text, @NonNull String value,
+                                     int color, int style, int sizePx) {
+        if (value.isEmpty()) return;
+        if (text.length() > 0) text.append(" · ");
+        int start = text.length();
+        text.append(value);
+        int end = text.length();
+        text.setSpan(new ForegroundColorSpan(color), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (style != Typeface.NORMAL) {
+            text.setSpan(new StyleSpan(style), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        if (sizePx > 0) {
+            text.setSpan(new AbsoluteSizeSpan(sizePx), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
     }
 
-    /**
-     * Shows a "CC N" badge on a video row when the parser captured subtitle
-     * tracks for that video. Count comes from {@link #mSubtitleCounts} (built
-     * from the unfiltered repository), keyed by origin. The badge must land on
-     * the VIDEO only: captions belong to a video, and the count is keyed on the
-     * page origin, so every other capture from the same page (thumbnail-sprite
-     * images, a player-logo SVG, poster images, audio) shares that origin and
-     * would otherwise wrongly inherit the badge — the "CC 1 on a PNG / SVG" bug.
-     */
-    private void bindCaptionBadge(@NonNull Context context,
-                                  @NonNull ViewHolder holder,
-                                  @NonNull BrowserDownloadEntity entity) {
-        if (holder.tagCc == null) return;
-        // Captions attach to a video; gate strictly on the video mime so a
-        // same-origin image/SVG/audio capture never inherits the count.
-        if (!FileUriHelper.isVideo(entity.getMimeType())) return;
-
-        String origin = entity.getFileOrigin();
-        if (TextUtils.isEmpty(origin)) return;
-
-        Integer count = mSubtitleCounts.get(origin);
-        if (count == null || count <= 0) return;
-
-        holder.tagCc.setText(context.getString(R.string.caption_count_badge, count));
-        holder.tagCc.setVisibility(View.VISIBLE);
-
-        // List layout separates tags with a "·"; show the CC separator only
-        // when a quality/duration tag precedes it. Grid has no separator view.
-        if (holder.tagCcSeparator != null
-                && ((holder.tagQuality != null && holder.tagQuality.getVisibility() == View.VISIBLE)
-                    || holder.tagDuration.getVisibility() == View.VISIBLE)) {
-            holder.tagCcSeparator.setVisibility(View.VISIBLE);
-        }
-    }
-
-    /**
-     * Renders a single tag into the appropriate view slot based on its type.
-     * All types use the tag's persisted text.
-     */
-    private void bindSingleTag(@NonNull Context context,
-                               @NonNull ViewHolder holder,
-                               @NonNull FFmpegTagEntity tag) {
-        switch (tag.getType()) {
-            case FFmpegTagEntity.TYPE_DURATION:
-                if (!TextUtils.isEmpty(tag.getText())) {
-                    // Trimmed at render, exactly as the Downloads row/tile does
-                    // (DownloadItemAdapter.secondaryMetaLabel) — "00:00:11"
-                    // spends two fields on zeros. Shared helper on purpose: the
-                    // two surfaces read their duration from different places
-                    // (this persisted tag vs. the entity field), which is how
-                    // they drifted apart when the trim was added to one of them.
-                    // The tag's stored text is untouched.
-                    holder.tagDuration.setText(DateUtils.compactDuration(tag.getText()));
-                    holder.tagDuration.setVisibility(View.VISIBLE);
-                }
-                break;
-
-            case FFmpegTagEntity.TYPE_QUALITY:
-                // Video quality (e.g. "1080p") — shown in BOTH layouts. In the
-                // grid it leads the meta row as "[mime] quality · duration"
-                // (the separator is bound only when duration is also present).
-                if (holder.tagQuality != null && !TextUtils.isEmpty(tag.getText())) {
-                    holder.tagQuality.setText(tag.getText());
-                    holder.tagQuality.setVisibility(View.VISIBLE);
-                }
-                break;
-
-            case FFmpegTagEntity.TYPE_RESOLUTION:
-                // Image dimensions (e.g. "320x180") — useful at a glance and
-                // compact, so shown in both layouts.
-                if (holder.tagQuality != null && !TextUtils.isEmpty(tag.getText())) {
-                    holder.tagQuality.setText(tag.getText());
-                    holder.tagQuality.setVisibility(View.VISIBLE);
-                }
-                break;
-
-            case FFmpegTagEntity.TYPE_LANGUAGE:
-                // Subtitle language (e.g. "English", "English (auto)"). Subtitle
-                // rows carry no quality/duration, so the quality slot is free;
-                // shown in both layouts so the language is visible at a glance.
-                if (holder.tagQuality != null && !TextUtils.isEmpty(tag.getText())) {
-                    holder.tagQuality.setText(tag.getText());
-                    holder.tagQuality.setVisibility(View.VISIBLE);
-                }
-                break;
-
-            case FFmpegTagEntity.TYPE_UNKNOWN:
-            default:
-                // Graceful fallback: render in the quality slot if still empty.
-                // Iteration order matters — a TYPE_UNKNOWN tag processed before
-                // a TYPE_QUALITY tag will be overwritten by it (desired).
-                if (holder.tagQuality != null
-                        && !TextUtils.isEmpty(tag.getText())
-                        && holder.tagQuality.getVisibility() == View.GONE) {
-                    holder.tagQuality.setText(tag.getText());
-                    holder.tagQuality.setVisibility(View.VISIBLE);
-                }
-                break;
-        }
+    @Nullable
+    private static String joinFacts(@Nullable String a, @Nullable String b) {
+        if (TextUtils.isEmpty(a)) return b;
+        if (TextUtils.isEmpty(b)) return a;
+        return a + " · " + b;
     }
 
 
     // ── Selection (keyed by UID) ─────────────────────────────────────────
 
     public void toggleSelected(int position) {
-        int uid = getItem(position).getUid();
+        CaptureItem item = getItemAt(position);
+        if (item == null || !item.isCapture()) return;
+        int uid = item.uid();
         if (!mSelected.remove(uid)) {
             mSelected.add(uid);
         }
-        notifyItemChanged(position);
-    }
-
-    public boolean isSelected(int position) {
-        return mSelected.contains(getItem(position).getUid());
+        notifyItemChanged(position, PAYLOAD_SELECTION);
     }
 
     public int getSelectedSize() {
@@ -525,34 +525,30 @@ public class BrowserOptionAdapter extends GridListBaseAdapter<BrowserDownloadEnt
 
     public void clearSelection() {
         mSelected.clear();
-        notifyItemRangeChanged(0, getItemCount());
+        notifyItemRangeChanged(0, getItemCount(), PAYLOAD_SELECTION);
     }
 
     public void selectAll() {
         for (int i = 0; i < getItemCount(); i++) {
-            mSelected.add(getItem(i).getUid());
+            CaptureItem item = getItem(i);
+            if (item.isCapture()) {
+                mSelected.add(item.uid());
+            }
         }
-        notifyItemRangeChanged(0, getItemCount());
-    }
-
-    public boolean isSelectionEmpty() {
-        return mSelected.isEmpty();
+        notifyItemRangeChanged(0, getItemCount(), PAYLOAD_SELECTION);
     }
 
     public void setActionMode(boolean value) {
         mActionMode = value;
-        notifyItemRangeChanged(0, getItemCount());
+        notifyItemRangeChanged(0, getItemCount(), PAYLOAD_SELECTION);
     }
 
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
     /**
-     * Falls back to extension-based detection when the entity's stored
-     * mime type is missing or generic. Public so the RecyclerView
-     * preloader in BrowserOptionFragment can compute the same RequestOptions
-     * key the bind path uses — otherwise the preload-warmed bitmap and
-     * the bind-time request resolve to different cache keys.
+     * Falls back to extension-based detection when the entity's stored mime
+     * type is missing or generic.
      */
     public static String resolveMimeType(@Nullable String mimeType, String fileUrl) {
         if (TextUtils.isEmpty(mimeType) || FileUriHelper.isMimeTypeUnknown(mimeType)) {
@@ -562,92 +558,28 @@ public class BrowserOptionAdapter extends GridListBaseAdapter<BrowserDownloadEnt
     }
 
 
-    // ── Unified ViewHolder ───────────────────────────────────────────────
+    // ── ViewHolders ──────────────────────────────────────────────────────
 
-    public static class ViewHolder extends RecyclerView.ViewHolder
+    /** A row or a square: a capture, clickable, selectable. */
+    abstract static class CaptureHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
 
-        final boolean isList;
         final OnItemClickListener listener;
-
-        // Common views (present in the list and grid layouts; the DENSE
-        // grid tile is thumbnail + checkmark only, so everything textual
-        // and the more button are null there)
         final MaterialCardView item;
         final AppCompatImageView image;
         final AppCompatImageView checkedView;
-        @Nullable final TextView mimeText;
-        @Nullable final MaterialButton more;
-        /** The grid caption block (scrim host); null in the list and dense
-         *  layouts. See applyGridGround. */
-        @Nullable final View bottomBlock;
-        /** The uid this holder currently binds — the Glide fallback callback
-         *  lands asynchronously and must not repaint a recycled holder. */
-        long boundUid;
-        /** The grid layout's own photo-tile inks, captured before anything
-         *  overwrites them (each layout declares the right one for the
-         *  scrim); restored on a holder that last showed a placeholder. */
-        final int photoTitle;
-        final int photoLabel;
-        final int photoFact;
-        final int photoCc;
-        final int photoSeparator;
-        @Nullable final TextView tagQuality;
-        @Nullable final TextView tagDuration;
-        @Nullable final View tagSeparator;
-        /** "·" between the mime and the first fact (grid only — the list row
-         *  appends its own separator to the mime text). */
-        @Nullable final View mimeSeparator;
-        @Nullable final TextView tagCc;
-        @Nullable final View tagCcSeparator;
+        /** The uid this holder binds now — a Glide callback lands
+         *  asynchronously and must not repaint a recycled holder. */
+        int boundUid = -1;
 
-        // List-only views (null in grid mode)
-        @Nullable final TextView fileName;
-        @Nullable final TextView fileUrl;
-
-        ViewHolder(View view, OnItemClickListener onItemClickListener, boolean isList) {
+        CaptureHolder(@NonNull View view, OnItemClickListener listener) {
             super(view);
-            this.isList = isList;
-            this.listener = onItemClickListener;
-
-            // Common
+            this.listener = listener;
             item = view.findViewById(R.id.item);
             image = view.findViewById(R.id.image);
             checkedView = view.findViewById(R.id.item_download_more_checked);
-            mimeText = view.findViewById(R.id.mime_text);
-            more = view.findViewById(R.id.item_download_more);
-            bottomBlock = view.findViewById(R.id.bottom_block);
-            tagQuality = view.findViewById(R.id.tag_quality);
-            tagDuration = view.findViewById(R.id.tag_duration);
-            tagSeparator = view.findViewById(R.id.tag_separator);
-            mimeSeparator = view.findViewById(R.id.mime_separator);
-            tagCc = view.findViewById(R.id.tag_cc);
-            tagCcSeparator = view.findViewById(R.id.tag_cc_separator);
-
-            // List-only
-            fileName = view.findViewById(R.id.file_name);
-            fileUrl = view.findViewById(R.id.file_url);
-
-            photoTitle = inkOf(fileName, Color.WHITE);
-            photoLabel = inkOf(mimeText, 0xFFF4F4F7);
-            photoFact = inkOf(tagDuration, 0xE0FFFFFF);
-            photoCc = inkOf(tagCc, 0xFFFFB3B1);
-            photoSeparator = inkOf(tagSeparator, 0x73FFFFFF);
-
-            // Image clipping
-            image.setClipToOutline(true);
-
-            // Click listeners
-            if (more != null) {
-                more.setOnClickListener(this);
-                Utils.expandTouchArea(more);
-            }
             item.setOnClickListener(this);
             item.setOnLongClickListener(this);
-        }
-
-        private static int inkOf(@Nullable View view, int fallback) {
-            return view instanceof TextView tv ? tv.getCurrentTextColor() : fallback;
         }
 
         void setTextOrHide(@Nullable TextView tv, @Nullable String text) {
@@ -662,7 +594,7 @@ public class BrowserOptionAdapter extends GridListBaseAdapter<BrowserDownloadEnt
 
         @Override
         public void onClick(View v) {
-            int position = getAbsoluteAdapterPosition();
+            int position = getBindingAdapterPosition();
             if (listener != null && position != RecyclerView.NO_POSITION) {
                 listener.onItemClick(position, v.getId());
             }
@@ -670,12 +602,63 @@ public class BrowserOptionAdapter extends GridListBaseAdapter<BrowserDownloadEnt
 
         @Override
         public boolean onLongClick(View v) {
-            int position = getAbsoluteAdapterPosition();
+            int position = getBindingAdapterPosition();
             if (listener != null && position != RecyclerView.NO_POSITION) {
                 listener.onLongClick(position, v.getId());
                 return true;
             }
             return false;
+        }
+    }
+
+    static final class RowHolder extends CaptureHolder {
+        final TextView fileName;
+        final TextView meta;
+        final MaterialButton more;
+        final LinearProgressIndicator progress;
+        boolean hasVariants;
+
+        RowHolder(@NonNull View view, OnItemClickListener listener) {
+            super(view, listener);
+            fileName = view.findViewById(R.id.file_name);
+            meta = view.findViewById(R.id.row_meta);
+            more = view.findViewById(R.id.item_download_more);
+            progress = view.findViewById(R.id.row_progress);
+            image.setClipToOutline(true);
+            more.setOnClickListener(this);
+            Utils.expandTouchArea(more);
+        }
+    }
+
+    static final class SquareHolder extends CaptureHolder {
+        final View bottomBlock;
+        final TextView caption;
+        final AppCompatImageView badge;
+        final LinearProgressIndicator progress;
+        /** The slot shows a real picture (vs the mime placeholder). */
+        boolean photo = true;
+
+        SquareHolder(@NonNull View view, OnItemClickListener listener) {
+            super(view, listener);
+            bottomBlock = view.findViewById(R.id.bottom_block);
+            caption = view.findViewById(R.id.square_caption);
+            badge = view.findViewById(R.id.square_badge);
+            progress = view.findViewById(R.id.square_progress);
+        }
+    }
+
+    static final class HeaderHolder extends RecyclerView.ViewHolder {
+        final TextView count;
+
+        HeaderHolder(@NonNull View view) {
+            super(view);
+            count = view.findViewById(R.id.section_count);
+        }
+    }
+
+    static final class DividerHolder extends RecyclerView.ViewHolder {
+        DividerHolder(@NonNull View view) {
+            super(view);
         }
     }
 }

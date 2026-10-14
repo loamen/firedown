@@ -803,4 +803,21 @@
     <string name="settings_address_bar_host_only_title">Показвай само името на сайта в адресната лента</string>
     <string name="settings_address_bar_host_only_summary">Пълният адрес се показва при докосване на лентата.</string>
     <string name="security_block_ads_trackers">Блокиране на реклами и тракери</string>
+    <string name="capture_earlier_in_tab">По-рано в този раздел</string>
+    <string name="capture_status_saved">Запазено</string>
+    <string name="capture_status_failed">Неуспешно изтегляне</string>
+    <string name="capture_status_downloading">Изтегля се · %1$d%%</string>
+    <string name="capture_batch_saved">Запазени %1$d от %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d се изтегля</item>
+        <item quantity="other">%d се изтеглят</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d изчаква</item>
+        <item quantity="other">%d изчакват</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d неуспешно</item>
+        <item quantity="other">%d неуспешни</item>
+    </plurals>
 </resources>

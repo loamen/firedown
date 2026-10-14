@@ -780,4 +780,21 @@
     <string name="settings_address_bar_host_only_title">Näita aadressiribal ainult saidi nime</string>
     <string name="settings_address_bar_host_only_summary">Täielik aadress ilmub ribale koputades.</string>
     <string name="security_block_ads_trackers">Blokeeri reklaamid ja jälitajad</string>
+    <string name="capture_earlier_in_tab">Varem sellel vahekaardil</string>
+    <string name="capture_status_saved">Salvestatud</string>
+    <string name="capture_status_failed">Allalaadimine ebaõnnestus</string>
+    <string name="capture_status_downloading">Allalaadimine · %1$d%%</string>
+    <string name="capture_batch_saved">Salvestatud %1$d / %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d laadib</item>
+        <item quantity="other">%d laadivad</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d ootel</item>
+        <item quantity="other">%d ootel</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d ebaõnnestus</item>
+        <item quantity="other">%d ebaõnnestus</item>
+    </plurals>
 </resources>

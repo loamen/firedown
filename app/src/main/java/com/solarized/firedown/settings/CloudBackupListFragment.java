@@ -256,7 +256,7 @@ public class CloudBackupListFragment extends Fragment
         mAdapter = new CloudBackupFileAdapter(this);
         mRecycler.setAdapter(mAdapter);
         // List ↔ grid, persisted. One GridLayoutManager drives both: span 1 for
-        // list, browser_grid_number for grid. In-progress TRANSFER rows always
+        // list, image_grid_number for grid. In-progress TRANSFER rows always
         // span the full width (SpanSizeLookup) so an uploading file still reads
         // as a row even in grid mode. The EqualSpacingItemDecoration below is
         // span-aware (re-reads the live span), so the same decoration fits both.

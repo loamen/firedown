@@ -862,4 +862,27 @@
     <string name="feedback_failed">Odeslání se nezdařilo. Zkontrolujte připojení a zkuste to znovu.</string>
     <string name="settings_address_bar_host_only_title">V adresním řádku zobrazovat jen název webu</string>
     <string name="settings_address_bar_host_only_summary">Celá adresa se zobrazí po klepnutí na řádek.</string>
+    <string name="capture_earlier_in_tab">Dříve v této kartě</string>
+    <string name="capture_status_saved">Uloženo</string>
+    <string name="capture_status_failed">Stažení se nezdařilo</string>
+    <string name="capture_status_downloading">Stahování · %1$d %%</string>
+    <string name="capture_batch_saved">Uloženo %1$d z %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d se stahuje</item>
+        <item quantity="few">%d se stahují</item>
+        <item quantity="many">%d se stahuje</item>
+        <item quantity="other">%d se stahuje</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d čeká</item>
+        <item quantity="few">%d čekají</item>
+        <item quantity="many">%d čeká</item>
+        <item quantity="other">%d čeká</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d se nezdařilo</item>
+        <item quantity="few">%d se nezdařila</item>
+        <item quantity="many">%d se nezdařilo</item>
+        <item quantity="other">%d se nezdařilo</item>
+    </plurals>
 </resources>

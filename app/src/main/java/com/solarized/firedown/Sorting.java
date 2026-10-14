@@ -47,6 +47,11 @@ public class Sorting {
         mSharedPreferences.edit().putInt(Preferences.SORT_LOCAL, type).apply();
     }
 
+    /** True while a Captured-sheet filter chip is active. */
+    public boolean isBrowserFiltered() {
+        return !SORT_TYPE_ALL.equals(mCurrentSortBrowser);
+    }
+
     public void setCurrentSortBrowser(String type) {
         this.mCurrentSortBrowser = type;
     }

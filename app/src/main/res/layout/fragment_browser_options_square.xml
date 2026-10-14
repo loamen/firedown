@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Captured-content SQUARE: an image capture (GIF and SVG included), three to
+  a line under the group's "Images N" header. See CaptureItem.
+
+  Text over the picture follows the app's photo-tile convention, never a pill
+  background: the bottom_scrim gradient behind white text with a shadow (the
+  Downloads/Captured grid captions), and a self-coloured badge glyph with a
+  baked shadow (cloud_badge's construction). The adapter drops the scrim and
+  switches to FallbackInks when the slot shows the mime placeholder instead
+  of a picture (a gradient over a flat colour is a smudge).
+
+  square_caption: the image's dimensions, led by GIF / SVG while unfiltered
+  (a plain image needs no label under an "Images" header). square_badge: the
+  download mark (saved / pending / failed); a running download shows
+  square_progress along the bottom edge instead. The card's 2dp stroke and the
+  corner check are the selection chrome, as on every grid tile.
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/item"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+        app:cardCornerRadius="@dimen/card_radius"
+        app:cardElevation="0dp"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:strokeColor="@color/transparent"
+        app:strokeWidth="2dp">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:duplicateParentState="true"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:id="@+id/bottom_block"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:background="@drawable/bottom_scrim"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="5dp">
+
+            <TextView
+                android:id="@+id/square_caption"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:shadowRadius="2"
+                android:textColor="@android:color/white"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="GIF · 300x168" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/square_badge"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="4dp"
+                android:visibility="gone"
+                tools:src="@drawable/capture_badge_saved"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/square_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:visibility="gone"
+            app:indicatorTrackGapSize="0dp"
+            app:trackCornerRadius="0dp"
+            app:trackStopIndicatorSize="0dp"
+            app:trackThickness="3dp" />
+
+        <!-- Selection indicator (action mode) -->
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/item_download_more_checked"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:contentDescription="@null"
+            android:padding="@dimen/button_icons_padding"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_baseline_check_circle_24"
+            app:tint="?attr/brandInk" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

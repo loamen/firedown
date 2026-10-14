@@ -975,4 +975,21 @@
     <string name="feedback_failed">No se pudo enviar. Comprueba la conexión e inténtalo de nuevo.</string>
     <string name="settings_address_bar_host_only_title">Mostrar solo el nombre del sitio en la barra de direcciones</string>
     <string name="settings_address_bar_host_only_summary">La dirección completa aparece al tocar la barra.</string>
+    <string name="capture_earlier_in_tab">Antes en esta pestaña</string>
+    <string name="capture_status_saved">Guardado</string>
+    <string name="capture_status_failed">No se pudo descargar</string>
+    <string name="capture_status_downloading">Descargando · %1$d %%</string>
+    <string name="capture_batch_saved">Guardados %1$d de %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d descargando</item>
+        <item quantity="other">%d descargando</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d pendiente</item>
+        <item quantity="other">%d pendientes</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d fallido</item>
+        <item quantity="other">%d fallidos</item>
+    </plurals>
 </resources>

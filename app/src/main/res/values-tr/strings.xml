@@ -878,4 +878,21 @@
     <string name="feedback_failed">Gönderilemedi. Bağlantını kontrol edip tekrar dene.</string>
     <string name="settings_address_bar_host_only_title">Adres çubuğunda yalnızca site adını göster</string>
     <string name="settings_address_bar_host_only_summary">Çubuğa dokunduğunuzda tam adres görünür.</string>
+    <string name="capture_earlier_in_tab">Bu sekmede daha önce</string>
+    <string name="capture_status_saved">Kaydedildi</string>
+    <string name="capture_status_failed">İndirilemedi</string>
+    <string name="capture_status_downloading">İndiriliyor · %%%1$d</string>
+    <string name="capture_batch_saved">%1$d/%2$d kaydedildi</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d indiriliyor</item>
+        <item quantity="other">%d indiriliyor</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d bekliyor</item>
+        <item quantity="other">%d bekliyor</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d başarısız</item>
+        <item quantity="other">%d başarısız</item>
+    </plurals>
 </resources>

@@ -1,0 +1,23 @@
+<!--
+  Captured-sheet square badge. Saved: the capture is in Downloads (or the Safe Folder).
+  White glyph over an offset ~70%-black copy, the construction of cloud_badge:
+  it sits on arbitrary artwork in either theme, and the baked shadow gives it
+  a dark edge on a bright picture. Self-coloured; do NOT tint at the use site.
+  The three badges (capture_badge_saved / _pending / _failed) share it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <group
+      android:translateX="0.55"
+      android:translateY="0.85">
+    <path
+        android:fillColor="#B3000000"
+        android:pathData="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z"/>
+  </group>
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z"/>
+</vector>

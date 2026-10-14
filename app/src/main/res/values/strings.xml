@@ -67,6 +67,25 @@
         <item quantity="other">%d URLs copied</item>
     </plurals>
     <string name="capture_show_variants">Select quality</string>
+    <!-- Captured sheet (option A): the divider above earlier pages' captures,
+         the per-capture download status, and the batch card. -->
+    <string name="capture_earlier_in_tab">Earlier in this tab</string>
+    <string name="capture_status_saved">Saved</string>
+    <string name="capture_status_failed">Couldn\'t download</string>
+    <string name="capture_status_downloading">Downloading · %1$d%%</string>
+    <string name="capture_batch_saved">Saved %1$d of %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d downloading</item>
+        <item quantity="other">%d downloading</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d pending</item>
+        <item quantity="other">%d pending</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d failed</item>
+        <item quantity="other">%d failed</item>
+    </plurals>
     <string name="cert_connection_exception">Security Exception</string>
     <string name="cert_connection_insecure">Connection is Not Secure</string>
     <string name="cert_connection_secure">Connection is Secure</string>

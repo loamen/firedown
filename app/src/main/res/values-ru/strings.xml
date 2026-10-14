@@ -894,4 +894,27 @@
     <string name="feedback_failed">Не удалось отправить. Проверьте подключение и повторите попытку.</string>
     <string name="settings_address_bar_host_only_title">Показывать в адресной строке только имя сайта</string>
     <string name="settings_address_bar_host_only_summary">Полный адрес появляется при нажатии на строку.</string>
+    <string name="capture_earlier_in_tab">Ранее в этой вкладке</string>
+    <string name="capture_status_saved">Сохранено</string>
+    <string name="capture_status_failed">Не удалось скачать</string>
+    <string name="capture_status_downloading">Загрузка · %1$d%%</string>
+    <string name="capture_batch_saved">Сохранено %1$d из %2$d</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d загружается</item>
+        <item quantity="few">%d загружаются</item>
+        <item quantity="many">%d загружаются</item>
+        <item quantity="other">%d загружаются</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d в ожидании</item>
+        <item quantity="few">%d в ожидании</item>
+        <item quantity="many">%d в ожидании</item>
+        <item quantity="other">%d в ожидании</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d с ошибкой</item>
+        <item quantity="few">%d с ошибкой</item>
+        <item quantity="many">%d с ошибкой</item>
+        <item quantity="other">%d с ошибкой</item>
+    </plurals>
 </resources>

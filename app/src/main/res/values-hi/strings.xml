@@ -815,4 +815,21 @@
     <string name="feedback_failed">भेजा नहीं जा सका। अपना कनेक्शन जाँचें और फिर से कोशिश करें।</string>
     <string name="settings_address_bar_host_only_title">पता बार में केवल साइट का नाम दिखाएँ</string>
     <string name="settings_address_bar_host_only_summary">बार पर टैप करने पर पूरा पता दिखता है।</string>
+    <string name="capture_earlier_in_tab">इस टैब में पहले</string>
+    <string name="capture_status_saved">सहेजा गया</string>
+    <string name="capture_status_failed">डाउनलोड नहीं हो सका</string>
+    <string name="capture_status_downloading">डाउनलोड हो रहा है · %1$d%%</string>
+    <string name="capture_batch_saved">%2$d में से %1$d सहेजे गए</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d डाउनलोड हो रहा है</item>
+        <item quantity="other">%d डाउनलोड हो रहे हैं</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d लंबित</item>
+        <item quantity="other">%d लंबित</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d विफल</item>
+        <item quantity="other">%d विफल</item>
+    </plurals>
 </resources>

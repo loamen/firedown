@@ -1,27 +1,35 @@
 package com.solarized.firedown.phone.dialogs;
 
-import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.activity.ComponentDialog;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.DialogFragment;
@@ -36,18 +44,19 @@ import com.bumptech.glide.ListPreloader;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.integration.recyclerview.RecyclerViewPreloader;
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.util.FixedPreloadSizeProvider;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.color.MaterialColors;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.GlideHelper;
-import com.solarized.firedown.GlideRequestOptions;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.Sorting;
+import com.solarized.firedown.data.capture.CaptureItem;
+import com.solarized.firedown.data.capture.CaptureSections.BatchSummary;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.entity.OptionEntity;
 import com.solarized.firedown.data.models.BrowserDownloadViewModel;
@@ -57,11 +66,10 @@ import com.solarized.firedown.phone.DownloadsActivity;
 import com.solarized.firedown.phone.SettingsActivity;
 import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.phone.fragments.BaseFocusFragment;
-import com.solarized.firedown.ui.EqualSpacingItemDecoration;
+import com.solarized.firedown.ui.CaptureSpacingDecoration;
 import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.ui.OnItemClickListener;
 import com.solarized.firedown.ui.adapters.BrowserOptionAdapter;
-import com.solarized.firedown.ui.diffs.BrowserDownloadsDiffCallback;
 import com.solarized.firedown.utils.CaptureUrlActions;
 import com.solarized.firedown.utils.NavigationUtils;
 import com.solarized.firedown.utils.SelectionStyling;
@@ -77,7 +85,6 @@ import dagger.hilt.android.AndroidEntryPoint;
 @AndroidEntryPoint
 public class BrowserOptionFragment extends BaseFocusFragment implements OnItemClickListener, ChipGroup.OnCheckedStateChangeListener {
 
-    private static final String TAG = BrowserOptionFragment.class.getName();
     @Inject SharedPreferences mSharedPreferences;
     private BrowserOptionAdapter mAdapter;
     private BrowserDownloadViewModel mBrowserDownloadViewModel;
@@ -86,8 +93,10 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     private ChipGroup mChipGroup;
     private Toolbar mToolbar;
     private View mHelpBanner;
+    private MaterialCardView mBatchCard;
+    private TextView mBatchText;
+    private LinearProgressIndicator mBatchProgress;
     private boolean mHelpBannerDismissed;
-    private boolean mEnableGrid;
     private boolean mIsIncognito;
     private int mScrollLimit;
     private OnBackPressedCallback mClearFilterOnBack;
@@ -98,12 +107,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     // empty+busy → LCEE loading; content+busy → a toolbar spinner (action_progress).
     private MenuItem mProgressMenuItem;
     private boolean mListEmpty = true;
-
-    /** A presentation flip (mime suppression / dense mosaic) is set on the
-     *  adapter but its commit callback hasn't applied the span/rebind yet —
-     *  a newer submit can supersede the older one's callback, so the next
-     *  emission must re-run the commit path. See submitWithPresentation. */
-    private boolean mPresentationDirty;
     private boolean mBusyShown;
     private static final long SPINNER_HIDE_LINGER_MS = 500L;
     private final Handler mSpinnerHandler = new Handler(Looper.getMainLooper());
@@ -113,7 +116,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mScrollLimit = Preferences.LIST_LIMIT;
-        mEnableGrid = mSharedPreferences.getBoolean(Preferences.SORT_LIST, false);
         mIsIncognito = getArguments() != null && getArguments().getBoolean(Keys.IS_INCOGNITO, false);
         mHelpBannerDismissed = mSharedPreferences.getBoolean(Preferences.CAPTURE_HELP_BANNER_DISMISSED, false);
         mBrowserDownloadViewModel = new ViewModelProvider(this).get(BrowserDownloadViewModel.class);
@@ -166,6 +168,11 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         view.findViewById(R.id.capture_help_banner_dismiss)
                 .setOnClickListener(v -> dismissHelpBanner());
 
+        mBatchCard = view.findViewById(R.id.capture_batch_card);
+        mBatchText = view.findViewById(R.id.capture_batch_text);
+        mBatchProgress = view.findViewById(R.id.capture_batch_progress);
+        mBatchCard.setOnClickListener(v -> openDownloads());
+
         if (mIsIncognito) {
             mToolbar.setPopupTheme(R.style.Theme_FireDown_Popup_Vault);
             int onSurface = IncognitoColors.getOnSurface(requireContext(), true);
@@ -198,19 +205,26 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         });
 
         mRecyclerView = mLCEERecyclerView.getRecyclerView();
-        mLayoutManager = new GridLayoutManager(requireContext(), getSpanCount());
+        // One grid for the whole mixed list: image squares take one column,
+        // everything else (rows, the Images header, the divider) the full
+        // line. There is no list/grid toggle any more — the layout follows the
+        // capture's type instead (see CaptureItem).
+        int columns = getResources().getInteger(R.integer.capture_columns);
+        mLayoutManager = new GridLayoutManager(requireContext(), columns);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        mAdapter = new BrowserOptionAdapter(mActivity, new BrowserDownloadsDiffCallback(), this, mEnableGrid);
-        // The persisted chip is checked above (before the listener attaches,
-        // which suppresses the synthetic callback) — so when the sheet
-        // reopens with a filter active, the presentation flags must be
-        // seeded here; getSpanCount() above already read the same chip
-        // state. Silent setter is fine pre-list (nothing bound yet).
-        mAdapter.setPresentation(
-                mChipGroup.getCheckedChipId() != View.NO_ID,
-                !mEnableGrid && isDenseImageFilter());
+        // The view's own context, not the activity's: in a private tab the
+        // sheet inflates under the incognito overlay, and the adapter resolves
+        // its inks from the context it is given.
+        mAdapter = new BrowserOptionAdapter(view.getContext(), this);
+        mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                return mAdapter != null ? mAdapter.spanSize(position, columns) : columns;
+            }
+        });
         mRecyclerView.setAdapter(mAdapter);
+        mRecyclerView.addItemDecoration(new CaptureSpacingDecoration(requireContext()));
 
         // The RecyclerView's own dimensions don't depend on the adapter
         // (it's match_parent inside the LCEE wrapper) — paging-driven
@@ -237,12 +251,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             // gone by the time the user scrolls back up — leaving a brief
             // empty frame plus a disk/network round-trip on rebind. Preload
             // 8 items ahead of the scroll direction so the cache stays
-            // warm for the rows about to enter the viewport.
-            RoundedCorners roundedCorners = new RoundedCorners(
-                    getResources().getDimensionPixelOffset(R.dimen.card_radius));
-            RequestOptions baseOptions = new RequestOptions()
-                    .apply(RequestOptions.bitmapTransform(roundedCorners));
-
+            // warm for the rows about to enter the viewport. ROWS only: the
+            // preload size is the row thumbnail's, and a square requested at
+            // that size would warm a cache entry its bind never asks for.
             RequestManager glide = Glide.with(this);
 
             RecyclerViewPreloader<BrowserDownloadEntity> preloader = new RecyclerViewPreloader<>(
@@ -251,35 +262,21 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                         @NonNull
                         @Override
                         public List<BrowserDownloadEntity> getPreloadItems(int position) {
-                            if (position < 0 || position >= mAdapter.getItemCount()) {
+                            CaptureItem item = mAdapter != null ? mAdapter.getItemAt(position) : null;
+                            if (item == null || item.type != CaptureItem.TYPE_ROW || item.entity == null) {
                                 return Collections.emptyList();
                             }
-                            BrowserDownloadEntity entity = mAdapter.getCurrentList().get(position);
-                            return entity == null
-                                    ? Collections.emptyList()
-                                    : Collections.singletonList(entity);
+                            return Collections.singletonList(item.entity);
                         }
 
                         @Nullable
                         @Override
                         public RequestBuilder<?> getPreloadRequestBuilder(@NonNull BrowserDownloadEntity entity) {
-                            // Match the per-item options the adapter builds
-                            // at bind time so the preload-warmed bitmap and
-                            // the bind-time request resolve to the same
-                            // Glide cache key.
-                            String fileUrl = entity.getFileUrl();
-                            String mimeType = BrowserOptionAdapter.resolveMimeType(
-                                    entity.getMimeType(), fileUrl);
-                            // clone() — the lambda is called repeatedly with the
-                            // same shared baseOptions; .set() mutates in place,
-                            // so without the clone every prior preload request
-                            // ends up tagged with the latest item's metadata.
-                            RequestOptions options = baseOptions.clone()
-                                    .set(GlideRequestOptions.MIMETYPE, mimeType)
-                                    .set(GlideRequestOptions.FILEPATH, fileUrl)
-                                    .set(GlideRequestOptions.HEADERS, entity.getFileHeaders())
-                                    .set(GlideRequestOptions.KEY, String.valueOf(entity.getUid()));
-                            return GlideHelper.preloadBrowser(glide, entity, options);
+                            if (mAdapter == null) return null;
+                            // The adapter's own options, so the preload-warmed
+                            // bitmap and the bind-time request share a key.
+                            return GlideHelper.preloadBrowser(glide, entity,
+                                    mAdapter.optionsFor(entity, false));
                         }
                     },
                     new FixedPreloadSizeProvider<>(
@@ -299,8 +296,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             });
         });
 
-        updateItemDecoration();
-
         mToolbar.invalidateMenu();
         mToolbar.addMenuProvider(new MenuProvider() {
             @Override
@@ -310,13 +305,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                 }else{
                     menuInflater.inflate(mActionModeEnabled ? R.menu.menu_capture_action : R.menu.menu_capture, menu);
                 }
-                MenuItem actionView = menu.findItem(R.id.action_view);
-                if (actionView != null) {
-                    actionView.setIcon(mEnableGrid ? R.drawable.ic_grid_view_24 : R.drawable.ic_view_list_24);
-                }
-                // The "scanning" spinner lives next to the grid/list toggle
-                // (absent in the action-mode menu). Re-apply its visibility on
-                // every (re)inflate from the current debounced busy state.
+                // The "scanning" spinner (absent in the action-mode menu).
+                // Re-apply its visibility on every (re)inflate from the
+                // current debounced busy state.
                 mProgressMenuItem = menu.findItem(R.id.action_progress);
                 updateProgressIndicator();
                 if (mIsIncognito) {
@@ -333,10 +324,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             @Override
             public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
                 int id = menuItem.getItemId();
-                if (id == R.id.action_view) {
-                    toggleViewMode(menuItem);
-                    return true;
-                } else if (id == R.id.action_clear) {
+                if (id == R.id.action_clear) {
                     mBrowserDownloadViewModel.clearBrowserDownloads();
                     return true;
                 } else if (id == R.id.action_download) {
@@ -357,7 +345,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                     openCaptureHelp();
                     return true;
                 } else if (id == R.id.action_downloads) {
-                    mStartForResult.launch(new Intent(requireContext(), DownloadsActivity.class));
+                    openDownloads();
                     return true;
                 } else if (id == R.id.action_safe) {
                     mStartForResult.launch(new Intent(requireContext(), VaultActivity.class));
@@ -377,21 +365,20 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mBrowserDownloadViewModel.getBrowserDownloads(mScrollLimit).observe(getViewLifecycleOwner(), downloads -> {
-
-            Log.d(TAG, "getBrowserDownloads: " + (downloads != null ? downloads.size() : 0));
+        mBrowserDownloadViewModel.getCaptureItems(mScrollLimit).observe(getViewLifecycleOwner(), items -> {
 
             if (mActionModeEnabled) return;
 
-            mListEmpty = downloads == null || downloads.isEmpty();
+            mListEmpty = items == null || items.isEmpty();
             renderListState();
-
-            // Refresh the origin → caption-count map (from the unfiltered
-            // repository) before submitting so the CC badge binds correctly
-            // even when the active chip has filtered the subtitle siblings out.
-            mAdapter.setSubtitleCounts(mBrowserDownloadViewModel.subtitleCountsByOrigin());
-            submitWithPresentation(downloads);
+            // The items carry their own presentation (sections, type labels,
+            // marks), built in the view model for the list they belong to, so
+            // a chip tap can't paint the old list in the new presentation: no
+            // adapter flags, no commit callback to flip them.
+            submitListPreservingScroll(items);
         });
+
+        mBrowserDownloadViewModel.getBatchSummary().observe(getViewLifecycleOwner(), this::renderBatch);
 
         mBrowserDownloadViewModel.getInflight().observe(getViewLifecycleOwner(),
                 count -> onInflightChanged(count == null ? 0 : count));
@@ -429,94 +416,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         }
     }
 
-
-    private void toggleViewMode(MenuItem item) {
-        mEnableGrid = !mEnableGrid;
-        mAdapter.enableGrid(mEnableGrid);
-        refreshGridDensity();
-        updateItemDecoration();
-        item.setIcon(mEnableGrid ? R.drawable.ic_grid_view_24 : R.drawable.ic_view_list_24);
-    }
-
-    private void updateItemDecoration() {
-        while (mRecyclerView.getItemDecorationCount() > 0) mRecyclerView.removeItemDecorationAt(0);
-        if (!mEnableGrid) {
-            mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(requireContext(), R.dimen.list_spacing));
-        }
-    }
-
-    /** NOTE the historic naming inversion: {@code mEnableGrid == true} is
-     *  LIST mode (it persists {@code Preferences.SORT_LIST} and maps to
-     *  {@code browser_list_number}); grid mode is {@code !mEnableGrid}. */
-    private int getSpanCount() {
-        if (mEnableGrid) {
-            return getResources().getInteger(R.integer.browser_list_number);
-        }
-        // Grid + images-only filter → the dense square mosaic (the tiles
-        // carry no text there, so the density costs no information).
-        return getResources().getInteger(isDenseImageFilter()
-                ? R.integer.browser_grid_dense_number
-                : R.integer.browser_grid_number);
-    }
-
-    /** Images and GIF chips both narrow to image-mime captures (the same
-     *  class whose grid tiles already hide the title), so both go dense. */
-    private boolean isDenseImageFilter() {
-        if (mChipGroup == null) {
-            return false;
-        }
-        int chipId = mChipGroup.getCheckedChipId();
-        return chipId == R.id.chip_image || chipId == R.id.chip_gif;
-    }
-
-    /** Re-syncs the adapter's dense flag and the span count with the
-     *  current view mode + filter chip. enableDenseGrid no-ops (and skips
-     *  its notifyDataSetChanged) when the flag didn't actually change.
-     *  Used by the grid/list TOGGLE only, where the data doesn't change
-     *  and an immediate flip is correct — a filter chip change must go
-     *  through {@link #submitWithPresentation} instead. */
-    private void refreshGridDensity() {
-        if (mAdapter == null || mLayoutManager == null) {
-            return;
-        }
-        mAdapter.enableDenseGrid(!mEnableGrid && isDenseImageFilter());
-        mLayoutManager.setSpanCount(getSpanCount());
-    }
-
-    /**
-     * Submits a list with the chip-derived presentation (mime suppression +
-     * dense mosaic) applied ATOMICALLY with the commit. A chip tap's requery
-     * is async — flipping the adapter from the tap re-renders the old list
-     * in the new presentation for a beat. So the flags are set silently
-     * here, and when they changed the span/rebind runs in submitList's
-     * commit callback: the differ has already swapped the content (the
-     * dense flag is read per-bind, so freshly inserted tiles inflate the
-     * right layout), the span flip and the survivors' rebind land in the
-     * same main-thread message — no intermediate frame. mPresentationDirty
-     * covers a commit callback that never ran because a newer submit
-     * superseded it (AsyncListDiffer drops the older commit).
-     */
-    @SuppressLint("NotifyDataSetChanged")
-    private void submitWithPresentation(List<BrowserDownloadEntity> downloads) {
-        boolean suppress = mChipGroup != null && mChipGroup.getCheckedChipId() != View.NO_ID;
-        boolean dense = !mEnableGrid && isDenseImageFilter();
-        boolean changed = mAdapter.setPresentation(suppress, dense);
-        if (!changed && !mPresentationDirty) {
-            submitListPreservingScroll(downloads);
-            return;
-        }
-        mPresentationDirty = true;
-        // Scroll anchoring is meaningless across a filter flip (the lists
-        // are disjoint) — plain submit with the presentation commit.
-        mAdapter.submitList(downloads, () -> {
-            if (mAdapter == null || mLayoutManager == null) {
-                return;
-            }
-            mPresentationDirty = false;
-            mLayoutManager.setSpanCount(getSpanCount());
-            mAdapter.notifyDataSetChanged();
-        });
-    }
 
     /**
      * Reacts to the in-flight inspect-task count. The spinner is small and
@@ -610,31 +509,98 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
      * up to reveal) instead of yanking the view. When nothing is scrolled past
      * (first load / at the top) we don't anchor, so fresh captures show normally.
      */
-    private void submitListPreservingScroll(List<BrowserDownloadEntity> downloads) {
+    private void submitListPreservingScroll(List<CaptureItem> items) {
         if (mAdapter == null) return;
         if (mLayoutManager == null) {
-            mAdapter.submitList(downloads);
+            mAdapter.submitList(items);
             return;
         }
         int firstPos = mLayoutManager.findFirstVisibleItemPosition();
-        List<BrowserDownloadEntity> current = mAdapter.getCurrentList();
+        List<CaptureItem> current = mAdapter.getCurrentList();
         if (firstPos <= 0 || firstPos >= current.size()) {
             // Nothing meaningful to anchor (at the top, or first load).
-            mAdapter.submitList(downloads);
+            mAdapter.submitList(items);
             return;
         }
-        final int anchorUid = current.get(firstPos).getUid();
-        final View anchorView = mLayoutManager.findViewByPosition(firstPos);
+        // Anchor on the first visible CAPTURE (a header or the divider has no
+        // identity that survives a re-sort).
+        int anchorPos = firstPos;
+        while (anchorPos < current.size() && !current.get(anchorPos).isCapture()) {
+            anchorPos++;
+        }
+        if (anchorPos >= current.size()) {
+            mAdapter.submitList(items);
+            return;
+        }
+        final int anchorUid = current.get(anchorPos).uid();
+        final View anchorView = mLayoutManager.findViewByPosition(anchorPos);
         final int anchorOffset = anchorView != null ? anchorView.getTop() : 0;
-        mAdapter.submitList(downloads, () -> {
-            if (mLayoutManager == null || downloads == null) return;
-            for (int i = 0; i < downloads.size(); i++) {
-                if (downloads.get(i).getUid() == anchorUid) {
+        mAdapter.submitList(items, () -> {
+            if (mLayoutManager == null || items == null) return;
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).isCapture() && items.get(i).uid() == anchorUid) {
                     mLayoutManager.scrollToPositionWithOffset(i, anchorOffset);
                     return;
                 }
             }
         });
+    }
+
+    /**
+     * The batch card above the chips: "Saved 3 of 20 · 4 downloading · 13
+     * pending", the batch's overall progress along its bottom edge. Hidden
+     * while no batch is in flight; once every item settled it stays, as the
+     * record of what the batch did, until the sheet closes.
+     */
+    private void renderBatch(@Nullable BatchSummary summary) {
+        if (mBatchCard == null) return;
+        if (summary == null || summary.total == 0) {
+            mBatchCard.setVisibility(View.GONE);
+            return;
+        }
+        Context context = mBatchCard.getContext();
+        SpannableStringBuilder text = new SpannableStringBuilder(
+                getString(R.string.capture_batch_saved, summary.saved, summary.total));
+        text.setSpan(new ForegroundColorSpan(MaterialColors.getColor(context,
+                        com.google.android.material.R.attr.colorOnSurface, Color.BLACK)),
+                0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new StyleSpan(Typeface.BOLD), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (summary.downloading > 0) {
+            text.append(" · ").append(getResources().getQuantityString(
+                    R.plurals.capture_batch_downloading, summary.downloading, summary.downloading));
+        }
+        if (summary.pending > 0) {
+            text.append(" · ").append(getResources().getQuantityString(
+                    R.plurals.capture_batch_pending, summary.pending, summary.pending));
+        }
+        if (summary.failed > 0) {
+            text.append(" · ");
+            int start = text.length();
+            text.append(getResources().getQuantityString(
+                    R.plurals.capture_batch_failed, summary.failed, summary.failed));
+            text.setSpan(new ForegroundColorSpan(MaterialColors.getColor(context,
+                            androidx.appcompat.R.attr.colorError, Color.RED)),
+                    start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        mBatchText.setText(text);
+        if (summary.isDone()) {
+            mBatchProgress.setVisibility(View.GONE);
+        } else {
+            mBatchProgress.setIndicatorColor(ContextCompat.getColor(context, R.color.progress_indicator));
+            mBatchProgress.setTrackColor(ColorUtils.setAlphaComponent(
+                    MaterialColors.getColor(context, android.R.attr.colorPrimary, Color.BLACK), 0x33));
+            mBatchProgress.setProgressCompat(summary.percent,
+                    mBatchProgress.getVisibility() == View.VISIBLE);
+            mBatchProgress.setVisibility(View.VISIBLE);
+        }
+        mBatchCard.setVisibility(View.VISIBLE);
+    }
+
+    /** Downloads, or the Safe Folder in a private tab (whose downloads land
+     *  there). The toolbar item and the batch card both land here. */
+    private void openDownloads() {
+        Class<?> target = mIsIncognito ? VaultActivity.class : DownloadsActivity.class;
+        mStartForResult.launch(new Intent(requireContext(), target));
     }
 
     private void configureEmptyState() {
@@ -672,13 +638,14 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     public void onItemClick(int position, int resId) {
         if (position == RecyclerView.NO_POSITION) return;
 
+        BrowserDownloadEntity entity = mAdapter.getEntityAt(position);
+        if (entity == null) return;
+
         if (mActionModeEnabled) {
             mAdapter.toggleSelected(position);
             updateActionModeTitle();
             return;
         }
-
-        BrowserDownloadEntity entity = mAdapter.getCurrentList().get(position);
 
         if (resId == R.id.item) {
             handlePrimaryItemClick(entity);
@@ -729,12 +696,14 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
 
     private void processBatchDownload() {
         ArrayList<DownloadRequest> requests = new ArrayList<>();
-        List<BrowserDownloadEntity> list = mAdapter.getCurrentList();
+        ArrayList<BrowserDownloadEntity> captures = new ArrayList<>();
         HashSet<Integer> selectedIds = mAdapter.getSelected();
 
-        for (BrowserDownloadEntity entity : list) {
-            if (selectedIds.contains(entity.getUid())) {
+        for (CaptureItem item : mAdapter.getCurrentList()) {
+            BrowserDownloadEntity entity = item.entity;
+            if (entity != null && selectedIds.contains(entity.getUid())) {
                 requests.add(DownloadRequest.from(entity));
+                captures.add(entity);
             }
         }
 
@@ -742,6 +711,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         option.setId(R.id.start_multiple_download);
         option.setDownloadRequests(requests);
         mFragmentsViewModel.onOptionsSelected(option);
+        // The batch card counts these down; the rows and squares carry their
+        // own marks either way.
+        mBrowserDownloadViewModel.startBatch(captures);
         invalidateActionMode();
     }
 
@@ -754,10 +726,10 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
      */
     private void copySelectedUrls() {
         ArrayList<String> urls = new ArrayList<>();
-        List<BrowserDownloadEntity> list = mAdapter.getCurrentList();
         HashSet<Integer> selectedIds = mAdapter.getSelected();
-        for (BrowserDownloadEntity entity : list) {
-            if (!selectedIds.contains(entity.getUid())) continue;
+        for (CaptureItem item : mAdapter.getCurrentList()) {
+            BrowserDownloadEntity entity = item.entity;
+            if (entity == null || !selectedIds.contains(entity.getUid())) continue;
             String url = CaptureUrlActions.externalUrl(entity);
             if (url != null) {
                 urls.add(url);
@@ -773,6 +745,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
 
     @Override
     public void onLongClick(int position, int resId) {
+        if (mAdapter.getEntityAt(position) == null) return;
         if (!mActionModeEnabled) {
             sendOptionEvent(R.id.divider, null);
             mActionModeEnabled = true;
@@ -832,13 +805,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         int selectedId = checkedIds.isEmpty() ? View.NO_ID : checkedIds.get(0);
         String type = mBrowserDownloadViewModel.getCurrentSortForIds(selectedId);
         mBrowserDownloadViewModel.sortBrowserDownloads(type);
-        // Deliberately NO presentation change here (density/span/mime
-        // suppression): the requery is async, so flipping the adapter now
-        // would re-render the OLD list in the NEW presentation first —
-        // on-device that showed the images mosaic collapsing to normal
-        // span-2 image tiles for a beat before the videos arrived. The
-        // downloads observer flips presentation atomically with the new
-        // list's commit (submitWithPresentation).
+        // Deliberately NO presentation change here: the requery is async, and
+        // the view model builds the new list's sections and labels with it
+        // (CaptureItem), so the presentation lands with the list.
         // Only intercept Back while a chip is actually checked — otherwise
         // Back must behave normally (close the screen).
         if (mClearFilterOnBack != null) mClearFilterOnBack.setEnabled(!checkedIds.isEmpty());
@@ -849,7 +818,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     public void onStop() {
         super.onStop();
         mBrowserDownloadViewModel.setCurrentSortBrowser(mChipGroup.getCheckedChipId());
-        mSharedPreferences.edit().putBoolean(Preferences.SORT_LIST, mEnableGrid).apply();
     }
 
     @Override
@@ -859,6 +827,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         mChipGroup = null;
         mToolbar = null;
         mHelpBanner = null;
+        mBatchCard = null;
+        mBatchText = null;
+        mBatchProgress = null;
         mAdapter = null;
         mLayoutManager = null;
         mProgressMenuItem = null;
@@ -873,7 +844,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     @Override
     public void onItemVariantClick(int position, int variant, int resId) {
         if (position == RecyclerView.NO_POSITION) return;
-        BrowserDownloadEntity entity = mAdapter.getCurrentList().get(position);
-        handlePrimaryItemClick(entity);
+        BrowserDownloadEntity entity = mAdapter.getEntityAt(position);
+        if (entity != null) {
+            handlePrimaryItemClick(entity);
+        }
     }
 }

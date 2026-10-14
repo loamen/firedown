@@ -977,4 +977,21 @@
     <string name="feedback_failed">Échec de l\'envoi. Vérifiez votre connexion et réessayez.</string>
     <string name="settings_address_bar_host_only_title">Afficher uniquement le nom du site dans la barre d\'adresse</string>
     <string name="settings_address_bar_host_only_summary">L\'adresse complète apparaît quand vous touchez la barre.</string>
+    <string name="capture_earlier_in_tab">Plus tôt dans cet onglet</string>
+    <string name="capture_status_saved">Enregistré</string>
+    <string name="capture_status_failed">Échec du téléchargement</string>
+    <string name="capture_status_downloading">Téléchargement · %1$d\u00A0%%</string>
+    <string name="capture_batch_saved">%1$d sur %2$d enregistrés</string>
+    <plurals name="capture_batch_downloading">
+        <item quantity="one">%d en cours</item>
+        <item quantity="other">%d en cours</item>
+    </plurals>
+    <plurals name="capture_batch_pending">
+        <item quantity="one">%d en attente</item>
+        <item quantity="other">%d en attente</item>
+    </plurals>
+    <plurals name="capture_batch_failed">
+        <item quantity="one">%d échec</item>
+        <item quantity="other">%d échecs</item>
+    </plurals>
 </resources>

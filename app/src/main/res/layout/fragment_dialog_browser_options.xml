@@ -18,6 +18,77 @@
         app:popupTheme="@style/Theme.FireDown.Popup"
         app:title="@string/navigation_captured" />
 
+    <!-- Batch card: shown after the sheet sent two or more captures to
+         Downloads at once, counting them down ("Saved 3 of 20 · 4 downloading
+         · 13 pending") with the batch's overall progress along its bottom
+         edge. Tap opens Downloads (the Safe Folder in a private tab). Visibility
+         and text come from BrowserOptionFragment.renderBatch; it lives as long
+         as the sheet does. Margins and corner match the help banner, its
+         sibling. -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/capture_batch_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/list_spacing"
+        android:layout_marginEnd="@dimen/list_spacing"
+        android:layout_marginBottom="@dimen/list_spacing"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone"
+        app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/download_24"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/capture_batch_text"
+                style="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chevron_right_24"
+                app:tint="?attr/colorOnSurfaceVariant" />
+
+        </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/capture_batch_progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            app:indicatorTrackGapSize="0dp"
+            app:trackCornerRadius="0dp"
+            app:trackStopIndicatorSize="0dp"
+            app:trackThickness="3dp" />
+
+    </com.google.android.material.card.MaterialCardView>
+
     <include
         layout="@layout/fragment_dialog_browser_options_list_options"
         android:layout_width="match_parent"

@@ -1,28 +1,39 @@
 package com.solarized.firedown.data.models;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.Sorting;
+import com.solarized.firedown.data.capture.CaptureItem;
+import com.solarized.firedown.data.capture.CaptureMark;
+import com.solarized.firedown.data.capture.CaptureSections;
+import com.solarized.firedown.data.capture.CaptureSections.BatchSummary;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.repository.BrowserDownloadRepository;
+import com.solarized.firedown.data.repository.DownloadDataRepository;
 import com.solarized.firedown.data.repository.GeckoStateDataRepository;
 import com.solarized.firedown.geckoview.GeckoRuntimeHelper;
 import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.PriorityTaskThreadPoolExecutor;
-import com.solarized.firedown.utils.BuildUtils;
 import com.solarized.firedown.utils.DebugLog;
 import com.solarized.firedown.utils.FileUriHelper;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -37,12 +48,32 @@ public class BrowserDownloadViewModel extends ViewModel {
     private final GeckoStateDataRepository mGeckoStateDataRepository;
     private final Sorting mSorting;
     private final PriorityTaskThreadPoolExecutor mPriorityExecutor;
-    private final LiveData<List<BrowserDownloadEntity>> mObservableBrowser;
     private final MutableLiveData<Integer> mObservableBrowserType = new MutableLiveData<>();
+
+    /** The sheet's items: the capture list built into sections, with each
+     *  capture's download mark. Rebuilt when either input moves. */
+    private final MediatorLiveData<List<CaptureItem>> mItems = new MediatorLiveData<>();
+    /** The status query's input; re-posted only when its value changes, since
+     *  every post starts a new Room query. */
+    private final MutableLiveData<MarksQuery> mMarksQuery = new MutableLiveData<>();
+    private final MutableLiveData<BatchSummary> mBatchSummary = new MutableLiveData<>();
+
+    @Nullable private Snapshot mSnapshot;
+    @NonNull private Map<String, CaptureMark> mMarksByUrl = Collections.emptyMap();
+
+    /** The captures of the batch this sheet dispatched, by uid, in dispatch
+     *  order. Held as entities, not uids: a chip or the list limit can take a
+     *  batch member out of the shown list, and its mark must still count. */
+    private final LinkedHashMap<Integer, BrowserDownloadEntity> mBatch = new LinkedHashMap<>();
+    /** Batch members whose download row has been seen. One that was seen and
+     *  is gone was deleted from Downloads, and leaves the batch — otherwise
+     *  the card would count it as pending forever. */
+    private final Set<Integer> mBatchSeen = new HashSet<>();
 
     @Inject
     public BrowserDownloadViewModel(
             BrowserDownloadRepository repository,
+            DownloadDataRepository downloadDataRepository,
             GeckoRuntimeHelper geckoRuntimeHelper,
             GeckoStateDataRepository geckoStateDataRepository,
             PriorityTaskThreadPoolExecutor priorityExecutor,
@@ -55,16 +86,105 @@ public class BrowserDownloadViewModel extends ViewModel {
         this.mSorting = sorting;
 
         // Use Transformations.switchMap to react to limit changes
-        mObservableBrowser = Transformations.switchMap(mObservableBrowserType, limit ->
+        LiveData<Snapshot> snapshots = Transformations.switchMap(mObservableBrowserType, limit ->
                 Transformations.map(mBrowserDownloadRepository.getData(), entities ->
-                        filter(entities, limit)
+                        snapshot(entities, limit)
                 )
         );
+        LiveData<Map<String, CaptureMark>> marks = Transformations.switchMap(mMarksQuery, query -> {
+            if (query.origins.isEmpty()) {
+                return new MutableLiveData<>(Collections.emptyMap());
+            }
+            return Transformations.map(
+                    downloadDataRepository.getCaptureStatesLive(query.safe, query.origins),
+                    CaptureSections::marksByUrl);
+        });
+        mItems.addSource(snapshots, snapshot -> {
+            mSnapshot = snapshot;
+            updateMarksQuery();
+            rebuild();
+        });
+        mItems.addSource(marks, byUrl -> {
+            mMarksByUrl = byUrl != null ? byUrl : Collections.emptyMap();
+            rebuild();
+        });
     }
 
-    public LiveData<List<BrowserDownloadEntity>> getBrowserDownloads(int limit) {
+    public LiveData<List<CaptureItem>> getCaptureItems(int limit) {
         mObservableBrowserType.postValue(limit);
-        return mObservableBrowser;
+        return mItems;
+    }
+
+    /** The batch card's counts, or null while no batch is in flight. */
+    public LiveData<BatchSummary> getBatchSummary() {
+        return mBatchSummary;
+    }
+
+    /**
+     * Remember the captures the sheet just sent to Downloads as one batch, so
+     * the card above the list can count them down. A single download needs no
+     * card (its row says it), so fewer than two captures clear the batch.
+     */
+    public void startBatch(@NonNull Collection<BrowserDownloadEntity> captures) {
+        mBatch.clear();
+        mBatchSeen.clear();
+        if (captures.size() >= 2) {
+            for (BrowserDownloadEntity e : captures) {
+                if (e != null) {
+                    mBatch.put(e.getUid(), e);
+                }
+            }
+        }
+        updateMarksQuery();
+        rebuild();
+    }
+
+    private void updateMarksQuery() {
+        List<BrowserDownloadEntity> watched = new ArrayList<>();
+        boolean safe = false;
+        if (mSnapshot != null) {
+            watched.addAll(mSnapshot.shown);
+            safe = mSnapshot.incognito;
+        }
+        watched.addAll(mBatch.values());
+        MarksQuery query = new MarksQuery(safe, CaptureSections.origins(watched));
+        if (!query.equals(mMarksQuery.getValue())) {
+            mMarksQuery.setValue(query);
+        }
+    }
+
+    private void rebuild() {
+        Snapshot snapshot = mSnapshot;
+        if (snapshot == null) {
+            return;
+        }
+        Map<Integer, CaptureMark> marks = CaptureSections.marksByUid(snapshot.shown, mMarksByUrl);
+        final int visitId = snapshot.visitId;
+        mItems.setValue(CaptureSections.build(snapshot.shown,
+                e -> isCurrentPage(e, visitId),
+                snapshot.filtered, snapshot.currentImages, snapshot.earlierImages, marks,
+                snapshot.captionCounts));
+        updateBatchSummary();
+    }
+
+    private void updateBatchSummary() {
+        if (mBatch.isEmpty()) {
+            if (mBatchSummary.getValue() != null) {
+                mBatchSummary.setValue(null);
+            }
+            return;
+        }
+        Map<Integer, CaptureMark> marks = CaptureSections.marksByUid(mBatch.values(), mMarksByUrl);
+        // A member with no row yet is pending (the engine inserts it a moment
+        // after the dispatch); one whose row was there and is gone was deleted
+        // from Downloads and stops counting.
+        mBatch.keySet().removeIf(uid -> !marks.containsKey(uid) && mBatchSeen.contains(uid));
+        mBatchSeen.addAll(marks.keySet());
+        if (mBatch.isEmpty()) {
+            mBatchSummary.setValue(null);
+            return;
+        }
+        mBatchSummary.setValue(CaptureSections.summarize(mBatch.keySet(), marks));
     }
 
     /**
@@ -76,7 +196,8 @@ public class BrowserDownloadViewModel extends ViewModel {
         return mPriorityExecutor.getInFlight();
     }
 
-    private List<BrowserDownloadEntity> filter(List<BrowserDownloadEntity> entities, int limit) {
+    @Nullable
+    private Snapshot snapshot(List<BrowserDownloadEntity> entities, int limit) {
         if (entities == null) return null;
 
         // Note: Using the injected mGeckoRuntimeHelper instead of static call
@@ -86,7 +207,9 @@ public class BrowserDownloadViewModel extends ViewModel {
         // Sort BEFORE limiting so the current page's media always floats to
         // the top (and never gets truncated by the limit). Order:
         //   1. captures from the page-visit you're on now, first
-        //   2. within that group, by type: video, audio, subtitle, then rest
+        //   2. within each group, by type: video, audio, subtitle, other,
+        //      images (CaptureSections.typeRank) — the images form one block
+        //      of squares under their header, after the media rows
         //   3. then most-recent first (descending creationTime)
         // Step 1 is the session anchor. Within one tab the repo accumulates
         // captures across navigations; each is stamped with the navigation
@@ -96,28 +219,44 @@ public class BrowserDownloadViewModel extends ViewModel {
         // spell inconsistently (m./www., feed vs deep-link).
         // Step 2 surfaces the actual video + captions above the page's
         // thumbnails (which are captured later, so recency alone would bury the
-        // video). It applies ONLY inside the current-page group; everything
-        // below keeps pure recency.
+        // video). Since the mixed layout it applies to BOTH groups: the
+        // section builder puts each group's images under one header, which
+        // needs them contiguous.
         Comparator<BrowserDownloadEntity> order = Comparator
                 .comparingInt((BrowserDownloadEntity e) ->
                         isCurrentPage(e, currentVisitId) ? 0 : 1)
-                .thenComparingInt((BrowserDownloadEntity e) ->
-                        isCurrentPage(e, currentVisitId) ? typeRank(e) : 0)
+                .thenComparingInt(CaptureSections::typeRank)
                 .thenComparing(Comparator.reverseOrder());
 
-        var stream = entities.stream()
-                .filter(entity -> mSorting.getPredicateBrowser(entity) && entity.getTabId() == currentTabId)
-                .sorted(order);
+        List<BrowserDownloadEntity> tab = entities.stream()
+                .filter(entity -> entity != null && entity.getTabId() == currentTabId)
+                .collect(Collectors.toList());
+        List<BrowserDownloadEntity> all = tab.stream()
+                .filter(mSorting::getPredicateBrowser)
+                .sorted(order)
+                .collect(Collectors.toList());
 
-        if (limit > 0) {
-            stream = stream.limit(limit);
+        // Header counts come from the whole group, before the limit cuts it,
+        // so "Images 40" doesn't read 15, then 25, as the user scrolls more in.
+        int currentImages = 0;
+        int earlierImages = 0;
+        for (BrowserDownloadEntity e : all) {
+            if (CaptureSections.isSquare(e)) {
+                if (isCurrentPage(e, currentVisitId)) {
+                    currentImages++;
+                } else {
+                    earlierImages++;
+                }
+            }
         }
 
-        List<BrowserDownloadEntity> result = BuildUtils.hasAndroid14()
-                ? stream.toList()
-                : stream.collect(Collectors.toList());
-        logVisitTrace(currentTabId, currentVisitId, result);
-        return result;
+        List<BrowserDownloadEntity> shown = limit > 0 && all.size() > limit
+                ? new ArrayList<>(all.subList(0, limit))
+                : all;
+        boolean incognito = !shown.isEmpty() && shown.get(0).isIncognito();
+        logVisitTrace(currentTabId, currentVisitId, shown);
+        return new Snapshot(shown, currentVisitId, mSorting.isBrowserFiltered(),
+                currentImages, earlierImages, incognito, CaptureSections.captionCounts(tab));
     }
 
     /**
@@ -153,18 +292,6 @@ public class BrowserDownloadViewModel extends ViewModel {
         return currentVisitId > 0 && e.getVisitId() == currentVisitId;
     }
 
-    /** Ordering rank by media kind, used only within the current-page group:
-     *  the downloadable video first, then audio, then subtitles/CC, then
-     *  everything else (thumbnails, etc.). Mirrors the grid's mime-based
-     *  VIDEO/AUDIO/SUBTITLE labelling so the badge and the order agree. */
-    private static int typeRank(BrowserDownloadEntity e) {
-        String mime = e.getMimeType();
-        if (FileUriHelper.isVideo(mime)) return 0;
-        if (e.isAudio() || FileUriHelper.isAudio(mime)) return 1;
-        if (FileUriHelper.isSubtitle(mime)) return 2;
-        return 3;
-    }
-
     /** Navigation-visit id of the page currently shown in the active tab, or
      *  0 when there's no active page (home / state unavailable). The session
      *  anchor: entities stamped with this id are "this page". */
@@ -172,29 +299,6 @@ public class BrowserDownloadViewModel extends ViewModel {
         GeckoState state = mGeckoStateDataRepository.peekCurrentGeckoState();
         if (state == null || state.isHome()) return 0;
         return state.getVisitId();
-    }
-
-    /**
-     * Count of subtitle entities per video origin, computed from the FULL
-     * (unfiltered) repository list — not the chip-filtered adapter list, so
-     * the CC badge on a video row stays correct even when the Subtitle chip
-     * has filtered the caption siblings out of view. Keyed by origin; only
-     * origins with at least one subtitle appear. Restricted to the current
-     * tab to match the list the adapter shows.
-     */
-    public Map<String, Integer> subtitleCountsByOrigin() {
-        List<BrowserDownloadEntity> entities = mBrowserDownloadRepository.getData().getValue();
-        if (entities == null) return Collections.emptyMap();
-        int currentTabId = mGeckoRuntimeHelper.getTabId();
-        Map<String, Integer> counts = new HashMap<>();
-        for (BrowserDownloadEntity e : entities) {
-            if (e == null || e.getTabId() != currentTabId) continue;
-            if (!FileUriHelper.isSubtitle(e.getMimeType())) continue;
-            String origin = e.getFileOrigin();
-            if (origin == null || origin.isEmpty()) continue;
-            counts.merge(origin, 1, Integer::sum);
-        }
-        return counts;
     }
 
     /**
@@ -246,5 +350,53 @@ public class BrowserDownloadViewModel extends ViewModel {
 
     public void loadMore(int limit) {
         mObservableBrowserType.postValue(limit);
+    }
+
+    /** One filtered, sorted, limited capture list plus what the section
+     *  builder needs to know about it, taken together so they can't disagree. */
+    private static final class Snapshot {
+        final List<BrowserDownloadEntity> shown;
+        final int visitId;
+        final boolean filtered;
+        final int currentImages;
+        final int earlierImages;
+        final boolean incognito;
+        final Map<String, Integer> captionCounts;
+
+        Snapshot(List<BrowserDownloadEntity> shown, int visitId, boolean filtered,
+                 int currentImages, int earlierImages, boolean incognito,
+                 Map<String, Integer> captionCounts) {
+            this.shown = shown;
+            this.visitId = visitId;
+            this.filtered = filtered;
+            this.currentImages = currentImages;
+            this.earlierImages = earlierImages;
+            this.incognito = incognito;
+            this.captionCounts = captionCounts;
+        }
+    }
+
+    /** The status query's arguments. A private tab's downloads go to the Safe
+     *  Folder, so its captures are matched against vault rows only. */
+    private static final class MarksQuery {
+        final boolean safe;
+        final List<String> origins;
+
+        MarksQuery(boolean safe, List<String> origins) {
+            this.safe = safe;
+            this.origins = origins;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof MarksQuery other)) return false;
+            return safe == other.safe && origins.equals(other.origins);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(safe, origins);
+        }
     }
 }
