@@ -22,12 +22,8 @@
     <string name="browser_tabs_empty">Không có thẻ đang mở</string>
     <string name="browser_tabs_empty_archive">Không có tab nào đã đóng gần đây.</string>
     <string name="cancel">Hủy</string>
-    <string name="capture_empty_audio_message">Không có sẵn tập tin âm thanh.</string>
-    <string name="capture_empty_gifs_message">Không có sẵn Gifs.</string>
-    <string name="capture_empty_images_message">Không có sẵn hình ảnh nào.</string>
     <string name="capture_empty_message">Không có sẵn phương tiện để tải xuống.</string>
     <string name="capture_empty_subtext">Tải lại trang web và Firedown sẽ phát hiện phương tiện có sẵn.</string>
-    <string name="capture_empty_video_message">Không có video nào.</string>
     <string name="clipboard">Sao chép vào clipboard</string>
     <string name="clipboard_from">Từ bộ nhớ tạm</string>
     <string name="close_tab">Đóng thẻ</string>

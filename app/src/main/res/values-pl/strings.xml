@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">Brak otwartych kart</string>
     <string name="browser_tabs_empty_archive">Brak ostatnio zamkniętych kart.</string>
     <string name="cancel">Anulować</string>
-    <string name="capture_empty_audio_message">Brak dostępnych plików audio.</string>
-    <string name="capture_empty_gifs_message">Brak dostępnych GIF-ów.</string>
-    <string name="capture_empty_images_message">Brak dostępnych obrazów.</string>
     <string name="capture_empty_message">Brak multimediów do pobrania.</string>
     <string name="capture_empty_subtext">Załaduj ponownie witrynę, a Firedown wykryje dostępne multimedia.</string>
-    <string name="capture_empty_video_message">Brak dostępnych filmów.</string>
     <string name="clipboard">Skopiowane do schowka</string>
     <string name="clipboard_from">Ze schowka</string>
     <string name="close_tab">Zamknij kartę</string>

@@ -29,12 +29,8 @@
     <string name="browser_tabs_empty">Siin kuvatakse teie avatud vahelehed.</string>
     <string name="browser_tabs_empty_archive">Hiljuti suletud vahelehti pole.</string>
     <string name="cancel">Tühista</string>
-    <string name="capture_empty_audio_message">Helifaile pole saadaval.</string>
-    <string name="capture_empty_gifs_message">Gifi pole saadaval.</string>
-    <string name="capture_empty_images_message">Pildid pole saadaval.</string>
     <string name="capture_empty_message">Allalaadimiseks pole meediume saadaval.</string>
     <string name="capture_empty_subtext">Laadige veebisait uuesti ja Firedown tuvastab saadaoleva meedia.</string>
-    <string name="capture_empty_video_message">Saadaval pole ühtegi videot.</string>
     <string name="clipboard">Kopeeriti lõikelauale</string>
     <string name="close_tab">Sulge kaart</string>
 <string name="close_tabs_after_one_day">Ühe päeva pärast</string>

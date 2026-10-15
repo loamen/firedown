@@ -19,12 +19,8 @@
     <string name="browser_tabs_empty">Sem separadores abertos</string>
     <string name="browser_tabs_empty_archive">Nenhum separador fechado recentemente.</string>
     <string name="cancel">Cancelar</string>
-    <string name="capture_empty_audio_message">Nenhum arquivo de áudio disponível.</string>
-    <string name="capture_empty_gifs_message">Nenhum Gif disponível.</string>
-    <string name="capture_empty_images_message">Nenhuma imagem disponível.</string>
     <string name="capture_empty_message">Nenhuma mídia disponível para download.</string>
     <string name="capture_empty_subtext">Recarregue o site e o Firedown detetará a mídia disponível.</string>
-    <string name="capture_empty_video_message">Nenhum vídeo disponível.</string>
     <string name="clipboard">Copiado para a área de transferência</string>
     <string name="clipboard_from">Da área de transferência</string>
     <string name="close_tab">Fechar separador</string>

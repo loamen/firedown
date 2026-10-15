@@ -12,12 +12,8 @@
     <string name="browser_tabs_empty">Tab terbuka anda akan ditunjukkan di sini.</string>
     <string name="browser_tabs_empty_archive">Tiada tab yang ditutup baru-baru ini.</string>
     <string name="cancel">Batal</string>
-    <string name="capture_empty_audio_message">Tiada fail Audio tersedia.</string>
-    <string name="capture_empty_gifs_message">Tiada Gif tersedia.</string>
-    <string name="capture_empty_images_message">Tiada Imej tersedia.</string>
     <string name="capture_empty_message">Tiada media tersedia untuk dimuat turun.</string>
     <string name="capture_empty_subtext">Muat semula tapak web dan Firedown akan mengesan media yang tersedia.</string>
-    <string name="capture_empty_video_message">Tiada video tersedia.</string>
     <string name="clipboard">Disalin ke papan keratan</string>
 <string name="connection_secure">Sambungan selamat</string>
     <string name="delete">Padam</string>

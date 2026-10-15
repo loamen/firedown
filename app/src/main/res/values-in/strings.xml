@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">Tidak ada tab terbuka</string>
     <string name="browser_tabs_empty_archive">Tidak ada tab yang baru saja ditutup.</string>
     <string name="cancel">Membatalkan</string>
-    <string name="capture_empty_audio_message">Tidak ada file Audio yang tersedia.</string>
-    <string name="capture_empty_gifs_message">Tidak ada Gif yang tersedia.</string>
-    <string name="capture_empty_images_message">Tidak ada Gambar yang tersedia.</string>
     <string name="capture_empty_message">Tidak ada media yang tersedia untuk diunduh.</string>
     <string name="capture_empty_subtext">Muat ulang situs web dan Firedown akan mendeteksi media yang tersedia.</string>
-    <string name="capture_empty_video_message">Tidak ada video yang tersedia.</string>
     <string name="clipboard">Disalin ke papan klip</string>
     <string name="clipboard_from">Dari papan klip</string>
     <string name="close_tab">Tutup tab</string>

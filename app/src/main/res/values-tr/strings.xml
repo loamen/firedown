@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">Açık sekme yok</string>
     <string name="browser_tabs_empty_archive">Yakın zamanda kapatılmış sekme yok.</string>
     <string name="cancel">İptal etmek</string>
-    <string name="capture_empty_audio_message">Kullanılabilir Ses dosyası yok.</string>
-    <string name="capture_empty_gifs_message">Gif mevcut değil.</string>
-    <string name="capture_empty_images_message">Resim mevcut değil.</string>
     <string name="capture_empty_message">İndirilebilecek medya yok.</string>
     <string name="capture_empty_subtext">Web sitesini yeniden yüklediğinizde Firedown mevcut medyayı algılayacaktır.</string>
-    <string name="capture_empty_video_message">Hiçbir video mevcut değil.</string>
     <string name="clipboard">Panoya kopyalandı</string>
     <string name="clipboard_from">Panodan</string>
     <string name="close_tab">Sekmeyi kapat</string>

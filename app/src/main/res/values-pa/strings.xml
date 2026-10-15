@@ -11,12 +11,8 @@
     <string name="browser_tabs_empty">ਤੁਹਾਡੀਆਂ ਖੁੱਲ੍ਹੀਆਂ ਟੈਬਾਂ ਇੱਥੇ ਦਿਖਾਈਆਂ ਜਾਣਗੀਆਂ।</string>
     <string name="browser_tabs_empty_archive">ਕੋਈ ਹਾਲ ਹੀ ਵਿੱਚ ਬੰਦ ਕੀਤੀਆਂ ਟੈਬਾਂ ਨਹੀਂ ਹਨ।</string>
     <string name="cancel">ਰੱਦ ਕਰੋ</string>
-    <string name="capture_empty_audio_message">ਕੋਈ ਆਡੀਓ ਫਾਈਲਾਂ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।</string>
-    <string name="capture_empty_gifs_message">ਕੋਈ GIF ਉਪਲਬਧ ਨਹੀਂ ਹਨ।</string>
-    <string name="capture_empty_images_message">ਕੋਈ ਚਿੱਤਰ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।</string>
     <string name="capture_empty_message">ਡਾਊਨਲੋਡ ਕਰਨ ਲਈ ਕੋਈ ਮੀਡੀਆ ਉਪਲਬਧ ਨਹੀਂ ਹੈ।</string>
     <string name="capture_empty_subtext">ਵੈੱਬਸਾਈਟ ਨੂੰ ਰੀਲੋਡ ਕਰੋ ਅਤੇ ਫਾਇਰਡਾਊਨ ਉਪਲਬਧ ਮੀਡੀਆ ਦਾ ਪਤਾ ਲਗਾ ਲਵੇਗਾ।</string>
-    <string name="capture_empty_video_message">ਕੋਈ ਵੀਡੀਓ ਉਪਲਬਧ ਨਹੀਂ ਹਨ।</string>
     <string name="clipboard">ਕਲਿੱਪਬੋਰਡ \'ਤੇ ਕਾਪੀ ਕੀਤਾ ਗਿਆ</string>
 <string name="connection_secure">ਕਨੈਕਸ਼ਨ ਸੁਰੱਖਿਅਤ ਹੈ</string>
     <string name="delete">ਮਿਟਾਓ</string>

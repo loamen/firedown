@@ -31,12 +31,8 @@
     <string name="browser_tabs_empty">Ei avoimia välilehtiä</string>
     <string name="browser_tabs_empty_archive">Ei äskettäin suljettuja välilehtiä.</string>
     <string name="cancel">Peruuttaa</string>
-    <string name="capture_empty_audio_message">Äänitiedostoja ei ole saatavilla.</string>
-    <string name="capture_empty_gifs_message">Gifiä ei ole saatavilla.</string>
-    <string name="capture_empty_images_message">Ei kuvia saatavilla.</string>
     <string name="capture_empty_message">Mediaa ei ole ladattavissa.</string>
     <string name="capture_empty_subtext">Lataa verkkosivusto uudelleen, niin Firedown havaitsee käytettävissä olevan median.</string>
-    <string name="capture_empty_video_message">Ei videoita saatavilla.</string>
     <string name="clipboard">Kopioitu leikepöydälle</string>
     <string name="clipboard_from">Leikepöydältä</string>
     <string name="close_tab">Sulje välilehti</string>

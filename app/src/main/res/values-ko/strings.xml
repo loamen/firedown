@@ -25,12 +25,8 @@
     <string name="browser_tabs_empty">열린 탭 없음</string>
     <string name="browser_tabs_empty_archive">최근에 닫은 탭이 없습니다.</string>
     <string name="cancel">취소</string>
-    <string name="capture_empty_audio_message">사용 가능한 오디오 파일이 없습니다.</string>
-    <string name="capture_empty_gifs_message">사용 가능한 GIF가 없습니다.</string>
-    <string name="capture_empty_images_message">사용 가능한 이미지가 없습니다.</string>
     <string name="capture_empty_message">다운로드에 사용할 수 있는 미디어가 없습니다.</string>
     <string name="capture_empty_subtext">웹사이트를 다시 로드하면 Firedown이 사용 가능한 미디어를 감지합니다.</string>
-    <string name="capture_empty_video_message">사용 가능한 동영상이 없습니다.</string>
     <string name="clipboard">클립보드에 복사됨</string>
     <string name="clipboard_from">클립보드에서</string>
     <string name="close_tab">탭 닫기</string>

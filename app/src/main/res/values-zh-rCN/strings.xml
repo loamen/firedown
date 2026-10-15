@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">没有打开的标签页</string>
     <string name="browser_tabs_empty_archive">没有最近关闭的标签。</string>
     <string name="cancel">取消</string>
-    <string name="capture_empty_audio_message">没有可用的音频文件。</string>
-    <string name="capture_empty_gifs_message">没有可用的 GIF。</string>
-    <string name="capture_empty_images_message">没有可用的图像。</string>
     <string name="capture_empty_message">没有可供下载的媒体。</string>
     <string name="capture_empty_subtext">重新加载网站，Firedown 将检测可用媒体。</string>
-    <string name="capture_empty_video_message">没有可用的视频。</string>
     <string name="cert_connection_exception">安全例外</string>
     <string name="cert_connection_insecure">连接不安全</string>
     <string name="cert_connection_secure">连接安全</string>

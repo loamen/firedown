@@ -12,12 +12,8 @@
     <string name="browser_tabs_empty">Ձեր բաց ներդիրները կցուցադրվեն այստեղ:</string>
     <string name="browser_tabs_empty_archive">Վերջերս փակված ներդիրներ չկան:</string>
     <string name="cancel">Չեղարկել</string>
-    <string name="capture_empty_audio_message">Աուդիո ֆայլեր հասանելի չեն:</string>
-    <string name="capture_empty_gifs_message">Gif-ներ չկան:</string>
-    <string name="capture_empty_images_message">Պատկերներ չկան:</string>
     <string name="capture_empty_message">Ներբեռնման համար հասանելի մեդիա չկա:</string>
     <string name="capture_empty_subtext">Վերբեռնեք կայքը և Firedown-ը կհայտնաբերի հասանելի լրատվամիջոցները:</string>
-    <string name="capture_empty_video_message">Տեսանյութեր չկան։</string>
     <string name="clipboard">Պատճենվել է սեղմատախտակում</string>
 <string name="connection_secure">Միացումն ապահով է</string>
     <string name="delete">Ջնջել</string>

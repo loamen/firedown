@@ -20,12 +20,8 @@
     <string name="browser_tabs_empty">আপনার খোলা ট্যাব এখানে দেখানো হবে.</string>
     <string name="browser_tabs_empty_archive">কোনো সম্প্রতি বন্ধ ট্যাব.</string>
     <string name="cancel">বাতিল করুন</string>
-    <string name="capture_empty_audio_message">কোন অডিও ফাইল উপলব্ধ নেই.</string>
-    <string name="capture_empty_gifs_message">কোন GIF উপলব্ধ নেই.</string>
-    <string name="capture_empty_images_message">কোন ছবি উপলব্ধ.</string>
     <string name="capture_empty_message">ডাউনলোড করার জন্য কোন মিডিয়া উপলব্ধ.</string>
     <string name="capture_empty_subtext">ওয়েবসাইট পুনরায় লোড করুন এবং ফায়ারডাউন উপলব্ধ মিডিয়া সনাক্ত করবে।</string>
-    <string name="capture_empty_video_message">কোনো ভিডিও উপলব্ধ নেই৷</string>
     <string name="clipboard">ক্লিপবোর্ডে কপি করা হয়েছে</string>
     <string name="close_tab">ট্যাব বন্ধ করুন</string>
 <string name="close_tabs_after_one_day">একদিন পর</string>

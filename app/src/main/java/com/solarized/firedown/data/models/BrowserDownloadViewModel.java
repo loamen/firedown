@@ -9,7 +9,6 @@ import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
 import com.solarized.firedown.BuildConfig;
-import com.solarized.firedown.Sorting;
 import com.solarized.firedown.data.capture.CaptureItem;
 import com.solarized.firedown.data.capture.CaptureMark;
 import com.solarized.firedown.data.capture.CaptureSections;
@@ -50,7 +49,6 @@ public class BrowserDownloadViewModel extends ViewModel {
     private final BrowserDownloadRepository mBrowserDownloadRepository;
     private final GeckoRuntimeHelper mGeckoRuntimeHelper;
     private final GeckoStateDataRepository mGeckoStateDataRepository;
-    private final Sorting mSorting;
     private final PriorityTaskThreadPoolExecutor mPriorityExecutor;
     private final MutableLiveData<Integer> mObservableBrowserType = new MutableLiveData<>();
 
@@ -65,8 +63,8 @@ public class BrowserDownloadViewModel extends ViewModel {
     @Nullable private Snapshot mSnapshot;
     /** Whether the fold is open: the user's last tap, or the sheet's own
      *  choice. Null until either, which is closed. While the page shown now
-     *  lists nothing (no page, nothing caught yet, nothing of the chip's
-     *  type) the fold is open whatever this says, and can't be closed: the
+     *  lists nothing (no page, or nothing caught yet) the fold is open
+     *  whatever this says, and can't be closed: the
      *  earlier captures are all there is (CaptureSections.earlierOpen). That
      *  opening LATCHES here (rebuild), so a capture landing on the page a
      *  moment later doesn't snap the list shut under the user. The view model
@@ -76,8 +74,9 @@ public class BrowserDownloadViewModel extends ViewModel {
     @NonNull private Map<String, CaptureMark> mMarksByUrl = Collections.emptyMap();
 
     /** The captures of the batch this sheet dispatched, by uid, in dispatch
-     *  order. Held as entities, not uids: a chip or the list limit can take a
-     *  batch member out of the shown list, and its mark must still count. */
+     *  order. Held as entities, not uids: the list limit or a closed fold
+     *  can take a batch member out of the shown list, and its mark must
+     *  still count. */
     private final LinkedHashMap<Integer, BrowserDownloadEntity> mBatch = new LinkedHashMap<>();
     /** Batch members whose download row has been seen. One that was seen and
      *  is gone was deleted from Downloads, and leaves the batch — otherwise
@@ -93,14 +92,12 @@ public class BrowserDownloadViewModel extends ViewModel {
             DownloadDataRepository downloadDataRepository,
             GeckoRuntimeHelper geckoRuntimeHelper,
             GeckoStateDataRepository geckoStateDataRepository,
-            PriorityTaskThreadPoolExecutor priorityExecutor,
-            Sorting sorting) {
+            PriorityTaskThreadPoolExecutor priorityExecutor) {
 
         this.mBrowserDownloadRepository = repository;
         this.mGeckoRuntimeHelper = geckoRuntimeHelper;
         this.mGeckoStateDataRepository = geckoStateDataRepository;
         this.mPriorityExecutor = priorityExecutor;
-        this.mSorting = sorting;
 
         // Use Transformations.switchMap to react to limit changes
         LiveData<Snapshot> snapshots = Transformations.switchMap(mObservableBrowserType, limit ->
@@ -190,9 +187,9 @@ public class BrowserDownloadViewModel extends ViewModel {
         if (snapshot == null) {
             return;
         }
-        // Not only from null: a fold the user closed under another chip
-        // opens here too, or the first capture of the page would close the
-        // earlier ones the user is looking at.
+        // Latched, not only computed: once open because the page listed
+        // nothing, the page's first capture must not close the earlier ones
+        // the user is looking at.
         if (snapshot.currentTotal == 0 && snapshot.earlierTotal > 0) {
             mEarlierOpen = true;
         }
@@ -205,7 +202,7 @@ public class BrowserDownloadViewModel extends ViewModel {
                         snapshot.earlierPreview);
         mItems.setValue(CaptureSections.build(snapshot.shown,
                 current::contains,
-                snapshot.filtered, snapshot.currentImages, snapshot.earlierImages,
+                snapshot.currentImages, snapshot.earlierImages,
                 earlier, marks, snapshot.captionCounts));
         updateBatchSummary();
     }
@@ -283,13 +280,10 @@ public class BrowserDownloadViewModel extends ViewModel {
                 .thenComparing(Comparator.reverseOrder());
         // A subtitle whose video's ⋮ already offers it is not an item
         // (CaptureSections.ridesWithVideo): the video counts it and its
-        // picker lists it, and the sheet has no Subtitle chip that could
-        // list it again. Dropped before anything is counted, so the fold's
+        // picker lists it. Dropped before anything is counted, so the fold's
         // "N files" and the empty-page rule count what is shown.
-        boolean filtered = mSorting.isBrowserFiltered();
         Set<String> captionDoors = CaptureSections.captionDoors(tab);
         List<BrowserDownloadEntity> all = tab.stream()
-                .filter(mSorting::getPredicateBrowser)
                 .filter(e -> !CaptureSections.ridesWithVideo(e, captionDoors))
                 .sorted(order)
                 .collect(Collectors.toList());
@@ -333,7 +327,7 @@ public class BrowserDownloadViewModel extends ViewModel {
                 : all;
         boolean incognito = !shown.isEmpty() && shown.get(0).isIncognito();
         logVisitTrace(currentTabId, currentVisitId, current, shown);
-        return new Snapshot(shown, current, filtered,
+        return new Snapshot(shown, current,
                 currentImages, earlierImages, all.size() - earlier.size(), earlier.size(),
                 new ArrayList<>(earlierDomains), CaptureSections.preview(earlier), incognito,
                 CaptureSections.captionCounts(tab));
@@ -429,29 +423,8 @@ public class BrowserDownloadViewModel extends ViewModel {
                 .collect(Collectors.toList());
     }
 
-    public int getCurrentSortBrowserId(){
-        return mSorting.getCurrentSortBrowserId();
-    }
-
-    public String getCurrentSortForIds(int selectedIds){
-        return mSorting.getCurrentSortForIds(selectedIds);
-    }
-
-    public void setCurrentSortBrowser(int type){
-        mSorting.setCurrentSortBrowser(type);
-    }
-
-    public void setCurrentSortBrowser(String type){
-        mSorting.setCurrentSortBrowser(type);
-    }
-
     public void clearBrowserDownloads() {
         mBrowserDownloadRepository.postClear();
-    }
-
-    public void sortBrowserDownloads(String sorting) {
-        mSorting.setCurrentSortBrowser(sorting);
-        mBrowserDownloadRepository.postComplete();
     }
 
     public void update() {
@@ -462,13 +435,12 @@ public class BrowserDownloadViewModel extends ViewModel {
         mObservableBrowserType.postValue(limit);
     }
 
-    /** One filtered, sorted, limited capture list plus what the section
+    /** One sorted, limited capture list plus what the section
      *  builder needs to know about it, taken together so they can't disagree. */
     private static final class Snapshot {
         final List<BrowserDownloadEntity> shown;
         /** The captures that are "this page" (see currentPage). */
         final Set<BrowserDownloadEntity> current;
-        final boolean filtered;
         final int currentImages;
         final int earlierImages;
         final int currentTotal;
@@ -479,13 +451,11 @@ public class BrowserDownloadViewModel extends ViewModel {
         final Map<String, Integer> captionCounts;
 
         Snapshot(List<BrowserDownloadEntity> shown, Set<BrowserDownloadEntity> current,
-                 boolean filtered,
                  int currentImages, int earlierImages, int currentTotal, int earlierTotal,
                  List<String> earlierDomains, List<BrowserDownloadEntity> earlierPreview,
                  boolean incognito, Map<String, Integer> captionCounts) {
             this.shown = shown;
             this.current = current;
-            this.filtered = filtered;
             this.currentImages = currentImages;
             this.earlierImages = earlierImages;
             this.currentTotal = currentTotal;

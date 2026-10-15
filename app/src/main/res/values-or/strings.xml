@@ -14,12 +14,8 @@
     <string name="browser_tabs_empty">ତୁମର ଖୋଲା ଟ୍ୟାବଗୁଡ଼ିକ ଏଠାରେ ଦେଖାଯିବ |</string>
     <string name="browser_tabs_empty_archive">ସମ୍ପ୍ରତି ବନ୍ଦ ଟ୍ୟାବଗୁଡ଼ିକ ନାହିଁ |</string>
     <string name="cancel">ବାତିଲ୍ କରନ୍ତୁ |</string>
-    <string name="capture_empty_audio_message">କ Audio ଣସି ଅଡିଓ ଫାଇଲ୍ ଉପଲବ୍ଧ ନାହିଁ |</string>
-    <string name="capture_empty_gifs_message">କ G ଣସି ଉପହାର ଉପଲବ୍ଧ ନାହିଁ |</string>
-    <string name="capture_empty_images_message">କ Images ଣସି ପ୍ରତିଛବି ଉପଲବ୍ଧ ନାହିଁ |</string>
     <string name="capture_empty_message">ଡାଉନଲୋଡ୍ ପାଇଁ କ media ଣସି ମିଡିଆ ଉପଲବ୍ଧ ନାହିଁ |</string>
     <string name="capture_empty_subtext">ୱେବସାଇଟ୍ ପୁନ elo ଲୋଡ୍ କରନ୍ତୁ ଏବଂ ଫିରେଡାଉନ୍ ଉପଲବ୍ଧ ମିଡିଆ ଚିହ୍ନଟ କରିବ |</string>
-    <string name="capture_empty_video_message">କ videos ଣସି ଭିଡିଓ ଉପଲବ୍ଧ ନାହିଁ |</string>
     <string name="clipboard">କ୍ଲିପବୋର୍ଡରେ କପି କରାଯାଇଛି |</string>
     <string name="close_tabs_after_one_month">ଗୋଟେ ମାସ ପରେ</string>
 <string name="connection_secure">ସଂଯୋଗ ସୁରକ୍ଷିତ ଅଟେ |</string>

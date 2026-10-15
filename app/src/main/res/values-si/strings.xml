@@ -20,12 +20,8 @@
     <string name="browser_tabs_empty">ඔබේ විවෘත ටැබ් මෙහි පෙන්වනු ඇත.</string>
     <string name="browser_tabs_empty_archive">මෑතකදී වසා දැමූ ටැබ් නැත.</string>
     <string name="cancel">අවලංගු කරන්න</string>
-    <string name="capture_empty_audio_message">ශ්‍රව්‍ය ගොනු නොමැත.</string>
-    <string name="capture_empty_gifs_message">Gifs නොමැත.</string>
-    <string name="capture_empty_images_message">පින්තූර නොමැත.</string>
     <string name="capture_empty_message">බාගත කිරීම සඳහා මාධ්‍ය නොමැත.</string>
     <string name="capture_empty_subtext">වෙබ් අඩවිය නැවත පූරණය කරන්න සහ Firedown පවතින මාධ්‍ය හඳුනා ගනී.</string>
-    <string name="capture_empty_video_message">වීඩියෝ නොමැත.</string>
     <string name="clipboard">පසුරු පුවරුවට පිටපත් කර ඇත</string>
     <string name="close_tab">පටිත්ත වසන්න</string>
 <string name="close_tabs_after_one_day">දවසකට පසු</string>

@@ -3,7 +3,6 @@ package com.solarized.firedown;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
-import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.entity.DownloadEntity;
 import com.solarized.firedown.utils.FileUriHelper;
 import javax.inject.Inject;
@@ -29,7 +28,6 @@ public class Sorting {
 
     private final SharedPreferences mSharedPreferences;
 
-    private String mCurrentSortBrowser = SORT_TYPE_ALL;
     private String mCurrentSortDownloads = SORT_TYPE_ALL;
 
     @Inject
@@ -47,28 +45,6 @@ public class Sorting {
         mSharedPreferences.edit().putInt(Preferences.SORT_LOCAL, type).apply();
     }
 
-    /** True while a Captured-sheet filter chip is active. */
-    public boolean isBrowserFiltered() {
-        return !SORT_TYPE_ALL.equals(mCurrentSortBrowser);
-    }
-
-    public void setCurrentSortBrowser(String type) {
-        this.mCurrentSortBrowser = type;
-    }
-
-    public void setCurrentSortBrowser(int selectedId) {
-        mCurrentSortBrowser = getCurrentSortForIds(selectedId);
-    }
-
-    public int getCurrentSortBrowserId() {
-        if (SORT_TYPE_VIDEO.equals(mCurrentSortBrowser)) return R.id.chip_video;
-        if (SORT_TYPE_AUDIO.equals(mCurrentSortBrowser)) return R.id.chip_audio;
-        if (SORT_TYPE_GIF.equals(mCurrentSortBrowser)) return R.id.chip_gif;
-        if (SORT_TYPE_IMAGES.equals(mCurrentSortBrowser)) return R.id.chip_image;
-        if (SORT_TYPE_DOCS.equals(mCurrentSortBrowser)) return R.id.chip_doc;
-        return R.id.chip_all;
-    }
-
     public void setCurrentSortDownloadsForId(int selectedId) {
         mCurrentSortDownloads = getCurrentSortForIds(selectedId);
     }
@@ -83,18 +59,6 @@ public class Sorting {
         if (selectedId == R.id.chip_zip) return SORT_TYPE_ZIP;
         if (selectedId == R.id.chip_subtitle) return SORT_TYPE_SUBTITLE;
         return SORT_TYPE_ALL;
-    }
-
-    public boolean getPredicateBrowser(BrowserDownloadEntity entity) {
-        if (entity == null) return false;
-        String mimeType = entity.getMimeType();
-        return switch (mCurrentSortBrowser) {
-            case SORT_TYPE_VIDEO -> FileUriHelper.isVideo(mimeType);
-            case SORT_TYPE_AUDIO -> FileUriHelper.isAudio(mimeType);
-            case SORT_TYPE_IMAGES -> FileUriHelper.isImage(mimeType) && !FileUriHelper.isGIF(mimeType);
-            case SORT_TYPE_GIF -> FileUriHelper.isGIF(mimeType);
-            default -> true;
-        };
     }
 
     public boolean getPredicateDownloads(DownloadEntity downloadEntity) {

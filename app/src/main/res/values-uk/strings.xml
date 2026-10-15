@@ -31,12 +31,8 @@
     <string name="browser_tabs_empty">Немає відкритих вкладок</string>
     <string name="browser_tabs_empty_archive">Немає нещодавно закритих вкладок.</string>
     <string name="cancel">Скасувати</string>
-    <string name="capture_empty_audio_message">Немає доступних аудіофайлів.</string>
-    <string name="capture_empty_gifs_message">Немає доступних GIF-файлів.</string>
-    <string name="capture_empty_images_message">Зображення відсутні.</string>
     <string name="capture_empty_message">Немає медіафайлів, доступних для завантаження.</string>
     <string name="capture_empty_subtext">Перезавантажте веб-сайт, і Firedown виявить доступні носії.</string>
-    <string name="capture_empty_video_message">Немає доступних відео.</string>
     <string name="clipboard">Скопійовано в буфер обміну</string>
     <string name="clipboard_from">З буфера обміну</string>
     <string name="close_tab">Закрити вкладку</string>

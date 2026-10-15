@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">開いているタブはありません</string>
     <string name="browser_tabs_empty_archive">最近閉じたタブはありません。</string>
     <string name="cancel">キャンセル</string>
-    <string name="capture_empty_audio_message">利用可能な音声ファイルがありません。</string>
-    <string name="capture_empty_gifs_message">利用可能な GIF はありません。</string>
-    <string name="capture_empty_images_message">利用可能な画像がありません。</string>
     <string name="capture_empty_message">ダウンロードできるメディアがありません。</string>
     <string name="capture_empty_subtext">Web サイトをリロードすると、Firedown が利用可能なメディアを検出します。</string>
-    <string name="capture_empty_video_message">利用できるビデオはありません。</string>
     <string name="cert_connection_exception">セキュリティ例外</string>
     <string name="cert_connection_insecure">接続は安全ではありません</string>
     <string name="cert_connection_secure">接続は安全です</string>

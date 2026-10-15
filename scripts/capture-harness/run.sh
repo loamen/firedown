@@ -3,10 +3,11 @@
 # capture but an image, then an "Images" header and the squares; the fold
 # row for the earlier pages, closed or open, and where it lands when the list
 # limit cuts first; the domain on earlier tiles only when they span several
-# sites; no headers or type labels under a chip; the CC count on the video
-# only, never on an audio capture in a video container; which subtitle
-# rides with its video (a video with qualities is its door); the fold's preview
-# picks; the filename test behind "Video on <site>"), CaptureMark (download
+# sites; which squares an "Images" header's select check takes, and which
+# header a square repaints; the CC count on the video only, never on an audio
+# capture in a video container; which subtitle rides with its video (a video
+# with qualities is its door); the fold's preview picks; the filename test
+# behind "Video on <site>"), CaptureMark (download
 # row -> mark, the FILE_NOT_FOUND exemption, finishing / live, which of two
 # marks wins), the URL matching that ties a download to its capture (own URL
 # or any variant's), the batch card's counts, the origin list's cap, and

@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">Ваше отворене картице ће бити приказане овде.</string>
     <string name="browser_tabs_empty_archive">Нема недавно затворених картица.</string>
     <string name="cancel">Поништи</string>
-    <string name="capture_empty_audio_message">Нема доступних аудио датотека.</string>
-    <string name="capture_empty_gifs_message">Нема доступних GIF-ова.</string>
-    <string name="capture_empty_images_message">Нема доступних слика.</string>
     <string name="capture_empty_message">Нема доступних медија за преузимање.</string>
     <string name="capture_empty_subtext">Поново учитајте веб локацију и Firedown ће открити доступне медије.</string>
-    <string name="capture_empty_video_message">Нема доступних видео снимака.</string>
     <string name="clipboard">Копирано у међуспремник</string>
     <string name="close_tab">Затвори језичак</string>
 <string name="close_tabs_after_one_day">После једног дана</string>

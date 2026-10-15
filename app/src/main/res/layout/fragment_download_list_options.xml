@@ -33,8 +33,7 @@
         <!-- Chip order is frequency-first within the visible window: Images
              (the generic catcher's most numerous type after video) and GIF sit
              ahead of the rarely-filtered Subtitle, which leads the long-tail
-             half. Keep this order in lockstep with
-             fragment_dialog_browser_options_list_options.xml (Captured). -->
+             half. (The Captured sheet has no chip rail.) -->
         <com.google.android.material.chip.Chip
             android:id="@+id/chip_image"
             style="@style/Theme.FireDown.Download.Chip"

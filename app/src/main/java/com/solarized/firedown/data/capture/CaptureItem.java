@@ -18,9 +18,10 @@ import java.util.Objects;
  * and captures from earlier pages of the tab sit behind one FOLD row that
  * opens in place. The view model builds this list
  * ({@link CaptureSections#build}) so the section structure, the per-item
- * presentation flags and the download marks land in ONE submit: a chip tap
- * can never paint the old list in the new presentation, which is the class
- * of bug the old adapter-side "presentation commit" machinery existed for.
+ * presentation flags and the download marks land in ONE submit. There are no
+ * filter chips: the list's own order (video, audio, other, then the images
+ * under their header) does what they did, and selecting a whole section is
+ * the Images header's check.
  */
 public final class CaptureItem {
 
@@ -39,9 +40,6 @@ public final class CaptureItem {
     public final int group;
     /** The capture; null for a header or the fold. */
     @Nullable public final BrowserDownloadEntity entity;
-    /** Show the type label (VIDEO, AUDIO, GIF…). False while a filter chip is
-     *  active: the chip already states the type. */
-    public final boolean showType;
     /** End a tile's facts with the capture's domain: only on earlier pages,
      *  and only when they span more than one site (with one, the fold row
      *  names it). */
@@ -55,8 +53,8 @@ public final class CaptureItem {
     /** A header's count, or the fold's: the earlier group's captures. */
     public final int count;
     /** Subtitle tracks captured for this video's page ("CC 2"), counted over
-     *  the tab's whole capture list so a chip that hides the subtitles doesn't
-     *  hide the count. 0 for everything but a video. */
+     *  the tab's whole capture list, the tracks the sheet leaves to the video
+     *  included. 0 for everything but a video. */
     public final int captionCount;
     /** What the download table says about this capture, or null. */
     @Nullable public final CaptureMark mark;
@@ -72,7 +70,7 @@ public final class CaptureItem {
     @NonNull public final List<BrowserDownloadEntity> preview;
 
     private CaptureItem(int type, int group, @Nullable BrowserDownloadEntity entity,
-                        boolean showType, boolean showDomain, boolean onlyVideo,
+                        boolean showDomain, boolean onlyVideo,
                         int count, int captionCount,
                         @Nullable CaptureMark mark, boolean open, boolean collapsible,
                         @NonNull List<String> domains,
@@ -80,7 +78,6 @@ public final class CaptureItem {
         this.type = type;
         this.group = group;
         this.entity = entity;
-        this.showType = showType;
         this.showDomain = showDomain;
         this.onlyVideo = onlyVideo;
         this.count = count;
@@ -93,34 +90,33 @@ public final class CaptureItem {
     }
 
     private static CaptureItem capture(int type, @NonNull BrowserDownloadEntity entity, int group,
-                                       boolean showType, boolean showDomain, boolean onlyVideo,
+                                       boolean showDomain, boolean onlyVideo,
                                        int captionCount, @Nullable CaptureMark mark) {
-        return new CaptureItem(type, group, entity, showType, showDomain, onlyVideo, 0,
+        return new CaptureItem(type, group, entity, showDomain, onlyVideo, 0,
                 captionCount, mark, false, false, Collections.emptyList(), Collections.emptyList());
     }
 
     /** Anything but an image: a video, its audio, a subtitle track, a file. */
     public static CaptureItem tile(@NonNull BrowserDownloadEntity entity, int group,
-                                   boolean showType, boolean showDomain, boolean onlyVideo,
+                                   boolean showDomain, boolean onlyVideo,
                                    int captionCount, @Nullable CaptureMark mark) {
-        return capture(TYPE_TILE, entity, group, showType, showDomain, onlyVideo,
-                captionCount, mark);
+        return capture(TYPE_TILE, entity, group, showDomain, onlyVideo, captionCount, mark);
     }
 
     public static CaptureItem square(@NonNull BrowserDownloadEntity entity, int group,
-                                     boolean showType, @Nullable CaptureMark mark) {
-        return capture(TYPE_SQUARE, entity, group, showType, false, false, 0, mark);
+                                     @Nullable CaptureMark mark) {
+        return capture(TYPE_SQUARE, entity, group, false, false, 0, mark);
     }
 
     public static CaptureItem header(int group, int count) {
-        return new CaptureItem(TYPE_HEADER, group, null, false, false, false, count, 0, null,
+        return new CaptureItem(TYPE_HEADER, group, null, false, false, count, 0, null,
                 false, false, Collections.emptyList(), Collections.emptyList());
     }
 
     public static CaptureItem fold(int count, boolean open, boolean collapsible,
                                    @NonNull List<String> domains,
                                    @NonNull List<BrowserDownloadEntity> preview) {
-        return new CaptureItem(TYPE_FOLD, GROUP_EARLIER, null, false, false, false, count, 0,
+        return new CaptureItem(TYPE_FOLD, GROUP_EARLIER, null, false, false, count, 0,
                 null, open, collapsible, domains, preview);
     }
 
@@ -146,8 +142,7 @@ public final class CaptureItem {
     /** Everything but the entity's own fields (the entity differ compares
      *  those) and the mark. */
     public boolean samePresentationAs(@NonNull CaptureItem other) {
-        return showType == other.showType
-                && showDomain == other.showDomain
+        return showDomain == other.showDomain
                 && onlyVideo == other.onlyVideo
                 && count == other.count
                 && captionCount == other.captionCount

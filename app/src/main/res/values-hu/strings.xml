@@ -22,12 +22,8 @@
     <string name="browser_tabs_empty">Nincsenek nyitott lapok</string>
     <string name="browser_tabs_empty_archive">Nincsenek nemrégiben bezárt lapok.</string>
     <string name="cancel">Mégse</string>
-    <string name="capture_empty_audio_message">Nincsenek elérhető audiofájlok.</string>
-    <string name="capture_empty_gifs_message">Nincsenek elérhető Gif-ek.</string>
-    <string name="capture_empty_images_message">Nincsenek elérhető képek.</string>
     <string name="capture_empty_message">Nincs letölthető média.</string>
     <string name="capture_empty_subtext">Töltse be újra a webhelyet, és a Firedown észleli az elérhető médiát.</string>
-    <string name="capture_empty_video_message">Nincsenek elérhető videók.</string>
     <string name="clipboard">Vágólapra másolva</string>
     <string name="clipboard_from">A vágólapról</string>
     <string name="close_tab">Lap bezárása</string>

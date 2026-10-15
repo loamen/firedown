@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">Aucun onglet ouvert</string>
     <string name="browser_tabs_empty_archive">Aucun onglet récemment fermé.</string>
     <string name="cancel">Annuler</string>
-    <string name="capture_empty_audio_message">Aucun fichier audio disponible.</string>
-    <string name="capture_empty_gifs_message">Aucun Gif disponible.</string>
-    <string name="capture_empty_images_message">Aucune image disponible.</string>
     <string name="capture_empty_message">Aucun média disponible en téléchargement.</string>
     <string name="capture_empty_subtext">Rechargez le site Internet et Firedown détectera les médias disponibles.</string>
-    <string name="capture_empty_video_message">Aucune vidéo disponible.</string>
     <string name="cert_connection_exception">Exception de sécurité</string>
     <string name="cert_connection_insecure">La connexion n\'est pas sécurisée</string>
     <string name="cert_connection_secure">La connexion est sécurisée</string>

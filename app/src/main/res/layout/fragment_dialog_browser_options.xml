@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Single vertical LinearLayout: the previous design wrapped the
-     toolbar + filter chips in a second LinearLayout that carried only
-     elevation="0dp" (no actual elevation) and forced an extra measure
-     pass on every inflation. Flattened. -->
+     toolbar in a second LinearLayout that carried only elevation="0dp"
+     (no actual elevation) and forced an extra measure pass on every
+     inflation. Flattened. There is no filter-chip rail: the list's own
+     type order and its Images section are the structure, and selecting a
+     whole section is the Images header's check. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -88,11 +90,6 @@
             app:trackThickness="3dp" />
 
     </com.google.android.material.card.MaterialCardView>
-
-    <include
-        layout="@layout/fragment_dialog_browser_options_list_options"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
 
     <!-- One-shot help banner: shown only when the list is NON-empty (the empty
          state already explains this) until the user taps or dismisses it. Tapping

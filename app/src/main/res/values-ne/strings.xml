@@ -11,12 +11,8 @@
     <string name="browser_tabs_empty">तपाईंका खुला ट्याबहरू यहाँ देखाइने छन्।</string>
     <string name="browser_tabs_empty_archive">हालसालै बन्द गरिएका ट्याबहरू छैनन्।</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
-    <string name="capture_empty_audio_message">कुनै अडियो फाइलहरू उपलब्ध छैनन्।</string>
-    <string name="capture_empty_gifs_message">कुनै Gif उपलब्ध छैन।</string>
-    <string name="capture_empty_images_message">कुनै छविहरू उपलब्ध छैनन्।</string>
     <string name="capture_empty_message">डाउनलोड गर्नका लागि कुनै मिडिया उपलब्ध छैन।</string>
     <string name="capture_empty_subtext">वेबसाइट पुन: लोड गर्नुहोस् र फायरडाउनले उपलब्ध मिडिया पत्ता लगाउनेछ।</string>
-    <string name="capture_empty_video_message">कुनै भिडियो उपलब्ध छैन।</string>
     <string name="clipboard">क्लिपबोर्डमा प्रतिलिपि गरियो</string>
 <string name="connection_secure">जडान सुरक्षित छ</string>
     <string name="delete">मेटाउन</string>

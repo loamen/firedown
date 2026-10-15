@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">നിങ്ങളുടെ തുറന്ന ടാബുകൾ ഇവിടെ കാണിക്കും.</string>
     <string name="browser_tabs_empty_archive">അടുത്തിടെ അടച്ച ടാബുകളൊന്നുമില്ല.</string>
     <string name="cancel">റദ്ദാക്കുക</string>
-    <string name="capture_empty_audio_message">ഓഡിയോ ഫയലുകളൊന്നും ലഭ്യമല്ല.</string>
-    <string name="capture_empty_gifs_message">Gif-കളൊന്നും ലഭ്യമല്ല.</string>
-    <string name="capture_empty_images_message">ചിത്രങ്ങളൊന്നും ലഭ്യമല്ല.</string>
     <string name="capture_empty_message">ഡൗൺലോഡ് ചെയ്യാൻ മീഡിയയൊന്നും ലഭ്യമല്ല.</string>
     <string name="capture_empty_subtext">വെബ്‌സൈറ്റ് റീലോഡ് ചെയ്യുക, ഫയർഡൗൺ ലഭ്യമായ മീഡിയ കണ്ടെത്തും.</string>
-    <string name="capture_empty_video_message">വീഡിയോകളൊന്നും ലഭ്യമല്ല.</string>
     <string name="clipboard">ക്ലിപ്പ്ബോർഡിലേക്ക് പകർത്തി</string>
     <string name="close_tab">ടാബ് അടയ്ക്കുക</string>
 <string name="close_tabs_after_one_day">ഒരു ദിവസത്തിന് ശേഷം</string>

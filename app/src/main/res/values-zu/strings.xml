@@ -12,12 +12,8 @@
     <string name="browser_tabs_empty">Amathebhu akho avuliwe azoboniswa lapha.</string>
     <string name="browser_tabs_empty_archive">Awekho amathebhu asanda kuvalwa.</string>
     <string name="cancel">Khansela</string>
-    <string name="capture_empty_audio_message">Awekho amafayela omsindo atholakalayo.</string>
-    <string name="capture_empty_gifs_message">Awekho ama-Gif atholakalayo.</string>
-    <string name="capture_empty_images_message">Azikho Izithombe ezitholakalayo.</string>
     <string name="capture_empty_message">Ayikho imidiya etholakalayo ukuze ilandwe.</string>
     <string name="capture_empty_subtext">Layisha kabusha iwebhusayithi futhi i-Firedown izothola imidiya etholakalayo.</string>
-    <string name="capture_empty_video_message">Awekho amavidiyo atholakalayo.</string>
     <string name="clipboard">Ikopishelwe ebhodini lokunamathisela</string>
 <string name="connection_secure">Uxhumano luvikelekile</string>
     <string name="delete">Susa</string>

@@ -22,12 +22,8 @@
     <string name="browser_tabs_empty">Skedat tuaja të hapura do të shfaqen këtu.</string>
     <string name="browser_tabs_empty_archive">Nuk ka skeda të mbyllura së fundi.</string>
     <string name="cancel">Anulo</string>
-    <string name="capture_empty_audio_message">Nuk ka skedarë audio të disponueshëm.</string>
-    <string name="capture_empty_gifs_message">Nuk ka GIF në dispozicion.</string>
-    <string name="capture_empty_images_message">Nuk ka imazhe të disponueshme.</string>
     <string name="capture_empty_message">Nuk ka media të disponueshme për shkarkim.</string>
     <string name="capture_empty_subtext">Rifresko faqen e internetit dhe Firedown do të zbulojë mediat e disponueshme.</string>
-    <string name="capture_empty_video_message">Nuk ka video të disponueshme.</string>
     <string name="clipboard">Kopjuar në kujtesën e fragmenteve</string>
     <string name="close_tab">Mbylle skedën</string>
 <string name="close_tabs_after_one_day">Pas një dite</string>

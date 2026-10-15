@@ -19,12 +19,8 @@
     <string name="browser_tabs_empty">మీ తెరిచిన ట్యాబ్‌లు ఇక్కడ చూపబడతాయి.</string>
     <string name="browser_tabs_empty_archive">ఇటీవల మూసివేయబడిన ట్యాబ్‌లు లేవు.</string>
     <string name="cancel">రద్దు చేయండి</string>
-    <string name="capture_empty_audio_message">ఆడియో ఫైల్‌లు ఏవీ అందుబాటులో లేవు.</string>
-    <string name="capture_empty_gifs_message">Gifలు ఏవీ అందుబాటులో లేవు.</string>
-    <string name="capture_empty_images_message">చిత్రాలు ఏవీ అందుబాటులో లేవు.</string>
     <string name="capture_empty_message">డౌన్‌లోడ్ చేయడానికి మీడియా అందుబాటులో లేదు.</string>
     <string name="capture_empty_subtext">వెబ్‌సైట్‌ను మళ్లీ లోడ్ చేయండి మరియు ఫైర్‌డౌన్ అందుబాటులో ఉన్న మీడియాను గుర్తిస్తుంది.</string>
-    <string name="capture_empty_video_message">వీడియోలు ఏవీ అందుబాటులో లేవు.</string>
     <string name="clipboard">క్లిప్‌బోర్డ్‌కి కాపీ చేయబడింది</string>
     <string name="close_tab">ట్యాబును మూసివేయి</string>
 <string name="close_tabs_after_one_day">ఒక రోజు తరువాత</string>

@@ -19,12 +19,8 @@
     <string name="browser_tabs_empty">آپ کے کھلے ٹیبز یہاں دکھائے جائیں گے۔</string>
     <string name="browser_tabs_empty_archive">کوئی حال ہی میں بند کردہ ٹیبز نہیں ہیں۔</string>
     <string name="cancel">منسوخ کریں۔</string>
-    <string name="capture_empty_audio_message">کوئی آڈیو فائلیں دستیاب نہیں ہیں۔</string>
-    <string name="capture_empty_gifs_message">کوئی GIF دستیاب نہیں۔</string>
-    <string name="capture_empty_images_message">کوئی تصاویر دستیاب نہیں ہیں۔</string>
     <string name="capture_empty_message">ڈاؤن لوڈ کرنے کے لیے کوئی میڈیا دستیاب نہیں ہے۔</string>
     <string name="capture_empty_subtext">ویب سائٹ کو دوبارہ لوڈ کریں اور فائر ڈاؤن دستیاب میڈیا کا پتہ لگائے گا۔</string>
-    <string name="capture_empty_video_message">کوئی ویڈیوز دستیاب نہیں ہیں۔</string>
     <string name="clipboard">کلپ بورڈ پر کاپی ہو گیا۔</string>
     <string name="close_tab">ٹیب بند کریں</string>
 <string name="close_tabs_after_one_day">ایک دن کے بعد</string>

@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">Ашық қойындылар осы жерде көрсетіледі.</string>
     <string name="browser_tabs_empty_archive">Жақында жабылған қойындылар жоқ.</string>
     <string name="cancel">Болдырмау</string>
-    <string name="capture_empty_audio_message">Аудио файлдар қолжетімді емес.</string>
-    <string name="capture_empty_gifs_message">Gif жоқ.</string>
-    <string name="capture_empty_images_message">Суреттер жоқ.</string>
     <string name="capture_empty_message">Жүктеп алуға болатын медиа жоқ.</string>
     <string name="capture_empty_subtext">Веб-сайтты қайта жүктеңіз және Firedown қол жетімді медианы анықтайды.</string>
-    <string name="capture_empty_video_message">Бейнелер жоқ.</string>
     <string name="clipboard">Буферге көшірілді</string>
     <string name="close_tab">Бетті жабу</string>
 <string name="close_tabs_after_one_day">Бір күннен кейін</string>

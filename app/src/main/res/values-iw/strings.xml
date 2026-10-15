@@ -22,12 +22,8 @@
     <string name="browser_tabs_empty">הכרטיסיות הפתוחות שלך יוצגו כאן.</string>
     <string name="browser_tabs_empty_archive">אין כרטיסיות שנסגרו לאחרונה.</string>
     <string name="cancel">לְבַטֵל</string>
-    <string name="capture_empty_audio_message">אין קבצי שמע זמינים.</string>
-    <string name="capture_empty_gifs_message">אין קובצי GIF זמינים.</string>
-    <string name="capture_empty_images_message">אין תמונות זמינות.</string>
     <string name="capture_empty_message">אין מדיה זמינה להורדה.</string>
     <string name="capture_empty_subtext">טען מחדש את האתר ו-Firedown יזהה מדיה זמינה.</string>
-    <string name="capture_empty_video_message">אין סרטונים זמינים.</string>
     <string name="clipboard">הועתק ללוח</string>
     <string name="close_tab">סגירת לשונית</string>
 <string name="close_tabs_after_one_day">אחרי יום אחד</string>

@@ -22,12 +22,8 @@
     <string name="browser_tabs_empty">Zure fitxa irekiak hemen erakutsiko dira.</string>
     <string name="browser_tabs_empty_archive">Ez dago itxitako fitxarik duela gutxi.</string>
     <string name="cancel">Utzi</string>
-    <string name="capture_empty_audio_message">Ez dago audio fitxategirik erabilgarri.</string>
-    <string name="capture_empty_gifs_message">Ez dago gifrik eskuragarri.</string>
-    <string name="capture_empty_images_message">Ez dago irudirik eskuragarri.</string>
     <string name="capture_empty_message">Ez dago euskarririk deskargatzeko.</string>
     <string name="capture_empty_subtext">Berriz kargatu webgunea eta Firedown-ek eskuragarri dauden euskarriak detektatuko ditu.</string>
-    <string name="capture_empty_video_message">Ez dago bideorik eskuragarri.</string>
     <string name="clipboard">Arbelean kopiatu da</string>
     <string name="close_tab">Itxi fitxa</string>
 <string name="close_tabs_after_one_day">Egun bat ondoren</string>

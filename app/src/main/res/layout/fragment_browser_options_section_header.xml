@@ -1,42 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  "Images / 9 files" over a group's squares in the Captured sheet (unfiltered
-  only: under a chip the chip names the type). The Downloads list's own
-  section header (fragment_item_header.xml): a LabelLarge title in onSurface
-  over a BodySmall count in onSurfaceVariant, so the two screens' headers
-  read alike, as their tiles do. The count is the whole group's, not the
-  squares loaded so far. Horizontal inset comes from CaptureSpacingDecoration
-  so the label lines up with the tiles' edge. Also "Earlier in this tab /
-  30 files · twitch.tv, …" over the earlier captures when the page shown now
-  lists nothing, the fold that can't close (the adapter sets both titles).
+  "Images / 9 files" over a group's squares in the Captured sheet. The
+  Downloads list's own section header (fragment_item_header.xml): a LabelLarge
+  title in onSurface over a BodySmall count in onSurfaceVariant, so the two
+  screens' headers read alike, as their tiles do. The count is the whole
+  group's, not the squares loaded so far. Horizontal inset comes from
+  CaptureSpacingDecoration so the label lines up with the tiles' edge. Also
+  "Earlier in this tab / 30 files · twitch.tv, …" over the earlier captures
+  when the page shown now lists nothing, the fold that can't close (the
+  adapter sets both titles).
+
+  section_check is the selection check, shown on an "Images" header only
+  while selecting: a tap on the header selects every square under it, or
+  clears them (BrowserOptionAdapter.bindHeader). Same drawable, tint and
+  padding as a square's corner check, so it lines up over the last column.
+  The row is clickable only then; at rest it is a heading and nothing more.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
     android:paddingTop="16dp"
     android:paddingBottom="10dp">
 
-    <TextView
-        android:id="@+id/section_title"
-        style="@style/TextAppearance.Material3.LabelLarge"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:singleLine="true"
-        android:text="@string/sort_by_type_images"
-        android:textColor="?attr/colorOnSurface" />
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/section_count"
-        style="@style/TextAppearance.Material3.BodySmall"
-        android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/section_title"
+            style="@style/TextAppearance.Material3.LabelLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@string/sort_by_type_images"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/section_count"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="9 files" />
+
+    </LinearLayout>
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/section_check"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:ellipsize="end"
-        android:singleLine="true"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        tools:text="9 files" />
+        android:contentDescription="@null"
+        android:importantForAccessibility="no"
+        android:padding="@dimen/button_icons_padding"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_baseline_check_circle_24"
+        app:tint="?attr/brandInk" />
 
 </LinearLayout>

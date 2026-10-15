@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">आपके खुले हुए टैब यहां दिखाए जाएंगे.</string>
     <string name="browser_tabs_empty_archive">हाल ही में बंद किए गए कोई टैब नहीं.</string>
     <string name="cancel">रद्द करें</string>
-    <string name="capture_empty_audio_message">कोई ऑडियो फ़ाइल उपलब्ध नहीं है.</string>
-    <string name="capture_empty_gifs_message">कोई GIF उपलब्ध नहीं है.</string>
-    <string name="capture_empty_images_message">कोई इमेज उपलब्ध नहीं.</string>
     <string name="capture_empty_message">डाउनलोड करने के लिए कोई मीडिया उपलब्ध नहीं है.</string>
     <string name="capture_empty_subtext">वेबसाइट को पुनः लोड करें और Firedown उपलब्ध मीडिया का पता लगाएगा.</string>
-    <string name="capture_empty_video_message">कोई वीडियो उपलब्ध नहीं है.</string>
     <string name="clipboard">क्लिपबोर्ड पर कॉपी किया गया</string>
 <string name="connection_secure">कनेक्शन सुरक्षित है</string>
     <string name="delete">मिटाएं</string>

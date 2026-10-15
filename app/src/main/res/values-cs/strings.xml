@@ -31,12 +31,8 @@
     <string name="browser_tabs_empty">Žádné otevřené karty</string>
     <string name="browser_tabs_empty_archive">Žádné nedávno zavřené karty.</string>
     <string name="cancel">zrušení</string>
-    <string name="capture_empty_audio_message">Nejsou k dispozici žádné zvukové soubory.</string>
-    <string name="capture_empty_gifs_message">Nejsou k dispozici žádné Gify.</string>
-    <string name="capture_empty_images_message">Nejsou k dispozici žádné obrázky.</string>
     <string name="capture_empty_message">Nejsou k dispozici žádná média ke stažení.</string>
     <string name="capture_empty_subtext">Znovu načtěte web a Firedown zjistí dostupná média.</string>
-    <string name="capture_empty_video_message">Nejsou k dispozici žádná videa.</string>
     <string name="clipboard">Zkopírováno do schránky</string>
     <string name="clipboard_from">Ze schránky</string>
     <string name="close_tab">Zavřít panel</string>

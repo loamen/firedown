@@ -19,12 +19,8 @@
     <string name="browser_tabs_empty">ನಿಮ್ಮ ತೆರೆದ ಟ್ಯಾಬ್‌ಗಳನ್ನು ಇಲ್ಲಿ ತೋರಿಸಲಾಗುತ್ತದೆ.</string>
     <string name="browser_tabs_empty_archive">ಇತ್ತೀಚೆಗೆ ಮುಚ್ಚಿದ ಟ್ಯಾಬ್‌ಗಳಿಲ್ಲ.</string>
     <string name="cancel">ರದ್ದುಮಾಡಿ</string>
-    <string name="capture_empty_audio_message">ಯಾವುದೇ ಆಡಿಯೊ ಫೈಲ್‌ಗಳು ಲಭ್ಯವಿಲ್ಲ.</string>
-    <string name="capture_empty_gifs_message">ಯಾವುದೇ Gif ಗಳು ಲಭ್ಯವಿಲ್ಲ.</string>
-    <string name="capture_empty_images_message">ಯಾವುದೇ ಚಿತ್ರಗಳು ಲಭ್ಯವಿಲ್ಲ.</string>
     <string name="capture_empty_message">ಡೌನ್‌ಲೋಡ್ ಮಾಡಲು ಯಾವುದೇ ಮಾಧ್ಯಮ ಲಭ್ಯವಿಲ್ಲ.</string>
     <string name="capture_empty_subtext">ವೆಬ್‌ಸೈಟ್ ಅನ್ನು ಮರುಲೋಡ್ ಮಾಡಿ ಮತ್ತು ಫೈರ್‌ಡೌನ್ ಲಭ್ಯವಿರುವ ಮಾಧ್ಯಮವನ್ನು ಪತ್ತೆ ಮಾಡುತ್ತದೆ.</string>
-    <string name="capture_empty_video_message">ಯಾವುದೇ ವೀಡಿಯೊಗಳು ಲಭ್ಯವಿಲ್ಲ.</string>
     <string name="clipboard">ಕ್ಲಿಪ್‌ಬೋರ್ಡ್‌ಗೆ ನಕಲಿಸಲಾಗಿದೆ</string>
     <string name="close_tab">ಹಾಳೆಯನ್ನು ಮುಚ್ಚು</string>
 <string name="connection_secure">ಸಂಪರ್ಕ ಸುರಕ್ಷಿತವಾಗಿದೆ</string>

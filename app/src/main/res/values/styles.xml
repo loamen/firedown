@@ -177,15 +177,6 @@
         <item name="elevationOverlayEnabled">false</item>
     </style>
 
-    <style name="Firedown.Widget.App.Chip.Filter" parent="Widget.Material3.Chip.Filter">
-        <item name="materialThemeOverlay">@style/ThemeOverlay.App.Chip</item>
-        <!-- Matches Theme.FireDown.Download.Chip: full pill + 36dp
-             min height so the rail reads consistently across the
-             Downloads list and the BrowserOptions sheet. -->
-        <item name="chipCornerRadius">100dp</item>
-        <item name="chipMinHeight">36dp</item>
-    </style>
-
     <!-- Variant-picker chips (audio track / captions). TONAL checked state
          (secondaryContainer), NOT the brand overlay the filter rail uses:
          these chips sit directly above the Download CTA, so per the
@@ -242,11 +233,10 @@
              but its container tone drifted off that base.)
 
              Remapped rather than reimplemented: the library keeps owning the
-             enabled/checked/disabled selector logic, and both rails' chips
-             (Captured via Firedown.Widget.App.Chip.Filter, Downloads via
-             Theme.FireDown.Download.Chip and its chip_download selector,
-             which also resolves ?attr/colorSecondaryContainer) pick the swap
-             up from this one place. The label follows via
+             enabled/checked/disabled selector logic, and the Downloads
+             rail's chips (Theme.FireDown.Download.Chip and its chip_download
+             selector, which also resolves ?attr/colorSecondaryContainer)
+             pick the swap up from this one place. The label follows via
              colorOnSecondaryContainer so the pair can never disagree.
 
              NOT colorPrimary: #f0716c under a white label is 2.88:1, below
@@ -612,8 +602,7 @@
 
 
     <style name="Theme.FireDown.Download.Chip" parent="Widget.Material3.Chip.Filter">
-        <!-- Shares ThemeOverlay.App.Chip with the Captured rail so the
-             checked-chip colour is defined once for both surfaces. -->
+        <!-- The checked-chip colour lives in ThemeOverlay.App.Chip. -->
         <item name="materialThemeOverlay">@style/ThemeOverlay.App.Chip</item>
         <item name="chipSurfaceColor">@color/transparent</item>
         <item name="chipBackgroundColor">@color/chip_download</item>

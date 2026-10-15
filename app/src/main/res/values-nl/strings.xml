@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">Geen open tabbladen</string>
     <string name="browser_tabs_empty_archive">Geen recent gesloten tabbladen.</string>
     <string name="cancel">Annuleren</string>
-    <string name="capture_empty_audio_message">Geen audiobestanden beschikbaar.</string>
-    <string name="capture_empty_gifs_message">Geen GIF\'s beschikbaar.</string>
-    <string name="capture_empty_images_message">Geen afbeeldingen beschikbaar.</string>
     <string name="capture_empty_message">Er zijn geen media beschikbaar om te downloaden.</string>
     <string name="capture_empty_subtext">Laad de website opnieuw en Firedown zal de beschikbare media detecteren.</string>
-    <string name="capture_empty_video_message">Geen video\'s beschikbaar.</string>
     <string name="clipboard">Gekopieerd naar het klembord</string>
     <string name="clipboard_from">Van klembord</string>
     <string name="close_tab">Tabblad sluiten</string>

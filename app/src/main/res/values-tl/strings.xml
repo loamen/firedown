@@ -20,12 +20,8 @@
     <string name="browser_tabs_empty">Ang iyong mga bukas na tab ay ipapakita dito.</string>
     <string name="browser_tabs_empty_archive">Walang kamakailang isinarang tab.</string>
     <string name="cancel">Kanselahin</string>
-    <string name="capture_empty_audio_message">Walang available na Audio file.</string>
-    <string name="capture_empty_gifs_message">Walang available na Gif.</string>
-    <string name="capture_empty_images_message">Walang available na mga Larawan.</string>
     <string name="capture_empty_message">Walang magagamit na media para sa pag-download.</string>
     <string name="capture_empty_subtext">I-reload ang website at makikita ng Firedown ang available na media.</string>
-    <string name="capture_empty_video_message">Walang available na video.</string>
     <string name="clipboard">Kinopya sa clipboard</string>
     <string name="close_tab">Isara ang tab</string>
 <string name="close_tabs_after_one_day">Pagkatapos ng isang araw</string>

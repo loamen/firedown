@@ -1,6 +1,5 @@
 package com.solarized.firedown.phone.dialogs;
 
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,9 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
-import androidx.activity.ComponentDialog;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
@@ -32,8 +29,6 @@ import androidx.core.content.res.ResourcesCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.MenuProvider;
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -47,7 +42,6 @@ import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.integration.recyclerview.RecyclerViewPreloader;
 import com.bumptech.glide.util.FixedPreloadSizeProvider;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.solarized.firedown.BuildConfig;
@@ -55,7 +49,6 @@ import com.solarized.firedown.GlideHelper;
 import com.solarized.firedown.Keys;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
-import com.solarized.firedown.Sorting;
 import com.solarized.firedown.data.capture.CaptureItem;
 import com.solarized.firedown.data.capture.CaptureSections.BatchSummary;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
@@ -84,14 +77,13 @@ import javax.inject.Inject;
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
-public class BrowserOptionFragment extends BaseFocusFragment implements OnItemClickListener, ChipGroup.OnCheckedStateChangeListener {
+public class BrowserOptionFragment extends BaseFocusFragment implements OnItemClickListener {
 
     @Inject SharedPreferences mSharedPreferences;
     private BrowserOptionAdapter mAdapter;
     private BrowserDownloadViewModel mBrowserDownloadViewModel;
     private FragmentsOptionsViewModel mFragmentsViewModel;
     private GridLayoutManager mLayoutManager;
-    private ChipGroup mChipGroup;
     private Toolbar mToolbar;
     private View mHelpBanner;
     private MaterialCardView mBatchCard;
@@ -100,7 +92,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     private boolean mHelpBannerDismissed;
     private boolean mIsIncognito;
     private int mScrollLimit;
-    private OnBackPressedCallback mClearFilterOnBack;
     // Set by a tap that OPENS the fold, cleared by the first list that comes
     // back with it open: that list's commit scrolls the fold to the top.
     private boolean mRevealFoldOnCommit;
@@ -137,9 +128,12 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         View view = themedInflater.inflate(R.layout.fragment_dialog_browser_options, container, false);
 
         mToolbar = view.findViewById(R.id.toolbar);
-        mChipGroup = view.findViewById(R.id.chip_group);
         mLCEERecyclerView = view.findViewById(R.id.list_recycler_lcee);
         mLCEERecyclerView.setEmptyButtonVisibility(View.VISIBLE);
+        // One empty state for the whole sheet.
+        mLCEERecyclerView.setEmptyText(R.string.capture_empty_message);
+        mLCEERecyclerView.setEmptySubText(R.string.capture_empty_subtext);
+        mLCEERecyclerView.setEmptyImageView(R.drawable.ill_baloons);
 
         // One-shot help banner (non-empty list only). Tapping the body opens the
         // same help screen as the toolbar Help item; the X just dismisses. Either
@@ -185,21 +179,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             if (navIcon != null) DrawableCompat.setTint(navIcon, onSurface);
         }
 
-        // Set the initial checked chip BEFORE attaching the listener so
-        // the synthetic onCheckedChange callback that ChipGroup fires on
-        // .check() doesn't run our sort/filter pipeline once on launch.
-        // chip_all is no longer a physical chip in the group — when the
-        // persisted state is "all", we leave the group with no
-        // selection (Material filter-chip convention: nothing
-        // selected = unfiltered). Trying to .check(chip_all) would be
-        // a silent no-op now anyway, but the explicit guard makes the
-        // intent obvious.
-        int persistedId = mBrowserDownloadViewModel.getCurrentSortBrowserId();
-        if (persistedId != R.id.chip_all) {
-            mChipGroup.check(persistedId);
-        }
-        mChipGroup.setOnCheckedStateChangeListener(this);
-
         mToolbar.setContentInsetsAbsolute(getResources().getDimensionPixelSize(R.dimen.list_spacing), 0);
 
         mLCEERecyclerView.setButtonListener(id -> {
@@ -225,6 +204,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         // its inks from the context it is given.
         mAdapter = new BrowserOptionAdapter(view.getContext(), this);
         mAdapter.setOnFoldClick(this::onFoldClick);
+        mAdapter.setOnSelectionChanged(this::updateActionModeTitle);
         mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
@@ -384,9 +364,8 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             mListEmpty = items == null || items.isEmpty();
             renderListState();
             // The items carry their own presentation (sections, type labels,
-            // marks), built in the view model for the list they belong to, so
-            // a chip tap can't paint the old list in the new presentation: no
-            // adapter flags, no commit callback to flip them.
+            // marks), built in the view model for the list they belong to:
+            // no adapter flags, no commit callback to flip them.
             submitListPreservingScroll(items);
         });
 
@@ -396,36 +375,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                 count -> onInflightChanged(count == null ? 0 : count));
 
         mBrowserDownloadViewModel.update();
-
-        /* Back deselects an active filter chip (reverts to the unfiltered
-         * list) instead of dismissing the screen — mirrors DownloadFragment
-         * so "Back unwinds my last narrowing step" is consistent across the
-         * two list surfaces. The callback enables/disables itself in
-         * onCheckedChanged so it only intercepts Back while a chip is
-         * actually checked; otherwise Back behaves normally.
-         *
-         * IMPORTANT: this fragment is hosted inside a BottomSheetDialog,
-         * which owns its own Window and intercepts Back BEFORE the Activity's
-         * OnBackPressedDispatcher ever runs. The callback must therefore
-         * register against the DIALOG's dispatcher (ComponentDialog, since
-         * Material 1.6+), not the Activity's — otherwise the dialog
-         * dismisses on Back and the callback never fires. */
-        mClearFilterOnBack = new OnBackPressedCallback(false) {
-            @Override
-            public void handleOnBackPressed() {
-                if (mChipGroup != null && mChipGroup.getCheckedChipId() != View.NO_ID) {
-                    mChipGroup.clearCheck();
-                }
-            }
-        };
-        Fragment parent = getParentFragment();
-        if (parent instanceof DialogFragment) {
-            Dialog dialog = ((DialogFragment) parent).getDialog();
-            if (dialog instanceof ComponentDialog) {
-                ((ComponentDialog) dialog).getOnBackPressedDispatcher()
-                        .addCallback(getViewLifecycleOwner(), mClearFilterOnBack);
-            }
-        }
     }
 
 
@@ -453,16 +402,13 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
 
     /**
      * Owns the LCEE list state: content when non-empty, otherwise the empty
-     * state (with the active chip's message). The toolbar spinner is the single
-     * "work happening" cue and is driven independently — see
-     * {@link #updateProgressIndicator()} — so it doesn't double up with a centre
-     * loading spinner, and an empty *filtered* view (e.g. "Audio" with no audio)
-     * correctly reads "No audio available" rather than a misleading spinner.
+     * state. The toolbar spinner is the single "work happening" cue and is
+     * driven independently — see {@link #updateProgressIndicator()} — so it
+     * doesn't double up with a centre loading spinner.
      */
     private void renderListState() {
         if (!mActionModeEnabled) {
             if (mListEmpty) {
-                configureEmptyState();
                 mLCEERecyclerView.showEmpty();
             } else {
                 mLCEERecyclerView.hideAll();
@@ -500,10 +446,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
 
     /**
      * Toolbar "scanning" spinner — a global "background work" indicator. It
-     * tracks only the in-flight count (debounced), independent of the active
-     * filter chip or whether the filtered list is currently empty: filtering to
-     * an empty type must not hide it while captures are still streaming in.
-     * No-op when the menu isn't inflated or is the action-mode menu.
+     * tracks only the in-flight count (debounced), independent of whether the
+     * list is currently empty. No-op when the menu isn't inflated or is the
+     * action-mode menu.
      */
     private void updateProgressIndicator() {
         if (mProgressMenuItem != null) {
@@ -615,7 +560,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     }
 
     /**
-     * The batch card above the chips: "Saved 3 of 20 · 4 downloading · 13
+     * The batch card above the list: "Saved 3 of 20 · 4 downloading · 13
      * pending", the batch's overall progress along its bottom edge. Hidden
      * while no batch is in flight; once every item settled it stays, as the
      * record of what the batch did, until the sheet closes.
@@ -669,30 +614,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     private void openDownloads() {
         Class<?> target = mIsIncognito ? VaultActivity.class : DownloadsActivity.class;
         mStartForResult.launch(new Intent(requireContext(), target));
-    }
-
-    private void configureEmptyState() {
-        int selectedId = mChipGroup.getCheckedChipId();
-        int textRes = R.string.capture_empty_message;
-        int imgRes = R.drawable.ill_baloons;
-
-        if (selectedId == R.id.chip_video) {
-            textRes = R.string.capture_empty_video_message;
-            imgRes = R.drawable.ill_small_video;
-        } else if (selectedId == R.id.chip_audio) {
-            textRes = R.string.capture_empty_audio_message;
-            imgRes = R.drawable.ill_small_audio;
-        } else if (selectedId == R.id.chip_image) {
-            textRes = R.string.capture_empty_images_message;
-            imgRes = R.drawable.ill_small_image;
-        } else if (selectedId == R.id.chip_gif) {
-            textRes = R.string.capture_empty_gifs_message;
-            imgRes = R.drawable.ill_small_gif;
-        }
-
-        mLCEERecyclerView.setEmptyText(textRes);
-        mLCEERecyclerView.setEmptySubText(R.string.capture_empty_subtext);
-        mLCEERecyclerView.setEmptyImageView(imgRes);
     }
 
     // ========================================================================
@@ -816,7 +737,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             mActionModeEnabled = true;
             mAdapter.setActionMode(true);
             mAdapter.toggleSelected(position);
-            setChipsEnabled(false);
             updateActionModeTitle();
             mToolbar.invalidateMenu();
             updateHelpBanner();
@@ -831,7 +751,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         mActionModeEnabled = false;
         mAdapter.clearSelection();
         mAdapter.setActionMode(false);
-        setChipsEnabled(true);
         mToolbar.setTitle(R.string.navigation_captured);
         mToolbar.setBackgroundColor(ResourcesCompat.getColor(getResources(), R.color.transparent, null));
         mToolbar.invalidateMenu();
@@ -854,42 +773,10 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         mToolbar.setTitle(getString(R.string.action_mode_selected, mAdapter.getSelectedSize()));
     }
 
-    private void setChipsEnabled(boolean enabled) {
-        for (int i = 0; i < mChipGroup.getChildCount(); i++) {
-            mChipGroup.getChildAt(i).setEnabled(enabled);
-        }
-        mChipGroup.setEnabled(enabled);
-    }
-
-    @Override
-    public void onCheckedChanged(@NonNull ChipGroup group, @NonNull List<Integer> checkedIds) {
-        // Empty selection now means "show all" — Material filter-chip
-        // convention, matches DownloadFragment's effective behavior.
-        // getCurrentSortForIds returns SORT_TYPE_ALL on an unknown id,
-        // so View.NO_ID routes to the same predicate fall-through.
-        int selectedId = checkedIds.isEmpty() ? View.NO_ID : checkedIds.get(0);
-        String type = mBrowserDownloadViewModel.getCurrentSortForIds(selectedId);
-        mBrowserDownloadViewModel.sortBrowserDownloads(type);
-        // Deliberately NO presentation change here: the requery is async, and
-        // the view model builds the new list's sections and labels with it
-        // (CaptureItem), so the presentation lands with the list.
-        // Only intercept Back while a chip is actually checked — otherwise
-        // Back must behave normally (close the screen).
-        if (mClearFilterOnBack != null) mClearFilterOnBack.setEnabled(!checkedIds.isEmpty());
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        mBrowserDownloadViewModel.setCurrentSortBrowser(mChipGroup.getCheckedChipId());
-    }
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
         mSpinnerHandler.removeCallbacks(mHideSpinner);
-        mChipGroup = null;
         mToolbar = null;
         mHelpBanner = null;
         mBatchCard = null;
@@ -898,12 +785,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         mAdapter = null;
         mLayoutManager = null;
         mProgressMenuItem = null;
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        mBrowserDownloadViewModel.setCurrentSortBrowser(Sorting.SORT_TYPE_ALL);
     }
 
     @Override

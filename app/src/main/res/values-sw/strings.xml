@@ -12,12 +12,8 @@
     <string name="browser_tabs_empty">Vichupo vyako vilivyo wazi vitaonyeshwa hapa.</string>
     <string name="browser_tabs_empty_archive">Hakuna vichupo vilivyofungwa hivi majuzi.</string>
     <string name="cancel">Ghairi</string>
-    <string name="capture_empty_audio_message">Hakuna faili za Sauti zinazopatikana.</string>
-    <string name="capture_empty_gifs_message">Hakuna Gif zinazopatikana.</string>
-    <string name="capture_empty_images_message">Hakuna Picha zinazopatikana.</string>
     <string name="capture_empty_message">Hakuna midia inayopatikana ya kupakua.</string>
     <string name="capture_empty_subtext">Pakia upya tovuti na Firedown itatambua maudhui yanayopatikana.</string>
-    <string name="capture_empty_video_message">Hakuna video zinazopatikana.</string>
     <string name="clipboard">Imenakiliwa kwenye ubao wa kunakili</string>
 <string name="connection_secure">Muunganisho ni salama</string>
     <string name="delete">Futa</string>

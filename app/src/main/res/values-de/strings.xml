@@ -34,12 +34,8 @@
     <string name="browser_tabs_empty">Keine offenen Tabs</string>
     <string name="browser_tabs_empty_archive">Keine kürzlich geschlossenen Tabs.</string>
     <string name="cancel">Abbrechen</string>
-    <string name="capture_empty_audio_message">Keine Audiodateien verfügbar.</string>
-    <string name="capture_empty_gifs_message">Keine GIFs verfügbar.</string>
-    <string name="capture_empty_images_message">Keine Bilder verfügbar.</string>
     <string name="capture_empty_message">Es stehen keine Medien zum Download zur Verfügung.</string>
     <string name="capture_empty_subtext">Laden Sie die Website neu und Firedown erkennt verfügbare Medien.</string>
-    <string name="capture_empty_video_message">Keine Videos verfügbar.</string>
     <string name="cert_connection_exception">Sicherheits-Ausnahme</string>
     <string name="cert_connection_insecure">Verbindung ist nicht sicher</string>
     <string name="cert_connection_secure">Verbindung ist sicher</string>

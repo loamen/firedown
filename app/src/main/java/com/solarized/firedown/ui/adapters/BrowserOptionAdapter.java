@@ -62,7 +62,8 @@ import java.util.regex.Pattern;
  * images under their HEADER, and the FOLD row that holds the earlier pages'
  * captures. The view model builds the item list (see {@link CaptureItem});
  * this class only renders it. Selection is keyed by capture uid, so it
- * survives the list re-sorting under it.
+ * survives the list re-sorting under it; while selecting, each "Images"
+ * header carries a check that selects or clears its squares at once.
  */
 public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.ViewHolder> {
 
@@ -110,6 +111,9 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     private final boolean mWideVideo;
     private boolean mActionMode;
     @Nullable private Runnable mOnFoldClick;
+    /** Told when a header's check changed the selection (the sheet's
+     *  toolbar counts the selected captures). */
+    @Nullable private Runnable mOnSelectionChanged;
     /** Resolved on the first bind (needs a themed Context). */
     @Nullable private FallbackInks mFallbackInks;
 
@@ -138,6 +142,11 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     /** What a tap on the fold row does (the view model opens or closes it). */
     public void setOnFoldClick(@Nullable Runnable onFoldClick) {
         mOnFoldClick = onFoldClick;
+    }
+
+    /** Called after a header's check selected or cleared its squares. */
+    public void setOnSelectionChanged(@Nullable Runnable onSelectionChanged) {
+        mOnSelectionChanged = onSelectionChanged;
     }
 
     /**
@@ -224,8 +233,12 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
             case CaptureItem.TYPE_SQUARE -> new SquareHolder(
                     inflater.inflate(R.layout.fragment_browser_options_square, parent, false),
                     mOnItemClickListener);
-            case CaptureItem.TYPE_HEADER, VIEW_EARLIER_HEADING -> new HeaderHolder(
-                    inflater.inflate(R.layout.fragment_browser_options_section_header, parent, false));
+            case CaptureItem.TYPE_HEADER, VIEW_EARLIER_HEADING -> {
+                HeaderHolder header = new HeaderHolder(
+                        inflater.inflate(R.layout.fragment_browser_options_section_header, parent, false));
+                header.itemView.setOnClickListener(v -> toggleSection(header.getBindingAdapterPosition()));
+                yield header;
+            }
             case CaptureItem.TYPE_FOLD -> new FoldHolder(
                     inflater.inflate(R.layout.fragment_browser_options_fold, parent, false));
             // The Downloads grid tile itself, so the two screens can't drift
@@ -272,7 +285,7 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
         } else if (holder instanceof SquareHolder square) {
             bindSquare(square, item);
         } else if (holder instanceof HeaderHolder header) {
-            bindHeader(header, item);
+            bindHeader(header, item, position);
         } else if (holder instanceof FoldHolder fold) {
             bindFold(fold, item);
         }
@@ -369,7 +382,7 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     }
 
     /**
-     * "VIDEO" in the mime slot (unfiltered only, as on Downloads), then
+     * "VIDEO" in the mime slot, then
      * " · 2:01:32 · CC 1" and, on earlier pages from several sites, the
      * domain; the download badge trails it all.
      */
@@ -378,7 +391,7 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
         if (entity == null) return;
         Context context = holder.itemView.getContext();
         String mime = entity.getMimeType();
-        String label = item.showType ? FileUriHelper.getLongMimeText(context, mime) : null;
+        String label = FileUriHelper.getLongMimeText(context, mime);
         holder.setTextOrHide(holder.mimeText, label);
 
         String facts = tileFacts(context, item, entity);
@@ -485,12 +498,11 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
             mFallbackInks = FallbackInks.resolve(context);
         }
 
-        // Dimensions, led by GIF / SVG while unfiltered: under the "Images"
-        // header a plain image needs no label, but a GIF among them is worth
-        // knowing. The resolution stays under a chip too (it's the one fact a
-        // picture's thumbnail doesn't show).
+        // Dimensions, led by GIF / SVG: under the "Images" header a plain
+        // image needs no label, but a GIF among them is worth knowing, and
+        // the resolution is the one fact a picture's thumbnail doesn't show.
         String mime = entity.getMimeType();
-        String label = item.showType && (FileUriHelper.isGIF(mime) || FileUriHelper.isSVG(mime))
+        String label = (FileUriHelper.isGIF(mime) || FileUriHelper.isSVG(mime))
                 ? FileUriHelper.getLongMimeText(context, mime).toUpperCase(Locale.getDefault())
                 : null;
         String caption = joinFacts(label, primaryFact(entity));
@@ -595,12 +607,18 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
      * "Images / 9 files" over a group's squares, or the fold that can't close
      * as a heading of the same shape: "Earlier in this tab / 30 files ·
      * twitch.tv, higgsfield.ai". That is the fold with nothing of the page
-     * above it (no page, nothing caught yet, nothing of the chip's type): the
-     * earlier captures are all the list holds and always shown, so a card
-     * with a chevron there would offer a toggle with nothing to give back.
-     * Both titles are set here, never left to the layout's default text.
+     * above it (no page, or nothing caught yet): the earlier captures are
+     * all the list holds and always shown, so a card with a chevron there
+     * would offer a toggle with nothing to give back. Both titles are set
+     * here, never left to the layout's default text.
+     *
+     * <p>While selecting, an "Images" header shows the selection check at
+     * its end and a tap selects every square under it, or clears them when
+     * all are already selected (Google Photos' date-header check). It is
+     * what the sheet's Images chip + Select all used to do, without a chip:
+     * the toolbar's Select all takes the whole list, this takes one section.
      */
-    private void bindHeader(@NonNull HeaderHolder holder, @NonNull CaptureItem item) {
+    private void bindHeader(@NonNull HeaderHolder holder, @NonNull CaptureItem item, int position) {
         Context context = holder.itemView.getContext();
         if (item.type == CaptureItem.TYPE_FOLD) {
             holder.title.setText(R.string.capture_earlier_in_tab);
@@ -608,6 +626,26 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
         } else {
             holder.title.setText(R.string.sort_by_type_images);
             holder.count.setText(filesLabel(context, item.count));
+        }
+        List<Integer> squares = item.type == CaptureItem.TYPE_HEADER && mActionMode
+                ? CaptureSections.squaresUnder(getCurrentList(), position)
+                : List.of();
+        boolean selectable = !squares.isEmpty();
+        boolean all = selectable && allSelected(squares);
+        holder.check.setVisibility(selectable ? View.VISIBLE : View.GONE);
+        holder.check.setImageDrawable(!selectable ? null
+                : all ? SelectionStyling.checkedDrawable(context)
+                : SelectionStyling.uncheckedDrawable(context));
+        holder.itemView.setClickable(selectable);
+        // A heading to the screen reader at rest; while selecting, also a
+        // control whose action says what a tap does.
+        if (selectable) {
+            ViewCompat.replaceAccessibilityAction(holder.itemView,
+                    AccessibilityActionCompat.ACTION_CLICK,
+                    context.getString(all ? R.string.select_all_not : R.string.select_all), null);
+        } else {
+            ViewCompat.removeAccessibilityAction(holder.itemView,
+                    AccessibilityActionCompat.ACTION_CLICK.getId());
         }
     }
 
@@ -843,6 +881,42 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
             mSelected.add(uid);
         }
         notifyItemChanged(position, PAYLOAD_SELECTION);
+        // A square can complete or break its section: its header's check.
+        int header = CaptureSections.headerAbove(getCurrentList(), position);
+        if (header >= 0) {
+            notifyItemChanged(header, PAYLOAD_SELECTION);
+        }
+    }
+
+    /**
+     * An "Images" header's check: select every square under it, or clear
+     * them all when every one is selected already. Inert outside selection
+     * (the check isn't shown then) and on the fold's heading.
+     */
+    private void toggleSection(int header) {
+        if (!mActionMode || header == RecyclerView.NO_POSITION) return;
+        List<Integer> squares = CaptureSections.squaresUnder(getCurrentList(), header);
+        if (squares.isEmpty()) return;
+        boolean clear = allSelected(squares);
+        for (int position : squares) {
+            int uid = getItem(position).uid();
+            if (clear) {
+                mSelected.remove(uid);
+            } else {
+                mSelected.add(uid);
+            }
+        }
+        notifyItemRangeChanged(header, squares.size() + 1, PAYLOAD_SELECTION);
+        if (mOnSelectionChanged != null) {
+            mOnSelectionChanged.run();
+        }
+    }
+
+    private boolean allSelected(@NonNull List<Integer> positions) {
+        for (int position : positions) {
+            if (!mSelected.contains(getItem(position).uid())) return false;
+        }
+        return true;
     }
 
     public int getSelectedSize() {
@@ -1019,11 +1093,13 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     static final class HeaderHolder extends RecyclerView.ViewHolder {
         final TextView title;
         final TextView count;
+        final ImageView check;
 
         HeaderHolder(@NonNull View view) {
             super(view);
             title = view.findViewById(R.id.section_title);
             count = view.findViewById(R.id.section_count);
+            check = view.findViewById(R.id.section_check);
             ViewCompat.setAccessibilityHeading(view, true);
         }
     }

@@ -20,12 +20,8 @@
     <string name="browser_tabs_empty">Čia bus rodomi jūsų atidaryti skirtukai.</string>
     <string name="browser_tabs_empty_archive">Nėra neseniai uždarytų skirtukų.</string>
     <string name="cancel">Atšaukti</string>
-    <string name="capture_empty_audio_message">Garso failų nėra.</string>
-    <string name="capture_empty_gifs_message">Gif failų nėra.</string>
-    <string name="capture_empty_images_message">Nėra vaizdų.</string>
     <string name="capture_empty_message">Nėra medijos, kurią būtų galima atsisiųsti.</string>
     <string name="capture_empty_subtext">Iš naujo įkraukite svetainę ir „Firedown“ aptiks galimą mediją.</string>
-    <string name="capture_empty_video_message">Vaizdo įrašų nėra.</string>
     <string name="clipboard">Nukopijuota į mainų sritį</string>
     <string name="close_tab">Užverti kortelę</string>
 <string name="close_tabs_after_one_day">Po vienos dienos</string>

@@ -40,8 +40,8 @@ public final class CaptureSections {
     private CaptureSections() {
     }
 
-    /** An image capture renders as a square. GIF and SVG are images here,
-     *  as in the chip rail. */
+    /** An image capture renders as a square, GIF and SVG included: they sit
+     *  among the images, labelled on their square. */
     public static boolean isSquare(@NonNull BrowserDownloadEntity e) {
         return FileUriHelper.isImage(e.getMimeType());
     }
@@ -91,8 +91,6 @@ public final class CaptureSections {
      * @param shown          captures to show, sorted group-first then by
      *                       {@link #typeRank}, already cut to the list limit
      * @param isCurrent      whether a capture belongs to the page shown now
-     * @param filtered       a filter chip is active: no headers (the chip
-     *                       names the type) and no type labels
      * @param currentImages  images in the current group BEFORE the limit, so
      *                       the header's count doesn't grow as the user
      *                       scrolls more in
@@ -101,12 +99,12 @@ public final class CaptureSections {
      *                       preview, before the limit, and whether it is open
      * @param marks          download marks by capture uid
      * @param captionCounts  subtitle tracks per page origin, over the tab's
-     *                       unfiltered captures (see {@link #captionCounts})
+     *                       captures, the tracks left to their video
+     *                       included (see {@link #captionCounts})
      */
     @NonNull
     public static List<CaptureItem> build(@NonNull List<BrowserDownloadEntity> shown,
                                           @NonNull Predicate<BrowserDownloadEntity> isCurrent,
-                                          boolean filtered,
                                           int currentImages,
                                           int earlierImages,
                                           @NonNull Earlier earlier,
@@ -144,17 +142,17 @@ public final class CaptureSections {
             }
             CaptureMark mark = marks.get(e.getUid());
             if (isSquare(e)) {
-                if (!filtered && !headerAdded) {
+                if (!headerAdded) {
                     int count = g == CaptureItem.GROUP_CURRENT ? currentImages : earlierImages;
                     out.add(CaptureItem.header(g, count));
                     headerAdded = true;
                 }
-                out.add(CaptureItem.square(e, g, !filtered, mark));
+                out.add(CaptureItem.square(e, g, mark));
             } else {
                 boolean showDomain = g == CaptureItem.GROUP_EARLIER && multiSite;
                 boolean onlyVideo = g == CaptureItem.GROUP_CURRENT && currentVideos == 1
                         && isVideo(e);
-                out.add(CaptureItem.tile(e, g, !filtered, showDomain, onlyVideo,
+                out.add(CaptureItem.tile(e, g, showDomain, onlyVideo,
                         captionCountFor(e, captionCounts), mark));
             }
         }
@@ -165,6 +163,42 @@ public final class CaptureSections {
             out.add(earlier.toItem());
         }
         return out;
+    }
+
+    /**
+     * The positions of the squares an "Images" header heads: every square
+     * that follows it until the next row that is not one (the fold, or the
+     * end). Empty for anything but a header. The header's select check
+     * selects exactly these, and a square's own toggle repaints the header it
+     * finds through {@link #headerAbove}.
+     */
+    @NonNull
+    public static List<Integer> squaresUnder(@NonNull List<CaptureItem> items, int header) {
+        if (header < 0 || header >= items.size()
+                || items.get(header).type != CaptureItem.TYPE_HEADER) {
+            return Collections.emptyList();
+        }
+        List<Integer> out = new ArrayList<>();
+        for (int i = header + 1; i < items.size(); i++) {
+            if (items.get(i).type != CaptureItem.TYPE_SQUARE) break;
+            out.add(i);
+        }
+        return out;
+    }
+
+    /** The header heading a square, or -1: the nearest header above it with
+     *  nothing but squares between them. */
+    public static int headerAbove(@NonNull List<CaptureItem> items, int position) {
+        if (position < 0 || position >= items.size()
+                || items.get(position).type != CaptureItem.TYPE_SQUARE) {
+            return -1;
+        }
+        for (int i = position - 1; i >= 0; i--) {
+            int type = items.get(i).type;
+            if (type == CaptureItem.TYPE_HEADER) return i;
+            if (type != CaptureItem.TYPE_SQUARE) return -1;
+        }
+        return -1;
     }
 
     /**
@@ -245,15 +279,14 @@ public final class CaptureSections {
 
     /**
      * Whether the fold shows the earlier captures. Open whenever nothing of
-     * the page shown now is listed (no page, nothing caught yet, or nothing
-     * of the chip's type): the earlier captures are then all the list holds,
-     * and a closed fold over an empty page read as a lone card on a blank
-     * sheet (on-device, the Video chip on a page with no video, after the
-     * fold had been closed under another chip). Otherwise the user's choice,
-     * closed until they make one.
+     * the page shown now is listed (no page, or nothing caught yet): the
+     * earlier captures are then all the list holds, and a closed fold over an
+     * empty page read as a lone card on a blank sheet (on-device, when the
+     * sheet still had filter chips). Otherwise the user's choice, closed
+     * until they make one.
      *
      * @param choice       the user's last tap, or null before any
-     * @param currentTotal the page's captures under the active chip
+     * @param currentTotal the page's captures in the list
      */
     public static boolean earlierOpen(@Nullable Boolean choice, int currentTotal) {
         return currentTotal == 0 || Boolean.TRUE.equals(choice);
@@ -307,10 +340,11 @@ public final class CaptureSections {
      * where it was a second door to the same file and the one that cost the
      * most room (a whole tile for a glyph, and under a page's only video the
      * half-empty row the wide tile removes). The video's tile counts it
-     * ("CC 1") and its ⋮ picks it; the sheet has no Subtitle chip, because a
-     * chip that listed the tracks the list leaves out read as the list having
-     * lost them. A track with no door keeps its tile: no video of its page
-     * was captured, or that video has one quality and so no ⋮.
+     * ("CC 1") and its ⋮ picks it; nothing else in the sheet lists it (the
+     * sheet had a Subtitle chip that did, and a chip showing what the list
+     * leaves out read as the list having lost it). A track with no door
+     * keeps its tile: no video of its page was captured, or that video has
+     * one quality and so no ⋮.
      */
     public static boolean ridesWithVideo(@NonNull BrowserDownloadEntity e,
                                          @NonNull Set<String> doors) {

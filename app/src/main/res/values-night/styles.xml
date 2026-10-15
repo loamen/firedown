@@ -53,12 +53,6 @@
         <item name="actionOverflowButtonStyle">@style/Theme.FireDown.Toolbar.ActionMode.Overflow</item>
     </style>
 
-    <style name="Firedown.Widget.App.Chip.Filter" parent="Widget.Material3.Chip.Filter">
-        <item name="materialThemeOverlay">@style/ThemeOverlay.App.Chip</item>
-        <item name="chipCornerRadius">100dp</item>
-        <item name="chipMinHeight">36dp</item>
-    </style>
-
     <style name="ThemeOverlay.App.Chip" parent="">
         <item name="elevationOverlayEnabled">false</item>
         <item name="colorSurface">@color/transparent</item>
@@ -72,11 +66,10 @@
              but its container tone drifted off that base.)
 
              Remapped rather than reimplemented: the library keeps owning the
-             enabled/checked/disabled selector logic, and both rails' chips
-             (Captured via Firedown.Widget.App.Chip.Filter, Downloads via
-             Theme.FireDown.Download.Chip and its chip_download selector,
-             which also resolves ?attr/colorSecondaryContainer) pick the swap
-             up from this one place. The label follows via
+             enabled/checked/disabled selector logic, and the Downloads
+             rail's chips (Theme.FireDown.Download.Chip and its chip_download
+             selector, which also resolves ?attr/colorSecondaryContainer)
+             pick the swap up from this one place. The label follows via
              colorOnSecondaryContainer so the pair can never disagree.
 
              NOT colorPrimary: #f0716c under a white label is 2.88:1, below
@@ -181,8 +174,7 @@
 
 
     <style name="Theme.FireDown.Download.Chip" parent="Widget.Material3.Chip.Filter">
-        <!-- Shares ThemeOverlay.App.Chip with the Captured rail so the
-             checked-chip colour is defined once for both surfaces. -->
+        <!-- The checked-chip colour lives in ThemeOverlay.App.Chip. -->
         <item name="materialThemeOverlay">@style/ThemeOverlay.App.Chip</item>
         <item name="chipSurfaceColor">@color/transparent</item>
         <item name="chipBackgroundColor">@color/chip_download</item>

@@ -12,12 +12,8 @@
   <string name="browser_tabs_empty">Tus pestañas abiertas se mostrarán aquí.</string>
   <string name="browser_tabs_empty_archive">No hay pestañas cerradas recientemente.</string>
   <string name="cancel">Cancelar</string>
-  <string name="capture_empty_audio_message">No hay archivos de audio disponibles.</string>
-  <string name="capture_empty_gifs_message">No hay gifs disponibles.</string>
-  <string name="capture_empty_images_message">No hay imágenes disponibles.</string>
   <string name="capture_empty_message">No hay medios disponibles para descargar.</string>
   <string name="capture_empty_subtext">Vuelve a cargar el sitio web y Firedown detectará los medios disponibles.</string>
-  <string name="capture_empty_video_message">No hay vídeos disponibles.</string>
     <string name="clipboard">Copiado al portapapeles</string>
 <string name="connection_secure">La conexión es segura</string>
     <string name="delete">Eliminar</string>

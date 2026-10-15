@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">As túas pestanas abertas mostraranse aquí.</string>
     <string name="browser_tabs_empty_archive">Non hai pestanas pechadas recentemente.</string>
     <string name="cancel">Cancelar</string>
-    <string name="capture_empty_audio_message">Non hai ficheiros de audio dispoñibles.</string>
-    <string name="capture_empty_gifs_message">Non hai Gifs dispoñibles.</string>
-    <string name="capture_empty_images_message">Non hai imaxes dispoñibles.</string>
     <string name="capture_empty_message">Non hai medios dispoñibles para descargar.</string>
     <string name="capture_empty_subtext">Volve cargar o sitio web e Firedown detectará os medios dispoñibles.</string>
-    <string name="capture_empty_video_message">Non hai vídeos dispoñibles.</string>
     <string name="clipboard">Copiouse no portapapeis</string>
     <string name="close_tab">Pechar lapela</string>
 <string name="close_tabs_after_one_day">Despois dun día</string>

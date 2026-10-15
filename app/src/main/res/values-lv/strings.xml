@@ -12,12 +12,8 @@
     <string name="browser_tabs_empty">Šeit tiks rādītas jūsu atvērtās cilnes.</string>
     <string name="browser_tabs_empty_archive">Nav nesen aizvērtu cilņu.</string>
     <string name="cancel">Atcelt</string>
-    <string name="capture_empty_audio_message">Audio faili nav pieejami.</string>
-    <string name="capture_empty_gifs_message">GIF faili nav pieejami.</string>
-    <string name="capture_empty_images_message">Nav pieejami attēli.</string>
     <string name="capture_empty_message">Lejupielādei nav pieejams neviens plašsaziņas līdzeklis.</string>
     <string name="capture_empty_subtext">Atkārtoti ielādējiet tīmekļa vietni, un Firedown noteiks pieejamos plašsaziņas līdzekļus.</string>
-    <string name="capture_empty_video_message">Nav pieejams neviens video.</string>
     <string name="clipboard">Kopēts starpliktuvē</string>
 <string name="connection_secure">Savienojums ir drošs</string>
     <string name="delete">Izdzēst</string>

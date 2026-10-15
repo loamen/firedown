@@ -1796,7 +1796,7 @@ Three layers prevent duplicate entries for one video:
   url/uid (pHash is 0 before the probe), so the larger copy always reaches the
   comparison; a same-URL dup has equal pixels and never churns. (Related, same
   HAR-verified episode: `google.<tld>/maps/vt` raster tiles are blocked in
-  `regex.js` — dozens of 256px tiles per pan/zoom flooded the Images chip and
+  `regex.js` — dozens of 256px tiles per pan/zoom flooded the sheet's images and
   buried the real photos, which are `lh3.googleusercontent.com` and still
   capture.)
 
@@ -1982,9 +1982,8 @@ type, not a mode.
   title and stays. A subtitle tile is titled by its LANGUAGE when the parser
   named one, and then carries the file's name in its meta row so two
   "English" tracks of two videos stay told apart.
-- **A subtitle its video already offers is NOT an item of the sheet, and
-  the sheet has NO Subtitle chip** (canvas row "Subtitles ride with their
-  video", board J). A video
+- **A subtitle its video already offers is NOT an item of the sheet**
+  (canvas row "Subtitles ride with their video", board J). A video
   with quality variants wears the ⋮, and the ⋮'s picker has a Captions
   section listing every subtitle of that page (same tab, same origin,
   `subtitlesForOrigin`), with the device language pre-ticked. So the track's
@@ -1995,23 +1994,23 @@ type, not a mode.
   `ridesWithVideo` decide it; the view model drops those tracks in
   `snapshot()` BEFORE anything is counted, so the fold's "N files" and the
   empty-page rule count what is shown. **The Subtitle chip went with it**
-  (the Captured rail is Video · Audio · Images · GIF): for one build the
-  tracks were hidden only while no chip was checked and listed under the
-  Subtitle chip, and the maintainer read it as broken: a filter chip only
-  ever narrows, so a chip showing items the unfiltered list lacks says the
-  list lost them. Two consistent answers were weighed, show every track
-  again or offer them only through the video, and the maintainer took the
-  second. What stays: the video's "CC n" (counted over the whole tab,
+  (and then the whole rail, see the no-chips bullet below): for one build
+  the tracks were hidden only while no chip was checked and listed under
+  the Subtitle chip, and the maintainer read it as broken: a filter chip
+  only ever narrows, so a chip showing items the unfiltered list lacks
+  says the list lost them. Two consistent answers were weighed, show
+  every track again or offer them only through the video, and the
+  maintainer took the second. What stays: the video's "CC n" (counted over the whole tab,
   unchanged), and the tile of a track with NO door — no video of its page
   captured, or a video with one quality and so no ⋮ (the generic catcher's
-  mp4 + `.vtt` is the common case, and it keeps the half row); such a
-  track is in no chip, only in the unfiltered list. Showing the ⋮ on a
+  mp4 + `.vtt` is the common case, and it keeps the half row). Showing the ⋮ on a
   captioned one-quality video (a picker with only the Captions section)
   would close that last case; not built yet. Costs, accepted: a riding
   track downloads only beside its video (the picker has no captions-only
   download), its URL can no longer be copied from the sheet, and
-  select-all never picks it up. Don't bring the Subtitle chip back to this
-  sheet; the Downloads rail keeps its own, where a subtitle is a file.
+  select-all never picks it up. Don't list the riding tracks anywhere else
+  in this sheet; the Downloads rail keeps its Subtitle chip, where a
+  subtitle is a file.
   Rows were the other answer and are why this exists instead: board F drew
   subtitles as compact rows and on-device they read as a third tile style.
 - **Earlier pages are FOLDED, not divided.** F ended the current page with a
@@ -2026,17 +2025,17 @@ type, not a mode.
   place under it, in the same tiles and squares. **The open state lives in
   the view model** (`toggleEarlier`, which is the sheet's own, so every
   opening of the sheet starts over and a rotation keeps it): closed by
-  default; OPEN whenever the page shown now lists nothing — no page,
-  nothing caught yet, or nothing of the CHIP's type
+  default; OPEN whenever the page shown now lists nothing — no page, or
+  nothing caught yet
   (`CaptureSections.earlierOpen`, the one rule, pinned by the harness) —
   WHATEVER the user chose before, and then it is not a toggle at all: the
   row is drawn as a section heading in the Images heading's shape
   (`collapsible` false → the adapter's `VIEW_EARLIER_HEADING`, no card, no
   chevron, no expand action), because the earlier captures are all the
   list holds and closing them would leave a lone card on a blank sheet.
-  That shipped: a fold closed under one chip stayed closed under the Video
-  chip on a page with no video, and the sheet showed the fold card and
-  nothing else (on-device). That opening LATCHES (`mEarlierOpen = true`,
+  That shipped, while the sheet still had filter chips: a fold closed under
+  one chip stayed closed under the Video chip on a page with no video, and
+  the sheet showed the fold card and nothing else (on-device). That opening LATCHES (`mEarlierOpen = true`,
   over a closed choice too), so a capture landing a moment later doesn't
   snap the list shut under the user. Earlier tiles carry their domain only when the earlier
   pages span more than one site; with one, the fold names it. When the list
@@ -2061,7 +2060,7 @@ type, not a mode.
   Don't put presentation state back on the adapter.
 - **A page's ONLY video spans the row — on a two-column grid only**
   (`CaptureItem.onlyVideo`, set by `CaptureSections.build` when the current
-  group, under the active chip, holds exactly one video; an audio-flagged
+  group holds exactly one video; an audio-flagged
   mp4 counts as audio; `BrowserOptionAdapter.spanSize` widens it only when
   `capture_tile_columns` is 2). On-device a single-video page (Twitch,
   YouTube, a clip or status page — the common case) showed its video in
@@ -2090,14 +2089,37 @@ type, not a mode.
   The header's and the fold's facts are the whole group's BEFORE the list
   limit, so they don't climb 15 → 25 as the user scrolls in more; the fold's
   sites are parsed once per distinct page, not per capture (it runs on every
-  emission). Under a chip: no headers (the chip names the type) and no type
-  labels; the fold stays, counting that type.
+  emission). Every tile carries its type label (VIDEO, AUDIO…).
 - **The Images header is Downloads' section header** (LabelLarge title in
   onSurface over a BodySmall "N files" from `downloads_group_files`), so the
   two screens' headers read alike as their tiles do.
-- **A SQUARE** shows the dimensions bottom-left (led by GIF / SVG while
-  unfiltered, and kept under a chip, the maintainer's call: it is the one
-  fact a picture's thumbnail doesn't show) and the mark bottom-right.
+- **The sheet has NO filter chips; selecting a whole section is the Images
+  header's check** (2026-10, after the Subtitle chip went: "makes me wonder
+  if chips here are unnecessary"). The rail was Video · Audio · Images · GIF
+  over a list that already orders video, audio, other, then the images
+  under their header, so on a typical page (one video, its audio, a few
+  pictures) a chip only restated the order, and GIF is a kind of image,
+  labelled on its square. The one thing a chip did that the order can't,
+  Images + Select all, moved onto the header (Google Photos' date-header
+  check): while selecting, an "Images" header shows the squares' own
+  `brandInk` check or ring at its end, and a tap selects every square under
+  it, or clears them when all are selected (`CaptureSections.squaresUnder` /
+  `headerAbove`, `BrowserOptionAdapter.toggleSection`; a square's own
+  toggle repaints its header, and the screen reader gets "Select all" /
+  "Deselect all" as the header's click action). At rest the header is a
+  heading and nothing more (not clickable, no check); the earlier-captures
+  heading never takes the check. The toolbar's Select all still takes the
+  whole list. With the chips went the per-type empty states (one empty
+  state), Back-clears-a-chip, `Sorting`'s browser half, `CaptureItem`'s
+  `showType` (type labels always show) and the
+  `Firedown.Widget.App.Chip.Filter` style. Don't bring a rail back to this
+  sheet: a filter on a list this short costs a row to save a scroll, the
+  header covers the bulk action, and a chip invites the "chip shows what
+  the list lacks" bug the Subtitle chip shipped. The Downloads rail keeps
+  its chips; a long file list is where a filter earns its row.
+- **A SQUARE** shows the dimensions bottom-left (led by GIF / SVG; the
+  maintainer's call: it is the one fact a picture's thumbnail doesn't show)
+  and the mark bottom-right.
   **Text over a picture follows the app's photo-tile convention, never a
   pill**: `bottom_scrim` plus white text with the grid caption's shadow, and
   self-coloured badge glyphs with a baked shadow
@@ -2125,12 +2147,12 @@ type, not a mode.
   Origins are capped at `MAX_ORIGINS` (900), under SQLite's 999
   bound-variable limit on Android below 11. A mark-only change is a
   `PAYLOAD_MARK` rebind, so a progress tick never reloads a thumbnail.
-- **Batch card** (above the chips): after a multi-select download of two or
+- **Batch card** (above the list): after a multi-select download of two or
   more captures, "Saved 3 of 20 · 4 downloading · 13 pending (· 2 failed)",
   with the overall progress along its bottom edge; a tap opens Downloads
   (the Safe Folder in a private tab). The batch is held in the VIEW MODEL as
-  entities, because a chip or the list limit can hide a member and it must
-  still count. A member with no row yet is pending; one whose row was seen
+  entities, because the list limit or a closed fold can hide a member and
+  it must still count. A member with no row yet is pending; one whose row was seen
   and is now gone was deleted from Downloads and leaves the batch. It lives
   as long as the sheet.
 - **Spacing** is `CaptureSpacingDecoration.attach`: 16dp gutter (the
@@ -2171,14 +2193,16 @@ type, not a mode.
   directly.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
-  `CaptureItemDiffCallback`; 71 checks; mutants that ignore the fold's open
+  `CaptureItemDiffCallback`; 77 checks; mutants that ignore the fold's open
   state, show the domain with one site, drop the short-word filename rule,
   skip pictures-first in the preview, drop the fold when the limit cuts
   first, count an audio-flagged mp4 as a video, let an earlier "closed"
   choice win over an empty page, leave `collapsible` or `onlyVideo` out of
   the diff, widen the first of several videos, widen an earlier page's
-  video, count a one-quality video as a caption door, or keep every track
-  in the list each fail it). On-device
+  video, count a one-quality video as a caption door, keep every track
+  in the list, let a header's check take squares past the fold, let a
+  square find a header past a tile, or drop the header over the page's
+  images each fail it). On-device
   unverified at write time.
 - The bare "timedtext" subtitle that sat beside YouTube's titled caption
   tracks was the generic catcher capturing the player's own caption fetch;
@@ -2227,8 +2251,8 @@ this sheet's job.
 aborts count too). `BrowserOptionFragment` observes it via
 `BrowserDownloadViewModel.getInflight()` and shows a small brand-orange spinner
 in the toolbar whenever busy — debounced (show-now + ~500 ms
-hide-linger so it doesn't strobe; decoupled from the filter chips, so filtering
-to an empty type doesn't hide it). The empty list uses the LCEE loading spinner.
+hide-linger so it doesn't strobe; decoupled from whether the list is empty, so
+an empty sheet still shows work arriving). The empty list uses the LCEE loading spinner.
 Fills the gap where a slow capture (e.g. an HLS-master fetch) makes the sheet
 look empty for seconds.
 
@@ -3311,12 +3335,10 @@ restore button, and the older empty-text line that showed "nothing of this
 type" on an unfiltered empty list). Chip ORDER is frequency-first within the
 rail's visible window — `Video · Audio · Images · GIF · Subtitle · Documents
 · APK · Archives` (Images/GIF deliberately ahead of the rarely-filtered
-Subtitle, which leads the long-tail half) — and the Captured sheet
-(`fragment_dialog_browser_options_list_options.xml`) carries the first four
-in the same order as the Downloads rail (`fragment_download_list_options.xml`):
-it has no Subtitle chip on purpose (see "Subtitles ride with their video"
-under the Captured sheet). Reordering is safe (all chip handling is
-id-keyed, never positional) but do it in both files.
+Subtitle, which leads the long-tail half), in
+`fragment_download_list_options.xml`. The Captured sheet has no chip rail at
+all (see "The sheet has NO filter chips" under the Captured sheet).
+Reordering is safe: all chip handling is id-keyed, never positional.
 
 **The missing-file sweep (`MediaListenerWorker`, runs on every
 DownloadsActivity resume via unique work `media-existence-check`/KEEP) is
@@ -8469,10 +8491,10 @@ here:
   retoned, because the token is correctly peach for every other consumer.
   `ThemeOverlay.App.Chip` maps `colorSecondaryContainer` →
   `colorPrimaryContainer` and `colorOnSecondaryContainer` →
-  `colorOnPrimaryContainer`, and BOTH rails' styles use it —
-  `Firedown.Widget.App.Chip.Filter` (Captured) and
-  `Theme.FireDown.Download.Chip` (Downloads, whose `chip_download` selector
-  also resolves `?attr/colorSecondaryContainer`). Remapped rather than
+  `colorOnPrimaryContainer`, and the Downloads rail's style uses it —
+  `Theme.FireDown.Download.Chip`, whose `chip_download` selector also
+  resolves `?attr/colorSecondaryContainer` (the Captured sheet's rail,
+  which used it too, is gone). Remapped rather than
   reimplemented so the library keeps owning the enabled/checked/disabled
   selector logic, and the label follows the background automatically.
   **Never point it at `colorPrimary`:** `#ff716c` under a white label is
@@ -8684,16 +8706,14 @@ here:
   space-less scripts (CJK/Thai) and silently drops real titles. The mime chip
   labels the type in the UNFILTERED grid (where it varies row to row), incl.
   when the title is hidden — but it is **suppressed while a single-type filter
-  chip is active** (`setMimeSuppressed`, wired to the chip rail; the Captured
-  sheet drops its type labels the same way): stamping "VIDEO" on every tile under an active
+  chip is active** (`setMimeSuppressed`, wired to the chip rail): stamping "VIDEO" on every tile under an active
   Video filter merely repeats the checked chip. **Presentation flips
   (suppression/density/span) must land WITH the new list, never on the chip
   tap** — the requery is async, and an eager flip re-renders the OLD list in
   the NEW presentation first (on-device: the images mosaic collapsed to
   normal span-2 image tiles for a beat before the videos arrived). The
-  Captured sheet now builds the presentation INTO its items in the view model
-  (see "Captured sheet — tiles for video, squares for images"), so it lands
-  with the list by construction; Downloads defers
+  Captured sheet (no chips now) builds its presentation INTO its items in
+  the view model, so it lands with the list by construction; Downloads defers
   to the paging load-state listener (`applyPendingPresentation` on refresh
   NotLoading). The rebind-on-change is still required either way: the differ
   won't rebind items that survived a filter flip unchanged. (Captured used to *always* show the title as a pre-download

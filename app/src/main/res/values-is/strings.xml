@@ -21,12 +21,8 @@
     <string name="browser_tabs_empty">Opnu fliparnir þínir verða sýndir hér.</string>
     <string name="browser_tabs_empty_archive">Engir nýlega lokaðir flipar.</string>
     <string name="cancel">Hætta við</string>
-    <string name="capture_empty_audio_message">Engar hljóðskrár tiltækar.</string>
-    <string name="capture_empty_gifs_message">Engin gifs í boði.</string>
-    <string name="capture_empty_images_message">Engar myndir tiltækar.</string>
     <string name="capture_empty_message">Enginn miðill tiltækur til niðurhals.</string>
     <string name="capture_empty_subtext">Endurhlaðið vefsíðuna og Firedown finnur tiltæka miðla.</string>
-    <string name="capture_empty_video_message">Engin myndskeið í boði.</string>
     <string name="clipboard">Afritað á klippiborð</string>
     <string name="close_tab">Loka flipa</string>
 <string name="close_tabs_after_one_day">Eftir einn dag</string>

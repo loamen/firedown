@@ -12,12 +12,8 @@
     <string name="browser_tabs_empty">Inga öppna flikar</string>
     <string name="browser_tabs_empty_archive">Inga nyligen stängda flikar.</string>
     <string name="cancel">Annullera</string>
-    <string name="capture_empty_audio_message">Inga ljudfiler tillgängliga.</string>
-    <string name="capture_empty_gifs_message">Inga gifs tillgängliga.</string>
-    <string name="capture_empty_images_message">Inga bilder tillgängliga.</string>
     <string name="capture_empty_message">Ingen media tillgänglig för nedladdning.</string>
     <string name="capture_empty_subtext">Ladda om webbplatsen och Firedown kommer att upptäcka tillgänglig media.</string>
-    <string name="capture_empty_video_message">Inga videor tillgängliga.</string>
     <string name="clipboard">Kopierade till urklipp</string>
     <string name="clipboard_from">Från urklipp</string>
 <string name="connection_secure">Anslutningen är säker</string>

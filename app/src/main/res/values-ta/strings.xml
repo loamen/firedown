@@ -19,12 +19,8 @@
     <string name="browser_tabs_empty">உங்கள் திறந்த தாவல்கள் இங்கே காட்டப்படும்.</string>
     <string name="browser_tabs_empty_archive">சமீபத்தில் மூடப்பட்ட தாவல்கள் இல்லை.</string>
     <string name="cancel">ரத்து செய்</string>
-    <string name="capture_empty_audio_message">ஆடியோ கோப்புகள் இல்லை.</string>
-    <string name="capture_empty_gifs_message">Gifகள் இல்லை.</string>
-    <string name="capture_empty_images_message">படங்கள் எதுவும் கிடைக்கவில்லை.</string>
     <string name="capture_empty_message">பதிவிறக்குவதற்கு எந்த மீடியாவும் இல்லை.</string>
     <string name="capture_empty_subtext">இணையதளத்தை மீண்டும் ஏற்றவும், கிடைக்கக்கூடிய மீடியாவை Firedown கண்டறியும்.</string>
-    <string name="capture_empty_video_message">வீடியோக்கள் இல்லை.</string>
     <string name="clipboard">கிளிப்போர்டுக்கு நகலெடுக்கப்பட்டது</string>
     <string name="close_tab">கீற்றை மூடு</string>
 <string name="close_tabs_after_one_day">ஒரு நாள் கழித்து</string>
