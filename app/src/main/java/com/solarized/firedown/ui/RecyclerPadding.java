@@ -51,6 +51,14 @@ public final class RecyclerPadding {
         apply(view, parts);
     }
 
+    /** The base's bottom alone, for a listener that only reserves the
+     *  navigation bar: the rest of the base and the extra are kept. */
+    public static void setBaseBottom(@NonNull View view, int bottom) {
+        int[] parts = partsOf(view);
+        parts[BOTTOM] = bottom;
+        apply(view, parts);
+    }
+
     /** The extra: the same on both sides, and on top and bottom. Keeps the
      *  base. */
     public static void setExtra(@NonNull View view, int horizontal, int vertical) {

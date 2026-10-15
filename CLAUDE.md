@@ -1987,29 +1987,29 @@ type, not a mode.
   item's insets until the item is REBOUND, and a capture inserted above
   shifts every item after it into the other column without a rebind. Don't
   reintroduce column-dependent offsets here. Downloads had the same bug
-  (`EqualSpacingItemDecoration` computes each item's edges from its
-  position and span index) and now uses that class's
-  `attachUniform`: half the spacing on every item, the other half on the
-  RecyclerView's padding. So do the tab grid (a tab opened, closed or
-  dragged moves every card after it), the Backups list and grid (a
-  finished upload inserts a row), Bookmarks and History (an entry added
-  or removed at either end, or the sync banner coming and going, moves
-  which row is first or last). **A list's padding then has two owners,
-  and both go through `ui/RecyclerPadding`**: the decoration sets the
-  EXTRA (`setExtra`, the edge around the items) and the inset listener
-  sets the BASE (`setBase`, the system bars), and the padding is their
-  sum. The Downloads switch shipped without it for one commit, and the
-  inset listener every `BaseFocusFragment` puts on its list did
-  `setPadding(insets.left, 0, insets.right, insets.bottom)` after the
-  decoration had padded the list (insets arrive after attach), erasing
-  the edge: tiles 4dp from the screen instead of 8, and a re-attach on
-  the grid/list switch did the reverse and dropped the nav-bar inset. An
-  inset listener on a list whose decoration pads it never calls
-  `setPadding` directly. Still on the per-position mode: the tab
-  archive, Storage review and Licenses — single-column lists, where an
-  insert can stale only the first and last row's top/bottom edge
-  (Storage review's own inset listener sets the padding outright, so it
-  moves to `setBase` with it).
+  (`EqualSpacingItemDecoration` then computed each item's edges from its
+  position and span index) and moved to that class's `attachUniform`:
+  half the spacing on every item, the other half on the RecyclerView's
+  padding. Then every other list did too — the tab grid (a tab opened,
+  closed or dragged moves every card after it), the Backups list and
+  grid (a finished upload inserts a row), Bookmarks, History, the tab
+  archive, Storage review and Licenses (in a single-column list an entry
+  added or removed at either end changes which row is first or last,
+  and the old per-position edge left an uneven gap there) — and the
+  per-position mode was DELETED: `attachUniform` is the class's only
+  door. Don't bring the per-position mode back. **A list's padding has
+  two owners, and both go through `ui/RecyclerPadding`**: the decoration
+  sets the EXTRA (`setExtra`, the edge around the items) and the inset
+  listener sets the BASE (`setBase`, or `setBaseBottom` for a listener
+  that only reserves the navigation bar, the settings list's), and the
+  padding is their sum. The Downloads switch shipped without it for one
+  commit, and the inset listener every `BaseFocusFragment` puts on its
+  list did `setPadding(insets.left, 0, insets.right, insets.bottom)`
+  after the decoration had padded the list (insets arrive after attach),
+  erasing the edge: tiles 4dp from the screen instead of 8, and a
+  re-attach on the grid/list switch did the reverse and dropped the
+  nav-bar inset. An inset listener on a list never calls `setPadding`
+  directly.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
   `CaptureItemDiffCallback`; 55 checks; mutants that ignore the fold's open

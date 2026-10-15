@@ -300,9 +300,9 @@ public class CloudBackupListFragment extends Fragment
             Insets insets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(insets.left, 0, insets.right, 0);
-            // The list's BASE padding (the root carries the side insets);
-            // the spacing's edge rides on top of it.
-            RecyclerPadding.setBase(mRecycler, 0, 0, 0, insets.bottom);
+            // The list's BASE bottom (the root carries the side insets); the
+            // spacing's edge rides on top of it.
+            RecyclerPadding.setBaseBottom(mRecycler, insets.bottom);
             if (navScrim != null) {
                 navScrim.getLayoutParams().height = insets.bottom;
                 navScrim.requestLayout();

@@ -27,6 +27,7 @@ import com.solarized.firedown.BaseActivity;
 import com.solarized.firedown.R;
 import com.solarized.firedown.geckoview.GeckoRuntimeHelper;
 import com.solarized.firedown.settings.ui.CardPreferenceGroupAdapter;
+import com.solarized.firedown.ui.RecyclerPadding;
 
 import javax.inject.Inject;
 
@@ -66,12 +67,10 @@ public class BasePreferenceFragment extends PreferenceFragmentCompat {
 
             // Apply bottom inset as padding to the list so scrolled content
             // goes under the nav bar but the last items aren't permanently clipped
+            // (the BASE bottom: a spacing decoration's edge, Licenses', is
+            // kept on top of it).
             if (listView != null) {
-                listView.setPadding(
-                        listView.getPaddingLeft(),
-                        listView.getPaddingTop(),
-                        listView.getPaddingRight(),
-                        insets.bottom);
+                RecyclerPadding.setBaseBottom(listView, insets.bottom);
             }
 
             return WindowInsetsCompat.CONSUMED;

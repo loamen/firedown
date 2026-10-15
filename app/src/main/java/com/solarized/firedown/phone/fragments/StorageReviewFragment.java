@@ -29,6 +29,7 @@ import com.solarized.firedown.data.repository.DownloadDataRepository;
 import com.solarized.firedown.data.repository.TaskRepository;
 import com.solarized.firedown.sync.CloudBackupManager;
 import com.solarized.firedown.ui.EqualSpacingItemDecoration;
+import com.solarized.firedown.ui.RecyclerPadding;
 import com.solarized.firedown.ui.adapters.StorageReviewAdapter;
 import com.solarized.firedown.utils.NavigationUtils;
 
@@ -98,7 +99,10 @@ public class StorageReviewFragment extends BaseFocusFragment {
 
     private StorageReviewAdapter mAdapter;
     private View mBar;
-    /** Bottom system-bar inset, kept so the list padding can flip with the bar. */
+    /** System-bar insets, kept so the list's bottom padding can flip with
+     *  the bar. */
+    private int mLeftInset;
+    private int mRightInset;
     private int mBottomInset;
     private MaterialButton mDeleteButton;
     private MenuItem mSelectAll;
@@ -141,8 +145,10 @@ public class StorageReviewFragment extends BaseFocusFragment {
         mAdapter = new StorageReviewAdapter(requireContext(), this::onSelectionChanged);
         RecyclerView recycler = mRecyclerView;
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recycler.addItemDecoration(
-                new EqualSpacingItemDecoration(requireContext(), R.dimen.list_spacing));
+        // Position-independent spacing: a delete removes rows from anywhere,
+        // including the first and last, through a remove, not a rebind.
+        EqualSpacingItemDecoration.attachUniform(recycler,
+                getResources().getDimensionPixelSize(R.dimen.list_spacing));
         recycler.setAdapter(mAdapter);
         mLCEERecyclerView.setEmptyImageView(R.drawable.ill_small_folder);
         mLCEERecyclerView.setEmptyText(R.string.storage_review_empty);
@@ -155,13 +161,14 @@ public class StorageReviewFragment extends BaseFocusFragment {
         // column, so the bar would never see the insets. Same padding, insets
         // passed on. The bottom padding is dropped while the bar is up — the
         // bar then owns the bottom edge and the inset-sized padding would be
-        // dead space above it (applyListBottomPadding).
+        // dead space above it (applyListPadding).
         ViewCompat.setOnApplyWindowInsetsListener(recycler, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                     | WindowInsetsCompat.Type.displayCutout());
+            mLeftInset = insets.left;
+            mRightInset = insets.right;
             mBottomInset = insets.bottom;
-            v.setPadding(insets.left, 0, insets.right, 0);
-            applyListBottomPadding();
+            applyListPadding();
             return windowInsets;
         });
 
@@ -318,13 +325,13 @@ public class StorageReviewFragment extends BaseFocusFragment {
         }
         if (!ValueAnimator.areAnimatorsEnabled()) {
             mBar.setVisibility(show ? View.VISIBLE : View.GONE);
-            applyListBottomPadding();
+            applyListPadding();
             return;
         }
         mBar.animate().cancel();
         if (show) {
             mBar.setVisibility(View.VISIBLE);
-            applyListBottomPadding();
+            applyListPadding();
             mBar.setTranslationY(mBar.getHeight() > 0 ? mBar.getHeight() : mBar.getMeasuredHeight());
             mBar.setAlpha(0f);
             mBar.animate().translationY(0f).alpha(1f).setDuration(200).start();
@@ -335,7 +342,7 @@ public class StorageReviewFragment extends BaseFocusFragment {
                             mBar.setVisibility(View.GONE);
                             mBar.setTranslationY(0f);
                             mBar.setAlpha(1f);
-                            applyListBottomPadding();
+                            applyListPadding();
                         }
                     }).start();
         }
@@ -348,14 +355,15 @@ public class StorageReviewFragment extends BaseFocusFragment {
      * meets the window edge (rows scroll under the bar, the scrim covers the
      * gesture area), and zero while the delete bar is up and owns that edge.
      */
-    private void applyListBottomPadding() {
+    private void applyListPadding() {
         RecyclerView list = mRecyclerView;
         if (list == null) {
             return;
         }
         boolean barUp = mBar != null && mBar.getVisibility() == View.VISIBLE;
-        list.setPadding(list.getPaddingLeft(), list.getPaddingTop(),
-                list.getPaddingRight(), barUp ? 0 : mBottomInset);
+        // The BASE of the list's padding; the spacing's edge rides on top.
+        RecyclerPadding.setBase(list, mLeftInset, 0, mRightInset,
+                barUp ? 0 : mBottomInset);
     }
 
     private void confirmDelete() {

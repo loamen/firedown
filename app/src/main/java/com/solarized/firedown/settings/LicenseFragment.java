@@ -37,7 +37,9 @@ public class LicenseFragment extends BasePreferenceFragment implements OnItemCli
 
         mRecyclerView.setHasFixedSize(true);
 
-        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(mActivity, R.dimen.list_spacing));
+        // Position-independent spacing, as every other list's.
+        EqualSpacingItemDecoration.attachUniform(mRecyclerView,
+                getResources().getDimensionPixelSize(R.dimen.list_spacing));
 
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(mActivity,
                 DividerItemDecoration.VERTICAL);

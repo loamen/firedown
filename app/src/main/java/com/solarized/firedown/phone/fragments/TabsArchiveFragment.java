@@ -89,8 +89,12 @@ public class TabsArchiveFragment extends BaseFocusFragment implements OnItemClic
         // bookmarks, history and downloads lists use. CardViewListItemDecoration
         // emitted spacing only on the very first and last items and zero between,
         // which let adjacent selected rows' chrome touch; that is why the other
-        // lists moved off it.
-        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(mActivity, R.dimen.list_spacing));
+        // lists moved off it. The position-independent mode: restoring or
+        // deleting the first or last archived tab moves which row is at the
+        // end through a remove, not a rebind, and a row kept the edge
+        // offsets of the place it left.
+        EqualSpacingItemDecoration.attachUniform(mRecyclerView,
+                getResources().getDimensionPixelSize(R.dimen.list_spacing));
 
         mLCEERecyclerView.setEmptyImageView(R.drawable.ill_small_tabs);
         mLCEERecyclerView.setEmptyText(R.string.browser_tabs_empty_archive);
