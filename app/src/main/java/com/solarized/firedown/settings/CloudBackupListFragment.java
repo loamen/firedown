@@ -62,6 +62,7 @@ import com.solarized.firedown.sync.VaultRestoreWorker;
 import com.solarized.firedown.sync.model.VaultEntry;
 import com.solarized.firedown.ui.EqualSpacingItemDecoration;
 import com.solarized.firedown.ui.LCEERecyclerView;
+import com.solarized.firedown.ui.RecyclerPadding;
 import com.solarized.firedown.utils.NavigationUtils;
 
 import java.util.ArrayList;
@@ -258,8 +259,8 @@ public class CloudBackupListFragment extends Fragment
         // List ↔ grid, persisted. One GridLayoutManager drives both: span 1 for
         // list, image_grid_number for grid. In-progress TRANSFER rows always
         // span the full width (SpanSizeLookup) so an uploading file still reads
-        // as a row even in grid mode. The EqualSpacingItemDecoration below is
-        // span-aware (re-reads the live span), so the same decoration fits both.
+        // as a row even in grid mode. The spacing below gives every item the
+        // same offsets whatever its column, so it fits both.
         mEnableGrid = mPrefs.getBoolean(PREF_GRID, false);
         mLayoutManager = new GridLayoutManager(requireContext(), gridSpanCount(mEnableGrid));
         mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -276,10 +277,12 @@ public class CloudBackupListFragment extends Fragment
         });
         mRecycler.setLayoutManager(mLayoutManager);
         mAdapter.enableGrid(mEnableGrid);
-        // Same gutter as the Downloads list (and Bookmarks/History/Captured):
-        // EqualSpacingItemDecoration at list_spacing.
-        mRecycler.addItemDecoration(
-                new EqualSpacingItemDecoration(requireContext(), R.dimen.list_spacing));
+        // Same gutter as the Downloads list, and the same position-independent
+        // spacing: an upload finishing above inserts a row and moves every
+        // tile after it into another column without rebinding it, and
+        // offsets worked out per column stayed on the tile that left it.
+        EqualSpacingItemDecoration.attachUniform(mRecycler,
+                getResources().getDimensionPixelSize(R.dimen.list_spacing));
         // Empty state (LCEE) — the cloud illustration (restored from the
         // retired P2P-send header art; this screen IS the cloud, the Downloads
         // balloons read as a copy-paste here) + message. render()/applyEmptyState()
@@ -297,8 +300,9 @@ public class CloudBackupListFragment extends Fragment
             Insets insets = windowInsets.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(insets.left, 0, insets.right, 0);
-            mRecycler.setPadding(mRecycler.getPaddingLeft(), mRecycler.getPaddingTop(),
-                    mRecycler.getPaddingRight(), insets.bottom);
+            // The list's BASE padding (the root carries the side insets);
+            // the spacing's edge rides on top of it.
+            RecyclerPadding.setBase(mRecycler, 0, 0, 0, insets.bottom);
             if (navScrim != null) {
                 navScrim.getLayoutParams().height = insets.bottom;
                 navScrim.requestLayout();

@@ -1990,14 +1990,23 @@ type, not a mode.
   (`EqualSpacingItemDecoration` computes each item's edges from its
   position and span index) and now uses that class's
   `attachUniform`: half the spacing on every item, the other half on the
-  RecyclerView's padding (on top of the padding it had, remembered on the
-  view so the grid/list switch's re-attach doesn't pile it up). The other
-  screens on that class (Bookmarks, History, the tab archive, the tab grid,
-  Backups, Storage review, Licenses) still use the per-position mode; a
-  grid among them that inserts items (the tab grid, the Backups grid) can
-  show the same stale edge, and moving one over means checking its own
-  inset listener doesn't overwrite the padding (the tab grid's and Storage
-  review's set the RecyclerView's padding outright).
+  RecyclerView's padding. So do the tab grid (a tab opened, closed or
+  dragged moves every card after it) and the Backups list and grid (a
+  finished upload inserts a row). **A list's padding then has two owners,
+  and both go through `ui/RecyclerPadding`**: the decoration sets the
+  EXTRA (`setExtra`, the edge around the items) and the inset listener
+  sets the BASE (`setBase`, the system bars), and the padding is their
+  sum. The Downloads switch shipped without it for one commit, and the
+  inset listener every `BaseFocusFragment` puts on its list did
+  `setPadding(insets.left, 0, insets.right, insets.bottom)` after the
+  decoration had padded the list (insets arrive after attach), erasing
+  the edge: tiles 4dp from the screen instead of 8, and a re-attach on
+  the grid/list switch did the reverse and dropped the nav-bar inset. An
+  inset listener on a list whose decoration pads it never calls
+  `setPadding` directly. Still on the per-position mode: Bookmarks,
+  History, the tab archive, Storage review and Licenses — single-column
+  lists, where an insert can stale only the first and last row's
+  top/bottom edge.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
   `CaptureItemDiffCallback`; 55 checks; mutants that ignore the fold's open

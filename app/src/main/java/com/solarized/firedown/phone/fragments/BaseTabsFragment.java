@@ -32,6 +32,7 @@ import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.media.GeckoMediaController;
 import com.solarized.firedown.ui.EqualSpacingItemDecoration;
 import com.solarized.firedown.ui.OnItemClickListener;
+import com.solarized.firedown.ui.RecyclerPadding;
 import com.solarized.firedown.ui.adapters.BrowserTabsAdapter;
 import com.solarized.firedown.ui.diffs.GeckoStateDiffCallback;
 
@@ -427,8 +428,12 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
         // the very first layout pass already has both items and a
         // pending scroll position, and the LM uses the position as
         // its initial anchor.
-        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(
-                getResources().getDimensionPixelSize(R.dimen.list_item_margin)));
+        // Position-independent spacing (the Downloads grid's): a tab opened,
+        // closed or dragged moves every card after it into another column
+        // through an insert or a move, not a rebind, and offsets worked out
+        // per column would stay on the card that left it.
+        EqualSpacingItemDecoration.attachUniform(mRecyclerView,
+                getResources().getDimensionPixelSize(R.dimen.list_item_margin));
     }
 
     /**
@@ -474,7 +479,7 @@ public abstract class BaseTabsFragment extends BaseFocusFragment implements OnIt
             ViewCompat.setOnApplyWindowInsetsListener(mRecyclerView, (v, windowInsets) -> {
                 Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars()
                         | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(insets.left, 0, insets.right, 0);
+                RecyclerPadding.setBase(v, insets.left, 0, insets.right, 0);
                 return WindowInsetsCompat.CONSUMED;
             });
         }

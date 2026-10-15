@@ -63,6 +63,7 @@ import com.solarized.firedown.phone.VaultActivity;
 import com.solarized.firedown.phone.HtmlViewerActivity;
 import com.solarized.firedown.ui.IncognitoColors;
 import com.solarized.firedown.ui.LCEERecyclerView;
+import com.solarized.firedown.ui.RecyclerPadding;
 import com.solarized.firedown.ui.SearchMarketListener;
 import com.solarized.firedown.geckoview.toolbar.BottomProgressView;
 import com.solarized.firedown.IntentActions;
@@ -194,11 +195,10 @@ public class BaseFocusFragment extends Fragment {
             ViewCompat.setOnApplyWindowInsetsListener(mRecyclerView, (v, windowInsets) -> {
                 Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars() |
                         WindowInsetsCompat.Type.displayCutout());
-                // Apply the insets as a margin to the view. This solution sets only the
-                // bottom, left, and right dimensions, but you can apply whichever insets are
-                // appropriate to your layout. You can also update the view padding if that's
-                // more appropriate.
-                v.setPadding(insets.left, 0, insets.right, insets.bottom);
+                // The BASE of the list's padding: the spacing decoration
+                // (Downloads, the Captured sheet) keeps its own part on top,
+                // which a plain setPadding here used to erase.
+                RecyclerPadding.setBase(v, insets.left, 0, insets.right, insets.bottom);
                 return WindowInsetsCompat.CONSUMED;
             });
         }

@@ -12,8 +12,6 @@ import androidx.recyclerview.widget.OrientationHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
-import com.solarized.firedown.R;
-
 /**
  * {@code spacing} around and between the items of a list or grid: half of it
  * on each side of every item, the full amount at the list's edges.
@@ -58,28 +56,19 @@ public class EqualSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     /**
      * Adds the decoration in its position-independent mode and pads the
-     * RecyclerView by the rest of the spacing on all four sides, on top of
-     * whatever padding the view had the first time (remembered on the view,
-     * so a list that re-attaches on every grid/list switch doesn't pile
-     * padding up). The caller removes any previous decoration first, as
-     * before. The list needs clipToPadding off to scroll through the top and
-     * bottom padding, as the LCEE recycler has.
+     * RecyclerView by the rest of the spacing on all four sides, as the
+     * EXTRA part of its padding ({@link RecyclerPadding}): the base, what an
+     * inset listener reserves for the system bars, is kept whichever of the
+     * two runs first, and re-attaching (the grid/list switch) never piles
+     * the edge up. An inset listener on such a list must set its padding
+     * through {@link RecyclerPadding#setBase}, never {@code setPadding}. The
+     * caller removes any previous decoration first, as before. The list
+     * needs clipToPadding off to scroll through the top and bottom padding,
+     * as the LCEE recycler has.
      */
     public static void attachUniform(@NonNull RecyclerView recyclerView, int spacingPx) {
-        int[] base;
-        Object tag = recyclerView.getTag(R.id.equal_spacing_base_padding);
-        if (tag instanceof int[] stored) {
-            base = stored;
-        } else {
-            base = new int[] {
-                    recyclerView.getPaddingStart(), recyclerView.getPaddingTop(),
-                    recyclerView.getPaddingEnd(), recyclerView.getPaddingBottom()
-            };
-            recyclerView.setTag(R.id.equal_spacing_base_padding, base);
-        }
         int edge = spacingPx - spacingPx / 2;
-        recyclerView.setPaddingRelative(base[0] + edge, base[1] + edge,
-                base[2] + edge, base[3] + edge);
+        RecyclerPadding.setExtra(recyclerView, edge, edge);
         // The scrollbar stays on the view's edge, outside the new padding.
         recyclerView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         recyclerView.addItemDecoration(new EqualSpacingItemDecoration(spacingPx, true));

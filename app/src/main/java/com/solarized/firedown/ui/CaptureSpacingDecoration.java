@@ -48,8 +48,9 @@ public class CaptureSpacingDecoration extends RecyclerView.ItemDecoration {
         CaptureSpacingDecoration decoration = new CaptureSpacingDecoration(context);
         int gutter = Math.round(16 * context.getResources().getDisplayMetrics().density);
         int side = Math.max(0, gutter - decoration.mHalfGap);
-        recyclerView.setPaddingRelative(side, recyclerView.getPaddingTop(),
-                side, recyclerView.getPaddingBottom());
+        // The EXTRA part of the padding (RecyclerPadding), so an inset
+        // listener on the list keeps it.
+        RecyclerPadding.setExtra(recyclerView, side, 0);
         recyclerView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         recyclerView.addItemDecoration(decoration);
     }
