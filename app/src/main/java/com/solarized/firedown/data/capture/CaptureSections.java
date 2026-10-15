@@ -303,13 +303,14 @@ public final class CaptureSections {
     }
 
     /**
-     * A subtitle track its video already offers: left out of the unfiltered
-     * list, where it was a second door to the same file and the one that cost
-     * the most room (a whole tile for a glyph, and under a page's only video
-     * the half-empty row the wide tile removes). The video's tile counts it
-     * ("CC 1"), its ⋮ picks it, the Subtitle chip still lists it. A track with
-     * no door keeps its tile: no video of its page was captured, or that video
-     * has one quality and so no ⋮.
+     * A subtitle track its video already offers: not an item of the sheet,
+     * where it was a second door to the same file and the one that cost the
+     * most room (a whole tile for a glyph, and under a page's only video the
+     * half-empty row the wide tile removes). The video's tile counts it
+     * ("CC 1") and its ⋮ picks it; the sheet has no Subtitle chip, because a
+     * chip that listed the tracks the list leaves out read as the list having
+     * lost them. A track with no door keeps its tile: no video of its page
+     * was captured, or that video has one quality and so no ⋮.
      */
     public static boolean ridesWithVideo(@NonNull BrowserDownloadEntity e,
                                          @NonNull Set<String> doors) {

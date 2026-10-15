@@ -688,9 +688,6 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         } else if (selectedId == R.id.chip_gif) {
             textRes = R.string.capture_empty_gifs_message;
             imgRes = R.drawable.ill_small_gif;
-        } else if (selectedId == R.id.chip_subtitle) {
-            textRes = R.string.capture_empty_subtitles_message;
-            imgRes = R.drawable.ill_small_doc;
         }
 
         mLCEERecyclerView.setEmptyText(textRes);

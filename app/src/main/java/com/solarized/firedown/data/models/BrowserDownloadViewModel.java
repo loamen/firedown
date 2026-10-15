@@ -281,14 +281,13 @@ public class BrowserDownloadViewModel extends ViewModel {
                 .comparingInt((BrowserDownloadEntity e) -> current.contains(e) ? 0 : 1)
                 .thenComparingInt(CaptureSections::typeRank)
                 .thenComparing(Comparator.reverseOrder());
-        // Unfiltered, a subtitle whose video's ⋮ already offers it is left
-        // out (CaptureSections.ridesWithVideo): the video counts it, the
-        // Subtitle chip lists it. Dropped before anything is counted, so the
-        // fold's "N files" and the empty-page rule count what is shown.
+        // A subtitle whose video's ⋮ already offers it is not an item
+        // (CaptureSections.ridesWithVideo): the video counts it and its
+        // picker lists it, and the sheet has no Subtitle chip that could
+        // list it again. Dropped before anything is counted, so the fold's
+        // "N files" and the empty-page rule count what is shown.
         boolean filtered = mSorting.isBrowserFiltered();
-        Set<String> captionDoors = filtered
-                ? Collections.emptySet()
-                : CaptureSections.captionDoors(tab);
+        Set<String> captionDoors = CaptureSections.captionDoors(tab);
         List<BrowserDownloadEntity> all = tab.stream()
                 .filter(mSorting::getPredicateBrowser)
                 .filter(e -> !CaptureSections.ridesWithVideo(e, captionDoors))

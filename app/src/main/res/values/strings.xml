@@ -55,7 +55,6 @@
     <string name="capture_help_menu">Capture help</string>
     <string name="capture_help_banner_title">Video not listed?</string>
     <string name="capture_help_banner">Some embedded media must be played first. Tap to learn how.</string>
-    <string name="capture_empty_subtitles_message">No Subtitles available.</string>
     <string name="capture_empty_video_message">No videos available.</string>
     <!-- Copy/Share the captured resource's URL (issue #302) — the variant
          sheet's overflow. Only for captures whose URL is self-contained (see

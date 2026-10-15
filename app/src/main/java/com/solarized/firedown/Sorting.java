@@ -66,7 +66,6 @@ public class Sorting {
         if (SORT_TYPE_GIF.equals(mCurrentSortBrowser)) return R.id.chip_gif;
         if (SORT_TYPE_IMAGES.equals(mCurrentSortBrowser)) return R.id.chip_image;
         if (SORT_TYPE_DOCS.equals(mCurrentSortBrowser)) return R.id.chip_doc;
-        if (SORT_TYPE_SUBTITLE.equals(mCurrentSortBrowser)) return R.id.chip_subtitle;
         return R.id.chip_all;
     }
 
@@ -94,7 +93,6 @@ public class Sorting {
             case SORT_TYPE_AUDIO -> FileUriHelper.isAudio(mimeType);
             case SORT_TYPE_IMAGES -> FileUriHelper.isImage(mimeType) && !FileUriHelper.isGIF(mimeType);
             case SORT_TYPE_GIF -> FileUriHelper.isGIF(mimeType);
-            case SORT_TYPE_SUBTITLE -> FileUriHelper.isSubtitle(mimeType);
             default -> true;
         };
     }

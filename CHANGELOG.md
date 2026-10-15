@@ -3,6 +3,7 @@
 - Captured content: redesigned to match Downloads, with earlier pages folded into one row
 - Captured content: each capture shows whether it is saved, downloading or failed
 - Captured content: YouTube captions are no longer listed twice
+- Captured content: a video's subtitles are picked from its quality menu instead of listed separately
 - Fixed tiles and rows landing out of place when items are added or removed
 - Embedded tweets and other social posts now show on news sites
 - X videos are titled with the tweet's text, including embedded tweets on news sites

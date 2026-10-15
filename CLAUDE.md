@@ -1982,8 +1982,9 @@ type, not a mode.
   title and stays. A subtitle tile is titled by its LANGUAGE when the parser
   named one, and then carries the file's name in its meta row so two
   "English" tracks of two videos stay told apart.
-- **A subtitle its video already offers is NOT an item of the unfiltered
-  list** (canvas row "Subtitles ride with their video", board J). A video
+- **A subtitle its video already offers is NOT an item of the sheet, and
+  the sheet has NO Subtitle chip** (canvas row "Subtitles ride with their
+  video", board J). A video
   with quality variants wears the ⋮, and the ⋮'s picker has a Captions
   section listing every subtitle of that page (same tab, same origin,
   `subtitlesForOrigin`), with the device language pre-ticked. So the track's
@@ -1993,16 +1994,24 @@ type, not a mode.
   `CaptureSections.captionDoors` (the origins of videos with variants) and
   `ridesWithVideo` decide it; the view model drops those tracks in
   `snapshot()` BEFORE anything is counted, so the fold's "N files" and the
-  empty-page rule count what is shown, and only when no chip is checked.
-  What stays: the video's "CC n" (counted over the whole tab, unchanged),
-  every track under the Subtitle chip (as tiles: there every item is one,
-  so it is one shape), and the tile of a track with NO door — no video of
-  its page captured, or a video with one quality and so no ⋮ (the generic
-  catcher's mp4 + `.vtt` is the common case, and it keeps the half row).
-  Showing the ⋮ on a captioned one-quality video (a picker with only the
-  Captions section) would close that last case; deliberately not built
-  first. Copying a hidden track's URL now goes through the Subtitle chip's
-  long-press, and select-all unfiltered no longer picks the tracks up.
+  empty-page rule count what is shown. **The Subtitle chip went with it**
+  (the Captured rail is Video · Audio · Images · GIF): for one build the
+  tracks were hidden only while no chip was checked and listed under the
+  Subtitle chip, and the maintainer read it as broken: a filter chip only
+  ever narrows, so a chip showing items the unfiltered list lacks says the
+  list lost them. Two consistent answers were weighed, show every track
+  again or offer them only through the video, and the maintainer took the
+  second. What stays: the video's "CC n" (counted over the whole tab,
+  unchanged), and the tile of a track with NO door — no video of its page
+  captured, or a video with one quality and so no ⋮ (the generic catcher's
+  mp4 + `.vtt` is the common case, and it keeps the half row); such a
+  track is in no chip, only in the unfiltered list. Showing the ⋮ on a
+  captioned one-quality video (a picker with only the Captions section)
+  would close that last case; not built yet. Costs, accepted: a riding
+  track downloads only beside its video (the picker has no captions-only
+  download), its URL can no longer be copied from the sheet, and
+  select-all never picks it up. Don't bring the Subtitle chip back to this
+  sheet; the Downloads rail keeps its own, where a subtitle is a file.
   Rows were the other answer and are why this exists instead: board F drew
   subtitles as compact rows and on-device they read as a third tile style.
 - **Earlier pages are FOLDED, not divided.** F ended the current page with a
@@ -3302,10 +3311,12 @@ restore button, and the older empty-text line that showed "nothing of this
 type" on an unfiltered empty list). Chip ORDER is frequency-first within the
 rail's visible window — `Video · Audio · Images · GIF · Subtitle · Documents
 · APK · Archives` (Images/GIF deliberately ahead of the rarely-filtered
-Subtitle, which leads the long-tail half) — kept in lockstep across the
-Downloads rail (`fragment_download_list_options.xml`) and the Captured sheet
-(`fragment_dialog_browser_options_list_options.xml`). Reordering is safe
-(all chip handling is id-keyed, never positional) but do it in both files.
+Subtitle, which leads the long-tail half) — and the Captured sheet
+(`fragment_dialog_browser_options_list_options.xml`) carries the first four
+in the same order as the Downloads rail (`fragment_download_list_options.xml`):
+it has no Subtitle chip on purpose (see "Subtitles ride with their video"
+under the Captured sheet). Reordering is safe (all chip handling is
+id-keyed, never positional) but do it in both files.
 
 **The missing-file sweep (`MediaListenerWorker`, runs on every
 DownloadsActivity resume via unique work `media-existence-check`/KEEP) is
