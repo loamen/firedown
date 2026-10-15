@@ -1991,8 +1991,10 @@ type, not a mode.
   position and span index) and now uses that class's
   `attachUniform`: half the spacing on every item, the other half on the
   RecyclerView's padding. So do the tab grid (a tab opened, closed or
-  dragged moves every card after it) and the Backups list and grid (a
-  finished upload inserts a row). **A list's padding then has two owners,
+  dragged moves every card after it), the Backups list and grid (a
+  finished upload inserts a row), Bookmarks and History (an entry added
+  or removed at either end, or the sync banner coming and going, moves
+  which row is first or last). **A list's padding then has two owners,
   and both go through `ui/RecyclerPadding`**: the decoration sets the
   EXTRA (`setExtra`, the edge around the items) and the inset listener
   sets the BASE (`setBase`, the system bars), and the padding is their
@@ -2003,10 +2005,11 @@ type, not a mode.
   the edge: tiles 4dp from the screen instead of 8, and a re-attach on
   the grid/list switch did the reverse and dropped the nav-bar inset. An
   inset listener on a list whose decoration pads it never calls
-  `setPadding` directly. Still on the per-position mode: Bookmarks,
-  History, the tab archive, Storage review and Licenses — single-column
-  lists, where an insert can stale only the first and last row's
-  top/bottom edge.
+  `setPadding` directly. Still on the per-position mode: the tab
+  archive, Storage review and Licenses — single-column lists, where an
+  insert can stale only the first and last row's top/bottom edge
+  (Storage review's own inset listener sets the padding outright, so it
+  moves to `setBase` with it).
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
   `CaptureItemDiffCallback`; 55 checks; mutants that ignore the fold's open

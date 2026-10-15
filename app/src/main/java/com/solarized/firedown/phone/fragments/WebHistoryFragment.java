@@ -153,8 +153,11 @@ public class WebHistoryFragment extends BaseFocusFragment implements OnItemClick
         // halfSpacing between rows + full list_spacing on the edges,
         // so adjacent 2dp card strokes don't touch (which would have
         // read as a doubled border in action mode). Previously this
-        // fragment had no decoration and items ran edge-to-edge.
-        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(mActivity, R.dimen.list_spacing));
+        // fragment had no decoration and items ran edge-to-edge. The
+        // position-independent mode, as Bookmarks: a visit landing at the
+        // top moves which row is first through an insert, not a rebind.
+        EqualSpacingItemDecoration.attachUniform(mRecyclerView,
+                getResources().getDimensionPixelSize(R.dimen.list_spacing));
         mRecyclerView.setAdapter(mAdapter);
         setupSearchBar(v);
 

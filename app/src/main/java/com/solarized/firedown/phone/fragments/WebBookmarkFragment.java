@@ -230,8 +230,13 @@ public class WebBookmarkFragment extends BaseFocusFragment implements OnItemClic
         // CardViewListItemDecoration emitted spacing only on the very
         // first and last items and zero between, so adjacent 2dp card
         // strokes touched and read as a doubled border in action mode.
-        // Same decoration the downloads list now uses.
-        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(mActivity, R.dimen.list_spacing));
+        // The position-independent mode, as Downloads: a bookmark added or
+        // deleted at either end of the list (or the sync banner coming and
+        // going above it) moves which row is first or last through an
+        // insert, not a rebind, and a row kept the edge offsets of the
+        // place it left.
+        EqualSpacingItemDecoration.attachUniform(mRecyclerView,
+                getResources().getDimensionPixelSize(R.dimen.list_spacing));
         mAdapter = new WebBookmarkAdapter(mActivity, new WebBookmarkDiffCallback(), this, mIncognito);
 
         // Sync discoverability is non-incognito only. ConcatAdapter prepends the
