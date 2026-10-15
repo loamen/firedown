@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +69,9 @@ public final class CaptureSections {
      * Order inside a group: the video first, then its audio, its subtitles,
      * any other file, and the images last — the media are what a visit to the
      * sheet is usually for, and the images sit as one block below them instead
-     * of interleaving. Ranks 0–3 are all tiles, so a video and its subtitle
-     * sit side by side on one line.
+     * of interleaving. Ranks 0–3 are all tiles, so a video and its audio sit
+     * side by side on one line (its subtitles too, when they have no door:
+     * see {@link #ridesWithVideo}).
      */
     public static int typeRank(@NonNull BrowserDownloadEntity e) {
         String mime = e.getMimeType();
@@ -276,6 +278,44 @@ public final class CaptureSections {
             }
         }
         return counts;
+    }
+
+    /**
+     * The pages whose video is a door to its own captions: a video capture
+     * with quality variants, so its tile wears the ⋮ and the ⋮ opens the
+     * picker, whose Captions section lists every subtitle of that page (same
+     * tab, same origin: {@code BrowserDownloadViewModel.subtitlesForOrigin}).
+     * Keyed by origin like {@link #captionCounts}, so the tracks a door hides
+     * are exactly the ones its CC count counts.
+     */
+    @NonNull
+    public static Set<String> captionDoors(@Nullable Collection<BrowserDownloadEntity> captures) {
+        if (captures == null || captures.isEmpty()) return Collections.emptySet();
+        Set<String> doors = new HashSet<>();
+        for (BrowserDownloadEntity e : captures) {
+            if (e == null || !isVideo(e) || !e.getHasVariants()) continue;
+            String origin = e.getFileOrigin();
+            if (!TextUtils.isEmpty(origin)) {
+                doors.add(origin);
+            }
+        }
+        return doors;
+    }
+
+    /**
+     * A subtitle track its video already offers: left out of the unfiltered
+     * list, where it was a second door to the same file and the one that cost
+     * the most room (a whole tile for a glyph, and under a page's only video
+     * the half-empty row the wide tile removes). The video's tile counts it
+     * ("CC 1"), its ⋮ picks it, the Subtitle chip still lists it. A track with
+     * no door keeps its tile: no video of its page was captured, or that video
+     * has one quality and so no ⋮.
+     */
+    public static boolean ridesWithVideo(@NonNull BrowserDownloadEntity e,
+                                         @NonNull Set<String> doors) {
+        if (doors.isEmpty() || !FileUriHelper.isSubtitle(e.getMimeType())) return false;
+        String origin = e.getFileOrigin();
+        return !TextUtils.isEmpty(origin) && doors.contains(origin);
     }
 
     private static int captionCountFor(@NonNull BrowserDownloadEntity e,

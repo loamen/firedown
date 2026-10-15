@@ -273,8 +273,17 @@ public class BrowserDownloadViewModel extends ViewModel {
         List<BrowserDownloadEntity> tab = entities.stream()
                 .filter(entity -> entity != null && entity.getTabId() == currentTabId)
                 .collect(Collectors.toList());
+        // Unfiltered, a subtitle whose video's ⋮ already offers it is left
+        // out (CaptureSections.ridesWithVideo): the video counts it, the
+        // Subtitle chip lists it. Dropped before anything is counted, so the
+        // fold's "N files" and the empty-page rule count what is shown.
+        boolean filtered = mSorting.isBrowserFiltered();
+        Set<String> captionDoors = filtered
+                ? Collections.emptySet()
+                : CaptureSections.captionDoors(tab);
         List<BrowserDownloadEntity> all = tab.stream()
                 .filter(mSorting::getPredicateBrowser)
+                .filter(e -> !CaptureSections.ridesWithVideo(e, captionDoors))
                 .sorted(order)
                 .collect(Collectors.toList());
 
@@ -317,7 +326,7 @@ public class BrowserDownloadViewModel extends ViewModel {
                 : all;
         boolean incognito = !shown.isEmpty() && shown.get(0).isIncognito();
         logVisitTrace(currentTabId, currentVisitId, shown);
-        return new Snapshot(shown, currentVisitId, mSorting.isBrowserFiltered(),
+        return new Snapshot(shown, currentVisitId, filtered,
                 currentImages, earlierImages, all.size() - earlier.size(), earlier.size(),
                 new ArrayList<>(earlierDomains), CaptureSections.preview(earlier), incognito,
                 CaptureSections.captionCounts(tab));

@@ -1884,7 +1884,7 @@ type, not a mode.
   else, a lone video leaving half a row empty, three kinds of gap. G reuses
   the one tile the app already has — 16:10, the title and
   "VIDEO · 2:01:32 · CC 1" on the bottom scrim, the ⋮ top-end — for video,
-  audio, subtitles and files alike, so a page's video and its subtitle sit
+  audio, subtitles and files alike, so a page's video and its audio sit
   side by side and the row fills. **A change to that layout is a change to
   both screens**, on purpose; the sheet relies on its ids (listed in the
   layout's header comment). Don't fork a Captured copy of it. The sheet
@@ -1919,6 +1919,29 @@ type, not a mode.
   title and stays. A subtitle tile is titled by its LANGUAGE when the parser
   named one, and then carries the file's name in its meta row so two
   "English" tracks of two videos stay told apart.
+- **A subtitle its video already offers is NOT an item of the unfiltered
+  list** (canvas row "Subtitles ride with their video", board J). A video
+  with quality variants wears the ⋮, and the ⋮'s picker has a Captions
+  section listing every subtitle of that page (same tab, same origin,
+  `subtitlesForOrigin`), with the device language pre-ticked. So the track's
+  own tile was a second door to the same file, and the one that cost the
+  most room: a whole 16:10 tile for a glyph, and under a page's only video
+  it put back the half-empty row the wide tile removes (on-device).
+  `CaptureSections.captionDoors` (the origins of videos with variants) and
+  `ridesWithVideo` decide it; the view model drops those tracks in
+  `snapshot()` BEFORE anything is counted, so the fold's "N files" and the
+  empty-page rule count what is shown, and only when no chip is checked.
+  What stays: the video's "CC n" (counted over the whole tab, unchanged),
+  every track under the Subtitle chip (as tiles: there every item is one,
+  so it is one shape), and the tile of a track with NO door — no video of
+  its page captured, or a video with one quality and so no ⋮ (the generic
+  catcher's mp4 + `.vtt` is the common case, and it keeps the half row).
+  Showing the ⋮ on a captioned one-quality video (a picker with only the
+  Captions section) would close that last case; deliberately not built
+  first. Copying a hidden track's URL now goes through the Subtitle chip's
+  long-press, and select-all unfiltered no longer picks the tracks up.
+  Rows were the other answer and are why this exists instead: board F drew
+  subtitles as compact rows and on-device they read as a third tile style.
 - **Earlier pages are FOLDED, not divided.** F ended the current page with a
   full-width line and a TitleMedium "Earlier in this tab N" heading, then
   every earlier capture; on-device it read as a seam in the list, not as a
@@ -2076,13 +2099,14 @@ type, not a mode.
   directly.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
-  `CaptureItemDiffCallback`; 66 checks; mutants that ignore the fold's open
+  `CaptureItemDiffCallback`; 71 checks; mutants that ignore the fold's open
   state, show the domain with one site, drop the short-word filename rule,
   skip pictures-first in the preview, drop the fold when the limit cuts
   first, count an audio-flagged mp4 as a video, let an earlier "closed"
   choice win over an empty page, leave `collapsible` or `onlyVideo` out of
-  the diff, widen the first of several videos, or widen an earlier page's
-  video each fail it). On-device
+  the diff, widen the first of several videos, widen an earlier page's
+  video, count a one-quality video as a caption door, or keep every track
+  in the list each fail it). On-device
   unverified at write time.
 - The bare "timedtext" subtitle that sat beside YouTube's titled caption
   tracks was the generic catcher capturing the player's own caption fetch;

@@ -199,6 +199,34 @@ public class CaptureHarness {
     List<String> origins = CaptureSections.origins(many);
     check("origins capped", origins.size() == CaptureSections.MAX_ORIGINS && origins.get(0).equals("o0") && new HashSet<>(origins).size() == origins.size());
 
+    // a subtitle rides with its video when the video's ⋮ offers it: a video
+    // with quality variants is a caption door for its page; one quality (no
+    // ⋮), an audio capture in a video container, or no origin is not
+    BrowserDownloadEntity door = e(40, "video/mp4", "dv", P); door.variants = true;
+    BrowserDownloadEntity oneQuality = e(41, "video/mp4", "ov", Q);
+    BrowserDownloadEntity audioDoor = e(42, "video/mp4", "ad.m4a", "https://r.example/a"); audioDoor.audio = true; audioDoor.variants = true;
+    BrowserDownloadEntity noOrigin = e(43, "video/mp4", "nv", null); noOrigin.variants = true;
+    Set<String> doors = CaptureSections.captionDoors(List.of(door, oneQuality, audioDoor, noOrigin));
+    check("caption doors: " + doors, doors.equals(Set.of(P)));
+    check("track rides with its video", CaptureSections.ridesWithVideo(e(44, "text/vtt", "t1", P), doors));
+    check("track with no door keeps its tile", !CaptureSections.ridesWithVideo(e(45, "text/vtt", "t2", Q), doors)
+        && !CaptureSections.ridesWithVideo(e(46, "text/vtt", "t3", null), doors)
+        && !CaptureSections.ridesWithVideo(e(44, "text/vtt", "t1", P), Set.of()));
+    check("only tracks ride", !CaptureSections.ridesWithVideo(door, doors)
+        && !CaptureSections.ridesWithVideo(e(47, "image/png", "i", P), doors));
+    // what the view model does unfiltered: drop the riding tracks, keep the
+    // CC count (counted over the whole tab), so the page's video is the
+    // page's only tile and spans; a one-quality video's track stays beside it
+    BrowserDownloadEntity v1 = e(1, "video/mp4", "v1", P); v1.variants = true;
+    List<BrowserDownloadEntity> tabJ = List.of(v1, e(3, "text/vtt", "s1", P),
+        e(5, "image/png", "i1", P), oneQuality, e(48, "text/vtt", "s2", Q));
+    Set<String> doorsJ = CaptureSections.captionDoors(tabJ);
+    List<BrowserDownloadEntity> shownJ = tabJ.stream().filter(t -> !CaptureSections.ridesWithVideo(t, doorsJ)).toList();
+    Set<Integer> currentJ = Set.of(1, 3, 5);
+    items = CaptureSections.build(shownJ, t -> currentJ.contains(t.getUid()), false, 1, 0,
+        earlier(2, true, "firedown.app"), Map.of(), CaptureSections.captionCounts(tabJ));
+    check("track left to its video: " + shape(items), shape(items).equals("T1tc1w H0:1 S5t F2o T41tc1 T48t"));
+
     // diff: a mark-only change is a payload; a presentation change is not
     CaptureItemDiffCallback diff = new CaptureItemDiffCallback();
     BrowserDownloadEntity x = e(30, "video/mp4", "v", P);
