@@ -5,7 +5,6 @@ import android.graphics.Rect;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.solarized.firedown.R;
@@ -13,31 +12,46 @@ import com.solarized.firedown.data.capture.CaptureItem;
 
 /**
  * Spacing for the Captured sheet's mixed list: the tiles and the squares on
- * one 8dp gap, the Downloads grid's own (EqualSpacingItemDecoration with
- * list_spacing), the Images header and the fold row inset from the sheet
- * edges to the tiles' edge, and the fold set apart from the grid above and
- * below it.
+ * one 8dp gap, the Downloads grid's own ({@code list_spacing}), everything
+ * lined up on the sheet's 16dp gutter, and the fold set apart from the grid
+ * above and below it.
  *
- * <p>Why not {@link EqualSpacingItemDecoration} itself: it gives every item
- * half the gap on each side and the edge items the full gutter, so in a grid
- * the edge columns lose more width to offsets than the middle one and the
- * squares come out different widths. Here every column gives up the same
- * total ({@code (2·gutter + (n−1)·gap) / n}) and only how it splits between
- * left and right moves with the column. The column count comes from the
- * item's own span size, so one grid holds tiles and squares at different
- * counts.
+ * <p><b>No offset depends on the column.</b> Every item gets half the gap on
+ * each side, and the other part of the gutter is the RecyclerView's own
+ * horizontal padding ({@link #attach}): 16dp to every edge, 8dp between
+ * columns, every column the same width, for tiles and squares alike. The
+ * first version split the offsets by column (the first column flush with
+ * the gutter, the last one too), and on-device that broke as captures
+ * arrived: RecyclerView caches an item's offsets until the item is rebound,
+ * and a capture landing ABOVE moves every tile after it into the other
+ * column without rebinding it, so tiles kept their old column's offsets and
+ * sat 12dp off on one side, hugging the screen edge on the other. Offsets
+ * that are the same in every column cannot go stale.
  */
 public class CaptureSpacingDecoration extends RecyclerView.ItemDecoration {
 
-    private final int mGutter;
-    private final int mGap;
+    private final int mHalfGap;
     private final int mFoldGap;
 
-    public CaptureSpacingDecoration(@NonNull Context context) {
-        float density = context.getResources().getDisplayMetrics().density;
-        mGutter = Math.round(16 * density);
-        mGap = context.getResources().getDimensionPixelSize(R.dimen.list_spacing);
-        mFoldGap = Math.round(12 * density);
+    private CaptureSpacingDecoration(@NonNull Context context) {
+        mHalfGap = context.getResources().getDimensionPixelSize(R.dimen.list_spacing) / 2;
+        mFoldGap = Math.round(12 * context.getResources().getDisplayMetrics().density);
+    }
+
+    /**
+     * Pads the list to the gutter less half a gap and adds the decoration:
+     * the two halves of one rule, so they're set together or not at all.
+     * The scrollbar stays on the sheet's edge, outside the padding.
+     */
+    public static void attach(@NonNull RecyclerView recyclerView) {
+        Context context = recyclerView.getContext();
+        CaptureSpacingDecoration decoration = new CaptureSpacingDecoration(context);
+        int gutter = Math.round(16 * context.getResources().getDisplayMetrics().density);
+        int side = Math.max(0, gutter - decoration.mHalfGap);
+        recyclerView.setPaddingRelative(side, recyclerView.getPaddingTop(),
+                side, recyclerView.getPaddingBottom());
+        recyclerView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
+        recyclerView.addItemDecoration(decoration);
     }
 
     @Override
@@ -45,39 +59,17 @@ public class CaptureSpacingDecoration extends RecyclerView.ItemDecoration {
                                @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
         int type = holder != null ? holder.getItemViewType() : RecyclerView.INVALID_TYPE;
+        outRect.left = mHalfGap;
+        outRect.right = mHalfGap;
         if (type == CaptureItem.TYPE_SQUARE || type == CaptureItem.TYPE_TILE) {
-            gridOffsets(outRect, view, parent);
-            return;
+            outRect.top = 0;
+            outRect.bottom = 2 * mHalfGap;
+        } else if (type == CaptureItem.TYPE_FOLD) {
+            outRect.top = mFoldGap;
+            outRect.bottom = mFoldGap;
+        } else {
+            outRect.top = 0;
+            outRect.bottom = 0;
         }
-        outRect.left = mGutter;
-        outRect.right = mGutter;
-        boolean fold = type == CaptureItem.TYPE_FOLD;
-        outRect.top = fold ? mFoldGap : 0;
-        outRect.bottom = fold ? mFoldGap : 0;
-    }
-
-    private void gridOffsets(@NonNull Rect outRect, @NonNull View view,
-                             @NonNull RecyclerView parent) {
-        int spanCount = 1;
-        RecyclerView.LayoutManager manager = parent.getLayoutManager();
-        if (manager instanceof GridLayoutManager grid) {
-            spanCount = grid.getSpanCount();
-        }
-        int columns = 1;
-        int column = 0;
-        if (view.getLayoutParams() instanceof GridLayoutManager.LayoutParams params) {
-            int span = Math.max(1, params.getSpanSize());
-            columns = Math.max(1, spanCount / span);
-            column = Math.max(0, params.getSpanIndex()) / span;
-        }
-        // Each column's share of the offsets, then where in it this column's
-        // left edge falls: the first column starts at the gutter, each next
-        // one a gap minus a share further in.
-        float share = (2f * mGutter + (columns - 1) * mGap) / columns;
-        int left = Math.round(mGutter + column * (mGap - share));
-        outRect.left = left;
-        outRect.right = Math.round(share) - left;
-        outRect.top = 0;
-        outRect.bottom = mGap;
     }
 }

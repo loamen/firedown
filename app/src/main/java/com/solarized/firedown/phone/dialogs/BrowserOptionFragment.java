@@ -230,7 +230,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             }
         });
         mRecyclerView.setAdapter(mAdapter);
-        mRecyclerView.addItemDecoration(new CaptureSpacingDecoration(requireContext()));
+        CaptureSpacingDecoration.attach(mRecyclerView);
 
         // The RecyclerView's own dimensions don't depend on the adapter
         // (it's match_parent inside the LCEE wrapper) — paging-driven

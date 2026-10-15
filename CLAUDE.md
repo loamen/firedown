@@ -1965,11 +1965,21 @@ type, not a mode.
   still count. A member with no row yet is pending; one whose row was seen
   and is now gone was deleted from Downloads and leaves the batch. It lives
   as long as the sheet.
-- **Spacing** is `CaptureSpacingDecoration`: 16dp gutter (the sheet's), ONE
-  8dp gap between tiles and between squares (`list_spacing`, the Downloads
-  grid's), 12dp above and below the fold, and every grid column the same
-  width (`EqualSpacingItemDecoration` gives the edge columns less width);
-  the column count comes from each item's own span size.
+- **Spacing** is `CaptureSpacingDecoration.attach`: 16dp gutter (the
+  sheet's), ONE 8dp gap between tiles and between squares (`list_spacing`,
+  the Downloads grid's), 12dp above and below the fold, every column the
+  same width. **No item offset depends on its column**: every item gets
+  half the gap on each side and the rest of the gutter is the
+  RecyclerView's own horizontal padding (set by `attach`, with the
+  scrollbar moved outside it). The first G build split the offsets by span
+  index, and on-device tiles and squares landed 12dp off one side and flush
+  with the screen on the other as captures arrived (measured from the
+  screenshot: exactly the other column's insets). RecyclerView caches an
+  item's insets until the item is REBOUND, and a capture inserted above
+  shifts every item after it into the other column without a rebind. Don't
+  reintroduce column-dependent offsets here (and `EqualSpacingItemDecoration`,
+  which Downloads uses, computes its edges from the span index the same
+  way).
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
   `CaptureItemDiffCallback`; 55 checks; mutants that ignore the fold's open
