@@ -1036,6 +1036,70 @@ const micro = async (n) => { for (let i = 0; i < n; i++) await null; };
         wire.emits.length === 1 && wire.emits[0].msg.type === "hls-master", JSON.stringify(wire.emits.map(s => s.msg.type)));
 }
 
+// X embeds: a tweet embedded in another site comes from ONE call,
+// cdn.syndication.twimg.com/tweet-result (shape from HAR 26-10-15, elmundo.es;
+// ids, names and text here are made up). Before the embed reader, these clips
+// reached the sheet only through the wire fallback, titled "X video".
+{
+    const mp4 = (id, w, h, br) => ({ bitrate: br, content_type: "video/mp4",
+        url: `https://video.twimg.com/ext_tw_video/${id}/pu/vid/avc1/${w}x${h}/clip${h}.mp4?tag=12` });
+    const m3u8 = (id) => ({ content_type: "application/x-mpegURL",
+        url: `https://video.twimg.com/ext_tw_video/${id}/pu/pl/master.m3u8?tag=12&v=1` });
+    const videoMedia = (id) => ({ type: "video", expanded_url: `https://x.com/SampleShow/status/x/video/1`,
+        media_url_https: `https://pbs.twimg.com/ext_tw_video_thumb/${id}/pu/img/poster.jpg`,
+        video_info: { aspect_ratio: [16, 9], duration_millis: 37170,
+            variants: [m3u8(id), mp4(id, 480, 270, 256000), mp4(id, 640, 360, 832000), mp4(id, 1280, 720, 2176000)] } });
+    const embed = (idStr, text, media, extra) => JSON.stringify({ __typename: "Tweet", id_str: idStr, lang: "es", text,
+        user: { id_str: "1", name: "Sample Show", screen_name: "SampleShow" },
+        mediaDetails: media, photos: [], ...extra });
+    const url = (id) => `https://cdn.syndication.twimg.com/tweet-result?features=tfw_timeline_list%3A&id=${id}&lang=es&token=abc`;
+
+    const one = await drive(url("7001"), "xmlhttprequest", 90, "twEmbed",
+        embed("7001", ".@guest debuta como DJ en el cierre de temporada #SampleTag https://t.co/AbCdEf", [videoMedia("600001")]));
+    check("twitter-embed: the embedded tweet's video is captured", one.emits.length === 1, one.emits.length);
+    if (one.emits.length === 1) {
+        const m = one.emits[0].msg;
+        check("twitter-embed: titled by the tweet's text, its t.co link dropped",
+            m.name === ".@guest debuta como DJ en el cierre de temporada #SampleTag", m.name);
+        check("twitter-embed: the author's handle is the description", m.description === "@SampleShow", m.description);
+        check("twitter-embed: origin is the tweet, poster and duration carried",
+            m.origin === "https://x.com/SampleShow/status/7001"
+                && m.img === "https://pbs.twimg.com/ext_tw_video_thumb/600001/pu/img/poster.jpg"
+                && m.duration === 37170,
+            JSON.stringify([m.origin, m.img, m.duration]));
+        check("twitter-embed: every mp4 rendition is a variant, the HLS master is not",
+            m.variants.length === 3 && m.variants.every(v => v.url.includes(".mp4")),
+            JSON.stringify(m.variants.map(v => v.url)));
+    }
+    // The player then fetches the clip's master: already captured in this
+    // tab, so the wire fallback stays quiet (it used to be the only capture).
+    const master = await drive("https://video.twimg.com/ext_tw_video/600001/pu/pl/master.m3u8?tag=12&v=1",
+        "xmlhttprequest", 90, "twEmbedMaster");
+    check("twitter-embed: the clip's master is not captured again off the wire", master.emits.length === 0,
+        JSON.stringify(master.emits.map(s => s.msg.name)));
+
+    // A quoted tweet carrying its own video is its own capture, named by its own text.
+    const quoted = await drive(url("7002"), "xmlhttprequest", 91, "twEmbedQuoted",
+        embed("7002", "Look at this https://t.co/Zz", [], { quoted_tweet: JSON.parse(
+            embed("7003", "The quoted clip https://t.co/Yy", [videoMedia("600003")])) }));
+    check("twitter-embed: a quoted tweet's video is captured under the quoted tweet",
+        quoted.emits.length === 1 && quoted.emits[0].msg.origin === "https://x.com/SampleShow/status/7003"
+            && quoted.emits[0].msg.name === "The quoted clip",
+        JSON.stringify(quoted.emits.map(s => [s.msg.origin, s.msg.name])));
+
+    // No words but the link: the handle titles it, never an empty name.
+    const bare = await drive(url("7004"), "xmlhttprequest", 92, "twEmbedBare",
+        embed("7004", "https://t.co/Qq", [videoMedia("600004")]));
+    check("twitter-embed: a tweet with no text is titled by its author",
+        bare.emits.length === 1 && bare.emits[0].msg.name === "@SampleShow",
+        JSON.stringify(bare.emits.map(s => s.msg.name)));
+
+    // A photo-only tweet emits nothing.
+    const photo = await drive(url("7005"), "xmlhttprequest", 93, "twEmbedPhoto",
+        embed("7005", "Just a photo https://t.co/Pp", [{ type: "photo", media_url_https: "https://pbs.twimg.com/media/x.jpg" }]));
+    check("twitter-embed: a photo-only tweet captures nothing", photo.emits.length === 0, photo.emits.length);
+}
+
 // Bluesky: every video of a response is cached BEFORE any emit awaits, so a
 // master the player fetches during the emit round trips is enriched, not
 // generic (the generic emit used to win the origin dedup).

@@ -670,6 +670,28 @@ back-ref and a reply carrying its own video that must not be collected. A
 and a HAR of the status page: if the document has neither marker, X moved
 the SSR again — fix the document parser, don't lean on Layer 1 having fired.
 
+**Embedded tweets have their own endpoint — Layer 1b.** A tweet embedded in
+another site (`<blockquote class="twitter-tweet">` + `widgets.js`) is
+rendered by the embed iframe from one JSON call per tweet,
+`cdn.syndication.twimg.com/tweet-result?id=…`, never GraphQL. Its
+`mediaDetails` is the classic media-entity shape (`video_info.variants`,
+`duration_millis`, `media_url_https`), `user.screen_name` and `text` sit at
+the top level, and a quoted tweet rides inside as `quoted_tweet`.
+`listenerTwitterSyndication` reads it (`extractSyndicationCapture`, then the
+shared `emitTweetMedia`), so the emit marks the media rich-captured and the
+wire fallback stays quiet on play. Before it, every embedded clip arrived
+only through Layer 3, titled "X video" (HAR 26-10-15, elmundo.es, six
+embeds). `quoted_tweet` and `parent` are in `TWEET_NESTED_TWEET_KEYS` so the
+shape scan never credits a quoted video to the quoting tweet. Note that the
+embeds only render at all because Gecko's social-tracker blocker is off
+outside Strict (see the security sheet section).
+
+**A clip is titled by its tweet's text, not its author** (`tweetTitle`: the
+t.co links dropped, whitespace collapsed; `@handle` when the tweet has no
+words, the handle is the description). The author's handle titled every
+clip of an account the same, five identical "El_Hormiguero" tiles on one
+article. Same rule for every layer that emits through `emitTweetMedia`.
+
 **Each media of a tweet is its own capture — `emitTweetMedia` passes
 `dedupKey: <origin>#<twimg media id>`.** Every video of a multi-video tweet
 shares the tweet's origin, and `sendVariants`' origin-keyed default dropped

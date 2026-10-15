@@ -5,6 +5,7 @@
 - Captured content: YouTube captions are no longer listed twice
 - Fixed tiles and rows landing out of place when items are added or removed
 - Embedded tweets and other social posts now show on news sites
+- X videos are titled with the tweet's text, including embedded tweets on news sites
 
 ## [1.2.01] - 2026-10-12
 

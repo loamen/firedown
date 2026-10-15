@@ -192,7 +192,9 @@ function isRichCaptured(id, tabId) {
 // attribute a quoted/reply video to the wrong tweet).
 const TWEET_NESTED_TWEET_KEYS = new Set([
     "quoted_tweet_results", "quoted_status_result", "retweeted_status_result",
-    "tweet_results", "reply_to_results", "reply_to_user_results"
+    "tweet_results", "reply_to_results", "reply_to_user_results",
+    // the embed endpoint's (cdn.syndication.twimg.com/tweet-result) own names
+    "quoted_tweet", "parent"
 ]);
 
 // Bounded DFS for the first array whose elements look like media entities (carry
@@ -273,14 +275,25 @@ function extractTweetCapture(result, details) {
     };
 }
 
+// A clip's title is the tweet's own words: the t.co links (the media's own
+// link and any others) are dropped and the whitespace collapsed. It was the
+// author's handle, which titled every clip of an account the same: the five
+// embedded El Hormiguero clips of one elmundo.es article all read
+// "El_Hormiguero" (HAR 26-10-15). The handle moves to the description.
+function tweetTitle(text) {
+    return String(text || "").replace(/https?:\/\/t\.co\/\S+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 // Shared emit core: turn a normalised capture context — media array plus author
 // / text / thumbnail — into download variants and send them. Returns true if at
 // least one video was emitted.
 function emitTweetMedia(details, { screenName, tweetId, text, imageUrl, media }) {
     if (!media || media.length === 0) return false;
-    const originUrl = (screenName && screenName !== "unknown")
+    const knownAuthor = !!screenName && screenName !== "unknown";
+    const originUrl = knownAuthor
         ? `https://x.com/${screenName}/status/${tweetId}`
         : `https://x.com/i/status/${tweetId}`;
+    const title = tweetTitle(text);
 
     let emitted = false;
     for (let i = 0; i < media.length; i++) {
@@ -331,9 +344,9 @@ function emitTweetMedia(details, { screenName, tweetId, text, imageUrl, media })
             variants,
             origin: originUrl,
             dedupKey: `${originUrl}#${mediaId}`,
-            description: text || "",
+            description: knownAuthor ? `@${screenName}` : "",
             img: imageUrl,
-            name: screenName || "unknown",
+            name: title || (knownAuthor ? `@${screenName}` : "X video"),
             duration: m.video_info.duration_millis || 0
         });
 
@@ -411,6 +424,55 @@ function listenerTwitterGraphql(details) {
 browser.webRequest.onBeforeRequest.addListener(
     listenerTwitterGraphql,
     { urls: TWITTER_GRAPHQL_URLS, types: ["xmlhttprequest"] },
+    ["blocking"]
+);
+
+// ============================================================================
+// Layer 1b — embedded tweets (cdn.syndication.twimg.com/tweet-result)
+// ============================================================================
+// A tweet embedded in another site (<blockquote class="twitter-tweet"> +
+// platform.twitter.com/widgets.js) is rendered by the embed iframe from ONE
+// JSON call per tweet, cdn.syndication.twimg.com/tweet-result?id=<id>, which
+// is the whole tweet: text, user, and mediaDetails in the same media-entity
+// shape as GraphQL's legacy.extended_entities.media (video_info.variants with
+// every mp4 rendition, duration_millis, media_url_https). No GraphQL call is
+// made, so before this every embedded clip reached the Captured sheet only
+// through the wire-master fallback below, titled "X video" (HAR 26-10-15,
+// six embeds in an elmundo.es article). A quoted tweet rides inside as
+// quoted_tweet with its own mediaDetails and is emitted as its own capture.
+
+// Normalise one tweet-result object into the capture context emitTweetMedia
+// consumes, or null when it holds no video. Exported for the replay test.
+function extractSyndicationCapture(tweet, details) {
+    if (!tweet || typeof tweet !== "object") return null;
+    const media = Array.isArray(tweet.mediaDetails) && tweet.mediaDetails.length
+        ? tweet.mediaDetails
+        : findTweetMedia(tweet);
+    if (!media.some(m => m?.video_info?.variants)) return null;
+    return {
+        screenName: tweet.user?.screen_name || "unknown",
+        tweetId: tweet.id_str,
+        text: tweet.text || "",
+        imageUrl: tweetThumbnail(tweet, media) || tweet.video?.poster,
+        media
+    };
+}
+
+function listenerTwitterSyndication(details) {
+    readFilteredJson(details, "TWITTER", "embed", (parsed) => {
+        let emitted = 0;
+        for (const tweet of [parsed, parsed?.quoted_tweet]) {
+            const ctx = extractSyndicationCapture(tweet, details);
+            if (ctx && emitTweetMedia(details, ctx)) emitted++;
+        }
+        log("TWITTER", `embed: ${emitted} tweet(s) with video`, { id: parsed?.id_str });
+    });
+    return {};
+}
+
+browser.webRequest.onBeforeRequest.addListener(
+    listenerTwitterSyndication,
+    { urls: ["*://cdn.syndication.twimg.com/tweet-result*"], types: ["xmlhttprequest"] },
     ["blocking"]
 );
 
@@ -911,7 +973,7 @@ browser.webRequest.onBeforeRequest.addListener(
 // Exported for the HAR-replay smoke test (run the REAL extractor against fixtures
 // / HAR bytes, not a copy-paste). Not used by index.js.
 export {
-    collectTweetResults, extractTweetCapture,
+    collectTweetResults, extractTweetCapture, extractSyndicationCapture, tweetTitle,
     parseTwitterSsrRecords, parseTwitterSsrStreamValues, collectTwitterSsrTweets,
     twimgMediaId, isTwitterMasterUrl,
 };
