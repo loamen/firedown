@@ -22,12 +22,16 @@ public class CaptureHarness {
         case CaptureItem.TYPE_TILE -> "T" + i.uid() + (i.showType ? "t" : "") + (i.showDomain ? "d" : "") + (i.captionCount > 0 ? "c" + i.captionCount : "");
         case CaptureItem.TYPE_SQUARE -> "S" + i.uid() + (i.showType ? "t" : "");
         case CaptureItem.TYPE_HEADER -> "H" + i.group + ":" + i.count;
-        default -> "F" + i.count + (i.open ? "o" : "c"); }).append(' ');
+        default -> "F" + i.count + (!i.collapsible ? "h" : i.open ? "o" : "c"); }).append(' ');
     }
     return b.toString().trim();
   }
   static CaptureSections.Earlier earlier(int total, boolean open, String... domains) {
-    return new CaptureSections.Earlier(total, open, List.of(domains), List.of());
+    return new CaptureSections.Earlier(total, open, true, List.of(domains), List.of());
+  }
+  /** Nothing of the page listed: open, and a heading rather than a toggle. */
+  static CaptureSections.Earlier earlierOnly(int total, String... domains) {
+    return new CaptureSections.Earlier(total, true, false, List.of(domains), List.of());
   }
   static CaptureDownloadState row(String url, int status, int progress, boolean live, int err) {
     CaptureDownloadState s = new CaptureDownloadState(); s.url = url; s.status = status; s.progress = progress; s.live = live; s.errorType = err; return s;
@@ -79,9 +83,24 @@ public class CaptureHarness {
     items = CaptureSections.build(imgs, x -> current.contains(x.getUid()), true, 2, 1, earlier(1, false, "firedown.app"), Map.of(), Map.of());
     check("filtered, closed: " + shape(items), shape(items).equals("S5 S6 F1c"));
 
-    // no current page (home): everything is earlier, behind an open fold
-    items = CaptureSections.build(shown, x -> false, false, 0, 4, earlier(9, true, "clips.example", "firedown.app"), Map.of(), Map.of());
-    check("no anchor: " + shape(items), shape(items).equals("F9o T1td T2td T3td H1:4 S4t S5t S6t T7td S8t S9t"));
+    // no current page (home): everything is earlier, under the fold as a heading
+    items = CaptureSections.build(shown, x -> false, false, 0, 4, earlierOnly(9, "clips.example", "firedown.app"), Map.of(), Map.of());
+    check("no anchor: " + shape(items), shape(items).equals("F9h T1td T2td T3td H1:4 S4t S5t S6t T7td S8t S9t"));
+
+    // a chip with nothing of its type on the page (the Video chip on a page
+    // of images): the earlier videos under the heading, never a lone fold
+    List<BrowserDownloadEntity> vids = List.of(e(7,"video/mp4","v2",Q), e(10,"video/mp4","v3",Q));
+    items = CaptureSections.build(vids, x -> current.contains(x.getUid()), true, 0, 0, earlierOnly(2, "firedown.app"), Map.of(), Map.of());
+    check("chip, page has none: " + shape(items), shape(items).equals("F2h T7 T10"));
+
+    // the open decision: nothing of the page listed opens it whatever the
+    // user chose before (a fold closed under another chip included);
+    // otherwise the user's choice, closed until they make one
+    check("open: page empty, no choice", CaptureSections.earlierOpen(null, 0));
+    check("open: page empty, closed before", CaptureSections.earlierOpen(Boolean.FALSE, 0));
+    check("closed: page listed, no choice", !CaptureSections.earlierOpen(null, 5));
+    check("closed: page listed, closed", !CaptureSections.earlierOpen(Boolean.FALSE, 5));
+    check("open: page listed, opened", CaptureSections.earlierOpen(Boolean.TRUE, 5));
     // (the second video sits after the squares because the input was not
     // re-sorted for "one group" here; the builder keeps input order inside a
     // group, and the view model's sort puts the tiles first.)
@@ -182,12 +201,15 @@ public class CaptureHarness {
         && !diff.areItemsTheSame(CaptureItem.header(0, 3), CaptureItem.header(1, 3))
         && !diff.areContentsTheSame(CaptureItem.header(0, 3), CaptureItem.header(0, 4)));
     check("tile vs square never same", !diff.areItemsTheSame(a0, CaptureItem.square(x, 0, true, null)));
-    CaptureItem f0 = CaptureItem.fold(3, false, List.of("a"), List.of(x)), f1 = CaptureItem.fold(3, true, List.of("a"), List.of(x));
-    check("fold same", diff.areContentsTheSame(f0, CaptureItem.fold(3, false, List.of("a"), List.of(x))));
+    CaptureItem f0 = CaptureItem.fold(3, false, true, List.of("a"), List.of(x)), f1 = CaptureItem.fold(3, true, true, List.of("a"), List.of(x));
+    check("fold same", diff.areContentsTheSame(f0, CaptureItem.fold(3, false, true, List.of("a"), List.of(x))));
     check("fold open rebinds", diff.areItemsTheSame(f0, f1) && !diff.areContentsTheSame(f0, f1) && diff.getChangePayload(f0, f1) == null);
-    check("fold count, sites, preview rebind", !diff.areContentsTheSame(f0, CaptureItem.fold(4, false, List.of("a"), List.of(x)))
-        && !diff.areContentsTheSame(f0, CaptureItem.fold(3, false, List.of("a", "b"), List.of(x)))
-        && !diff.areContentsTheSame(f0, CaptureItem.fold(3, false, List.of("a"), List.of(e(31, "video/mp4", "w", P)))));
+    check("fold count, sites, preview rebind", !diff.areContentsTheSame(f0, CaptureItem.fold(4, false, true, List.of("a"), List.of(x)))
+        && !diff.areContentsTheSame(f0, CaptureItem.fold(3, false, true, List.of("a", "b"), List.of(x)))
+        && !diff.areContentsTheSame(f0, CaptureItem.fold(3, false, true, List.of("a"), List.of(e(31, "video/mp4", "w", P)))));
+    // a heading becoming a toggle (the page's first capture lands) is a rebind
+    CaptureItem fh = CaptureItem.fold(3, true, false, List.of("a"), List.of(x));
+    check("fold heading -> toggle rebinds", diff.areItemsTheSame(fh, f1) && !diff.areContentsTheSame(fh, f1));
 
     System.out.println(pass + " passed, " + fail + " failed");
     if (fail > 0) System.exit(1);

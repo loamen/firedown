@@ -6,7 +6,9 @@
   over a BodySmall count in onSurfaceVariant, so the two screens' headers
   read alike, as their tiles do. The count is the whole group's, not the
   squares loaded so far. Horizontal inset comes from CaptureSpacingDecoration
-  so the label lines up with the tiles' edge.
+  so the label lines up with the tiles' edge. Also "Earlier in this tab /
+  30 files · twitch.tv, …" over the earlier captures when the page shown now
+  lists nothing, the fold that can't close (the adapter sets both titles).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"

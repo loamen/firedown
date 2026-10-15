@@ -81,6 +81,10 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     /** The fold's stacked thumbnails: each one this far (dp) to the end of
      *  the one in front of it, as fragment_browser_options_fold lays them. */
     private static final int FOLD_THUMB_DP = 42;
+    /** The fold when it can't close (nothing of the page above it): drawn as
+     *  a section heading, not a card. A view type of its own, outside
+     *  CaptureItem's types. */
+    private static final int VIEW_EARLIER_HEADING = 100;
     private static final int FOLD_THUMB_STEP_DP = 13;
 
     private final OnItemClickListener mOnItemClickListener;
@@ -169,7 +173,11 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
 
     @Override
     public int getItemViewType(int position) {
-        return getItem(position).type;
+        CaptureItem item = getItem(position);
+        if (item.type == CaptureItem.TYPE_FOLD && !item.collapsible) {
+            return VIEW_EARLIER_HEADING;
+        }
+        return item.type;
     }
 
     @Override
@@ -192,7 +200,7 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
             case CaptureItem.TYPE_SQUARE -> new SquareHolder(
                     inflater.inflate(R.layout.fragment_browser_options_square, parent, false),
                     mOnItemClickListener);
-            case CaptureItem.TYPE_HEADER -> new HeaderHolder(
+            case CaptureItem.TYPE_HEADER, VIEW_EARLIER_HEADING -> new HeaderHolder(
                     inflater.inflate(R.layout.fragment_browser_options_section_header, parent, false));
             case CaptureItem.TYPE_FOLD -> new FoldHolder(
                     inflater.inflate(R.layout.fragment_browser_options_fold, parent, false));
@@ -240,7 +248,7 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
         } else if (holder instanceof SquareHolder square) {
             bindSquare(square, item);
         } else if (holder instanceof HeaderHolder header) {
-            header.count.setText(filesLabel(header.itemView.getContext(), item.count));
+            bindHeader(header, item);
         } else if (holder instanceof FoldHolder fold) {
             bindFold(fold, item);
         }
@@ -555,18 +563,46 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     // ── The fold ─────────────────────────────────────────────────────────
 
     /**
-     * "Earlier in this tab / 29 files · youtube.com, firedown.app", three
-     * stacked thumbnails of what is inside, and the chevron, turned while it
-     * is open. The tap and the accessibility action both go to the view
-     * model, which rebuilds the list with the earlier captures in or out.
+     * "Images / 9 files" over a group's squares, or the fold that can't close
+     * as a heading of the same shape: "Earlier in this tab / 30 files ·
+     * twitch.tv, higgsfield.ai". That is the fold with nothing of the page
+     * above it (no page, nothing caught yet, nothing of the chip's type): the
+     * earlier captures are all the list holds and always shown, so a card
+     * with a chevron there would offer a toggle with nothing to give back.
+     * Both titles are set here, never left to the layout's default text.
      */
-    private void bindFold(@NonNull FoldHolder holder, @NonNull CaptureItem item) {
+    private void bindHeader(@NonNull HeaderHolder holder, @NonNull CaptureItem item) {
         Context context = holder.itemView.getContext();
+        if (item.type == CaptureItem.TYPE_FOLD) {
+            holder.title.setText(R.string.capture_earlier_in_tab);
+            holder.count.setText(foldSubtitle(context, item));
+        } else {
+            holder.title.setText(R.string.sort_by_type_images);
+            holder.count.setText(filesLabel(context, item.count));
+        }
+    }
+
+    /** "29 files · youtube.com, firedown.app". */
+    @NonNull
+    private static String foldSubtitle(@NonNull Context context, @NonNull CaptureItem item) {
         String subtitle = filesLabel(context, item.count);
         if (!item.domains.isEmpty()) {
             subtitle = subtitle + " · " + TextUtils.join(", ", item.domains);
         }
-        holder.subtitle.setText(subtitle);
+        return subtitle;
+    }
+
+    /**
+     * "Earlier in this tab / 29 files · youtube.com, firedown.app", three
+     * stacked thumbnails of what is inside, and the chevron, turned while it
+     * is open. The tap and the accessibility action both go to the view
+     * model, which rebuilds the list with the earlier captures in or out.
+     * Only a fold that can close comes here; one that can't is a heading
+     * ({@link #bindHeader}).
+     */
+    private void bindFold(@NonNull FoldHolder holder, @NonNull CaptureItem item) {
+        Context context = holder.itemView.getContext();
+        holder.subtitle.setText(foldSubtitle(context, item));
         holder.chevron.setRotation(item.open ? 180f : 0f);
 
         int shown = 0;
@@ -952,11 +988,14 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     }
 
     static final class HeaderHolder extends RecyclerView.ViewHolder {
+        final TextView title;
         final TextView count;
 
         HeaderHolder(@NonNull View view) {
             super(view);
+            title = view.findViewById(R.id.section_title);
             count = view.findViewById(R.id.section_count);
+            ViewCompat.setAccessibilityHeading(view, true);
         }
     }
 

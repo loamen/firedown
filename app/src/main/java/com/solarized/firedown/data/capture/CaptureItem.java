@@ -56,6 +56,10 @@ public final class CaptureItem {
     @Nullable public final CaptureMark mark;
     /** The fold is open: the earlier captures follow it. */
     public final boolean open;
+    /** The fold can be closed: something of the page shown now sits above
+     *  it. Without that the earlier captures are all the list holds, and the
+     *  row is their heading, always open (see {@link CaptureSections#earlierOpen}). */
+    public final boolean collapsible;
     /** The fold's sites, in order of first appearance. */
     @NonNull public final List<String> domains;
     /** The fold's stacked thumbnails, at most three captures. */
@@ -63,7 +67,8 @@ public final class CaptureItem {
 
     private CaptureItem(int type, int group, @Nullable BrowserDownloadEntity entity,
                         boolean showType, boolean showDomain, int count, int captionCount,
-                        @Nullable CaptureMark mark, boolean open, @NonNull List<String> domains,
+                        @Nullable CaptureMark mark, boolean open, boolean collapsible,
+                        @NonNull List<String> domains,
                         @NonNull List<BrowserDownloadEntity> preview) {
         this.type = type;
         this.group = group;
@@ -74,6 +79,7 @@ public final class CaptureItem {
         this.captionCount = captionCount;
         this.mark = mark;
         this.open = open;
+        this.collapsible = collapsible;
         this.domains = domains;
         this.preview = preview;
     }
@@ -82,7 +88,7 @@ public final class CaptureItem {
                                        boolean showType, boolean showDomain, int captionCount,
                                        @Nullable CaptureMark mark) {
         return new CaptureItem(type, group, entity, showType, showDomain, 0, captionCount, mark,
-                false, Collections.emptyList(), Collections.emptyList());
+                false, false, Collections.emptyList(), Collections.emptyList());
     }
 
     /** Anything but an image: a video, its audio, a subtitle track, a file. */
@@ -99,13 +105,14 @@ public final class CaptureItem {
 
     public static CaptureItem header(int group, int count) {
         return new CaptureItem(TYPE_HEADER, group, null, false, false, count, 0, null,
-                false, Collections.emptyList(), Collections.emptyList());
+                false, false, Collections.emptyList(), Collections.emptyList());
     }
 
-    public static CaptureItem fold(int count, boolean open, @NonNull List<String> domains,
+    public static CaptureItem fold(int count, boolean open, boolean collapsible,
+                                   @NonNull List<String> domains,
                                    @NonNull List<BrowserDownloadEntity> preview) {
         return new CaptureItem(TYPE_FOLD, GROUP_EARLIER, null, false, false, count, 0, null,
-                open, domains, preview);
+                open, collapsible, domains, preview);
     }
 
     public boolean isCapture() {
@@ -136,6 +143,7 @@ public final class CaptureItem {
                 && captionCount == other.captionCount
                 && group == other.group
                 && open == other.open
+                && collapsible == other.collapsible
                 && domains.equals(other.domains)
                 && samePreview(preview, other.preview);
     }

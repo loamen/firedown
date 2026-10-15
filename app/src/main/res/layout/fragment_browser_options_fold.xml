@@ -10,8 +10,10 @@
   earlier captures, which on-device read as a seam in the list rather than as
   a place, and put every earlier capture into the scroll whether the user
   wanted them or not. Closed by default, so the sheet opens on the page the
-  user is looking at; the view model opens it itself when that page has
-  caught nothing yet.
+  user is looking at. When that page lists nothing (nothing caught yet, or
+  nothing of the chip's type) the earlier captures are shown and can't be
+  folded away, and this card is not used: the adapter draws the row as a
+  section heading (fragment_browser_options_section_header).
 
   A card on colorSurfaceContainerLow like the sheet's other surfaces. The
   thumbnails' stroke is the card's own colour, which cuts each one out of the

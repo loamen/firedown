@@ -1931,10 +1931,19 @@ type, not a mode.
   place under it, in the same tiles and squares. **The open state lives in
   the view model** (`toggleEarlier`, which is the sheet's own, so every
   opening of the sheet starts over and a rotation keeps it): closed by
-  default; OPEN when the page shown now has caught nothing yet (the tab
-  shows no page, or a capture is still in flight) — and that opening
-  LATCHES, so a capture landing a moment later doesn't snap the list shut
-  under the user. Earlier tiles carry their domain only when the earlier
+  default; OPEN whenever the page shown now lists nothing — no page,
+  nothing caught yet, or nothing of the CHIP's type
+  (`CaptureSections.earlierOpen`, the one rule, pinned by the harness) —
+  WHATEVER the user chose before, and then it is not a toggle at all: the
+  row is drawn as a section heading in the Images heading's shape
+  (`collapsible` false → the adapter's `VIEW_EARLIER_HEADING`, no card, no
+  chevron, no expand action), because the earlier captures are all the
+  list holds and closing them would leave a lone card on a blank sheet.
+  That shipped: a fold closed under one chip stayed closed under the Video
+  chip on a page with no video, and the sheet showed the fold card and
+  nothing else (on-device). That opening LATCHES (`mEarlierOpen = true`,
+  over a closed choice too), so a capture landing a moment later doesn't
+  snap the list shut under the user. Earlier tiles carry their domain only when the earlier
   pages span more than one site; with one, the fold names it. When the list
   limit cuts before any earlier capture, the fold still ends the list.
   Select-all selects what is shown — with the fold closed, the current page.
@@ -2042,10 +2051,12 @@ type, not a mode.
   directly.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
-  `CaptureItemDiffCallback`; 55 checks; mutants that ignore the fold's open
+  `CaptureItemDiffCallback`; 62 checks; mutants that ignore the fold's open
   state, show the domain with one site, drop the short-word filename rule,
   skip pictures-first in the preview, drop the fold when the limit cuts
-  first, or count an audio-flagged mp4 as a video each fail it). On-device
+  first, count an audio-flagged mp4 as a video, let an earlier "closed"
+  choice win over an empty page, or leave `collapsible` out of the diff
+  each fail it). On-device
   unverified at write time.
 - The bare "timedtext" subtitle that sat beside YouTube's titled caption
   tracks was the generic catcher capturing the player's own caption fetch;

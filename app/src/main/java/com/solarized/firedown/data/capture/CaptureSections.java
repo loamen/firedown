@@ -208,23 +208,42 @@ public final class CaptureSections {
     public static final class Earlier {
         public final int total;
         public final boolean open;
+        public final boolean collapsible;
         @NonNull public final List<String> domains;
         @NonNull public final List<BrowserDownloadEntity> preview;
 
-        public Earlier(int total, boolean open, @NonNull List<String> domains,
+        public Earlier(int total, boolean open, boolean collapsible,
+                       @NonNull List<String> domains,
                        @NonNull List<BrowserDownloadEntity> preview) {
             this.total = total;
             this.open = open;
+            this.collapsible = collapsible;
             this.domains = domains;
             this.preview = preview;
         }
 
-        public static final Earlier NONE = new Earlier(0, false,
+        public static final Earlier NONE = new Earlier(0, false, false,
                 Collections.emptyList(), Collections.emptyList());
 
         CaptureItem toItem() {
-            return CaptureItem.fold(total, open, domains, preview);
+            return CaptureItem.fold(total, open, collapsible, domains, preview);
         }
+    }
+
+    /**
+     * Whether the fold shows the earlier captures. Open whenever nothing of
+     * the page shown now is listed (no page, nothing caught yet, or nothing
+     * of the chip's type): the earlier captures are then all the list holds,
+     * and a closed fold over an empty page read as a lone card on a blank
+     * sheet (on-device, the Video chip on a page with no video, after the
+     * fold had been closed under another chip). Otherwise the user's choice,
+     * closed until they make one.
+     *
+     * @param choice       the user's last tap, or null before any
+     * @param currentTotal the page's captures under the active chip
+     */
+    public static boolean earlierOpen(@Nullable Boolean choice, int currentTotal) {
+        return currentTotal == 0 || Boolean.TRUE.equals(choice);
     }
 
     /**

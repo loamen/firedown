@@ -62,9 +62,11 @@ public class BrowserDownloadViewModel extends ViewModel {
 
     @Nullable private Snapshot mSnapshot;
     /** Whether the fold is open: the user's last tap, or the sheet's own
-     *  choice. Null until either: the fold is closed, unless the page shown
-     *  now has caught nothing, when the earlier captures are all there is —
-     *  and that opening LATCHES (rebuild), so a capture landing on the page a
+     *  choice. Null until either, which is closed. While the page shown now
+     *  lists nothing (no page, nothing caught yet, nothing of the chip's
+     *  type) the fold is open whatever this says, and can't be closed: the
+     *  earlier captures are all there is (CaptureSections.earlierOpen). That
+     *  opening LATCHES here (rebuild), so a capture landing on the page a
      *  moment later doesn't snap the list shut under the user. The view model
      *  is the sheet's own, so every opening of the sheet starts over, and a
      *  rotation keeps the state. */
@@ -155,7 +157,8 @@ public class BrowserDownloadViewModel extends ViewModel {
     /** Open the fold if it's closed, close it if it's open. */
     public void toggleEarlier() {
         Snapshot snapshot = mSnapshot;
-        if (snapshot == null) {
+        // Nothing of the page above the fold: it is a heading, not a toggle.
+        if (snapshot == null || snapshot.currentTotal == 0) {
             return;
         }
         mEarlierOpen = !isEarlierOpen(snapshot);
@@ -163,7 +166,7 @@ public class BrowserDownloadViewModel extends ViewModel {
     }
 
     private boolean isEarlierOpen(@NonNull Snapshot snapshot) {
-        return mEarlierOpen != null ? mEarlierOpen : snapshot.currentTotal == 0;
+        return CaptureSections.earlierOpen(mEarlierOpen, snapshot.currentTotal);
     }
 
     private void updateMarksQuery() {
@@ -185,7 +188,10 @@ public class BrowserDownloadViewModel extends ViewModel {
         if (snapshot == null) {
             return;
         }
-        if (mEarlierOpen == null && snapshot.currentTotal == 0 && snapshot.earlierTotal > 0) {
+        // Not only from null: a fold the user closed under another chip
+        // opens here too, or the first capture of the page would close the
+        // earlier ones the user is looking at.
+        if (snapshot.currentTotal == 0 && snapshot.earlierTotal > 0) {
             mEarlierOpen = true;
         }
         Map<Integer, CaptureMark> marks = CaptureSections.marksByUid(snapshot.shown, mMarksByUrl);
@@ -193,7 +199,8 @@ public class BrowserDownloadViewModel extends ViewModel {
         CaptureSections.Earlier earlier = snapshot.earlierTotal == 0
                 ? CaptureSections.Earlier.NONE
                 : new CaptureSections.Earlier(snapshot.earlierTotal, isEarlierOpen(snapshot),
-                        snapshot.earlierDomains, snapshot.earlierPreview);
+                        snapshot.currentTotal > 0, snapshot.earlierDomains,
+                        snapshot.earlierPreview);
         mItems.setValue(CaptureSections.build(snapshot.shown,
                 e -> isCurrentPage(e, visitId),
                 snapshot.filtered, snapshot.currentImages, snapshot.earlierImages,
