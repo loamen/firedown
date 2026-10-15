@@ -200,6 +200,23 @@ public class GeckoStateDataRepository {
     }
 
 
+    /**
+     * Applies a tracking protection level change to the regular tabs whose
+     * session is open (the rest pick it up when created): blocking tracker
+     * loads on or off, from the next request on. Private tabs live in
+     * {@code IncognitoStateRepository} and always block.
+     */
+    public void setTrackingContentBlocking(boolean block) {
+        synchronized (mGeckoStates) {
+            for (GeckoState state : mGeckoStates) {
+                GeckoSession session = state.getGeckoSession();
+                if (session != null && !state.isIncognito()) {
+                    session.getSettings().setUseTrackingProtection(block);
+                }
+            }
+        }
+    }
+
     public boolean isEmpty(){
         synchronized (mGeckoStates) {
             return mGeckoStates.isEmpty();

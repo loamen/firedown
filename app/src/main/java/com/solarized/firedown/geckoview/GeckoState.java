@@ -345,7 +345,13 @@ public class GeckoState {
     }
 
 
-    public GeckoSession getOrCreateGeckoSession() {
+    /**
+     * The tab's session, created on first use. {@code blockTrackingContent}
+     * is {@link GeckoRuntimeHelper#blocksTrackingContent}: it only matters
+     * when the session is created here; a live session follows a change
+     * through {@code GeckoStateDataRepository.setTrackingContentBlocking}.
+     */
+    public GeckoSession getOrCreateGeckoSession(boolean blockTrackingContent) {
         if (mGeckoSession == null) {
             boolean deskTop = mGeckoStateEntity.isDesktop();
             boolean incognito = mGeckoStateEntity.isIncognito();
@@ -354,11 +360,9 @@ public class GeckoState {
             settingsBuilder
                     .usePrivateMode(incognito)                    // ← was hardcoded false
                     .suspendMediaWhenInactive(false)
-                    // Always on: Gecko's tracker blocking is governed by the
-                    // global ETP level in Settings only. The per-site
-                    // exception that used to flip this (a Room table + the
-                    // security sheet's second switch) was removed.
-                    .useTrackingProtection(true)
+                    // Tracker LOADS blocked only in Strict and in private
+                    // tabs (GeckoRuntimeHelper.blocksTrackingContent).
+                    .useTrackingProtection(blockTrackingContent)
                     .viewportMode(
                             deskTop
                                     ? GeckoSessionSettings.VIEWPORT_MODE_DESKTOP

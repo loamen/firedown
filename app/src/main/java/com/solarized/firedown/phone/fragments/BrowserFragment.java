@@ -2645,7 +2645,8 @@ public class BrowserFragment extends BaseBrowserFragment
         final WebExtensionController controller =
                 mGeckoRuntimeHelper.getGeckoRuntime().getWebExtensionController();
         final GeckoSession previousSession = mGeckoView.getSession();
-        final GeckoSession newSession = geckoState.getOrCreateGeckoSession();
+        final GeckoSession newSession = geckoState.getOrCreateGeckoSession(
+                mGeckoRuntimeHelper.blocksTrackingContent(geckoState.isIncognito()));
 
         if (newSession == null) {
             Log.e(TAG, "setGeckoViewSession: session is null, falling back to home");
@@ -2910,7 +2911,8 @@ public class BrowserFragment extends BaseBrowserFragment
                 + " hasGeckoSession=" + (geckoState.getGeckoSession() != null)
                 + " isOpen=" + (geckoState.getGeckoSession() != null && geckoState.getGeckoSession().isOpen()));
         mGeckoToolbar.onLocationChange(geckoState.getEntityUri());
-        connectSession(geckoState.getOrCreateGeckoSession());
+        connectSession(geckoState.getOrCreateGeckoSession(
+                mGeckoRuntimeHelper.blocksTrackingContent(geckoState.isIncognito())));
         setGeckoViewSession(geckoState);
         updateProgress(geckoState, 0);
         // Adopt the incoming tab's load state BEFORE enterBrowsing applies the

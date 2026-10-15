@@ -7703,9 +7703,7 @@ maintainer call after sketches on the design canvas:
   incognito in-memory twin, the two view-models' `isTrackingProtected`/
   `toggleTrackingProtection`, `GeckoState.setTrackingProtection`, the
   entity's persisted `useTrackingProtection` flag and the toolbar's
-  `mTrackingEnabled` half of the shield). Gecko's URL-list tracker blocking
-  is a strict SUBSET of what the bundled uBlock already blocks (EasyPrivacy
-  + the uBlock lists dwarf Disconnect's), so two switches on one sheet were
+  `mTrackingEnabled` half of the shield). Two switches on one sheet were
   two engines saying "trackers" for the same thing, and "break this site"
   needed BOTH off. uBlock's per-host whitelist (`GeckoRuntimeHelper.setAds`
   → firedown.js `toggleNetFilteringSwitch`) is the one per-site control
@@ -7714,9 +7712,24 @@ maintainer call after sketches on the design canvas:
   `tracking.default` true, `Preferences.getEnhancedTrackingProtectionLevel`
   falls to it; this was verified, not changed), where cookie partitioning /
   purging — engine-only features uBlock has no equivalent of — live anyway.
-  `GeckoState` builds every session `.useTrackingProtection(true)`. Don't
-  re-add a per-site ETP switch "for the one site uBlock lets through";
-  uBlock's own whitelist is the per-site door.
+  **Gecko blocks tracker LOADS only in Strict and in private tabs — the
+  Firefox rule** (`GeckoRuntimeHelper.blocksTrackingContent`, read from the
+  runtime's ETP level when a session is created; a level change in
+  `TrackingFragment` is applied to open tabs through
+  `GeckoStateDataRepository.setTrackingContentBlocking`). In Standard Gecko
+  marks trackers and blocks their cross-site cookies but lets them load,
+  and uBlock blocks the ads and analytics. Every session used to be built
+  with `.useTrackingProtection(true)`, which made Standard Firefox's Strict,
+  and the removal above rested on a false premise: Gecko's lists are NOT a
+  subset of uBlock's. The default set includes Disconnect's SOCIAL list
+  (`social-track-digest256`, which names twitter.com and x.com) and no
+  bundled uBlock list blocks `platform.twitter.com/widgets.js`, so embedded
+  tweets never rendered on any news site, with uBlock off for the site and
+  no setting that could bring them back (HAR, elmundo.es 2026-10-15: seven
+  `widgets.js` requests cancelled before leaving the phone). Don't make
+  regular tabs block loads in Standard again, and don't re-add a per-site
+  ETP switch: with loads unblocked in Standard, uBlock's whitelist really
+  is the per-site door.
 - **Migration leftovers that must stay:** the sessions file's `tracking_
   protection` key is tolerated in files BELOW v4 (its name lives only in the
   strict reader's `RETIRED_KEYS` map — not in `GeckoStateEntity.KEYS`, which

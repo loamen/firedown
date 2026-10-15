@@ -1660,6 +1660,28 @@ public class GeckoRuntimeHelper {
     }
 
     /**
+     * Whether a tab blocks tracker LOADS ({@code useTrackingProtection}),
+     * Firefox's rule: private tabs always, regular tabs only in Strict. In
+     * Standard, Gecko still marks trackers and blocks their cross-site
+     * cookies but lets them load; uBlock blocks the ads and analytics.
+     * Every tab used to block, which made Standard Firefox's Strict: the
+     * social-tracker list covers twitter.com, so embedded tweets (and other
+     * social embeds) never rendered, with no per-site way to allow them
+     * (uBlock's switch doesn't touch Gecko's lists). Read from the runtime,
+     * which is what Gecko enforces.
+     */
+    public boolean blocksTrackingContent(boolean incognito) {
+        if (incognito) {
+            return true;
+        }
+        if (sGeckoRuntime == null) {
+            return false;
+        }
+        return sGeckoRuntime.getSettings().getContentBlocking().getEnhancedTrackingProtectionLevel()
+                == ContentBlocking.EtpLevel.STRICT;
+    }
+
+    /**
      * Enable the WebAuthn / passkey backend. GeckoView routes
      * {@code navigator.credentials.create/get} to Android's FIDO2 / Credential
      * Manager and surfaces the OS passkey UI through the runtime

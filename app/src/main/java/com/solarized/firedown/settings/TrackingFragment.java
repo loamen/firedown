@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.preference.Preference;
 import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
+import com.solarized.firedown.data.repository.GeckoStateDataRepository;
 import com.solarized.firedown.settings.ui.RadioButtonPreference;
 import com.solarized.firedown.utils.NavigationUtils;
 import dagger.hilt.android.AndroidEntryPoint;
@@ -19,6 +20,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
+import javax.inject.Inject;
 
 
 @AndroidEntryPoint
@@ -41,6 +44,9 @@ public class TrackingFragment extends BasePreferenceFragment implements Preferen
     private RadioButtonPreference mCustomPreference;
 
     private Preference mStripListNavPreference;
+
+    @Inject
+    GeckoStateDataRepository mGeckoStateDataRepository;
 
 
     @Override
@@ -183,6 +189,10 @@ public class TrackingFragment extends BasePreferenceFragment implements Preferen
             cb.setQueryParameterStrippingStripList(
                     Preferences.getQueryParameterStripList(mSharedPreferences));
         }
+        // Open tabs follow the new level: tracker loads blocked in Strict
+        // only (private tabs always block and need nothing here).
+        mGeckoStateDataRepository.setTrackingContentBlocking(
+                mGeckoRuntimeHelper.blocksTrackingContent(false));
         updateStripListEnabled();
         return false;
     }
