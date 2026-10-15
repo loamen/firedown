@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- The Captured sheet's "pick a quality" action: what a tile's ⋮ reports
+         and the option event the sheet sends for it. Its view used to carry
+         this id; the tile is now the Downloads grid layout, whose ⋮ is
+         item_download_action, so the id lives here. -->
+    <item name="item_download_more" type="id" />
     <item name="settings_explicit_accept" type="id" />
     <item name="settings_explicit_decline" type="id" />
     <item name="popup_select_all" type="id" />

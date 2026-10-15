@@ -847,6 +847,8 @@
     <string name="settings_address_bar_host_only_title">Näytä osoitepalkissa vain sivuston nimi</string>
     <string name="settings_address_bar_host_only_summary">Koko osoite näkyy, kun napautat palkkia.</string>
     <string name="capture_earlier_in_tab">Aiemmin tässä välilehdessä</string>
+    <string name="capture_video_on_site">Video sivustolta %1$s</string>
+    <string name="capture_audio_on_site">Ääni sivustolta %1$s</string>
     <string name="capture_status_saved">Tallennettu</string>
     <string name="capture_status_failed">Lataus epäonnistui</string>
     <string name="capture_status_downloading">Ladataan · %1$d %%</string>
@@ -854,6 +856,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d latautuu</item>
         <item quantity="other">%d latautuu</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d tiedosto</item>
+        <item quantity="other">%d tiedostoa</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d odottaa</item>

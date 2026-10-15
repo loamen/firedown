@@ -781,6 +781,8 @@
     <string name="settings_address_bar_host_only_summary">Täielik aadress ilmub ribale koputades.</string>
     <string name="security_block_ads_trackers">Blokeeri reklaamid ja jälitajad</string>
     <string name="capture_earlier_in_tab">Varem sellel vahekaardil</string>
+    <string name="capture_video_on_site">Video saidilt %1$s</string>
+    <string name="capture_audio_on_site">Heli saidilt %1$s</string>
     <string name="capture_status_saved">Salvestatud</string>
     <string name="capture_status_failed">Allalaadimine ebaõnnestus</string>
     <string name="capture_status_downloading">Allalaadimine · %1$d%%</string>
@@ -788,6 +790,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d laadib</item>
         <item quantity="other">%d laadivad</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d fail</item>
+        <item quantity="other">%d faili</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d ootel</item>

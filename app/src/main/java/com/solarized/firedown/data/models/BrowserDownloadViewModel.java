@@ -23,6 +23,7 @@ import com.solarized.firedown.geckoview.GeckoState;
 import com.solarized.firedown.geckoview.PriorityTaskThreadPoolExecutor;
 import com.solarized.firedown.utils.DebugLog;
 import com.solarized.firedown.utils.FileUriHelper;
+import com.solarized.firedown.utils.WebUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +31,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,6 +61,14 @@ public class BrowserDownloadViewModel extends ViewModel {
     private final MutableLiveData<BatchSummary> mBatchSummary = new MutableLiveData<>();
 
     @Nullable private Snapshot mSnapshot;
+    /** Whether the fold is open: the user's last tap, or the sheet's own
+     *  choice. Null until either: the fold is closed, unless the page shown
+     *  now has caught nothing, when the earlier captures are all there is —
+     *  and that opening LATCHES (rebuild), so a capture landing on the page a
+     *  moment later doesn't snap the list shut under the user. The view model
+     *  is the sheet's own, so every opening of the sheet starts over, and a
+     *  rotation keeps the state. */
+    @Nullable private Boolean mEarlierOpen;
     @NonNull private Map<String, CaptureMark> mMarksByUrl = Collections.emptyMap();
 
     /** The captures of the batch this sheet dispatched, by uid, in dispatch
@@ -69,6 +79,9 @@ public class BrowserDownloadViewModel extends ViewModel {
      *  is gone was deleted from Downloads, and leaves the batch — otherwise
      *  the card would count it as pending forever. */
     private final Set<Integer> mBatchSeen = new HashSet<>();
+
+    /** Sites the fold row lists at most; the line ellipsizes long before. */
+    private static final int MAX_FOLD_DOMAINS = 8;
 
     @Inject
     public BrowserDownloadViewModel(
@@ -139,6 +152,20 @@ public class BrowserDownloadViewModel extends ViewModel {
         rebuild();
     }
 
+    /** Open the fold if it's closed, close it if it's open. */
+    public void toggleEarlier() {
+        Snapshot snapshot = mSnapshot;
+        if (snapshot == null) {
+            return;
+        }
+        mEarlierOpen = !isEarlierOpen(snapshot);
+        rebuild();
+    }
+
+    private boolean isEarlierOpen(@NonNull Snapshot snapshot) {
+        return mEarlierOpen != null ? mEarlierOpen : snapshot.currentTotal == 0;
+    }
+
     private void updateMarksQuery() {
         List<BrowserDownloadEntity> watched = new ArrayList<>();
         boolean safe = false;
@@ -158,12 +185,19 @@ public class BrowserDownloadViewModel extends ViewModel {
         if (snapshot == null) {
             return;
         }
+        if (mEarlierOpen == null && snapshot.currentTotal == 0 && snapshot.earlierTotal > 0) {
+            mEarlierOpen = true;
+        }
         Map<Integer, CaptureMark> marks = CaptureSections.marksByUid(snapshot.shown, mMarksByUrl);
         final int visitId = snapshot.visitId;
+        CaptureSections.Earlier earlier = snapshot.earlierTotal == 0
+                ? CaptureSections.Earlier.NONE
+                : new CaptureSections.Earlier(snapshot.earlierTotal, isEarlierOpen(snapshot),
+                        snapshot.earlierDomains, snapshot.earlierPreview);
         mItems.setValue(CaptureSections.build(snapshot.shown,
                 e -> isCurrentPage(e, visitId),
                 snapshot.filtered, snapshot.currentImages, snapshot.earlierImages,
-                snapshot.earlierTotal, marks, snapshot.captionCounts));
+                earlier, marks, snapshot.captionCounts));
         updateBatchSummary();
     }
 
@@ -208,9 +242,9 @@ public class BrowserDownloadViewModel extends ViewModel {
         // the top (and never gets truncated by the limit). Order:
         //   1. captures from the page-visit you're on now, first
         //   2. within each group, by type: video, audio, subtitle, other,
-        //      images (CaptureSections.typeRank) — the videos form one block
-        //      of tiles at the top, the images one block of squares under
-        //      their header, after the rows
+        //      images (CaptureSections.typeRank) — the tiles first, the video
+        //      leading them, then the images as one block of squares under
+        //      their header
         //   3. then most-recent first (descending creationTime)
         // Step 1 is the session anchor. Within one tab the repo accumulates
         // captures across navigations; each is stamped with the navigation
@@ -238,15 +272,18 @@ public class BrowserDownloadViewModel extends ViewModel {
                 .collect(Collectors.toList());
 
         // Header counts come from the whole group, before the limit cuts it,
-        // so "Images 40" doesn't read 15, then 25, as the user scrolls more in.
-        // The same for the divider's "Earlier in this tab 12".
+        // so "40 files" doesn't read 15, then 25, as the user scrolls more in.
+        // The same for the fold: its count, its sites and its thumbnails.
         int currentImages = 0;
         int earlierImages = 0;
-        int earlierTotal = 0;
+        List<BrowserDownloadEntity> earlier = new ArrayList<>();
+        Set<String> earlierOrigins = new LinkedHashSet<>();
         for (BrowserDownloadEntity e : all) {
             boolean current = isCurrentPage(e, currentVisitId);
             if (!current) {
-                earlierTotal++;
+                earlier.add(e);
+                String origin = e.getFileOrigin();
+                earlierOrigins.add(origin == null || origin.isEmpty() ? e.getFileUrl() : origin);
             }
             if (CaptureSections.isSquare(e)) {
                 if (current) {
@@ -257,13 +294,25 @@ public class BrowserDownloadViewModel extends ViewModel {
             }
         }
 
+        // Parsed per distinct page, not per capture: a page's captures share
+        // its origin, and this runs on every emission.
+        Set<String> earlierDomains = new LinkedHashSet<>();
+        for (String origin : earlierOrigins) {
+            if (earlierDomains.size() >= MAX_FOLD_DOMAINS) break;
+            String domain = origin != null ? WebUtils.getDomainName(origin) : null;
+            if (domain != null && !domain.isEmpty()) {
+                earlierDomains.add(domain);
+            }
+        }
+
         List<BrowserDownloadEntity> shown = limit > 0 && all.size() > limit
                 ? new ArrayList<>(all.subList(0, limit))
                 : all;
         boolean incognito = !shown.isEmpty() && shown.get(0).isIncognito();
         logVisitTrace(currentTabId, currentVisitId, shown);
         return new Snapshot(shown, currentVisitId, mSorting.isBrowserFiltered(),
-                currentImages, earlierImages, earlierTotal, incognito,
+                currentImages, earlierImages, all.size() - earlier.size(), earlier.size(),
+                new ArrayList<>(earlierDomains), CaptureSections.preview(earlier), incognito,
                 CaptureSections.captionCounts(tab));
     }
 
@@ -368,19 +417,26 @@ public class BrowserDownloadViewModel extends ViewModel {
         final boolean filtered;
         final int currentImages;
         final int earlierImages;
+        final int currentTotal;
         final int earlierTotal;
+        final List<String> earlierDomains;
+        final List<BrowserDownloadEntity> earlierPreview;
         final boolean incognito;
         final Map<String, Integer> captionCounts;
 
         Snapshot(List<BrowserDownloadEntity> shown, int visitId, boolean filtered,
-                 int currentImages, int earlierImages, int earlierTotal, boolean incognito,
-                 Map<String, Integer> captionCounts) {
+                 int currentImages, int earlierImages, int currentTotal, int earlierTotal,
+                 List<String> earlierDomains, List<BrowserDownloadEntity> earlierPreview,
+                 boolean incognito, Map<String, Integer> captionCounts) {
             this.shown = shown;
             this.visitId = visitId;
             this.filtered = filtered;
             this.currentImages = currentImages;
             this.earlierImages = earlierImages;
+            this.currentTotal = currentTotal;
             this.earlierTotal = earlierTotal;
+            this.earlierDomains = earlierDomains;
+            this.earlierPreview = earlierPreview;
             this.incognito = incognito;
             this.captionCounts = captionCounts;
         }

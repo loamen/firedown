@@ -804,6 +804,8 @@
     <string name="settings_address_bar_host_only_summary">Пълният адрес се показва при докосване на лентата.</string>
     <string name="security_block_ads_trackers">Блокиране на реклами и тракери</string>
     <string name="capture_earlier_in_tab">По-рано в този раздел</string>
+    <string name="capture_video_on_site">Видео от %1$s</string>
+    <string name="capture_audio_on_site">Аудио от %1$s</string>
     <string name="capture_status_saved">Запазено</string>
     <string name="capture_status_failed">Неуспешно изтегляне</string>
     <string name="capture_status_downloading">Изтегля се · %1$d%%</string>
@@ -811,6 +813,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d се изтегля</item>
         <item quantity="other">%d се изтеглят</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="other">%d файла</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d изчаква</item>

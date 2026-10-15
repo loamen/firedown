@@ -564,6 +564,13 @@
         <item name="cornerSize">6dp</item>
     </style>
 
+    <!-- The Captured sheet's fold row: the stacked thumbnails of the earlier
+         pages' captures, at the tiles' own 8dp corner. -->
+    <style name="FoldThumbnail" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
     <!-- (CertSectionHeader is gone: the certificate sheet's sections are
          group labels (Firedown.PopupGroupLabel) over sheet cards now.) -->
 

@@ -879,6 +879,8 @@
     <string name="settings_address_bar_host_only_title">Adres çubuğunda yalnızca site adını göster</string>
     <string name="settings_address_bar_host_only_summary">Çubuğa dokunduğunuzda tam adres görünür.</string>
     <string name="capture_earlier_in_tab">Bu sekmede daha önce</string>
+    <string name="capture_video_on_site">%1$s videosu</string>
+    <string name="capture_audio_on_site">%1$s sesi</string>
     <string name="capture_status_saved">Kaydedildi</string>
     <string name="capture_status_failed">İndirilemedi</string>
     <string name="capture_status_downloading">İndiriliyor · %%%1$d</string>
@@ -886,6 +888,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d indiriliyor</item>
         <item quantity="other">%d indiriliyor</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d dosya</item>
+        <item quantity="other">%d dosya</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d bekliyor</item>

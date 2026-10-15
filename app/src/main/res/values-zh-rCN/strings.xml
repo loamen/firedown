@@ -971,12 +971,17 @@
     <string name="settings_address_bar_host_only_title">地址栏仅显示网站名称</string>
     <string name="settings_address_bar_host_only_summary">点按地址栏时会显示完整地址。</string>
     <string name="capture_earlier_in_tab">此标签页中较早的内容</string>
+    <string name="capture_video_on_site">%1$s 上的视频</string>
+    <string name="capture_audio_on_site">%1$s 上的音频</string>
     <string name="capture_status_saved">已保存</string>
     <string name="capture_status_failed">无法下载</string>
     <string name="capture_status_downloading">正在下载 · %1$d%%</string>
     <string name="capture_batch_saved">已保存 %1$d/%2$d</string>
     <plurals name="capture_batch_downloading">
         <item quantity="other">%d 个下载中</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="other">%d 个文件</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="other">%d 个等待中</item>

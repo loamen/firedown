@@ -816,6 +816,8 @@
     <string name="settings_address_bar_host_only_title">पता बार में केवल साइट का नाम दिखाएँ</string>
     <string name="settings_address_bar_host_only_summary">बार पर टैप करने पर पूरा पता दिखता है।</string>
     <string name="capture_earlier_in_tab">इस टैब में पहले</string>
+    <string name="capture_video_on_site">%1$s पर वीडियो</string>
+    <string name="capture_audio_on_site">%1$s पर ऑडियो</string>
     <string name="capture_status_saved">सहेजा गया</string>
     <string name="capture_status_failed">डाउनलोड नहीं हो सका</string>
     <string name="capture_status_downloading">डाउनलोड हो रहा है · %1$d%%</string>
@@ -823,6 +825,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d डाउनलोड हो रहा है</item>
         <item quantity="other">%d डाउनलोड हो रहे हैं</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d फ़ाइल</item>
+        <item quantity="other">%d फ़ाइलें</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d लंबित</item>

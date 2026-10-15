@@ -10,8 +10,10 @@ import android.text.Spanned;
 import android.text.style.ImageSpan;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.solarized.firedown.R;
 import com.solarized.firedown.utils.Utils;
@@ -25,10 +27,12 @@ import java.util.Map;
  * trails the grid caption's meta row ('{@code 3:51 · 40,1 MB [cloud]}').
  *
  * <p>ONE implementation for every surface that renders it (the Downloads
- * list and grid, the Storage review list). It used to be three private
- * pieces inside {@code DownloadItemAdapter}; a second adapter needing the
- * same glyph would have meant copying ~100 lines of measured tuning, which
- * is exactly how {@code compactDuration} once drifted between two surfaces.
+ * list and grid, the Storage review list), and for the Captured sheet's
+ * download badges on the same tile ({@link #trailingBadge}). It used to be
+ * three private pieces inside {@code DownloadItemAdapter}; a second adapter
+ * needing the same glyph would have meant copying ~100 lines of measured
+ * tuning, which is exactly how {@code compactDuration} once drifted between
+ * two surfaces.
  *
  * <p>The tag (glyph + metrics) is built once per SURFACE and cached, keyed
  * by the text size and ink of the TextView it was measured on — the two
@@ -60,6 +64,7 @@ public final class CloudMark {
 
     private final Context mContext;
     private final Map<Long, Tag> mTags = new HashMap<>();
+    private final Map<Long, Tag> mBadges = new HashMap<>();
 
     public CloudMark(@NonNull Context context) {
         mContext = context.getApplicationContext();
@@ -124,6 +129,50 @@ public final class CloudMark {
                         gapBefore ? tag.gap : 0, 0),
                 start, start + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return text;
+    }
+
+    /**
+     * '{@code VIDEO · 0:45 [badge]}' — a self-coloured status glyph (the
+     * Captured sheet's saved / pending / failed badges) trailing a meta row,
+     * on the same centring and gutter as the cloud. Not tinted: the badges
+     * carry their own colours and a baked shadow, so they read on a picture's
+     * scrim and on the mime placeholder alike. A little larger than the cloud
+     * (a round badge is all ink to its edge; the cloud stands 16 of 24).
+     */
+    public CharSequence trailingBadge(@NonNull TextView view, @NonNull CharSequence facts,
+                                      @DrawableRes int badge, boolean gapBefore) {
+        long key = ((long) Float.floatToIntBits(view.getTextSize()) << 32) | (badge & 0xFFFFFFFFL);
+        Tag tag = mBadges.get(key);
+        if (tag == null && !mBadges.containsKey(key)) {
+            tag = buildBadge(view, badge);
+            mBadges.put(key, tag);
+        }
+        if (tag == null) {
+            return facts;
+        }
+        SpannableStringBuilder text = new SpannableStringBuilder(facts);
+        int start = text.length();
+        text.append(' ');
+        text.setSpan(new CenteredImageSpan(tag.glyph, tag.baselineOffset,
+                        gapBefore ? tag.gap : 0, 0),
+                start, start + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return text;
+    }
+
+    @Nullable
+    private Tag buildBadge(TextView view, @DrawableRes int badge) {
+        Drawable glyph = ContextCompat.getDrawable(mContext, badge);
+        if (glyph == null) {
+            return null;
+        }
+        glyph = glyph.mutate();
+        int size = Math.round(view.getTextSize() * 1.25f);
+        glyph.setBounds(0, 0, size, size);
+        Tag measured = build(view, false);
+        int baselineOffset = measured != null ? measured.baselineOffset
+                : Math.round(view.getPaint().ascent() / 3f);
+        int gap = Math.max(1, Math.round(view.getTextSize() * 0.55f));
+        return new Tag(glyph, baselineOffset, gap);
     }
 
     /** Alpha of the in-flight mark (0–255): dim enough to read as "not yet"

@@ -893,6 +893,8 @@
     <string name="settings_address_bar_host_only_title">Pokazuj w pasku adresu tylko nazwę witryny</string>
     <string name="settings_address_bar_host_only_summary">Pełny adres pojawia się po dotknięciu paska.</string>
     <string name="capture_earlier_in_tab">Wcześniej w tej karcie</string>
+    <string name="capture_video_on_site">Wideo z %1$s</string>
+    <string name="capture_audio_on_site">Dźwięk z %1$s</string>
     <string name="capture_status_saved">Zapisano</string>
     <string name="capture_status_failed">Nie udało się pobrać</string>
     <string name="capture_status_downloading">Pobieranie · %1$d%%</string>
@@ -902,6 +904,12 @@
         <item quantity="few">%d pobierane</item>
         <item quantity="many">%d pobieranych</item>
         <item quantity="other">%d pobieranych</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d plik</item>
+        <item quantity="few">%d pliki</item>
+        <item quantity="many">%d plików</item>
+        <item quantity="other">%d pliku</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d oczekujący</item>

@@ -879,6 +879,8 @@
     <string name="settings_address_bar_host_only_title">Alleen de sitenaam in de adresbalk tonen</string>
     <string name="settings_address_bar_host_only_summary">Het volledige adres verschijnt als je op de balk tikt.</string>
     <string name="capture_earlier_in_tab">Eerder in dit tabblad</string>
+    <string name="capture_video_on_site">Video op %1$s</string>
+    <string name="capture_audio_on_site">Audio op %1$s</string>
     <string name="capture_status_saved">Opgeslagen</string>
     <string name="capture_status_failed">Downloaden mislukt</string>
     <string name="capture_status_downloading">Downloaden · %1$d%%</string>
@@ -886,6 +888,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d downloadt</item>
         <item quantity="other">%d downloaden</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d bestand</item>
+        <item quantity="other">%d bestanden</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d in behandeling</item>

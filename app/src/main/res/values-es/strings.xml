@@ -976,6 +976,8 @@
     <string name="settings_address_bar_host_only_title">Mostrar solo el nombre del sitio en la barra de direcciones</string>
     <string name="settings_address_bar_host_only_summary">La dirección completa aparece al tocar la barra.</string>
     <string name="capture_earlier_in_tab">Antes en esta pestaña</string>
+    <string name="capture_video_on_site">Vídeo en %1$s</string>
+    <string name="capture_audio_on_site">Audio en %1$s</string>
     <string name="capture_status_saved">Guardado</string>
     <string name="capture_status_failed">No se pudo descargar</string>
     <string name="capture_status_downloading">Descargando · %1$d %%</string>
@@ -983,6 +985,10 @@
     <plurals name="capture_batch_downloading">
         <item quantity="one">%d descargando</item>
         <item quantity="other">%d descargando</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d archivo</item>
+        <item quantity="other">%d archivos</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d pendiente</item>

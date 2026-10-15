@@ -8,38 +8,36 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.solarized.firedown.R;
 import com.solarized.firedown.data.capture.CaptureItem;
 
 /**
- * Spacing for the Captured sheet's mixed list: full-width rows and headers
- * inset from the sheet edges, the divider edge to edge (its line runs the
- * full width; its label carries its own inset), and the grid items — video
- * tiles two to a line, image squares three — with equal gaps AND equal
- * widths.
+ * Spacing for the Captured sheet's mixed list: the tiles and the squares on
+ * one 8dp gap, the Downloads grid's own (EqualSpacingItemDecoration with
+ * list_spacing), the Images header and the fold row inset from the sheet
+ * edges to the tiles' edge, and the fold set apart from the grid above and
+ * below it.
  *
- * <p>Why not {@link EqualSpacingItemDecoration}: it gives every item half the
- * gap on each side and the edge items the full gutter, so in a grid the edge
- * columns lose more width to offsets than the middle one and the squares come
- * out different widths. Here every column gives up the same total
- * ({@code (2·gutter + (n−1)·gap) / n}) and only how it splits between left and
- * right moves with the column. The column count comes from the item's own
- * span size, so one grid holds tiles and squares at different counts.
+ * <p>Why not {@link EqualSpacingItemDecoration} itself: it gives every item
+ * half the gap on each side and the edge items the full gutter, so in a grid
+ * the edge columns lose more width to offsets than the middle one and the
+ * squares come out different widths. Here every column gives up the same
+ * total ({@code (2·gutter + (n−1)·gap) / n}) and only how it splits between
+ * left and right moves with the column. The column count comes from the
+ * item's own span size, so one grid holds tiles and squares at different
+ * counts.
  */
 public class CaptureSpacingDecoration extends RecyclerView.ItemDecoration {
 
     private final int mGutter;
-    private final int mRowGap;
-    private final int mSquareGap;
-    private final int mTileGap;
-    private final int mTileRowGap;
+    private final int mGap;
+    private final int mFoldGap;
 
     public CaptureSpacingDecoration(@NonNull Context context) {
         float density = context.getResources().getDisplayMetrics().density;
         mGutter = Math.round(16 * density);
-        mRowGap = Math.round(6 * density);
-        mSquareGap = Math.round(4 * density);
-        mTileGap = Math.round(8 * density);
-        mTileRowGap = Math.round(12 * density);
+        mGap = context.getResources().getDimensionPixelSize(R.dimen.list_spacing);
+        mFoldGap = Math.round(12 * density);
     }
 
     @Override
@@ -47,28 +45,19 @@ public class CaptureSpacingDecoration extends RecyclerView.ItemDecoration {
                                @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         RecyclerView.ViewHolder holder = parent.getChildViewHolder(view);
         int type = holder != null ? holder.getItemViewType() : RecyclerView.INVALID_TYPE;
-        if (type == CaptureItem.TYPE_SQUARE) {
-            gridOffsets(outRect, view, parent, mSquareGap, mSquareGap);
-            return;
-        }
-        if (type == CaptureItem.TYPE_TILE) {
-            gridOffsets(outRect, view, parent, mTileGap, mTileRowGap);
-            return;
-        }
-        if (type == CaptureItem.TYPE_DIVIDER) {
-            outRect.set(0, 0, 0, 0);
+        if (type == CaptureItem.TYPE_SQUARE || type == CaptureItem.TYPE_TILE) {
+            gridOffsets(outRect, view, parent);
             return;
         }
         outRect.left = mGutter;
         outRect.right = mGutter;
-        boolean row = type == CaptureItem.TYPE_ROW || type == CaptureItem.TYPE_COMPACT;
-        int vertical = row ? mRowGap / 2 : 0;
-        outRect.top = vertical;
-        outRect.bottom = vertical;
+        boolean fold = type == CaptureItem.TYPE_FOLD;
+        outRect.top = fold ? mFoldGap : 0;
+        outRect.bottom = fold ? mFoldGap : 0;
     }
 
     private void gridOffsets(@NonNull Rect outRect, @NonNull View view,
-                             @NonNull RecyclerView parent, int gap, int rowGap) {
+                             @NonNull RecyclerView parent) {
         int spanCount = 1;
         RecyclerView.LayoutManager manager = parent.getLayoutManager();
         if (manager instanceof GridLayoutManager grid) {
@@ -84,11 +73,11 @@ public class CaptureSpacingDecoration extends RecyclerView.ItemDecoration {
         // Each column's share of the offsets, then where in it this column's
         // left edge falls: the first column starts at the gutter, each next
         // one a gap minus a share further in.
-        float share = (2f * mGutter + (columns - 1) * gap) / columns;
-        int left = Math.round(mGutter + column * (gap - share));
+        float share = (2f * mGutter + (columns - 1) * mGap) / columns;
+        int left = Math.round(mGutter + column * (mGap - share));
         outRect.left = left;
         outRect.right = Math.round(share) - left;
         outRect.top = 0;
-        outRect.bottom = rowGap;
+        outRect.bottom = mGap;
     }
 }

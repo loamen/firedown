@@ -46,9 +46,6 @@
     <dimen name="list_download_image_height">64dp</dimen>
     <dimen name="list_download_image_height_grid">110dp</dimen>
     <dimen name="list_margin">8dp</dimen>
-    <!-- The type label (VIDEO, AUDIO…) inside a Captured row's meta line:
-         MimePrimaryLabel's size, applied as a span. -->
-    <dimen name="capture_type_label_size">11sp</dimen>
     <!-- A small SVG (an icon) is drawn inside this inset of its square, not
          stretched to fill it: about 2x a 24px icon on a phone's square. -->
     <dimen name="capture_icon_inset">28dp</dimen>

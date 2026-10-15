@@ -828,6 +828,8 @@
     <string name="settings_address_bar_host_only_summary">Повна адреса з\'являється при натисканні на рядок.</string>
     <string name="security_block_ads_trackers">Блокувати рекламу та трекери</string>
     <string name="capture_earlier_in_tab">Раніше в цій вкладці</string>
+    <string name="capture_video_on_site">Відео з %1$s</string>
+    <string name="capture_audio_on_site">Аудіо з %1$s</string>
     <string name="capture_status_saved">Збережено</string>
     <string name="capture_status_failed">Не вдалося завантажити</string>
     <string name="capture_status_downloading">Завантаження · %1$d%%</string>
@@ -837,6 +839,12 @@
         <item quantity="few">%d завантажуються</item>
         <item quantity="many">%d завантажуються</item>
         <item quantity="other">%d завантажуються</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="few">%d файли</item>
+        <item quantity="many">%d файлів</item>
+        <item quantity="other">%d файлу</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d очікує</item>

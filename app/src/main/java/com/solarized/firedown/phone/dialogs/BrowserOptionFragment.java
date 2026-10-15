@@ -56,7 +56,6 @@ import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.Sorting;
 import com.solarized.firedown.data.capture.CaptureItem;
-import com.solarized.firedown.data.capture.CaptureSections;
 import com.solarized.firedown.data.capture.CaptureSections.BatchSummary;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.entity.OptionEntity;
@@ -206,12 +205,11 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         });
 
         mRecyclerView = mLCEERecyclerView.getRecyclerView();
-        // One grid for the whole mixed list: video tiles two to a line, image
-        // squares three (on a phone), everything else (rows, the Images
-        // header, the divider) the full line. The span count is the least
-        // common multiple of the two, so both divide it. There is no
-        // list/grid toggle — the layout follows the capture's type instead
-        // (see CaptureItem).
+        // One grid for the whole mixed list: tiles two to a line, image
+        // squares three (on a phone), the Images header and the fold row the
+        // full line. The span count is the least common multiple of the two,
+        // so both divide it. There is no list/grid toggle — the layout follows
+        // the capture's type instead (see CaptureItem).
         int squareColumns = getResources().getInteger(R.integer.capture_columns);
         int tileColumns = getResources().getInteger(R.integer.capture_tile_columns);
         int columns = leastCommonMultiple(squareColumns, tileColumns);
@@ -222,6 +220,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         // sheet inflates under the incognito overlay, and the adapter resolves
         // its inks from the context it is given.
         mAdapter = new BrowserOptionAdapter(view.getContext(), this);
+        mAdapter.setOnFoldClick(() -> mBrowserDownloadViewModel.toggleEarlier());
         mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
@@ -258,10 +257,10 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             // gone by the time the user scrolls back up — leaving a brief
             // empty frame plus a disk/network round-trip on rebind. Preload
             // 8 items ahead of the scroll direction so the cache stays
-            // warm for the rows and video tiles about to enter the viewport
-            // (both decode at the fixed browser-thumb size, so the preload and
-            // the bind share a key). Not the squares: an SVG or GIF square
-            // loads through a different branch with no fixed size.
+            // warm for the tiles about to enter the viewport (they decode at
+            // the fixed browser-thumb size, so the preload and the bind share
+            // a key). Not the squares: an SVG or GIF square loads through a
+            // different branch with no fixed size.
             RequestManager glide = Glide.with(this);
 
             RecyclerViewPreloader<BrowserDownloadEntity> preloader = new RecyclerViewPreloader<>(
@@ -272,8 +271,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                         public List<BrowserDownloadEntity> getPreloadItems(int position) {
                             CaptureItem item = mAdapter != null ? mAdapter.getItemAt(position) : null;
                             if (item == null || item.entity == null
-                                    || (item.type != CaptureItem.TYPE_ROW
-                                    && item.type != CaptureItem.TYPE_TILE)) {
+                                    || item.type != CaptureItem.TYPE_TILE) {
                                 return Collections.emptyList();
                             }
                             return Collections.singletonList(item.entity);
@@ -286,8 +284,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                             // The adapter's own options, so the preload-warmed
                             // bitmap and the bind-time request share a key.
                             return GlideHelper.preloadBrowser(glide, entity,
-                                    mAdapter.optionsFor(entity, CaptureSections.isTile(entity)
-                                            ? CaptureItem.TYPE_TILE : CaptureItem.TYPE_ROW));
+                                    mAdapter.optionsFor(entity, CaptureItem.TYPE_TILE));
                         }
                     },
                     new FixedPreloadSizeProvider<>(

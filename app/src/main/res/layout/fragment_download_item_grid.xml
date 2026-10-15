@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Downloads grid tile, and the Captured sheet's tile too: the sheet's
+  adapter (BrowserOptionAdapter) inflates THIS file for every capture but an
+  image, so the two screens can't drift apart (canvas "Captured Content
+  sheet", board G — a copy with the text under the picture read on-device as
+  a different app). A change here is a change to both: the sheet relies on
+  the ids item / image / image_progress / bottom_block / file_name /
+  mime_text / mime_duration / status_text / item_download_action /
+  item_download_selected, and paints its own card tone and download badges
+  in code.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -52,7 +63,8 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <!-- Bottom info block: a gradient scrim carrying the title + a
-                 metadata row + status, mirroring the Captured grid. The scrim
+                 metadata row + status (the Captured sheet's tile is this
+                 layout). The scrim
                  is the block's background (always present); the adapter toggles
                  the individual children per download state. Left-aligned and
                  full-width like Captured. -->

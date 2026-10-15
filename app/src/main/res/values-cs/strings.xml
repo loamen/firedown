@@ -863,6 +863,8 @@
     <string name="settings_address_bar_host_only_title">V adresním řádku zobrazovat jen název webu</string>
     <string name="settings_address_bar_host_only_summary">Celá adresa se zobrazí po klepnutí na řádek.</string>
     <string name="capture_earlier_in_tab">Dříve v této kartě</string>
+    <string name="capture_video_on_site">Video z %1$s</string>
+    <string name="capture_audio_on_site">Zvuk z %1$s</string>
     <string name="capture_status_saved">Uloženo</string>
     <string name="capture_status_failed">Stažení se nezdařilo</string>
     <string name="capture_status_downloading">Stahování · %1$d %%</string>
@@ -872,6 +874,12 @@
         <item quantity="few">%d se stahují</item>
         <item quantity="many">%d se stahuje</item>
         <item quantity="other">%d se stahuje</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d soubor</item>
+        <item quantity="few">%d soubory</item>
+        <item quantity="many">%d souboru</item>
+        <item quantity="other">%d souborů</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d čeká</item>

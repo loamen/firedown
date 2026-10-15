@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * The Captured sheet's section rules, as pure functions the view model calls
@@ -44,37 +45,35 @@ public final class CaptureSections {
         return FileUriHelper.isImage(e.getMimeType());
     }
 
-    /** A video renders as a tile (HLS/DASH manifests included: isVideo knows
-     *  their mime types). Not an audio capture in a video container (the
-     *  entity's audio flag, an m4a served as video/mp4) nor an audio
-     *  playlist (audio/mpegurl, which isVideo also accepts): those are rows,
-     *  and a tile would show them as a blank frame. */
+    /** Everything else renders as a tile: the Downloads grid tile, for a
+     *  video, its audio, a subtitle track or any other file alike. */
     public static boolean isTile(@NonNull BrowserDownloadEntity e) {
-        String mime = e.getMimeType();
-        return !isAudioCapture(e) && FileUriHelper.isVideo(mime);
+        return !isSquare(e);
     }
 
-    private static boolean isAudioCapture(@NonNull BrowserDownloadEntity e) {
+    /** A video (HLS/DASH manifests included: isVideo knows their mime types).
+     *  Not an audio capture in a video container (the entity's audio flag, an
+     *  m4a served as video/mp4) nor an audio playlist (audio/mpegurl, which
+     *  isVideo also accepts): those rank with the audio, carry no caption
+     *  count and are named "Audio on …" when their name is a filename. */
+    public static boolean isVideo(@NonNull BrowserDownloadEntity e) {
+        return !isAudioCapture(e) && FileUriHelper.isVideo(e.getMimeType());
+    }
+
+    public static boolean isAudioCapture(@NonNull BrowserDownloadEntity e) {
         return e.isAudio() || FileUriHelper.isAudio(e.getMimeType());
-    }
-
-    /** A subtitle track renders as a compact row. */
-    public static boolean isCompact(@NonNull BrowserDownloadEntity e) {
-        return FileUriHelper.isSubtitle(e.getMimeType());
     }
 
     /**
      * Order inside a group: the video first, then its audio, its subtitles,
      * any other file, and the images last — the media are what a visit to the
      * sheet is usually for, and the images sit as one block below them instead
-     * of interleaving. Rank 0 is exactly the tiles ({@link #isTile}), so they
-     * stay one block and line up two to a line. Used for BOTH groups since the
-     * redesign (it was the current page only, when every capture was the same
-     * tile).
+     * of interleaving. Ranks 0–3 are all tiles, so a video and its subtitle
+     * sit side by side on one line.
      */
     public static int typeRank(@NonNull BrowserDownloadEntity e) {
         String mime = e.getMimeType();
-        if (isTile(e)) return 0;
+        if (isVideo(e)) return 0;
         if (isAudioCapture(e)) return 1;
         if (FileUriHelper.isSubtitle(mime)) return 2;
         if (FileUriHelper.isImage(mime)) return 4;
@@ -83,9 +82,9 @@ public final class CaptureSections {
 
     /**
      * The sheet's items for an already sorted and limited capture list: the
-     * current page's captures, then a divider and the earlier ones; inside
-     * each group the video tiles, the rows (audio, subtitles, other files),
-     * then an "Images N" header and the squares.
+     * current page's tiles, then an "Images" header and its squares, then the
+     * FOLD row for the earlier pages, followed by their captures in the same
+     * shape only while it is open.
      *
      * @param shown          captures to show, sorted group-first then by
      *                       {@link #typeRank}, already cut to the list limit
@@ -96,8 +95,8 @@ public final class CaptureSections {
      *                       the header's count doesn't grow as the user
      *                       scrolls more in
      * @param earlierImages  the same for the earlier group
-     * @param earlierTotal   every capture of the earlier group before the
-     *                       limit: the divider's count
+     * @param earlier        the fold: the earlier group's count, sites and
+     *                       preview, before the limit, and whether it is open
      * @param marks          download marks by capture uid
      * @param captionCounts  subtitle tracks per page origin, over the tab's
      *                       unfiltered captures (see {@link #captionCounts})
@@ -108,29 +107,32 @@ public final class CaptureSections {
                                           boolean filtered,
                                           int currentImages,
                                           int earlierImages,
-                                          int earlierTotal,
+                                          @NonNull Earlier earlier,
                                           @NonNull Map<Integer, CaptureMark> marks,
                                           @NonNull Map<String, Integer> captionCounts) {
         List<CaptureItem> out = new ArrayList<>(shown.size() + 3);
+        boolean multiSite = earlier.domains.size() > 1;
+        boolean foldAdded = false;
         int group = -1;
         boolean headerAdded = false;
         for (BrowserDownloadEntity e : shown) {
             if (e == null) continue;
             int g = isCurrent.test(e) ? CaptureItem.GROUP_CURRENT : CaptureItem.GROUP_EARLIER;
-            if (g != group) {
-                if (group == CaptureItem.GROUP_CURRENT && g == CaptureItem.GROUP_EARLIER) {
-                    out.add(CaptureItem.divider(earlierTotal));
+            if (g == CaptureItem.GROUP_EARLIER) {
+                if (!foldAdded) {
+                    out.add(earlier.toItem());
+                    foldAdded = true;
                 }
+                if (!earlier.open) {
+                    continue;
+                }
+            }
+            if (g != group) {
                 group = g;
                 headerAdded = false;
             }
             CaptureMark mark = marks.get(e.getUid());
-            boolean earlier = g == CaptureItem.GROUP_EARLIER;
-            if (isTile(e)) {
-                out.add(CaptureItem.tile(e, g, earlier, captionCountFor(e, captionCounts), mark));
-            } else if (isCompact(e)) {
-                out.add(CaptureItem.compact(e, g, !filtered, earlier, mark));
-            } else if (isSquare(e)) {
+            if (isSquare(e)) {
                 if (!filtered && !headerAdded) {
                     int count = g == CaptureItem.GROUP_CURRENT ? currentImages : earlierImages;
                     out.add(CaptureItem.header(g, count));
@@ -138,16 +140,96 @@ public final class CaptureSections {
                 }
                 out.add(CaptureItem.square(e, g, !filtered, mark));
             } else {
-                out.add(CaptureItem.row(e, g, !filtered, earlier,
+                boolean showDomain = g == CaptureItem.GROUP_EARLIER && multiSite;
+                out.add(CaptureItem.tile(e, g, !filtered, showDomain,
                         captionCountFor(e, captionCounts), mark));
             }
+        }
+        // The limit can cut the list before any earlier capture: the fold
+        // still closes the current page, so the earlier ones stay one tap (and
+        // a scroll) away rather than appearing under no heading.
+        if (!foldAdded && earlier.total > 0) {
+            out.add(earlier.toItem());
         }
         return out;
     }
 
     /**
-     * Subtitle captures per page origin. The count lands on the VIDEO tile of
-     * that page only ({@link #captionCountFor}): captions belong to a video,
+     * Up to three earlier captures for the fold's stacked thumbnails, in list
+     * order: pictures first (a video's frame, an image), so a page whose first
+     * capture is a subtitle track still previews as its video; anything else
+     * only to make up the count.
+     */
+    @NonNull
+    public static List<BrowserDownloadEntity> preview(@NonNull List<BrowserDownloadEntity> earlier) {
+        List<BrowserDownloadEntity> out = new ArrayList<>(3);
+        for (BrowserDownloadEntity e : earlier) {
+            if (out.size() == 3) return out;
+            if (e != null && (isVideo(e) || isSquare(e))) out.add(e);
+        }
+        for (BrowserDownloadEntity e : earlier) {
+            if (out.size() == 3) break;
+            if (e != null && !out.contains(e)) out.add(e);
+        }
+        return out;
+    }
+
+    /** A media file extension, as the catcher names a capture after its URL. */
+    private static final Pattern MEDIA_EXTENSION = Pattern.compile(
+            "\\.(?:mp4|m4v|mov|webm|mkv|avi|m3u8|mpd|ts|mp3|m4a|aac|wav|flac|ogg|opus)$",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern BARE_TOKEN = Pattern.compile("[a-z0-9]{1,16}");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s");
+
+    /**
+     * Whether a capture's name is a filename rather than a title: what an
+     * embedded player's capture is called when the page names nothing better
+     * ("src", "master.m3u8", "6aaaf5204d3859992c30a380.mp4", "videoplayback").
+     * Such a tile reads "Video on news.example" instead. The rule after
+     * stripping a media extension: no whitespace, and either a long token with
+     * digits in it (a hash or an id — the catcher's isFilenameLikeTitle test)
+     * or one short lowercase word (a URL segment). A name with a space, a
+     * capital or a separator is somebody's title and is kept.
+     */
+    public static boolean isFilenameLike(@Nullable String name) {
+        if (name == null) return true;
+        String s = MEDIA_EXTENSION.matcher(name.trim()).replaceFirst("").trim();
+        if (s.isEmpty()) return true;
+        if (WHITESPACE.matcher(s).find()) return false;
+        int digits = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (Character.isDigit(s.charAt(i))) digits++;
+        }
+        if (s.length() >= 12 && digits >= 3) return true;
+        return BARE_TOKEN.matcher(s).matches();
+    }
+
+    /** The fold row's facts, taken from the earlier group BEFORE the limit. */
+    public static final class Earlier {
+        public final int total;
+        public final boolean open;
+        @NonNull public final List<String> domains;
+        @NonNull public final List<BrowserDownloadEntity> preview;
+
+        public Earlier(int total, boolean open, @NonNull List<String> domains,
+                       @NonNull List<BrowserDownloadEntity> preview) {
+            this.total = total;
+            this.open = open;
+            this.domains = domains;
+            this.preview = preview;
+        }
+
+        public static final Earlier NONE = new Earlier(0, false,
+                Collections.emptyList(), Collections.emptyList());
+
+        CaptureItem toItem() {
+            return CaptureItem.fold(total, open, domains, preview);
+        }
+    }
+
+    /**
+     * Subtitle captures per page origin. The count lands on the VIDEO of that
+     * page only ({@link #captionCountFor}): captions belong to a video,
      * and every other capture of the page (thumbnail sprites, a player-logo
      * SVG, posters, the audio) shares the origin and would otherwise inherit
      * it — the "CC 1 on a PNG" bug.
@@ -168,7 +250,7 @@ public final class CaptureSections {
 
     private static int captionCountFor(@NonNull BrowserDownloadEntity e,
                                        @NonNull Map<String, Integer> counts) {
-        if (!isTile(e)) return 0;
+        if (!isVideo(e)) return 0;
         String origin = e.getFileOrigin();
         if (TextUtils.isEmpty(origin)) return 0;
         Integer count = counts.get(origin);

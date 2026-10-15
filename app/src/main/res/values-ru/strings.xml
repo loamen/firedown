@@ -895,6 +895,8 @@
     <string name="settings_address_bar_host_only_title">Показывать в адресной строке только имя сайта</string>
     <string name="settings_address_bar_host_only_summary">Полный адрес появляется при нажатии на строку.</string>
     <string name="capture_earlier_in_tab">Ранее в этой вкладке</string>
+    <string name="capture_video_on_site">Видео с %1$s</string>
+    <string name="capture_audio_on_site">Аудио с %1$s</string>
     <string name="capture_status_saved">Сохранено</string>
     <string name="capture_status_failed">Не удалось скачать</string>
     <string name="capture_status_downloading">Загрузка · %1$d%%</string>
@@ -904,6 +906,12 @@
         <item quantity="few">%d загружаются</item>
         <item quantity="many">%d загружаются</item>
         <item quantity="other">%d загружаются</item>
+    </plurals>
+    <plurals name="downloads_group_files">
+        <item quantity="one">%d файл</item>
+        <item quantity="few">%d файла</item>
+        <item quantity="many">%d файлов</item>
+        <item quantity="other">%d файла</item>
     </plurals>
     <plurals name="capture_batch_pending">
         <item quantity="one">%d в ожидании</item>

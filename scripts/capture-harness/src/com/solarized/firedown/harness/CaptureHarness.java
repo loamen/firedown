@@ -18,13 +18,16 @@ public class CaptureHarness {
   static String shape(List<CaptureItem> items) {
     StringBuilder b = new StringBuilder();
     for (CaptureItem i : items) {
-      b.append(switch (i.type) { case CaptureItem.TYPE_ROW -> "R" + i.uid() + (i.showType ? "t" : "") + (i.showDomain ? "d" : "") + (i.captionCount > 0 ? "c" + i.captionCount : "");
+      b.append(switch (i.type) {
         case CaptureItem.TYPE_TILE -> "T" + i.uid() + (i.showType ? "t" : "") + (i.showDomain ? "d" : "") + (i.captionCount > 0 ? "c" + i.captionCount : "");
-        case CaptureItem.TYPE_COMPACT -> "C" + i.uid() + (i.showType ? "t" : "") + (i.showDomain ? "d" : "");
         case CaptureItem.TYPE_SQUARE -> "S" + i.uid() + (i.showType ? "t" : "");
-        case CaptureItem.TYPE_HEADER -> "H" + i.group + ":" + i.count; default -> "|" + i.count; }).append(' ');
+        case CaptureItem.TYPE_HEADER -> "H" + i.group + ":" + i.count;
+        default -> "F" + i.count + (i.open ? "o" : "c"); }).append(' ');
     }
     return b.toString().trim();
+  }
+  static CaptureSections.Earlier earlier(int total, boolean open, String... domains) {
+    return new CaptureSections.Earlier(total, open, List.of(domains), List.of());
   }
   static CaptureDownloadState row(String url, int status, int progress, boolean live, int err) {
     CaptureDownloadState s = new CaptureDownloadState(); s.url = url; s.status = status; s.progress = progress; s.live = live; s.errorType = err; return s;
@@ -38,14 +41,17 @@ public class CaptureHarness {
         && CaptureSections.typeRank(e(1,"application/zip","u","o")) == 3
         && CaptureSections.typeRank(e(1,"image/png","u","o")) == 4);
 
-    // a video is a tile; audio in a video container (the entity's audio
-    // flag) is a row, ranked with the audio so the tiles stay one block
+    // every capture but an image is a tile (the Downloads grid tile); a video
+    // is told apart for the caption count and the "Video on" name, and audio
+    // in a video container (the entity's audio flag) is not one
     BrowserDownloadEntity m4a = e(2, "video/mp4", "a.m4a", "o"); m4a.audio = true;
-    check("video is a tile", CaptureSections.isTile(e(1,"video/mp4","u","o")));
-    check("audio-flagged mp4 is a row", !CaptureSections.isTile(m4a) && CaptureSections.typeRank(m4a) == 1);
-    check("hls master is a tile, an audio playlist is not", CaptureSections.isTile(e(1,"application/x-mpegurl","u","o"))
-        && !CaptureSections.isTile(e(1,"audio/mpegurl","u","o")));
-    check("subtitle is compact", CaptureSections.isCompact(e(1,"text/vtt","u","o")) && !CaptureSections.isCompact(e(1,"audio/mp4","u","o")));
+    check("tiles are everything but images", CaptureSections.isTile(e(1,"video/mp4","u","o"))
+        && CaptureSections.isTile(e(1,"audio/mp4","u","o")) && CaptureSections.isTile(e(1,"text/vtt","u","o"))
+        && CaptureSections.isTile(e(1,"application/zip","u","o")) && !CaptureSections.isTile(e(1,"image/gif","u","o")));
+    check("audio-flagged mp4 is audio, not video", !CaptureSections.isVideo(m4a) && CaptureSections.isAudioCapture(m4a)
+        && CaptureSections.typeRank(m4a) == 1);
+    check("hls master is a video, an audio playlist is not", CaptureSections.isVideo(e(1,"application/x-mpegurl","u","o"))
+        && !CaptureSections.isVideo(e(1,"audio/mpegurl","u","o")));
 
     // current page: video, audio, sub, 3 images; earlier: video, 2 images
     String P = "https://clips.example/v", Q = "https://firedown.app/s";
@@ -55,34 +61,61 @@ public class CaptureHarness {
         e(7,"video/mp4","v2",Q), e(8,"image/png","i3",Q), e(9,"image/png","i4",Q));
     Set<Integer> current = Set.of(1,2,3,4,5,6);
     Map<String,Integer> cc = CaptureSections.captionCounts(shown);
-    List<CaptureItem> items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, 43, Map.of(), cc);
-    check("unfiltered shape: " + shape(items), shape(items).equals("T1c1 R2t C3t H0:3 S4t S5t S6t |43 T7d H1:40 S8t S9t"));
+    List<CaptureItem> items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, earlier(43, false, "firedown.app"), Map.of(), cc);
+    check("fold closed: " + shape(items), shape(items).equals("T1tc1 T2t T3t H0:3 S4t S5t S6t F43c"));
 
-    // under a chip: no headers, no type labels, divider stays
+    // open, one earlier site: the fold names it, the tiles don't repeat it
+    items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, earlier(43, true, "firedown.app"), Map.of(), cc);
+    check("fold open: " + shape(items), shape(items).equals("T1tc1 T2t T3t H0:3 S4t S5t S6t F43o T7t H1:40 S8t S9t"));
+
+    // open, several earlier sites: each earlier tile carries its own
+    items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, earlier(43, true, "firedown.app", "a.example"), Map.of(), cc);
+    check("fold open, many sites: " + shape(items), shape(items).equals("T1tc1 T2t T3t H0:3 S4t S5t S6t F43o T7td H1:40 S8t S9t"));
+
+    // under a chip: no headers, no type labels, the fold stays
     List<BrowserDownloadEntity> imgs = List.of(e(5,"image/png","i1",P), e(6,"image/png","i2",P), e(8,"image/png","i3",Q));
-    items = CaptureSections.build(imgs, x -> current.contains(x.getUid()), true, 2, 1, 1, Map.of(), Map.of());
-    check("filtered shape: " + shape(items), shape(items).equals("S5 S6 |1 S8"));
+    items = CaptureSections.build(imgs, x -> current.contains(x.getUid()), true, 2, 1, earlier(1, true, "firedown.app"), Map.of(), Map.of());
+    check("filtered, open: " + shape(items), shape(items).equals("S5 S6 F1o S8"));
+    items = CaptureSections.build(imgs, x -> current.contains(x.getUid()), true, 2, 1, earlier(1, false, "firedown.app"), Map.of(), Map.of());
+    check("filtered, closed: " + shape(items), shape(items).equals("S5 S6 F1c"));
 
-    // no current page (home): one group, no divider, domains shown
-    items = CaptureSections.build(shown, x -> false, false, 0, 4, 9, Map.of(), Map.of());
-    check("no anchor: " + shape(items), shape(items).equals("T1d R2td C3td H1:4 S4t S5t S6t T7d S8t S9t"));
-    // the second video sits after the first group's squares because the
-    // input was not re-sorted for "one group" here; the builder keeps input
-    // order inside a group (the view model's sort puts rows first).
+    // no current page (home): everything is earlier, behind an open fold
+    items = CaptureSections.build(shown, x -> false, false, 0, 4, earlier(9, true, "clips.example", "firedown.app"), Map.of(), Map.of());
+    check("no anchor: " + shape(items), shape(items).equals("F9o T1td T2td T3td H1:4 S4t S5t S6t T7td S8t S9t"));
+    // (the second video sits after the squares because the input was not
+    // re-sorted for "one group" here; the builder keeps input order inside a
+    // group, and the view model's sort puts the tiles first.)
 
-    // only the current page: no divider
-    items = CaptureSections.build(shown.subList(0, 6), x -> true, false, 3, 0, 0, Map.of(), Map.of());
-    check("current only: " + shape(items), shape(items).equals("T1 R2t C3t H0:3 S4t S5t S6t"));
+    // only the current page: no fold
+    items = CaptureSections.build(shown.subList(0, 6), x -> true, false, 3, 0, CaptureSections.Earlier.NONE, Map.of(), Map.of());
+    check("current only: " + shape(items), shape(items).equals("T1t T2t T3t H0:3 S4t S5t S6t"));
 
-    // under the Subtitle chip: compact rows lose the type label, keep the domain
-    items = CaptureSections.build(List.of(e(3,"text/vtt","s1",P), e(10,"text/vtt","s2",Q)),
-        x -> current.contains(x.getUid()), true, 0, 0, 1, Map.of(), Map.of());
-    check("subtitle chip: " + shape(items), shape(items).equals("C3 |1 C10d"));
+    // the limit cut the list before any earlier capture: the fold still ends it
+    items = CaptureSections.build(shown.subList(0, 2), x -> true, false, 3, 0, earlier(5, false, "firedown.app"), Map.of(), Map.of());
+    check("limit before the fold: " + shape(items), shape(items).equals("T1t T2t F5c"));
 
-    // the CC count lands on the video tile only, never on the audio-flagged mp4
+    // the CC count lands on the video only, never on the audio-flagged mp4
     BrowserDownloadEntity cm = e(11, "video/mp4", "m", P); cm.audio = true;
-    items = CaptureSections.build(List.of(e(1,"video/mp4","v1",P), cm), x -> true, false, 0, 0, 0, Map.of(), Map.of(P, 2));
-    check("cc on tile only: " + shape(items), shape(items).equals("T1c2 R11t"));
+    items = CaptureSections.build(List.of(e(1,"video/mp4","v1",P), cm), x -> true, false, 0, 0, CaptureSections.Earlier.NONE, Map.of(), Map.of(P, 2));
+    check("cc on video only: " + shape(items), shape(items).equals("T1tc2 T11t"));
+
+    // the fold's thumbnails: pictures first, anything else only to fill
+    List<BrowserDownloadEntity> early = List.of(e(3,"text/vtt","s",Q), e(8,"image/png","i",Q), e(7,"video/mp4","v",Q),
+        e(12,"application/zip","z",Q), e(9,"image/png","j",Q));
+    List<Integer> pv = new ArrayList<>(); for (BrowserDownloadEntity x : CaptureSections.preview(early)) pv.add(x.getUid());
+    check("preview pictures first: " + pv, pv.equals(List.of(8, 7, 9)));
+    pv.clear(); for (BrowserDownloadEntity x : CaptureSections.preview(List.of(e(3,"text/vtt","s",Q), e(12,"application/zip","z",Q)))) pv.add(x.getUid());
+    check("preview fills with the rest: " + pv, pv.equals(List.of(3, 12)));
+
+    // a filename is not a title: "Video on <site>" takes its place
+    for (String junk : new String[] { null, "", "src", "master.m3u8", "index.m3u8", "videoplayback",
+        "6aaaf5204d3859992c30a380.mp4", "720p.mp4", "IMG_20240101_1234.mp4" }) {
+      check("filename-like: " + junk, CaptureSections.isFilenameLike(junk));
+    }
+    for (String title : new String[] { "Northern Lights.mp4", "Coral_Reef.mp4", "coral-reef", "Interstellar",
+        "Ambient visuals for focus", "MyVideo.mp4", "Episode 12" }) {
+      check("a title: " + title, !CaptureSections.isFilenameLike(title));
+    }
 
     // marks by URL: stronger wins, FILE_NOT_FOUND is no mark
     Map<String,CaptureMark> byUrl = CaptureSections.marksByUrl(List.of(
@@ -139,22 +172,22 @@ public class CaptureHarness {
     // diff: a mark-only change is a payload; a presentation change is not
     CaptureItemDiffCallback diff = new CaptureItemDiffCallback();
     BrowserDownloadEntity x = e(30, "video/mp4", "v", P);
-    CaptureItem a0 = CaptureItem.row(x, 0, true, false, 0, null);
-    CaptureItem a1 = CaptureItem.row(x, 0, true, false, 0, prog);
-    CaptureItem a2 = CaptureItem.row(x, 0, false, false, 0, null);
+    CaptureItem a0 = CaptureItem.tile(x, 0, true, false, 0, null);
+    CaptureItem a1 = CaptureItem.tile(x, 0, true, false, 0, prog);
+    CaptureItem a2 = CaptureItem.tile(x, 0, false, false, 0, null);
     check("same item", diff.areItemsTheSame(a0, a1) && diff.areItemsTheSame(a0, a2));
     check("mark change differs", !diff.areContentsTheSame(a0, a1) && diff.getChangePayload(a0, a1) == CaptureItemDiffCallback.PAYLOAD_MARK);
     check("presentation change no payload", !diff.areContentsTheSame(a0, a2) && diff.getChangePayload(a0, a2) == null);
     check("headers by group", diff.areItemsTheSame(CaptureItem.header(0, 3), CaptureItem.header(0, 4))
         && !diff.areItemsTheSame(CaptureItem.header(0, 3), CaptureItem.header(1, 3))
         && !diff.areContentsTheSame(CaptureItem.header(0, 3), CaptureItem.header(0, 4)));
-    check("row vs square never same", !diff.areItemsTheSame(a0, CaptureItem.square(x, 0, true, null)));
-    check("row vs tile never same", !diff.areItemsTheSame(a0, CaptureItem.tile(x, 0, false, 0, null)));
-    CaptureItem t0 = CaptureItem.tile(x, 0, false, 1, null), t1 = CaptureItem.tile(x, 0, false, 1, prog);
-    check("tile mark change is a payload", diff.areItemsTheSame(t0, t1) && diff.getChangePayload(t0, t1) == CaptureItemDiffCallback.PAYLOAD_MARK);
-    check("divider same", diff.areContentsTheSame(CaptureItem.divider(3), CaptureItem.divider(3)));
-    check("divider count change rebinds", diff.areItemsTheSame(CaptureItem.divider(3), CaptureItem.divider(4))
-        && !diff.areContentsTheSame(CaptureItem.divider(3), CaptureItem.divider(4)));
+    check("tile vs square never same", !diff.areItemsTheSame(a0, CaptureItem.square(x, 0, true, null)));
+    CaptureItem f0 = CaptureItem.fold(3, false, List.of("a"), List.of(x)), f1 = CaptureItem.fold(3, true, List.of("a"), List.of(x));
+    check("fold same", diff.areContentsTheSame(f0, CaptureItem.fold(3, false, List.of("a"), List.of(x))));
+    check("fold open rebinds", diff.areItemsTheSame(f0, f1) && !diff.areContentsTheSame(f0, f1) && diff.getChangePayload(f0, f1) == null);
+    check("fold count, sites, preview rebind", !diff.areContentsTheSame(f0, CaptureItem.fold(4, false, List.of("a"), List.of(x)))
+        && !diff.areContentsTheSame(f0, CaptureItem.fold(3, false, List.of("a", "b"), List.of(x)))
+        && !diff.areContentsTheSame(f0, CaptureItem.fold(3, false, List.of("a"), List.of(e(31, "video/mp4", "w", P)))));
 
     System.out.println(pass + " passed, " + fail + " failed");
     if (fail > 0) System.exit(1);

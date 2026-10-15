@@ -67,9 +67,13 @@
         <item quantity="other">%d URLs copied</item>
     </plurals>
     <string name="capture_show_variants">Select quality</string>
-    <!-- Captured sheet (option A): the divider above earlier pages' captures,
-         the per-capture download status, and the batch card. -->
+    <!-- Captured sheet: the fold row that holds earlier pages' captures, the
+         per-capture download status, and the batch card. -->
     <string name="capture_earlier_in_tab">Earlier in this tab</string>
+    <!-- A tile's title when the capture's own name is a filename
+         ("src", "master.m3u8", a hash): the site it came from. -->
+    <string name="capture_video_on_site">Video on %1$s</string>
+    <string name="capture_audio_on_site">Audio on %1$s</string>
     <string name="capture_status_saved">Saved</string>
     <string name="capture_status_failed">Couldn\'t download</string>
     <string name="capture_status_downloading">Downloading · %1$d%%</string>

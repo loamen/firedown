@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Captured sheet's FOLD: the captures from the tab's earlier pages,
+  behind one row under the current page's (canvas "Captured Content sheet",
+  board G). Three stacked thumbnails of what is inside, "Earlier in this
+  tab", the count and the sites, and a chevron; a tap opens the captures in
+  place under it, in the same tiles and squares, and the chevron turns.
+
+  It replaced a divider: a full-width line and a TitleMedium heading over the
+  earlier captures, which on-device read as a seam in the list rather than as
+  a place, and put every earlier capture into the scroll whether the user
+  wanted them or not. Closed by default, so the sheet opens on the page the
+  user is looking at; the view model opens it itself when that page has
+  caught nothing yet.
+
+  A card on colorSurfaceContainerLow like the sheet's other surfaces. The
+  thumbnails' stroke is the card's own colour, which cuts each one out of the
+  one behind it. The expand / collapse action is announced through the
+  standard accessibility actions (the adapter sets them), so it needs no
+  strings of its own.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fold"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:minHeight="68dp"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="12dp">
+
+        <!-- Back to front: the first capture is drawn last, on top, at the
+             start. The adapter hides the slots it has no capture for and
+             narrows the frame to what is left. -->
+        <FrameLayout
+            android:id="@+id/fold_stack"
+            android:layout_width="68dp"
+            android:layout_height="42dp"
+            android:importantForAccessibility="noHideDescendants">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/fold_thumb_3"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="26dp"
+                android:padding="1dp"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/FoldThumbnail"
+                app:strokeColor="?attr/colorSurfaceContainerLow"
+                app:strokeWidth="2dp" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/fold_thumb_2"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="13dp"
+                android:padding="1dp"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/FoldThumbnail"
+                app:strokeColor="?attr/colorSurfaceContainerLow"
+                app:strokeWidth="2dp" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/fold_thumb_1"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:padding="1dp"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/FoldThumbnail"
+                app:strokeColor="?attr/colorSurfaceContainerLow"
+                app:strokeWidth="2dp" />
+
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/fold_title"
+                style="@style/TextAppearance.Material3.TitleMedium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/capture_earlier_in_tab"
+                android:textColor="?attr/colorOnSurface" />
+
+            <TextView
+                android:id="@+id/fold_subtitle"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="29 files · youtube.com, firedown.app" />
+
+        </LinearLayout>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/fold_chevron"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@null"
+            app:srcCompat="@drawable/keyboard_arrow_down_24" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
