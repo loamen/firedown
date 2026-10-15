@@ -1829,7 +1829,17 @@ id with no title reset. VisitTrace on-device: Instagram's "Continue on web"
 pushStates `/p/<code>` → `/p/<code>/?l=1`, which used to allocate visit 2
 and demote the video captured under visit 1 below the one thumbnail
 captured after; same class as a YouTube Mix appending `list=/index=`. A
-changed value (`watch?v=A` → `watch?v=B`) still moves the id. **The
+changed value (`watch?v=A` → `watch?v=B`) still moves the id, with ONE
+exception: a **list POSITION** (`POSITION_PARAMS`, today only `index`) may
+change while everything else refines, as long as another parameter still
+names the item on both sides. VisitTrace on-device (2026-10-15, a Mix opened
+fresh on m.youtube.com): the video was stamped under `watch?v=X&list=RDX&
+index=1`, the page rewrote itself to `…&index=2` on the same video ~300 ms
+later, that allocated visit 2, and the video sat behind "Earlier in this
+tab" under the thumbnails captured after. The guard keeps a position-only
+query (`viewer?index=1` → `?index=2`, where the position IS the item)
+moving as before, and `index` stays in the identity key, so the duplicate-
+tab sweep still tells two playlist positions apart. **The
 empty→non-empty case is bounded: a ONE-segment path gaining its first query
 is a hub→item navigation, not a refinement** (`facebook.com/watch/` →
 `/watch/?v=123`, `/photo/?fbid=`, `index.php?id=` — the query IS the item;
@@ -1839,6 +1849,14 @@ rule exists for both survive: Instagram's `/p/<code>` has two segments, the
 Mix has params on both sides (`pathSegments` in `GeckoState`). Diagnose with
 `adb logcat -s VisitTrace:*` — the `stamp` line's `pendingLoad=`, the
 `visit new/re-anchor/alias` line, and the `resolve … restamped=N` line.
+**Verify a visit-rule change with `sh scripts/visit-harness/run.sh`**: it
+splices the REAL `updateVisit` / `pageIdentityKey` / `isQueryRefinement`
+out of `GeckoState` (stubbed `android.net.Uri`, JDK + python3 only) and
+replays URL sequences: the Mix report, Mix entry from a plain watch page,
+autoplay to the next video, Back re-anchoring, the position-only viewer,
+another video or list at the same position, the Instagram `?l=1` and
+Facebook hub cases. 32 checks; a mutant with no position params fails 12,
+one without the item guard fails 2.
 
 ### History row ⋮ — the shared web-options sheet, not a bare delete
 

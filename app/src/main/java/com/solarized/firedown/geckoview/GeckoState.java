@@ -21,6 +21,7 @@ import org.mozilla.geckoview.TranslationsController;
 import org.mozilla.geckoview.WebResponse;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -141,6 +142,17 @@ public class GeckoState {
             "pp", "feature", "si", "t", "ab_channel", "fbclid", "gclid",
             "ref", "ref_src", "ref_url", "ref_source", "spm", "cmpid",
             "igshid", "gi", "context", "app", "embeds_referring_euri"));
+
+    /**
+     * Query parameters that carry a POSITION in a list the page belongs to,
+     * not the page itself: YouTube's {@code index=} in a playlist or Mix.
+     * Unlike {@link #NOISE_PARAMS} they stay in the identity key (two tabs
+     * at different playlist positions are not duplicates); they are only
+     * ignored by {@link #isQueryRefinement}, and only while another
+     * parameter still names the item. See {@link #withoutPosition}.
+     */
+    private static final Set<String> POSITION_PARAMS = new HashSet<>(
+            Collections.singletonList("index"));
 
     /**
      * Original index in {@link GeckoStateDataRepository#mGeckoStates}
@@ -741,10 +753,12 @@ public class GeckoState {
         // pushStates to `/p/<code>/?l=1`, which allocated a fresh visit id, so
         // the video captured under the first id trailed the one thumbnail
         // captured under the second. Same class: a YouTube Mix appending
-        // `&list=…&index=…`, a gallery opening a lightbox `?photo=…`. A
-        // CHANGED value (`watch?v=A` → `watch?v=B`) is a different page and
-        // still moves the id. Registering the alias keeps a later revisit of
-        // either spelling re-anchoring to this same id.
+        // `&list=…&index=…`, a gallery opening a lightbox `?photo=…`, and a
+        // Mix then moving `index=1` → `index=2` on the SAME video (a list
+        // position, see POSITION_PARAMS). A CHANGED value of anything else
+        // (`watch?v=A` → `watch?v=B`) is a different page and still moves
+        // the id. Registering the alias keeps a later revisit of either
+        // spelling re-anchoring to this same id.
         if (mCurrentPageKey != null && isQueryRefinement(mCurrentPageKey, key)) {
             mCurrentPageKey = key;
             mVisitIdByKey.put(key, mVisitId);
@@ -873,6 +887,19 @@ public class GeckoState {
      * query moves the visit. A heuristic, deliberately narrow on the
      * over-accept side: a wrongly moved visit costs a title reset Gecko
      * repairs on the next title event, a wrongly kept one mis-pins captures.
+     *
+     * <p>One relaxation on top: a {@link #POSITION_PARAMS} value may change
+     * while everything else refines. VisitTrace on-device (m.youtube.com, a
+     * Mix opened fresh): the video was captured under
+     * {@code watch?v=X&list=RDX&index=1}, a few hundred ms later the page
+     * rewrote itself to {@code …&index=2} on the same video, the changed
+     * value allocated visit 2, and the video the user was watching sat
+     * behind "Earlier in this tab" under the thumbnails captured after.
+     * Narrow on purpose: the relaxation applies only when, with the
+     * position stripped, BOTH sides still carry an identity parameter
+     * ({@code v=} here). Where the position is the only parameter
+     * ({@code viewer?index=1} → {@code ?index=2}) it IS the item, and the
+     * visit moves as before.
      */
     static boolean isQueryRefinement(String a, String b) {
         int qa = a.indexOf('?');
@@ -882,9 +909,21 @@ public class GeckoState {
         if (!baseA.equals(baseB)) return false;
         Map<String, String> pa = keyParams(qa < 0 ? "" : a.substring(qa + 1));
         Map<String, String> pb = keyParams(qb < 0 ? "" : b.substring(qb + 1));
+        if (refines(baseA, pa, pb)) return true;
+        Map<String, String> ia = withoutPosition(pa);
+        Map<String, String> ib = withoutPosition(pb);
+        if (ia.size() == pa.size() && ib.size() == pb.size()) return false;
+        if (ia.isEmpty() || ib.isEmpty()) return false;
+        return refines(baseA, ia, ib);
+    }
+
+    /** The subset test of {@link #isQueryRefinement} over parsed params of
+     *  two keys that share {@code base}, with its one-segment guard. */
+    private static boolean refines(String base, Map<String, String> pa,
+                                   Map<String, String> pb) {
         Map<String, String> small = pa.size() <= pb.size() ? pa : pb;
         Map<String, String> large = small == pa ? pb : pa;
-        if (small.isEmpty() && !large.isEmpty() && pathSegments(baseA) < 2) {
+        if (small.isEmpty() && !large.isEmpty() && pathSegments(base) < 2) {
             return false;
         }
         for (Map.Entry<String, String> e : small.entrySet()) {
@@ -892,6 +931,20 @@ public class GeckoState {
             if (v == null || !v.equals(e.getValue())) return false;
         }
         return true;
+    }
+
+    /** {@code params} minus {@link #POSITION_PARAMS} (matched
+     *  case-insensitively, like the noise list); the same map when it holds
+     *  none of them. */
+    private static Map<String, String> withoutPosition(Map<String, String> params) {
+        Map<String, String> out = null;
+        for (String name : params.keySet()) {
+            if (POSITION_PARAMS.contains(name.toLowerCase(Locale.ROOT))) {
+                if (out == null) out = new HashMap<>(params);
+                out.remove(name);
+            }
+        }
+        return out == null ? params : out;
     }
 
     /** Non-empty {@code /}-separated segments after the host of a base key
