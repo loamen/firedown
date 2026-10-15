@@ -1830,39 +1830,70 @@ history delete. Zero new strings: the row reuses
 `browser_menu_bookmark_this_page_2` and the `browser_bookmark_saved_toast`
 snackbar.
 
-### Captured sheet — rows for media, squares for images, marks from Downloads
+### Captured sheet — tiles for video, squares for images, marks from Downloads
 
 The sheet is ONE mixed list since the 2026-10 redesign (canvas "Captured
-Content sheet", option A): video, audio, subtitle and other captures are
-full-width ROWS; images (GIF and SVG included) are SQUARES,
-`capture_columns` to a line (3 on a phone), under an "Images N" header; and
-captures from earlier pages of the tab sit below an "Earlier in this tab"
-divider. The grid/list toggle, the 16:10 grid tile, the images-chip "dense
-mosaic" and `Preferences.SORT_LIST` are GONE: the layout follows each
-capture's type, not a mode.
+Content sheet", option A, then board F after the device test): videos are
+16:9 TILES, `capture_tile_columns` to a line (2 on a phone); images (GIF and
+SVG included) are SQUARES, `capture_columns` to a line (3), under an
+"Images N" header; subtitles are COMPACT rows; audio and other files are
+full-width ROWS; and captures from earlier pages of the tab sit below an
+"Earlier in this tab" divider. The grid's span count is the least common
+multiple of the two counts (6 on a phone), so both divide it; keep every
+qualifier's pair of integers in step. The grid/list toggle, the 16:10 grid
+tile, the images-chip "dense mosaic" and `Preferences.SORT_LIST` are GONE:
+the layout follows each capture's type, not a mode.
 
+- **Why videos are tiles, not rows (the device test, 2026-10).** A capture
+  from a player embedded in another page is often named `src`, `master` or a
+  hash (`6aaaf5204d3859992c30a380.mp4`); the frame is then the only thing
+  that says which video it is, and a 78×64 row thumbnail cropped it to its
+  middle. Boards E (16:9 thumbnails in rows) and F (tiles) were sketched;
+  the maintainer picked F. Its costs, accepted: a video with no poster and
+  no decodable frame (common for HLS) is a big placeholder tile rather than
+  a small one, a page with many videos is taller, and the sheet no longer
+  matches the Downloads list rows (it matches its grid). An audio capture in
+  a video container (the entity's audio flag, `audio/mpegurl`) stays a row
+  (`CaptureSections.isTile`): a tile would show it as a blank frame.
 - **The VIEW MODEL builds the items** (`CaptureSections.build` →
-  `CaptureItem`): the sections, the header counts, each item's type-label
-  and domain flags, the CC count and the download mark all ride inside the
-  items, so they land in ONE submit with the list they belong to. This
-  replaced the adapter-side presentation flags and the
+  `CaptureItem`): the sections, the header and divider counts, each item's
+  type-label and domain flags, the CC count and the download mark all ride
+  inside the items, so they land in ONE submit with the list they belong
+  to. This replaced the adapter-side presentation flags and the
   `submitWithPresentation` commit-callback dance (with its
   `mPresentationDirty`), which existed so a chip tap couldn't paint the old
   list in the new presentation; that bug class is now structurally gone.
   Don't put presentation state back on the adapter.
 - **Order inside each group**: video, audio, subtitle, other, then images
-  (`CaptureSections.typeRank`, for both groups now), then most recent first.
-  The images must be contiguous for the header. The header's count is the
-  whole group's BEFORE the list limit, so it doesn't climb 15 → 25 as the
-  user scrolls in more. Under a chip: no headers (the chip names the type)
-  and no type labels; the divider stays.
-- **A ROW** is a title plus ONE meta line built as a spannable:
-  `[status] · [TYPE] · facts · [domain]`. The status shows only when the
-  capture has a download mark, the type only while unfiltered, the domain
-  only on earlier-page rows (on the current page it is the address bar's).
-  While a download runs, its status ("Downloading · 42%", "Finishing…",
-  "Downloading…" for a live stream) replaces the type label, and a 3dp
-  progress line runs along the card's bottom edge.
+  (`CaptureSections.typeRank`, for both groups), then most recent first.
+  Rank 0 is exactly the tiles, so they stay one block and line up; the
+  images must be contiguous for the header. The header's and the divider's
+  counts are the whole group's BEFORE the list limit, so they don't climb
+  15 → 25 as the user scrolls in more. Under a chip: no headers (the chip
+  names the type) and no type labels; the divider stays.
+- **The page break outranks the type break.** "Earlier in this tab" is the
+  loudest heading in the list: a full-width line (the decoration gives the
+  divider no side inset), then TitleMedium in onSurface with the group's
+  count. "Images N" is a grey LabelLarge. It shipped the other way round (a
+  grey LabelLarge under an inset line, a white TitleSmall header) and the
+  page boundary read on-device as no break at all (board C).
+- **A TILE** is the picture (quality bottom-left and duration bottom-right
+  on it, the ⋮ of a multi-variant capture top-right with no scrim, the grid
+  rule) and under it the name in two lines and ONE status line:
+  `[status] · [CC n] · [domain]`, hidden when empty. No type label ever: the
+  shape says video. Selection is the picture card's 2dp stroke plus the
+  corner check; the root card is a transparent touch target.
+- **A ROW** (audio, other files) is a two-line title plus ONE meta line built
+  as a spannable: `[status] · [TYPE] · facts · [domain]`. The status shows
+  only when the capture has a download mark, the type only while
+  unfiltered, the domain only on earlier-page rows (on the current page it
+  is the address bar's). While a download runs, its status ("Downloading ·
+  42%", "Finishing…", "Downloading…" for a live stream) replaces the type
+  label, and a 3dp progress line runs along the card's bottom edge.
+- **A COMPACT row** (subtitles) is 56dp: the mime glyph in brandInk, the
+  track's LANGUAGE as the title when the parser named one, and the meta line
+  ending with the file's name (after the domain, so the ellipsis eats the
+  name) so two "English" tracks of two videos can still be told apart.
 - **A SQUARE** shows the dimensions bottom-left (led by GIF / SVG while
   unfiltered, and kept under a chip, the maintainer's call: it is the one
   fact a picture's thumbnail doesn't show) and the mark bottom-right.
@@ -1873,7 +1904,15 @@ capture's type, not a mode.
   `cloud_badge`). The canvas sketches drew black rounded pills behind the
   labels; that shape exists nowhere in the app and was not built. On the
   mime placeholder the scrim drops and FallbackInks take over (the
-  `applySquareGround` rule, as on every grid tile).
+  `applySquareGround` / `applyTileGround` rule, as on every grid tile).
+- **Transparent images sit on a checkerboard; small SVGs are icons.** A
+  loaded square gets `CheckerboardDrawable` (two mid greys, no night
+  variant: black icons read at 4.6:1 or better, white at 4.0:1) behind it,
+  set only once the picture is there so a loading square never flashes
+  checks. YouTube's player SVGs have no fill colour and drew black on the
+  dark tile. An SVG no larger than 96px a side, or of unknown size, is drawn
+  inside `capture_icon_inset` with fitCenter instead of stretched over the
+  square.
 - **Download marks**: `DownloadDao.getCaptureStatesLive(safe, origins)` (a
   projection, `@Transaction`) returns every download that came from the
   shown pages, and `CaptureSections` ties a download to a capture by URL:
@@ -1895,18 +1934,27 @@ capture's type, not a mode.
   and is now gone was deleted from Downloads and leaves the batch. It lives
   as long as the sheet.
 - **Spacing** is `CaptureSpacingDecoration`: 16dp gutter, 6dp between rows,
-  4dp between squares, and every square the same width
-  (`EqualSpacingItemDecoration` gives the edge columns less width).
+  8dp between tiles and 12dp under them, 4dp between squares, the divider
+  edge to edge, and every grid column the same width
+  (`EqualSpacingItemDecoration` gives the edge columns less width); the
+  column count comes from each item's own span size.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
-  `CaptureItemDiffCallback`; 27 checks; mutants on the mark ranking, the
-  divider and the `FILE_NOT_FOUND` exemption each fail it). On-device
-  unverified at write time.
+  `CaptureItemDiffCallback`; 36 checks; mutants on the mark ranking, the
+  divider and its count, the `FILE_NOT_FOUND` exemption and the
+  audio-stays-a-row rule each fail it). On-device unverified at write time.
+- Still open from the same device test, not part of board F: a filename-like
+  name ("src", a hash) could be shown as "Video on <domain>" with the same
+  test the catcher already has (`isFilenameLikeTitle` in `requests.js`), and
+  YouTube's caption request is captured a second time by the generic catcher
+  as a bare "timedtext" subtitle beside the parser's titled one
+  (`requests.js` classifies `youtube.com/api/timedtext` as a capture).
 
 ### Captured row action slot — the ⋮ only; Copy is multi-select; Share/Open DECIDED AGAINST
 
 The Captured row has ONE action slot (`BrowserOptionAdapter` +
-`BrowserOptionFragment.onItemClick`, same view id both ways) and it shows
+`BrowserOptionFragment.onItemClick`, same view id both ways; on a video tile
+it is the picture's top-end corner) and it shows
 ONLY the ⋮ of a multi-variant capture → the quality picker (whose toolbar
 carries NO actions — a Copy URL icon lived there and was REMOVED: it copied
 the root/page URL, never the highlighted tile, which on a "Download quality"
@@ -8357,7 +8405,7 @@ here:
   the NEW presentation first (on-device: the images mosaic collapsed to
   normal span-2 image tiles for a beat before the videos arrived). The
   Captured sheet now builds the presentation INTO its items in the view model
-  (see "Captured sheet — rows for media, squares for images"), so it lands
+  (see "Captured sheet — tiles for video, squares for images"), so it lands
   with the list by construction; Downloads defers
   to the paging load-state listener (`applyPendingPresentation` on refresh
   NotLoading). The rebind-on-change is still required either way: the differ

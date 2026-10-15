@@ -38,23 +38,44 @@ public final class CaptureSections {
     private CaptureSections() {
     }
 
-    /** An image capture renders as a square; everything else as a row. GIF
-     *  and SVG are images here, as in the chip rail. */
+    /** An image capture renders as a square. GIF and SVG are images here,
+     *  as in the chip rail. */
     public static boolean isSquare(@NonNull BrowserDownloadEntity e) {
         return FileUriHelper.isImage(e.getMimeType());
     }
 
+    /** A video renders as a tile (HLS/DASH manifests included: isVideo knows
+     *  their mime types). Not an audio capture in a video container (the
+     *  entity's audio flag, an m4a served as video/mp4) nor an audio
+     *  playlist (audio/mpegurl, which isVideo also accepts): those are rows,
+     *  and a tile would show them as a blank frame. */
+    public static boolean isTile(@NonNull BrowserDownloadEntity e) {
+        String mime = e.getMimeType();
+        return !isAudioCapture(e) && FileUriHelper.isVideo(mime);
+    }
+
+    private static boolean isAudioCapture(@NonNull BrowserDownloadEntity e) {
+        return e.isAudio() || FileUriHelper.isAudio(e.getMimeType());
+    }
+
+    /** A subtitle track renders as a compact row. */
+    public static boolean isCompact(@NonNull BrowserDownloadEntity e) {
+        return FileUriHelper.isSubtitle(e.getMimeType());
+    }
+
     /**
      * Order inside a group: the video first, then its audio, its subtitles,
-     * any other file, and the images last — the media rows are what a visit
-     * to the sheet is usually for, and the images sit as one block below them
-     * instead of interleaving. Used for BOTH groups since the redesign (it was
-     * the current page only, when every capture was the same tile).
+     * any other file, and the images last — the media are what a visit to the
+     * sheet is usually for, and the images sit as one block below them instead
+     * of interleaving. Rank 0 is exactly the tiles ({@link #isTile}), so they
+     * stay one block and line up two to a line. Used for BOTH groups since the
+     * redesign (it was the current page only, when every capture was the same
+     * tile).
      */
     public static int typeRank(@NonNull BrowserDownloadEntity e) {
         String mime = e.getMimeType();
-        if (FileUriHelper.isVideo(mime)) return 0;
-        if (e.isAudio() || FileUriHelper.isAudio(mime)) return 1;
+        if (isTile(e)) return 0;
+        if (isAudioCapture(e)) return 1;
         if (FileUriHelper.isSubtitle(mime)) return 2;
         if (FileUriHelper.isImage(mime)) return 4;
         return 3;
@@ -63,7 +84,8 @@ public final class CaptureSections {
     /**
      * The sheet's items for an already sorted and limited capture list: the
      * current page's captures, then a divider and the earlier ones; inside
-     * each group the rows, then an "Images N" header and the squares.
+     * each group the video tiles, the rows (audio, subtitles, other files),
+     * then an "Images N" header and the squares.
      *
      * @param shown          captures to show, sorted group-first then by
      *                       {@link #typeRank}, already cut to the list limit
@@ -74,6 +96,8 @@ public final class CaptureSections {
      *                       the header's count doesn't grow as the user
      *                       scrolls more in
      * @param earlierImages  the same for the earlier group
+     * @param earlierTotal   every capture of the earlier group before the
+     *                       limit: the divider's count
      * @param marks          download marks by capture uid
      * @param captionCounts  subtitle tracks per page origin, over the tab's
      *                       unfiltered captures (see {@link #captionCounts})
@@ -84,6 +108,7 @@ public final class CaptureSections {
                                           boolean filtered,
                                           int currentImages,
                                           int earlierImages,
+                                          int earlierTotal,
                                           @NonNull Map<Integer, CaptureMark> marks,
                                           @NonNull Map<String, Integer> captionCounts) {
         List<CaptureItem> out = new ArrayList<>(shown.size() + 3);
@@ -94,13 +119,18 @@ public final class CaptureSections {
             int g = isCurrent.test(e) ? CaptureItem.GROUP_CURRENT : CaptureItem.GROUP_EARLIER;
             if (g != group) {
                 if (group == CaptureItem.GROUP_CURRENT && g == CaptureItem.GROUP_EARLIER) {
-                    out.add(CaptureItem.divider());
+                    out.add(CaptureItem.divider(earlierTotal));
                 }
                 group = g;
                 headerAdded = false;
             }
             CaptureMark mark = marks.get(e.getUid());
-            if (isSquare(e)) {
+            boolean earlier = g == CaptureItem.GROUP_EARLIER;
+            if (isTile(e)) {
+                out.add(CaptureItem.tile(e, g, earlier, captionCountFor(e, captionCounts), mark));
+            } else if (isCompact(e)) {
+                out.add(CaptureItem.compact(e, g, !filtered, earlier, mark));
+            } else if (isSquare(e)) {
                 if (!filtered && !headerAdded) {
                     int count = g == CaptureItem.GROUP_CURRENT ? currentImages : earlierImages;
                     out.add(CaptureItem.header(g, count));
@@ -108,15 +138,15 @@ public final class CaptureSections {
                 }
                 out.add(CaptureItem.square(e, g, !filtered, mark));
             } else {
-                out.add(CaptureItem.row(e, g, !filtered,
-                        g == CaptureItem.GROUP_EARLIER, captionCountFor(e, captionCounts), mark));
+                out.add(CaptureItem.row(e, g, !filtered, earlier,
+                        captionCountFor(e, captionCounts), mark));
             }
         }
         return out;
     }
 
     /**
-     * Subtitle captures per page origin. The count lands on the VIDEO row of
+     * Subtitle captures per page origin. The count lands on the VIDEO tile of
      * that page only ({@link #captionCountFor}): captions belong to a video,
      * and every other capture of the page (thumbnail sprites, a player-logo
      * SVG, posters, the audio) shares the origin and would otherwise inherit
@@ -138,7 +168,7 @@ public final class CaptureSections {
 
     private static int captionCountFor(@NonNull BrowserDownloadEntity e,
                                        @NonNull Map<String, Integer> counts) {
-        if (!FileUriHelper.isVideo(e.getMimeType())) return 0;
+        if (!isTile(e)) return 0;
         String origin = e.getFileOrigin();
         if (TextUtils.isEmpty(origin)) return 0;
         Integer count = counts.get(origin);

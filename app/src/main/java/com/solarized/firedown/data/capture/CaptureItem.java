@@ -9,10 +9,13 @@ import java.util.Objects;
 
 /**
  * One row of the Captured sheet. The sheet is a mixed list since the 2026-10
- * redesign (canvas "Captured Content sheet", option A): media, subtitles and
- * other files are full-width ROWS, images are SQUARES three to a line under
- * an "Images N" HEADER, and captures from earlier pages of the tab sit below
- * an "Earlier in this tab" DIVIDER. The view model builds this list
+ * redesign (canvas "Captured Content sheet", option A, then board F after the
+ * device test): videos are 16:9 TILES two to a line (the picture leads, since
+ * an embedded player's capture is often named "src" or a hash), images are
+ * SQUARES three to a line under an "Images N" HEADER, subtitles are COMPACT
+ * rows, audio and other files are full-width ROWS, and captures from earlier
+ * pages of the tab sit below an "Earlier in this tab" DIVIDER. The view
+ * model builds this list
  * ({@link CaptureSections#build}) so the section structure, the per-item
  * presentation flags and the download marks land in ONE submit: a chip tap
  * can never paint the old list in the new presentation, which is the class
@@ -24,6 +27,8 @@ public final class CaptureItem {
     public static final int TYPE_SQUARE = 1;
     public static final int TYPE_HEADER = 2;
     public static final int TYPE_DIVIDER = 3;
+    public static final int TYPE_TILE = 4;
+    public static final int TYPE_COMPACT = 5;
 
     /** Captures from the page the tab shows now (or every capture, when the
      *  tab has no current page). */
@@ -41,7 +46,7 @@ public final class CaptureItem {
     /** End a row's facts with the capture's domain. Only on earlier-page
      *  rows: on the current page every capture shares the address bar's. */
     public final boolean showDomain;
-    /** A header's count. */
+    /** A header's count, or the divider's: the earlier group's captures. */
     public final int count;
     /** Subtitle tracks captured for this video's page ("CC 2"), counted over
      *  the tab's whole capture list so a chip that hides the subtitles doesn't
@@ -75,12 +80,27 @@ public final class CaptureItem {
         return new CaptureItem(TYPE_SQUARE, group, entity, showType, false, 0, 0, mark);
     }
 
+    /** A video. No type label ever: the tile's shape says video. */
+    public static CaptureItem tile(@NonNull BrowserDownloadEntity entity, int group,
+                                   boolean showDomain, int captionCount,
+                                   @Nullable CaptureMark mark) {
+        return new CaptureItem(TYPE_TILE, group, entity, false, showDomain, 0,
+                captionCount, mark);
+    }
+
+    /** A subtitle track: a short row named by its language. */
+    public static CaptureItem compact(@NonNull BrowserDownloadEntity entity, int group,
+                                      boolean showType, boolean showDomain,
+                                      @Nullable CaptureMark mark) {
+        return new CaptureItem(TYPE_COMPACT, group, entity, showType, showDomain, 0, 0, mark);
+    }
+
     public static CaptureItem header(int group, int count) {
         return new CaptureItem(TYPE_HEADER, group, null, false, false, count, 0, null);
     }
 
-    public static CaptureItem divider() {
-        return new CaptureItem(TYPE_DIVIDER, GROUP_EARLIER, null, false, false, 0, 0, null);
+    public static CaptureItem divider(int count) {
+        return new CaptureItem(TYPE_DIVIDER, GROUP_EARLIER, null, false, false, count, 0, null);
     }
 
     public boolean isCapture() {

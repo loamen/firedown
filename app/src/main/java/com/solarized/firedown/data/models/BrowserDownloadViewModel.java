@@ -162,8 +162,8 @@ public class BrowserDownloadViewModel extends ViewModel {
         final int visitId = snapshot.visitId;
         mItems.setValue(CaptureSections.build(snapshot.shown,
                 e -> isCurrentPage(e, visitId),
-                snapshot.filtered, snapshot.currentImages, snapshot.earlierImages, marks,
-                snapshot.captionCounts));
+                snapshot.filtered, snapshot.currentImages, snapshot.earlierImages,
+                snapshot.earlierTotal, marks, snapshot.captionCounts));
         updateBatchSummary();
     }
 
@@ -208,8 +208,9 @@ public class BrowserDownloadViewModel extends ViewModel {
         // the top (and never gets truncated by the limit). Order:
         //   1. captures from the page-visit you're on now, first
         //   2. within each group, by type: video, audio, subtitle, other,
-        //      images (CaptureSections.typeRank) — the images form one block
-        //      of squares under their header, after the media rows
+        //      images (CaptureSections.typeRank) — the videos form one block
+        //      of tiles at the top, the images one block of squares under
+        //      their header, after the rows
         //   3. then most-recent first (descending creationTime)
         // Step 1 is the session anchor. Within one tab the repo accumulates
         // captures across navigations; each is stamped with the navigation
@@ -238,11 +239,17 @@ public class BrowserDownloadViewModel extends ViewModel {
 
         // Header counts come from the whole group, before the limit cuts it,
         // so "Images 40" doesn't read 15, then 25, as the user scrolls more in.
+        // The same for the divider's "Earlier in this tab 12".
         int currentImages = 0;
         int earlierImages = 0;
+        int earlierTotal = 0;
         for (BrowserDownloadEntity e : all) {
+            boolean current = isCurrentPage(e, currentVisitId);
+            if (!current) {
+                earlierTotal++;
+            }
             if (CaptureSections.isSquare(e)) {
-                if (isCurrentPage(e, currentVisitId)) {
+                if (current) {
                     currentImages++;
                 } else {
                     earlierImages++;
@@ -256,7 +263,8 @@ public class BrowserDownloadViewModel extends ViewModel {
         boolean incognito = !shown.isEmpty() && shown.get(0).isIncognito();
         logVisitTrace(currentTabId, currentVisitId, shown);
         return new Snapshot(shown, currentVisitId, mSorting.isBrowserFiltered(),
-                currentImages, earlierImages, incognito, CaptureSections.captionCounts(tab));
+                currentImages, earlierImages, earlierTotal, incognito,
+                CaptureSections.captionCounts(tab));
     }
 
     /**
@@ -360,17 +368,19 @@ public class BrowserDownloadViewModel extends ViewModel {
         final boolean filtered;
         final int currentImages;
         final int earlierImages;
+        final int earlierTotal;
         final boolean incognito;
         final Map<String, Integer> captionCounts;
 
         Snapshot(List<BrowserDownloadEntity> shown, int visitId, boolean filtered,
-                 int currentImages, int earlierImages, boolean incognito,
+                 int currentImages, int earlierImages, int earlierTotal, boolean incognito,
                  Map<String, Integer> captionCounts) {
             this.shown = shown;
             this.visitId = visitId;
             this.filtered = filtered;
             this.currentImages = currentImages;
             this.earlierImages = earlierImages;
+            this.earlierTotal = earlierTotal;
             this.incognito = incognito;
             this.captionCounts = captionCounts;
         }

@@ -12,10 +12,15 @@
   reflows — and the selected state paints a tonal WASH on the card via
   the adapter, not a stroke border.
 
-  ONE meta line under the title (row_meta), built by the adapter as a single
-  spannable: "[status] · [TYPE] · facts · [domain]". It replaced a mime label,
-  a domain line and a tag row of five TextViews; one line keeps every row the
-  same height and lets the status lead the facts it describes.
+  Audio and other files only since board F: videos are tiles
+  (fragment_browser_options_tile), subtitles compact rows
+  (fragment_browser_options_compact).
+
+  The title takes two lines (a long title cut at one line lost the words
+  that told it apart), then ONE meta line (row_meta), built by the adapter as
+  a single spannable: "[status] · [TYPE] · facts · [domain]". Two lines of
+  title and one of meta still fit beside the 64dp thumbnail, so the row
+  doesn't grow.
 
   row_progress is the download's progress along the card's bottom edge,
   shown only while the capture is downloading (the meta line carries the
@@ -77,7 +82,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
-                android:singleLine="true"
+                android:maxLines="2"
                 android:textColor="?attr/colorOnSurface"
                 tools:text="Northern Lights" />
 
@@ -88,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:ellipsize="end"
-                android:maxLines="2"
+                android:maxLines="1"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="VIDEO · 720p · 0:08 · clips.example" />
 

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Captured sheet: image squares per line (rows always span the line). -->
+    <!-- Captured sheet: image squares per line, and video tiles per line
+         (rows always span the line). The grid's span count is their least
+         common multiple; keep every qualifier's pair in step. -->
     <integer name="capture_columns">3</integer>
+    <integer name="capture_tile_columns">2</integer>
     <integer name="image_grid_number">2</integer>
     <integer name="image_list_number">1</integer>
     <integer name="image_grid_dense_number">3</integer>

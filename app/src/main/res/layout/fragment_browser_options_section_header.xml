@@ -4,6 +4,11 @@
   under a chip the chip names the type). The count is the whole group's, not
   the rows loaded so far. Horizontal inset comes from CaptureSpacingDecoration
   so the label lines up with the cards' edge.
+
+  A LABEL, grey, on purpose: it splits types inside one page, so it must
+  rank below the "Earlier in this tab" divider, which splits pages. It
+  shipped as a white TitleSmall, louder than that divider, and the page
+  break disappeared on-device (canvas "Captured Content sheet", board C).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -11,20 +16,20 @@
     android:layout_height="wrap_content"
     android:baselineAligned="true"
     android:orientation="horizontal"
-    android:paddingTop="16dp"
+    android:paddingTop="12dp"
     android:paddingBottom="8dp">
 
     <TextView
         android:id="@+id/section_title"
-        style="@style/TextAppearance.Material3.TitleSmall"
+        style="@style/TextAppearance.Material3.LabelLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/sort_by_type_images"
-        android:textColor="?attr/colorOnSurface" />
+        android:textColor="?attr/colorOnSurfaceVariant" />
 
     <TextView
         android:id="@+id/section_count"
-        style="@style/TextAppearance.Material3.BodyMedium"
+        style="@style/TextAppearance.Material3.LabelLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="6dp"

@@ -1,6 +1,6 @@
 ## [1.2.02] - 2026-10-14
 
-- Captured content: one list instead of a grid/list switch. Videos, audio and subtitles are rows, images are squares under an "Images" header (with their size, and GIF marked), and captures from earlier pages of the tab sit under "Earlier in this tab". Each capture shows whether it is already saved, waiting, downloading (with its progress) or failed, and downloading several at once shows a card above the list counting them down ("Saved 3 of 20 · 4 downloading · 13 pending"); tap it to open Downloads
+- Captured content: one list instead of a grid/list switch. Videos are tiles two to a line with the picture first (quality and length on it, the name under it), so a video whose page gives it no real name is still recognisable; audio is a row, subtitles a short row named by language, and images are squares under an "Images" header (with their size, and GIF marked). Transparent images such as a site's icons sit on a checkerboard and small icons are drawn at their own size instead of stretched. Captures from earlier pages of the tab sit under a clear "Earlier in this tab" heading with their count. Each capture shows whether it is already saved, waiting, downloading (with its progress) or failed, and downloading several at once shows a card above the list counting them down ("Saved 3 of 20 · 4 downloading · 13 pending"); tap it to open Downloads
 
 ## [1.2.01] - 2026-10-12
 

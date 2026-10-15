@@ -3,4 +3,5 @@
     <integer name="image_grid_number">4</integer>
     <integer name="image_grid_dense_number">6</integer>
     <integer name="capture_columns">5</integer>
+    <integer name="capture_tile_columns">3</integer>
 </resources>

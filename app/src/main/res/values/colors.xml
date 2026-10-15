@@ -328,6 +328,13 @@
          TransferVH lesson). If the wash alpha or primaryContainer ever move,
          re-measure these inks — they are bound to that derivation. -->
     <color name="mime_fallback_glyph">@color/brand_ink</color>
+    <!-- The checkerboard behind a Captured-sheet square, seen only where the
+         image is transparent (SVG icons, logos). Mid grey in BOTH themes, no
+         night variant: a page's icon may be black or white, and on these two
+         greys both read (black 4.6:1 at worst, white 4.0:1). The YouTube player icons
+         drew black on the dark tile and vanished (device, 2026-10). -->
+    <color name="capture_checker_light">#7E7F85</color>
+    <color name="capture_checker_dark">#74757B</color>
     <color name="mime_fallback_title">@color/md_theme_onSurface</color>
     <color name="mime_fallback_meta">@color/md_theme_onSurfaceVariant</color>
     <color name="mime_fallback_label">@color/md_theme_onSurface</color>

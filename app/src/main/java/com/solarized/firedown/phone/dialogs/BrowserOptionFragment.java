@@ -56,6 +56,7 @@ import com.solarized.firedown.Preferences;
 import com.solarized.firedown.R;
 import com.solarized.firedown.Sorting;
 import com.solarized.firedown.data.capture.CaptureItem;
+import com.solarized.firedown.data.capture.CaptureSections;
 import com.solarized.firedown.data.capture.CaptureSections.BatchSummary;
 import com.solarized.firedown.data.entity.BrowserDownloadEntity;
 import com.solarized.firedown.data.entity.OptionEntity;
@@ -205,11 +206,15 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         });
 
         mRecyclerView = mLCEERecyclerView.getRecyclerView();
-        // One grid for the whole mixed list: image squares take one column,
-        // everything else (rows, the Images header, the divider) the full
-        // line. There is no list/grid toggle any more — the layout follows the
-        // capture's type instead (see CaptureItem).
-        int columns = getResources().getInteger(R.integer.capture_columns);
+        // One grid for the whole mixed list: video tiles two to a line, image
+        // squares three (on a phone), everything else (rows, the Images
+        // header, the divider) the full line. The span count is the least
+        // common multiple of the two, so both divide it. There is no
+        // list/grid toggle — the layout follows the capture's type instead
+        // (see CaptureItem).
+        int squareColumns = getResources().getInteger(R.integer.capture_columns);
+        int tileColumns = getResources().getInteger(R.integer.capture_tile_columns);
+        int columns = leastCommonMultiple(squareColumns, tileColumns);
         mLayoutManager = new GridLayoutManager(requireContext(), columns);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
@@ -220,7 +225,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
-                return mAdapter != null ? mAdapter.spanSize(position, columns) : columns;
+                return mAdapter != null
+                        ? mAdapter.spanSize(position, columns, squareColumns, tileColumns)
+                        : columns;
             }
         });
         mRecyclerView.setAdapter(mAdapter);
@@ -251,9 +258,10 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             // gone by the time the user scrolls back up — leaving a brief
             // empty frame plus a disk/network round-trip on rebind. Preload
             // 8 items ahead of the scroll direction so the cache stays
-            // warm for the rows about to enter the viewport. ROWS only: the
-            // preload size is the row thumbnail's, and a square requested at
-            // that size would warm a cache entry its bind never asks for.
+            // warm for the rows and video tiles about to enter the viewport
+            // (both decode at the fixed browser-thumb size, so the preload and
+            // the bind share a key). Not the squares: an SVG or GIF square
+            // loads through a different branch with no fixed size.
             RequestManager glide = Glide.with(this);
 
             RecyclerViewPreloader<BrowserDownloadEntity> preloader = new RecyclerViewPreloader<>(
@@ -263,7 +271,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                         @Override
                         public List<BrowserDownloadEntity> getPreloadItems(int position) {
                             CaptureItem item = mAdapter != null ? mAdapter.getItemAt(position) : null;
-                            if (item == null || item.type != CaptureItem.TYPE_ROW || item.entity == null) {
+                            if (item == null || item.entity == null
+                                    || (item.type != CaptureItem.TYPE_ROW
+                                    && item.type != CaptureItem.TYPE_TILE)) {
                                 return Collections.emptyList();
                             }
                             return Collections.singletonList(item.entity);
@@ -276,7 +286,8 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                             // The adapter's own options, so the preload-warmed
                             // bitmap and the bind-time request share a key.
                             return GlideHelper.preloadBrowser(glide, entity,
-                                    mAdapter.optionsFor(entity, false));
+                                    mAdapter.optionsFor(entity, CaptureSections.isTile(entity)
+                                            ? CaptureItem.TYPE_TILE : CaptureItem.TYPE_ROW));
                         }
                     },
                     new FixedPreloadSizeProvider<>(
@@ -848,5 +859,19 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         if (entity != null) {
             handlePrimaryItemClick(entity);
         }
+    }
+
+    /** The grid's span count for two per-line counts: both must divide it. */
+    private static int leastCommonMultiple(int a, int b) {
+        int x = Math.max(1, a);
+        int y = Math.max(1, b);
+        int p = x;
+        int q = y;
+        while (q != 0) {
+            int t = p % q;
+            p = q;
+            q = t;
+        }
+        return x / p * y;
     }
 }
