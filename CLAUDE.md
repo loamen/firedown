@@ -2755,6 +2755,30 @@ tasks, not hand edits:
   release step, since a pushed status.json pointing at a missing APK is an
   update every user taps into a 404.
 
+### CHANGELOG entries — short, important changes only (HARD RULE)
+
+Every bullet ships verbatim as the in-app "What's new" (`releaseStatus` →
+`status.json`) and as the release notes, read on a phone. So:
+
+- **One short sentence per bullet: about 15 words, never more than 25.**
+  What changed for the user, in plain words. Not how, not why, not what it
+  used to do.
+- **Only changes a user would notice and care about**: a new feature, a fix
+  for something they could hit, a removal. Refactors, tests, harnesses,
+  docs, logging, renames and small visual polish get NO bullet. Related
+  fixes share one bullet.
+- **No theater**: no root causes, no history ("used to", "instead of"), no
+  reassurances, no lists of examples or screens, no parentheticals, no
+  class or file names.
+- The explanation belongs in the commit message and in this file, never in
+  the changelog.
+
+Wrong (1.2.02's first draft, 150 words in one bullet): "Captured content:
+one list instead of a grid/list switch, laid out like Downloads. Videos,
+audio, subtitles and files use the same tiles as the Downloads grid…".
+Right: "Captured content: redesigned to match Downloads, with earlier pages
+folded into one row".
+
 ## Logging discipline
 
 **Every log statement — Java and JavaScript — must be gated behind the debug
