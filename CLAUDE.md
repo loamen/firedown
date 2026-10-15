@@ -1426,7 +1426,16 @@ is byte-identical to the pre-picker behavior. The picker strings
 picker-sheet family (`quality_section_title`/`captions_section_title` are
 untranslated too — translating only the new section would mix languages in
 one sheet). Captions use the
-separate `timedtext` path. **YouTube LIVE is the exception: HLS, not SABR** —
+separate `timedtext` path: `emitYouTubeCaptions` emits every track (the
+video's title, the language, `-auto` for ASR). The PLAYER's own caption
+fetch (`youtube.com/api/timedtext`, an `application/json` body) is
+parser-block-listed under the `youtube` key: the catcher used to classify it
+as a `timedtext` capture of its own (a special case in `classifyXhr`, now
+gone — JSON is never a capture), and its URL never equals the parser's (the
+player adds its own `pot`/client params), so every captioned video showed a
+bare "timedtext" subtitle beside the parser's track in the Captured sheet.
+Pinned by the smoke's `youtube:` and `decide:` checks, which fail on the old
+catcher. **YouTube LIVE is the exception: HLS, not SABR** —
 `isLive` → the `hlsManifestUrl` (n-param-transformed), emitted as
 **`type:"hls-master"`, NOT `type:"media"`**. This matters: `type:"media"` →
 `UrlType.MEDIA` runs the capture-time ffmpeg probe, which on a LIVE stream opens
@@ -1977,9 +1986,18 @@ type, not a mode.
   screenshot: exactly the other column's insets). RecyclerView caches an
   item's insets until the item is REBOUND, and a capture inserted above
   shifts every item after it into the other column without a rebind. Don't
-  reintroduce column-dependent offsets here (and `EqualSpacingItemDecoration`,
-  which Downloads uses, computes its edges from the span index the same
-  way).
+  reintroduce column-dependent offsets here. Downloads had the same bug
+  (`EqualSpacingItemDecoration` computes each item's edges from its
+  position and span index) and now uses that class's
+  `attachUniform`: half the spacing on every item, the other half on the
+  RecyclerView's padding (on top of the padding it had, remembered on the
+  view so the grid/list switch's re-attach doesn't pile it up). The other
+  screens on that class (Bookmarks, History, the tab archive, the tab grid,
+  Backups, Storage review, Licenses) still use the per-position mode; a
+  grid among them that inserts items (the tab grid, the Backups grid) can
+  show the same stale edge, and moving one over means checking its own
+  inset listener doesn't overwrite the padding (the tab grid's and Storage
+  review's set the RecyclerView's padding outright).
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
   `CaptureItemDiffCallback`; 55 checks; mutants that ignore the fold's open
@@ -1987,10 +2005,9 @@ type, not a mode.
   skip pictures-first in the preview, drop the fold when the limit cuts
   first, or count an audio-flagged mp4 as a video each fail it). On-device
   unverified at write time.
-- Still open from the device tests: YouTube's caption request is captured a
-  second time by the generic catcher as a bare "timedtext" subtitle beside
-  the parser's titled one (`requests.js` classifies
-  `youtube.com/api/timedtext` as a capture).
+- The bare "timedtext" subtitle that sat beside YouTube's titled caption
+  tracks was the generic catcher capturing the player's own caption fetch;
+  it is parser-block-listed now (see the YouTube section).
 
 ### Captured row action slot — the ⋮ only; Copy is multi-select; Share/Open DECIDED AGAINST
 

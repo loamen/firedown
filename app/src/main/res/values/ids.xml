@@ -5,6 +5,10 @@
          this id; the tile is now the Downloads grid layout, whose ⋮ is
          item_download_action, so the id lives here. -->
     <item name="item_download_more" type="id" />
+    <!-- EqualSpacingItemDecoration.attachUniform: the RecyclerView's own
+         padding before the spacing was added, so a re-attach on every
+         grid/list switch doesn't pile padding up. -->
+    <item name="equal_spacing_base_padding" type="id" />
     <item name="settings_explicit_accept" type="id" />
     <item name="settings_explicit_decline" type="id" />
     <item name="popup_select_all" type="id" />

@@ -161,8 +161,18 @@ const PARSER_BLOCKLIST = {
   // capture before classify, so no probe. (The youtube@ parser separately emits
   // the master as type:"hls-master" → native enumerates the master text only, no
   // probe — these two together close both probe sources for live.)
+  //
+  // CAPTIONS: the parser emits every caption track itself (emitYouTubeCaptions,
+  // type "timedtext", named after the video with its language), so the
+  // player's own caption fetch — youtube.com/api/timedtext, on www. or m. — is
+  // parser-owned too. The catcher used to classify that fetch (an
+  // application/json body) as a timedtext capture of its own, and its URL never
+  // equals the parser's (the player adds its own pot/client params), so every
+  // captioned video showed a bare "timedtext" subtitle beside the parser's
+  // "English (auto)" one in the Captured sheet.
   youtube: [
     'googlevideo\\.com\\/',
+    'youtube\\.com\\/api\\/timedtext',
   ],
 
   // Telegram (t.me) — the parser reads the post page's <video>/og:video and

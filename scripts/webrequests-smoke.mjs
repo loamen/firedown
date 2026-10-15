@@ -543,6 +543,16 @@ expect(matchInParserBlocklist("https://p.scdn.co/mp3-preview/894b272aa0422aeebe8
 expect(!matchInParserBlocklist("https://i.scdn.co/image/ab67616d0000b273cover.jpg"),
   "spotify: scdn image is NOT block-listed");
 
+// YouTube's caption fetch is parser-owned: the youtube@ parser emits every
+// track itself, and the catcher's own capture of the player's request (a URL
+// the parser's never equals) was a bare "timedtext" duplicate in the sheet.
+expect(matchInParserBlocklist("https://www.youtube.com/api/timedtext?v=abc&lang=en&fmt=json3")
+    && matchInParserBlocklist("https://m.youtube.com/api/timedtext?v=abc&kind=asr&lang=en&pot=x"),
+  "youtube: caption fetch (www. and m.) is parser-block-listed");
+expect(!matchInParserBlocklist("https://m.youtube.com/watch?v=abc")
+    && !matchInParserBlocklist("https://i.ytimg.com/vi/abc/hqdefault.jpg"),
+  "youtube: the watch page and its thumbnails are NOT block-listed");
+
 // ---------------------------------------------------------------------------
 // classifyByUrl decision table (the generic catcher's admission test).
 //
@@ -1566,6 +1576,10 @@ expect(!matchInParserBlocklist("https://e-cdns-images.dzcdn.net/images/cover/x/5
     expect(r.action === "reject" && r.reason === "classify", "decide: a non-media response fails classification");
     r = decide(wire("d-pb", "https://video.twimg.com/ext_tw_video/1/pu/vid/720x1280/abc.mp4"));
     expect(r.action === "reject" && r.reason === "classify", "decide: a parser-block-listed URL fails classification");
+    r = decide(wire("d-tt", "https://m.youtube.com/api/timedtext?v=abc&lang=en&fmt=json3&pot=xyz",
+      { type: "xmlhttprequest", documentUrl: "https://m.youtube.com/watch?v=abc", originUrl: "https://m.youtube.com/watch?v=abc",
+        responseHeaders: ct("application/json; charset=UTF-8", 5000) }));
+    expect(r.action === "reject", "decide: YouTube's own caption fetch is rejected (the parser emits the tracks)");
     r = decide(wire("d-302", "https://media.example/clips/moved.mp4", { statusCode: 302, responseHeaders: [{ name: "location", value: "https://cdn.example/moved.mp4" }, ...ct("video/mp4", 0)] }));
     expect(r.action === "reject" && r.reason === "redirect", "decide: a redirect hop is rejected");
     expect(!__requestRecord("d-302")?.emittedUrl, "decide: a rejected response never claims the chain");

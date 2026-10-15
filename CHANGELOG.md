@@ -1,6 +1,8 @@
 ## [1.2.02] - 2026-10-14
 
 - Captured content: one list instead of a grid/list switch, laid out like Downloads. Videos, audio, subtitles and files use the same tiles as the Downloads grid (the name and "VIDEO · 2:01 · CC 1" over the picture), so a video and its subtitle sit side by side; a video whose page gives it no real name ("src", a long code) is called "Video on" its site instead. Images are squares under an "Images" header (with their size, and GIF marked); transparent images such as a site's icons sit on a checkerboard and small icons are drawn at their own size instead of stretched. Captures from earlier pages of the tab are folded into one row at the end, "Earlier in this tab", with a preview of what is inside; tap it to open them in place. Each capture shows whether it is already saved, waiting, downloading (with its progress) or failed, and downloading several at once shows a card above the list counting them down ("Saved 3 of 20 · 4 downloading · 13 pending"); tap it to open Downloads
+- Downloads grid: tiles no longer slide against the screen edge, with a double gap on the other side, when a new download appears above them
+- Captured content: a YouTube video's captions are no longer listed twice (a bare "timedtext" beside the titled track)
 
 ## [1.2.01] - 2026-10-12
 

@@ -12,6 +12,23 @@ import androidx.recyclerview.widget.OrientationHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.solarized.firedown.R;
+
+/**
+ * {@code spacing} around and between the items of a list or grid: half of it
+ * on each side of every item, the full amount at the list's edges.
+ *
+ * <p>Two ways to get the edges. The default constructors work them out per
+ * item from its position and span index (first row, first column, last
+ * column…). That goes STALE in a grid whose items move: RecyclerView caches
+ * an item's offsets until the item is rebound, and an insert above moves
+ * every later item to another column (and the old first row down) through
+ * an insert, not a rebind, so those items keep the old edge's offsets — a
+ * tile flush with the screen on one side and a double gap on the other.
+ * {@link #attachUniform} gives every item the same half on all four sides
+ * and puts the other half on the RecyclerView's own padding, so nothing
+ * depends on where an item sits and nothing can go stale. Same geometry.
+ */
 public class EqualSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     private static final int VERTICAL = OrientationHelper.VERTICAL;
@@ -20,23 +37,63 @@ public class EqualSpacingItemDecoration extends RecyclerView.ItemDecoration {
     private int spanCount = -1;
     private final int spacing;
     private final int halfSpacing;
+    /** {@link #attachUniform}'s mode: half the spacing on every side of every
+     *  item, no edge logic (the padding is the edge). */
+    private final boolean uniform;
 
     public EqualSpacingItemDecoration(Context context, @DimenRes int spacingDimen) {
-
-        spacing = context.getResources().getDimensionPixelSize(spacingDimen);
-        halfSpacing = spacing / 2;
+        this(context.getResources().getDimensionPixelSize(spacingDimen), false);
     }
 
     public EqualSpacingItemDecoration(int spacingPx) {
+        this(spacingPx, false);
+    }
+
+    private EqualSpacingItemDecoration(int spacingPx, boolean uniform) {
 
         spacing = spacingPx;
         halfSpacing = spacing / 2;
+        this.uniform = uniform;
+    }
+
+    /**
+     * Adds the decoration in its position-independent mode and pads the
+     * RecyclerView by the rest of the spacing on all four sides, on top of
+     * whatever padding the view had the first time (remembered on the view,
+     * so a list that re-attaches on every grid/list switch doesn't pile
+     * padding up). The caller removes any previous decoration first, as
+     * before. The list needs clipToPadding off to scroll through the top and
+     * bottom padding, as the LCEE recycler has.
+     */
+    public static void attachUniform(@NonNull RecyclerView recyclerView, int spacingPx) {
+        int[] base;
+        Object tag = recyclerView.getTag(R.id.equal_spacing_base_padding);
+        if (tag instanceof int[] stored) {
+            base = stored;
+        } else {
+            base = new int[] {
+                    recyclerView.getPaddingStart(), recyclerView.getPaddingTop(),
+                    recyclerView.getPaddingEnd(), recyclerView.getPaddingBottom()
+            };
+            recyclerView.setTag(R.id.equal_spacing_base_padding, base);
+        }
+        int edge = spacingPx - spacingPx / 2;
+        recyclerView.setPaddingRelative(base[0] + edge, base[1] + edge,
+                base[2] + edge, base[3] + edge);
+        // The scrollbar stays on the view's edge, outside the new padding.
+        recyclerView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
+        recyclerView.addItemDecoration(new EqualSpacingItemDecoration(spacingPx, true));
     }
 
     @Override
     public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
 
         super.getItemOffsets(outRect, view, parent, state);
+
+        if (uniform) {
+            outRect.set(halfSpacing, halfSpacing, halfSpacing, halfSpacing);
+            return;
+        }
 
         // Re-read BOTH from the live LayoutManager on every pass — never
         // cache them across layouts. The old once-only cache

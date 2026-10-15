@@ -60,7 +60,6 @@ let lastActiveTabId = -1;
 
 // Pre-compiled regex patterns
 const PATTERNS = {
-  youtubeTimedText: /^https?:\/\/[^/]*youtube\.com\/api\/timedtext/,
   rtveCdn: /^https?:\/\/[^/]*rtve[^/]*\.mpd/,
   subtitle: /^https?:\/\/[^/]+\/[^?#]*\.(?:vtt|srt)(?:[?#]|$)/i,
   html: /^https?:\/\/[^/]+\/[^?#]*\.(?:html?|aspx|css|js)(?:[?#]|$)/i,
@@ -654,11 +653,11 @@ function classifyXhr(data, headers) {
     return classifyByUrl(data);
   }
 
+  // JSON is never a capture. (YouTube's caption fetch used to be the one
+  // exception, classified as a "timedtext" capture here; the youtube@ parser
+  // emits every caption track itself, so that URL is parser-block-listed now
+  // and never reaches this table.)
   if (lowerCT.includes('application/json')) {
-    if (PATTERNS.youtubeTimedText.test(data.url)) {
-      data.type = 'timedtext';
-      return true;
-    }
     return false;
   }
 

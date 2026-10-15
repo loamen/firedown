@@ -1144,12 +1144,18 @@ public abstract class BaseDownloadFragment extends BaseFocusFragment {
         // spacing). With the card margins removed, list items lost their
         // gutter; switching the list to EqualSpacingItemDecoration too
         // restores it without re-adding per-row layout margins.
+        //
+        // attachUniform, not the per-position edges: a download inserted
+        // above shifts every grid tile after it into the other column
+        // without a rebind, and per-position offsets stayed the old
+        // column's (a tile flush with the screen edge) — the Captured
+        // sheet's bug, seen there first. Same geometry, nothing to go stale.
         int spacing = getResources().getDimensionPixelSize(R.dimen.list_spacing);
         while (mRecyclerView.getItemDecorationCount() > 0) {
             mRecyclerView.removeItemDecorationAt(0);
         }
 
-        mRecyclerView.addItemDecoration(new EqualSpacingItemDecoration(spacing));
+        EqualSpacingItemDecoration.attachUniform(mRecyclerView, spacing);
 
         // 3. Update Adapter state
         adapter.enableGrid(isGrid);
