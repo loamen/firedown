@@ -822,4 +822,12 @@
         <item quantity="one">%d неуспешно</item>
         <item quantity="other">%d неуспешни</item>
     </plurals>
+
+    <string name="player_subtitles">Субтитри</string>
+    <string name="player_subtitles_off">Изключени</string>
+    <string name="player_subtitles_in_video">Във видеото</string>
+    <string name="player_subtitles_add">Добавяне на файл със субтитри</string>
+    <string name="player_subtitles_track">Пътечка %1$d</string>
+    <string name="player_subtitles_unsupported">Този файл не е субтитри, които плейърът може да покаже</string>
+    <string name="player_subtitles_added">Субтитрите са добавени</string>
 </resources>

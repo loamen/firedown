@@ -984,4 +984,12 @@
     <plurals name="capture_batch_failed">
         <item quantity="other">%d 个失败</item>
     </plurals>
+
+    <string name="player_subtitles">字幕</string>
+    <string name="player_subtitles_off">关闭</string>
+    <string name="player_subtitles_in_video">视频内置</string>
+    <string name="player_subtitles_add">添加字幕文件</string>
+    <string name="player_subtitles_track">轨道 %1$d</string>
+    <string name="player_subtitles_unsupported">此文件不是播放器可以显示的字幕</string>
+    <string name="player_subtitles_added">已添加字幕</string>
 </resources>

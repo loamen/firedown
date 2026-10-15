@@ -12,6 +12,13 @@
         app:iconTint="?attr/colorControlNormal"
         app:showAsAction="ifRoom" />
     <item
+        android:id="@+id/action_subtitles"
+        android:title="@string/player_subtitles"
+        android:icon="@drawable/subtitles_24"
+        android:visible="false"
+        app:iconTint="?attr/colorControlNormal"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_share"
         android:title="@string/share"
         android:icon="@drawable/ic_share_24"

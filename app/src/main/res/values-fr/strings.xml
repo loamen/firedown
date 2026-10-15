@@ -995,4 +995,12 @@
         <item quantity="one">%d échec</item>
         <item quantity="other">%d échecs</item>
     </plurals>
+
+    <string name="player_subtitles">Sous-titres</string>
+    <string name="player_subtitles_off">Désactivés</string>
+    <string name="player_subtitles_in_video">Dans la vidéo</string>
+    <string name="player_subtitles_add">Ajouter un fichier de sous-titres</string>
+    <string name="player_subtitles_track">Piste %1$d</string>
+    <string name="player_subtitles_unsupported">Ce fichier n\'est pas un sous-titre que le lecteur peut afficher</string>
+    <string name="player_subtitles_added">Sous-titres ajoutés</string>
 </resources>

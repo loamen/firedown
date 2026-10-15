@@ -140,6 +140,10 @@ public class Preferences {
      *  of {@link #SYNC_BANNER_DISMISSED}, which does the same for the Bookmarks
      *  list's sync banner. */
     public static final String CLOUD_BACKUP_BANNER_DISMISSED = "com.solarized.firedown.preferences.cloud.backup.banner.dismissed";
+    /** False once the user picked "Off" in the player's Subtitles sheet: a
+     *  downloaded subtitle then no longer shows by itself (it stays one tap
+     *  away in the sheet). Picking a track turns it back on. Default true. */
+    public static final String PLAYER_SUBTITLES_ON = "com.solarized.firedown.preferences.player.subtitles.on";
     /** CACHE, not a setting: the last successfully-read total bytes held in the
      *  backup folder (-1 = unknown). The in-memory {@code lastStatus()} snapshot
      *  dies with the process; this survives it so the Backup hero's

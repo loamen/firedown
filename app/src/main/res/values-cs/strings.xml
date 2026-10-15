@@ -889,4 +889,12 @@
         <item quantity="many">%d se nezdařilo</item>
         <item quantity="other">%d se nezdařilo</item>
     </plurals>
+
+    <string name="player_subtitles">Titulky</string>
+    <string name="player_subtitles_off">Vypnuto</string>
+    <string name="player_subtitles_in_video">Ve videu</string>
+    <string name="player_subtitles_add">Přidat soubor s titulky</string>
+    <string name="player_subtitles_track">Stopa %1$d</string>
+    <string name="player_subtitles_unsupported">Tento soubor nejsou titulky, které přehrávač umí zobrazit</string>
+    <string name="player_subtitles_added">Titulky přidány</string>
 </resources>

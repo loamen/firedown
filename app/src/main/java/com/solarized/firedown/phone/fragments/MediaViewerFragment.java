@@ -1,9 +1,13 @@
 package com.solarized.firedown.phone.fragments;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -14,7 +18,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
+import android.os.Environment;
 import android.os.SystemClock;
+import android.provider.DocumentsContract;
+import android.provider.OpenableColumns;
+import android.text.TextUtils;
 import android.transition.Transition;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -25,6 +33,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
@@ -35,21 +45,26 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Lifecycle;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
+import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
+import androidx.media3.common.TrackSelectionOverride;
+import androidx.media3.common.TrackSelectionParameters;
+import androidx.media3.common.Tracks;
 import androidx.media3.common.VideoSize;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.datasource.DataSource;
 import androidx.media3.datasource.DefaultDataSource;
-import androidx.media3.datasource.FileDataSource;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.SeekParameters;
 import androidx.media3.exoplayer.mediacodec.MediaCodecRenderer;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
-import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.extractor.DefaultExtractorsFactory;
 import androidx.media3.extractor.ExtractorsFactory;
 import androidx.media3.ui.AspectRatioFrameLayout;
@@ -67,10 +82,17 @@ import com.google.android.material.snackbar.Snackbar;
 import com.solarized.firedown.App;
 import com.solarized.firedown.BuildConfig;
 import com.solarized.firedown.GlideRequestOptions;
+import com.solarized.firedown.Preferences;
+import com.solarized.firedown.data.Download;
+import com.solarized.firedown.data.di.RepositoryEntryPoint;
+import com.solarized.firedown.data.repository.DownloadDataRepository;
+import com.solarized.firedown.manager.UrlType;
+import com.solarized.firedown.phone.dialogs.SubtitleSheetDialogFragment;
 import com.solarized.firedown.glide.MimeTypeThumbnail;
 import com.solarized.firedown.phone.PlayerActivity;
 import com.solarized.firedown.phone.player.PlaybackDebugInfo;
 import com.solarized.firedown.phone.player.PlaybackHub;
+import com.solarized.firedown.phone.player.PlayerSubtitles;
 import com.solarized.firedown.ui.AspectRatioImageView;
 import com.solarized.firedown.R;
 import com.solarized.firedown.data.RestoredFileAccess;
@@ -82,10 +104,21 @@ import com.solarized.firedown.Keys;
 import com.solarized.firedown.utils.FragmentArgs;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-public class MediaViewerFragment extends Fragment {
+import dagger.hilt.android.EntryPointAccessors;
+
+public class MediaViewerFragment extends Fragment implements SubtitleSheetDialogFragment.Host {
 
     private static final String TAG = MediaViewerFragment.class.getSimpleName();
 
@@ -176,6 +209,60 @@ public class MediaViewerFragment extends Fragment {
     private final Handler mScrubHandler = new Handler(Looper.getMainLooper());
     private final Runnable mScrubPreviewTask = this::flushScrubPreview;
 
+    // ── Subtitles (main thread only) ─────────────────────────────────
+    /**
+     * Prefix of a side-loaded subtitle's id: the rest is its file name,
+     * which the Subtitles sheet shows under the language. Read back from
+     * the track's Format, so an ADOPTED player's sheet still has it.
+     */
+    private static final String SUBTITLE_ID_PREFIX = "fdsub:";
+
+    /**
+     * The media item's mime. Any non-adaptive mime pins
+     * DefaultMediaSourceFactory to the progressive source; without one it
+     * guesses from the uri, and a content:// uri or an odd extension is
+     * not something to guess about.
+     */
+    private static final String PROGRESSIVE_MIME = "application/octet-stream";
+
+    /** A subtitle file larger than this is refused (they are kilobytes). */
+    private static final long MAX_SUBTITLE_BYTES = 8L * 1024 * 1024;
+
+    private static final SecureRandom ID_RANDOM = new SecureRandom();
+
+    private final Handler mMainHandler = new Handler(Looper.getMainLooper());
+
+    @Nullable
+    private DownloadDataRepository mDownloadRepository;
+
+    @Nullable
+    private SharedPreferences mSharedPreferences;
+
+    /** The video's openable uri and data source, kept to rebuild the media. */
+    private Uri mPlayUri;
+    private DataSource.Factory mDataSourceFactory;
+
+    /** Bumped per subtitle lookup: a slower, older lookup never lands. */
+    private int mSubtitleLoadGen;
+
+    /** Id of a subtitle the user just added: selected once its track exists. */
+    @Nullable
+    private String mPendingSubtitleId;
+
+    /** Whether to resume playback after the file picker closes. */
+    private boolean mResumeAfterPick;
+
+    /**
+     * "Add a subtitle file". A list of mimes, not one: providers disagree on
+     * what a .srt is (application/x-subrip, text/plain, octet-stream), so a
+     * single type would hide the very file the user is looking for. A picker
+     * that ignores the list just shows everything; the import checks the
+     * file either way.
+     */
+    private final ActivityResultLauncher<String[]> mPickSubtitle =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(),
+                    this::onSubtitlePicked);
+
     /**
      * A field (not an inline anonymous listener) so it can be REMOVED
      * without releasing the player — background playback can outlive this
@@ -223,6 +310,14 @@ public class MediaViewerFragment extends Fragment {
         @Override
         public void onRenderedFirstFrame() {
             if (mPhotoView != null) mPhotoView.setVisibility(View.GONE);
+        }
+
+        /** Selects a subtitle the user just added, once its track exists. */
+        @Override
+        public void onTracksChanged(@NonNull Tracks tracks) {
+            if (mPendingSubtitleId != null) {
+                selectPendingSubtitle(tracks);
+            }
         }
 
         /**
@@ -336,6 +431,13 @@ public class MediaViewerFragment extends Fragment {
         }
 
         mAvoidTransition = mDownloadEntity.isFileEncrypted() || mDownloadEntity.isFileSafe();
+
+        // The activity is not a Hilt entry point, so the fragment can't be
+        // one either; the singletons come through the app's entry point.
+        RepositoryEntryPoint entryPoint = EntryPointAccessors.fromApplication(
+                App.getAppContext(), RepositoryEntryPoint.class);
+        mDownloadRepository = entryPoint.getDownloadDataRepository();
+        mSharedPreferences = entryPoint.getSharedPreferences();
 
         if (!mAvoidTransition) {
             addTransitionListener();
@@ -675,34 +777,39 @@ public class MediaViewerFragment extends Fragment {
         // device and the mojibake path in the log was the tell; a '#' would
         // truncate the path as a fragment marker the same way). fromFile()
         // ENCODES the path, so getPath() round-trips it verbatim.
-        DataSource.Factory dataSourceFactory = new FileDataSource.Factory();
         Uri playUri = Uri.fromFile(new File(mDownloadEntity.getFilePath()));
 
         // A foreign-owned RESTORED file can't be opened by path (EACCES). When
-        // it resolves to the persisted SAF content:// grant, play THAT through
-        // a DefaultDataSource (which speaks content://). Scoped to non-vault
-        // entries so encrypted/safe playback is byte-identical to before.
+        // it resolves to the persisted SAF content:// grant, play THAT. Scoped
+        // to non-vault entries so encrypted/safe playback reads the path as
+        // it always did.
         if (!mDownloadEntity.isFileEncrypted() && !mDownloadEntity.isFileSafe()) {
             Uri openable = RestoredFileAccess.openableUri(mActivity, mDownloadEntity.getFilePath());
             if (openable != null && "content".equals(openable.getScheme())) {
                 playUri = openable;
-                // App context for the same reason as the Builder above —
-                // the factory rides inside the media source, inside the
-                // player, inside the static hub.
-                dataSourceFactory = new DefaultDataSource.Factory(App.getAppContext());
             }
         }
+        mPlayUri = playUri;
+        // DefaultDataSource for every file: it reads a file:// uri through
+        // the same FileDataSource the player always used, and also speaks
+        // content://, which a subtitle file may need even when the video
+        // doesn't (a restored subtitle next to an owned video). App context
+        // for the same reason as the Builder above — the factory rides
+        // inside the media source, inside the player, inside the static hub.
+        mDataSourceFactory = new DefaultDataSource.Factory(App.getAppContext());
 
         if (!adopting) {
-            ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
-                    .setConstantBitrateSeekingEnabled(true)
-                    .setConstantBitrateSeekingAlwaysEnabled(true);
-
-            MediaItem mediaItem = MediaItem.fromUri(playUri);
-
-            MediaSource videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory, extractorsFactory).createMediaSource(mediaItem);
-
-            mExoPlayer.setMediaSource(videoSource);
+            // A video waits for its subtitle lookup (one bounded query, a few
+            // ms) so the player is prepared ONCE, with them; preparing first
+            // and adding them after would restart the extractor under the
+            // first frame. The lookup sets the media and prepares; onStart
+            // prepares too if it lands first. Audio carries no subtitles.
+            applySubtitlePreference();
+            if (FileUriHelper.isAudio(mimeType)) {
+                setMediaWithSubtitles(Collections.emptyList(), C.TIME_UNSET, null, false);
+            } else {
+                loadMediaWithSubtitles(C.TIME_UNSET, null, false);
+            }
         }
 
         // Pre-set PlayerView's inner AspectRatioFrameLayout from the
@@ -721,10 +828,6 @@ public class MediaViewerFragment extends Fragment {
         // is silently undone. setPlayWhenReady() below hasn't started
         // decoding yet, so the aspect set here is in place for the first
         // frame. (Verified against media3 1.10.1 PlayerView source.)
-        if (!adopting) {
-            mExoPlayer.prepare();
-        }
-
         mPlayerView.setPlayer(mExoPlayer);
 
         if (!FileUriHelper.isAudio(mimeType)) {
@@ -795,7 +898,10 @@ public class MediaViewerFragment extends Fragment {
         // without starting playback the user had paused. Without this the
         // returning activity showed a dead player (the pre-background-
         // playback bug: nothing ever re-prepared after onStop).
-        if (mExoPlayer != null && mExoPlayer.getPlaybackState() == Player.STATE_IDLE) {
+        // A player still waiting for its first media (the subtitle lookup
+        // hasn't landed) is left alone: the lookup prepares it.
+        if (mExoPlayer != null && mExoPlayer.getPlaybackState() == Player.STATE_IDLE
+                && mExoPlayer.getMediaItemCount() > 0) {
             mExoPlayer.prepare();
         }
     }
@@ -873,6 +979,670 @@ public class MediaViewerFragment extends Fragment {
         if (mExoPlayer == null) return;
         if (mExoPlayer.isPlaying()) mExoPlayer.pause();
         else mExoPlayer.play();
+    }
+
+    // ── Subtitles ────────────────────────────────────────────────────
+
+    /**
+     * The mimes the "Add a subtitle file" picker asks for (see
+     * {@link #mPickSubtitle}).
+     */
+    private static final String[] SUBTITLE_PICK_MIMES = {
+            "application/x-subrip", "text/*", "application/octet-stream",
+            "application/ttml+xml", "application/xml"
+    };
+
+    /**
+     * Honours "Off" from an earlier session: a downloaded subtitle still
+     * attaches (one tap away in the sheet) but no longer shows by itself.
+     * Only the DEFAULT flag is ignored, which is how this player marks the
+     * subtitle it would show; forced subtitles and the system caption
+     * settings are left to the track selector as always.
+     */
+    private void applySubtitlePreference() {
+        boolean on = mSharedPreferences == null
+                || mSharedPreferences.getBoolean(Preferences.PLAYER_SUBTITLES_ON, true);
+        mExoPlayer.setTrackSelectionParameters(mExoPlayer.getTrackSelectionParameters()
+                .buildUpon()
+                .setIgnoredTextSelectionFlags(on ? 0 : C.SELECTION_FLAG_DEFAULT)
+                .build());
+    }
+
+    /**
+     * Finds the video's subtitles on a worker thread, then hands the player
+     * the video with them. {@code positionMs} is where to continue
+     * (C.TIME_UNSET = from the start); {@code selectId} a subtitle to select
+     * once its track exists; {@code resume} plays when the media is set. A
+     * lookup overtaken by a newer one, or landing after this fragment let go
+     * of the player, does nothing.
+     */
+    private void loadMediaWithSubtitles(long positionMs, @Nullable String selectId,
+                                        boolean resume) {
+        final int gen = ++mSubtitleLoadGen;
+        final ExoPlayer player = mExoPlayer;
+        final DownloadEntity video = mDownloadEntity;
+        final DownloadDataRepository repository = mDownloadRepository;
+        final Context context = App.getAppContext();
+        new Thread(() -> {
+            List<MediaItem.SubtitleConfiguration> subtitles =
+                    findSubtitles(context, repository, video);
+            mMainHandler.post(() -> {
+                if (gen != mSubtitleLoadGen || player == null || player != mExoPlayer) {
+                    return;
+                }
+                setMediaWithSubtitles(subtitles, positionMs, selectId, resume);
+            });
+        }, "subtitle-lookup").start();
+    }
+
+    /**
+     * Sets the video, with {@code subtitles} side-loaded, as the player's
+     * media. DefaultMediaSourceFactory parses each subtitle file during
+     * extraction (its default; the legacy in-renderer decoding is off in this
+     * media3) and merges it with the video. Prepares only while the fragment
+     * is started — a lookup landing after onStop must not start playback in
+     * the background; onStart prepares then.
+     */
+    private void setMediaWithSubtitles(List<MediaItem.SubtitleConfiguration> subtitles,
+                                       long positionMs, @Nullable String selectId,
+                                       boolean resume) {
+        ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory()
+                .setConstantBitrateSeekingEnabled(true)
+                .setConstantBitrateSeekingAlwaysEnabled(true);
+        MediaItem mediaItem = new MediaItem.Builder()
+                .setUri(mPlayUri)
+                .setMimeType(PROGRESSIVE_MIME)
+                .setSubtitleConfigurations(subtitles)
+                .build();
+        MediaSource source = new DefaultMediaSourceFactory(mDataSourceFactory, extractorsFactory)
+                .createMediaSource(mediaItem);
+        if (selectId != null) {
+            mPendingSubtitleId = selectId;
+        }
+        if (positionMs == C.TIME_UNSET) {
+            mExoPlayer.setMediaSource(source);
+        } else {
+            mExoPlayer.setMediaSource(source, positionMs);
+        }
+        if (mExoPlayer.getPlaybackState() == Player.STATE_IDLE
+                && getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+            mExoPlayer.prepare();
+        }
+        if (resume) {
+            mExoPlayer.setPlayWhenReady(true);
+        }
+    }
+
+    /** One subtitle file found for the video, before it becomes a config. */
+    private static final class FoundSubtitle {
+        final DownloadEntity row;
+        final String sampleMime;
+        final Uri uri;
+        @Nullable
+        final String tag;
+        final String label;
+
+        FoundSubtitle(DownloadEntity row, String sampleMime, Uri uri,
+                      @Nullable String tag, String label) {
+            this.row = row;
+            this.sampleMime = sampleMime;
+            this.uri = uri;
+            this.tag = tag;
+            this.label = label;
+        }
+    }
+
+    /**
+     * The video's downloaded subtitles as side-loaded configurations: every
+     * subtitle file from the video's page or linked to it whose file is still
+     * there, sorted by name, with the one {@link PlayerSubtitles#pickDefault}
+     * chooses flagged DEFAULT (it shows by itself). Worker thread only.
+     */
+    private static List<MediaItem.SubtitleConfiguration> findSubtitles(
+            Context context, @Nullable DownloadDataRepository repository,
+            DownloadEntity video) {
+        List<MediaItem.SubtitleConfiguration> configs = new ArrayList<>();
+        if (repository == null || video.isFileEncrypted()) {
+            return configs;
+        }
+        List<DownloadEntity> rows;
+        try {
+            rows = repository.findPlayerCompanionsSync(video.isFileSafe(), video.getId(),
+                    video.getOriginUrl());
+        } catch (RuntimeException e) {
+            logSubtitle("lookup failed", e);
+            return configs;
+        }
+        String origin = video.getOriginUrl();
+        Locale locale = Locale.getDefault();
+        int otherVideos = 0;
+        List<FoundSubtitle> found = new ArrayList<>();
+        for (DownloadEntity row : rows) {
+            if (row.isFileEncrypted()) {
+                continue;
+            }
+            String storedMime = row.getFileMimeType();
+            if (FileUriHelper.isVideo(storedMime)) {
+                if (!TextUtils.isEmpty(origin) && origin.equals(row.getOriginUrl())) {
+                    otherVideos++;
+                }
+                continue;
+            }
+            String sampleMime = PlayerSubtitles.mimeFor(row.getFileName(), storedMime);
+            if (sampleMime == null) {
+                continue;
+            }
+            Uri uri = RestoredFileAccess.openableUri(context, row.getFilePath());
+            if (uri == null) {
+                continue; // the file is gone
+            }
+            String tag = PlayerSubtitles.languageTag(row.getFileName());
+            String label = row.getFileLanguage();
+            if (TextUtils.isEmpty(label)) {
+                label = PlayerSubtitles.displayLanguage(tag, locale);
+            }
+            if (TextUtils.isEmpty(label)) {
+                label = row.getFileName();
+            }
+            found.add(new FoundSubtitle(row, sampleMime, uri, tag, label));
+        }
+        found.sort((a, b) -> String.CASE_INSENSITIVE_ORDER.compare(a.label, b.label));
+        List<PlayerSubtitles.Candidate> candidates = new ArrayList<>();
+        for (FoundSubtitle subtitle : found) {
+            candidates.add(new PlayerSubtitles.Candidate(subtitle.row.getFileName(), subtitle.tag,
+                    subtitle.row.getParentId() == video.getId()));
+        }
+        int preferred = PlayerSubtitles.pickDefault(candidates, video.getFileName(), otherVideos,
+                locale.getLanguage());
+        for (int i = 0; i < found.size(); i++) {
+            FoundSubtitle subtitle = found.get(i);
+            configs.add(new MediaItem.SubtitleConfiguration.Builder(subtitle.uri)
+                    .setMimeType(subtitle.sampleMime)
+                    .setLanguage(PlayerSubtitles.languageOf(subtitle.tag))
+                    .setLabel(subtitle.label)
+                    .setId(SUBTITLE_ID_PREFIX + subtitle.row.getFileName())
+                    .setSelectionFlags(i == preferred ? C.SELECTION_FLAG_DEFAULT : 0)
+                    .build());
+        }
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "subtitles: " + configs.size() + " attached, default=" + preferred
+                    + ", other videos from the page=" + otherVideos);
+        }
+        return configs;
+    }
+
+    /** A subtitle track the player can show, as the sheet lists them. */
+    private static final class TextTrack {
+        final Tracks.Group group;
+        final int index;
+
+        TextTrack(Tracks.Group group, int index) {
+            this.group = group;
+            this.index = index;
+        }
+    }
+
+    private List<TextTrack> textTracks() {
+        List<TextTrack> tracks = new ArrayList<>();
+        if (mExoPlayer == null) {
+            return tracks;
+        }
+        for (Tracks.Group group : mExoPlayer.getCurrentTracks().getGroups()) {
+            if (group.getType() != C.TRACK_TYPE_TEXT) {
+                continue;
+            }
+            for (int i = 0; i < group.length; i++) {
+                if (group.isTrackSupported(i)) {
+                    tracks.add(new TextTrack(group, i));
+                }
+            }
+        }
+        return tracks;
+    }
+
+    /** The file name a side-loaded subtitle's track id carries, or null. */
+    @Nullable
+    private static String subtitleFileName(@Nullable String trackId) {
+        if (trackId == null) {
+            return null;
+        }
+        int at = trackId.indexOf(SUBTITLE_ID_PREFIX);
+        return at < 0 ? null : trackId.substring(at + SUBTITLE_ID_PREFIX.length());
+    }
+
+    /**
+     * Shows one track ({@code group} non-null) or none, and remembers which:
+     * "Off" keeps downloaded subtitles from showing by themselves on the next
+     * video too, picking a track turns that back on.
+     */
+    private void selectTextTrack(@Nullable Tracks.Group group, int trackIndex) {
+        if (mExoPlayer == null) {
+            return;
+        }
+        boolean on = group != null;
+        TrackSelectionParameters.Builder builder = mExoPlayer.getTrackSelectionParameters()
+                .buildUpon()
+                .clearOverridesOfType(C.TRACK_TYPE_TEXT);
+        if (on) {
+            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
+                    .setIgnoredTextSelectionFlags(0)
+                    .setOverrideForType(new TrackSelectionOverride(
+                            group.getMediaTrackGroup(), trackIndex));
+        } else {
+            builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true);
+        }
+        mExoPlayer.setTrackSelectionParameters(builder.build());
+        if (mSharedPreferences != null) {
+            mSharedPreferences.edit().putBoolean(Preferences.PLAYER_SUBTITLES_ON, on).apply();
+        }
+    }
+
+    private void selectPendingSubtitle(Tracks tracks) {
+        for (Tracks.Group group : tracks.getGroups()) {
+            if (group.getType() != C.TRACK_TYPE_TEXT) {
+                continue;
+            }
+            for (int i = 0; i < group.length; i++) {
+                Format format = group.getTrackFormat(i);
+                if (format.id != null && format.id.endsWith(mPendingSubtitleId)
+                        && group.isTrackSupported(i)) {
+                    mPendingSubtitleId = null;
+                    selectTextTrack(group, i);
+                    return;
+                }
+            }
+        }
+    }
+
+    /** The player's Subtitles button (PlayerActivity's toolbar). */
+    public void showSubtitleSheet() {
+        if (!isAdded() || mExoPlayer == null) {
+            return;
+        }
+        FragmentManager fragmentManager = getChildFragmentManager();
+        if (fragmentManager.isStateSaved()
+                || fragmentManager.findFragmentByTag(SubtitleSheetDialogFragment.TAG) != null) {
+            return;
+        }
+        new SubtitleSheetDialogFragment().show(fragmentManager, SubtitleSheetDialogFragment.TAG);
+    }
+
+    /** Closes the sheet — entering PiP leaves no room for it. */
+    public void dismissSubtitleSheet() {
+        if (!isAdded()) {
+            return;
+        }
+        Fragment sheet = getChildFragmentManager()
+                .findFragmentByTag(SubtitleSheetDialogFragment.TAG);
+        if (sheet instanceof SubtitleSheetDialogFragment) {
+            ((SubtitleSheetDialogFragment) sheet).dismissAllowingStateLoss();
+        }
+    }
+
+    @Override
+    public List<SubtitleSheetDialogFragment.Option> getSubtitleOptions() {
+        List<SubtitleSheetDialogFragment.Option> trackOptions = new ArrayList<>();
+        List<TextTrack> tracks = textTracks();
+        Locale locale = Locale.getDefault();
+        boolean anySelected = false;
+        for (int n = 0; n < tracks.size(); n++) {
+            TextTrack track = tracks.get(n);
+            Format format = track.group.getTrackFormat(track.index);
+            String label = !TextUtils.isEmpty(format.label)
+                    ? format.label
+                    : PlayerSubtitles.displayLanguage(format.language, locale);
+            if (TextUtils.isEmpty(label)) {
+                label = getString(R.string.player_subtitles_track, n + 1);
+            }
+            String file = subtitleFileName(format.id);
+            String detail = file != null ? file : getString(R.string.player_subtitles_in_video);
+            boolean selected = track.group.isTrackSelected(track.index);
+            anySelected |= selected;
+            trackOptions.add(new SubtitleSheetDialogFragment.Option(label, detail, selected, n));
+        }
+        List<SubtitleSheetDialogFragment.Option> options = new ArrayList<>();
+        options.add(new SubtitleSheetDialogFragment.Option(
+                getString(R.string.player_subtitles_off), null, !anySelected, -1));
+        options.addAll(trackOptions);
+        return options;
+    }
+
+    @Override
+    public void onSubtitleChosen(int index) {
+        if (index < 0) {
+            selectTextTrack(null, 0);
+            return;
+        }
+        List<TextTrack> tracks = textTracks();
+        if (index < tracks.size()) {
+            TextTrack track = tracks.get(index);
+            selectTextTrack(track.group, track.index);
+        }
+    }
+
+    @Override
+    public boolean canAddSubtitles() {
+        // A file opened from outside (an ACTION_VIEW with no Downloads row)
+        // has no id to link an added subtitle to, and the vault's encrypted
+        // files have no path a subtitle could sit beside.
+        return mDownloadEntity != null && mDownloadEntity.getId() != 0
+                && !mDownloadEntity.isFileEncrypted();
+    }
+
+    @Override
+    public void onAddSubtitleRequested() {
+        if (mExoPlayer == null) {
+            return;
+        }
+        // Paused first: the picker covers the player, and a PLAYING player
+        // reads that as leaving — PlayerActivity enters PiP on the leave hint
+        // and arms background playback on onStop. Resumed when it closes.
+        mResumeAfterPick = mExoPlayer.getPlayWhenReady()
+                && mExoPlayer.getPlaybackState() != Player.STATE_ENDED;
+        mExoPlayer.pause();
+        try {
+            mPickSubtitle.launch(SUBTITLE_PICK_MIMES);
+        } catch (ActivityNotFoundException e) {
+            resumeAfterPick();
+            showSubtitleMessage(R.string.error_unknown);
+        }
+    }
+
+    private void resumeAfterPick() {
+        if (mResumeAfterPick && mExoPlayer != null) {
+            mExoPlayer.play();
+        }
+        mResumeAfterPick = false;
+    }
+
+    private void showSubtitleMessage(int message) {
+        if (mPlayerView != null && isAdded()) {
+            Snackbar.make(mPlayerView, message, Snackbar.LENGTH_SHORT).show();
+        }
+    }
+
+    private void onSubtitlePicked(@Nullable Uri uri) {
+        if (uri == null || mExoPlayer == null || mDownloadRepository == null) {
+            resumeAfterPick();
+            return;
+        }
+        final ExoPlayer player = mExoPlayer;
+        final DownloadEntity video = mDownloadEntity;
+        final DownloadDataRepository repository = mDownloadRepository;
+        final Context context = App.getAppContext();
+        new Thread(() -> {
+            ImportResult result = importSubtitle(context, repository, uri, video);
+            mMainHandler.post(() -> {
+                if (player != mExoPlayer) {
+                    return;
+                }
+                if (result.fileName == null) {
+                    resumeAfterPick();
+                    showSubtitleMessage(result.unsupported
+                            ? R.string.player_subtitles_unsupported : R.string.error_unknown);
+                    return;
+                }
+                boolean resume = mResumeAfterPick;
+                mResumeAfterPick = false;
+                loadMediaWithSubtitles(mExoPlayer.getCurrentPosition(),
+                        SUBTITLE_ID_PREFIX + result.fileName, resume);
+                showSubtitleMessage(R.string.player_subtitles_added);
+            });
+        }, "subtitle-import").start();
+    }
+
+    /** What "Add a subtitle file" made of the picked file. */
+    private static final class ImportResult {
+        /** The subtitle's name in Downloads, or null when it failed. */
+        @Nullable
+        final String fileName;
+        /** Failed because the file is no subtitle the player can show. */
+        final boolean unsupported;
+
+        ImportResult(@Nullable String fileName, boolean unsupported) {
+            this.fileName = fileName;
+            this.unsupported = unsupported;
+        }
+    }
+
+    /**
+     * Makes a picked file one of the video's subtitles, on a worker thread.
+     * A file that is already a download (a subtitle saved from another page)
+     * is LINKED to the video; anything else is copied next to the video as
+     * "<video name> [lang].srt" and added to Downloads, linked, so it comes
+     * back the next time the video plays and can be deleted like any file.
+     * Returns once the row is written, so the reload that follows finds it.
+     */
+    private static ImportResult importSubtitle(Context context, DownloadDataRepository repository,
+                                               Uri uri, DownloadEntity video) {
+        ContentResolver resolver = context.getContentResolver();
+        String displayName = displayNameOf(resolver, uri);
+        String providerMime = null;
+        try {
+            providerMime = resolver.getType(uri);
+        } catch (RuntimeException e) {
+            logSubtitle("type", e);
+        }
+        String sampleMime = PlayerSubtitles.mimeFor(displayName, providerMime);
+        if (sampleMime == null) {
+            sampleMime = sniffSubtitle(resolver, uri);
+        }
+        if (sampleMime == null) {
+            return new ImportResult(null, true);
+        }
+
+        File picked = fileOfDocument(uri);
+        if (picked != null) {
+            DownloadEntity existing = repository.findByFilePath(picked.getAbsolutePath());
+            if (existing != null && existing.getId() != video.getId()
+                    && existing.isFileSafe() == video.isFileSafe()
+                    && existing.getFileStatus() == Download.FINISHED) {
+                CountDownLatch written = new CountDownLatch(1);
+                repository.setParentId(existing.getId(), video.getId(), written::countDown);
+                awaitWrite(written);
+                return new ImportResult(existing.getFileName(), false);
+            }
+        }
+
+        File videoFile = new File(video.getFilePath());
+        File dir = videoFile.getParentFile();
+        if (dir == null) {
+            return new ImportResult(null, false);
+        }
+        String tag = PlayerSubtitles.languageTag(displayName);
+        String stem = withoutExtension(video.getFileName());
+        if (TextUtils.isEmpty(stem)) {
+            stem = withoutExtension(videoFile.getName());
+        }
+        String tagSuffix = tag != null ? " [" + tag + "]" : "";
+        File target = freeSubtitleFile(dir, stem, tagSuffix,
+                PlayerSubtitles.extensionFor(sampleMime), repository);
+        if (target == null) {
+            return new ImportResult(null, false);
+        }
+        long size = copyCapped(resolver, uri, target);
+        if (size <= 0) {
+            return new ImportResult(null, false);
+        }
+
+        String path = target.getAbsolutePath();
+        String origin = video.getOriginUrl();
+        DownloadEntity entity = new DownloadEntity();
+        entity.setId(newRowId(repository));
+        entity.setFileType(UrlType.FILE.getValue());
+        // file_url is the file itself: the page URL belongs to the video's own
+        // capture, and Captured ties a download to a capture by URL. The
+        // origin is the video's, so the row reads "SUBTITLE · its site".
+        entity.setFileUrl(Uri.fromFile(target).toString());
+        entity.setFileOriginUrl(origin != null ? origin : "");
+        entity.setFileName(target.getName());
+        entity.setFileImg(path);
+        entity.setFilePath(path);
+        entity.setFileMimeType(PlayerSubtitles.storedMimeFor(sampleMime));
+        entity.setFileLanguage(PlayerSubtitles.displayLanguage(tag, Locale.getDefault()));
+        entity.setFileProgress(100);
+        entity.setFileDate(System.currentTimeMillis());
+        entity.setFileSize(size);
+        entity.setFileStatus(Download.FINISHED);
+        entity.setFileSafe(video.isFileSafe());
+        entity.setFileThumbnailUnavailable(false);
+        entity.setParentId(video.getId());
+        CountDownLatch written = new CountDownLatch(1);
+        repository.add(entity, written::countDown);
+        awaitWrite(written);
+        return new ImportResult(target.getName(), false);
+    }
+
+    private static void awaitWrite(CountDownLatch written) {
+        try {
+            if (!written.await(10, TimeUnit.SECONDS)) {
+                logSubtitle("row write still queued", null);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /** A row id no download holds yet (0 means "no parent" on a link). */
+    private static int newRowId(DownloadDataRepository repository) {
+        int id = ID_RANDOM.nextInt();
+        while (id == 0 || repository.findByIdSync(id) != null) {
+            id = ID_RANDOM.nextInt();
+        }
+        return id;
+    }
+
+    @Nullable
+    private static String displayNameOf(ContentResolver resolver, Uri uri) {
+        try (Cursor cursor = resolver.query(uri,
+                new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst() && !cursor.isNull(0)) {
+                return cursor.getString(0);
+            }
+        } catch (RuntimeException e) {
+            logSubtitle("name", e);
+        }
+        return uri.getLastPathSegment();
+    }
+
+    /** The format from the file's first bytes, for a name that says nothing. */
+    @Nullable
+    private static String sniffSubtitle(ContentResolver resolver, Uri uri) {
+        byte[] head = new byte[4096];
+        int length = 0;
+        try (InputStream in = resolver.openInputStream(uri)) {
+            if (in == null) {
+                return null;
+            }
+            int read = in.read(head, 0, head.length);
+            while (read > 0) {
+                length += read;
+                if (length >= head.length) {
+                    break;
+                }
+                read = in.read(head, length, head.length - length);
+            }
+        } catch (IOException | RuntimeException e) {
+            logSubtitle("sniff", e);
+            return null;
+        }
+        return PlayerSubtitles.sniffMime(head, length);
+    }
+
+    /**
+     * The file behind a picked document, for the two providers whose ids are
+     * paths (the phone's storage and the Downloads app); null for any other.
+     * The volume mapping is FolderStore.directoryOfTree's.
+     */
+    @Nullable
+    private static File fileOfDocument(Uri uri) {
+        String docId;
+        try {
+            docId = DocumentsContract.getDocumentId(uri);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        String authority = uri.getAuthority();
+        if ("com.android.externalstorage.documents".equals(authority)) {
+            int colon = docId.indexOf(':');
+            if (colon < 0) {
+                return null;
+            }
+            String volume = docId.substring(0, colon);
+            String relative = docId.substring(colon + 1);
+            File root = "primary".equals(volume)
+                    ? Environment.getExternalStorageDirectory()
+                    : new File("/storage", volume);
+            return new File(root, relative);
+        }
+        if ("com.android.providers.downloads.documents".equals(authority)
+                && docId.startsWith("raw:")) {
+            return new File(docId.substring("raw:".length()));
+        }
+        return null;
+    }
+
+    /**
+     * "<stem> [en].srt", or "<stem> (2) [en].srt" when taken on disk or by a
+     * download row. The counter goes BEFORE the language tag so the tag stays
+     * last, where {@link PlayerSubtitles#languageTag} reads it.
+     */
+    @Nullable
+    private static File freeSubtitleFile(File dir, String stem, String tagSuffix, String extension,
+                                         DownloadDataRepository repository) {
+        for (int n = 1; n < 100; n++) {
+            String counter = n == 1 ? "" : " (" + n + ")";
+            File candidate = new File(dir, stem + counter + tagSuffix + "." + extension);
+            if (!candidate.exists()
+                    && repository.findByFilePath(candidate.getAbsolutePath()) == null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /** Copies at most MAX_SUBTITLE_BYTES; the byte count, or -1 (target removed). */
+    private static long copyCapped(ContentResolver resolver, Uri uri, File target) {
+        long total = 0;
+        boolean ok = false;
+        try (InputStream in = resolver.openInputStream(uri);
+             OutputStream out = new FileOutputStream(target)) {
+            if (in == null) {
+                return -1;
+            }
+            byte[] buffer = new byte[16 * 1024];
+            int read = in.read(buffer);
+            while (read != -1) {
+                total += read;
+                if (total > MAX_SUBTITLE_BYTES) {
+                    return -1;
+                }
+                out.write(buffer, 0, read);
+                read = in.read(buffer);
+            }
+            ok = total > 0;
+        } catch (IOException | RuntimeException e) {
+            logSubtitle("copy", e);
+        } finally {
+            if (!ok && target.exists() && !target.delete()) {
+                logSubtitle("copy: partial file left", null);
+            }
+        }
+        return ok ? total : -1;
+    }
+
+    private static void logSubtitle(String message, @Nullable Throwable error) {
+        if (BuildConfig.DEBUG) {
+            Log.w(TAG, "subtitles: " + message, error);
+        }
+    }
+
+    private static String withoutExtension(@Nullable String name) {
+        if (name == null) {
+            return "";
+        }
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
     }
 
     // ── Double-tap-to-seek ───────────────────────────────────────────

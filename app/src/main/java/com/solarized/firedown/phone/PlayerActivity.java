@@ -253,6 +253,13 @@ public class PlayerActivity extends AppCompatActivity {
                     && (fragment.isVideoMime() || fragment.isAudioMime());
             pipItem.setVisible(pipSupported && isPlayable);
         }
+        // Subtitles: a video only. The sheet lists the downloaded subtitles
+        // the player attached and any the file itself carries.
+        MenuItem subtitlesItem = menu.findItem(R.id.action_subtitles);
+        if (subtitlesItem != null) {
+            MediaViewerFragment fragment = getMediaFragment();
+            subtitlesItem.setVisible(fragment != null && fragment.isVideoMime());
+        }
         // The Backups list opens the player with EXTRA_HIDE_SHARE — sharing a
         // backed-up item is meaningless (see the constant). Normal Downloads
         // playback keeps Share.
@@ -433,6 +440,8 @@ public class PlayerActivity extends AppCompatActivity {
 
         if (isInPictureInPictureMode) {
             mPipTeardown = false;
+            MediaViewerFragment sheetHost = getMediaFragment();
+            if (sheetHost != null) sheetHost.dismissSubtitleSheet();
             // Defensive: some OEM ROMs deliver onPictureInPictureModeChanged(true)
             // twice in a row without an intervening (false). Without this
             // unregister the previous BroadcastReceiver would stay registered
@@ -610,6 +619,10 @@ public class PlayerActivity extends AppCompatActivity {
             finish();
         }else if (id == R.id.action_pip) {
             enterPipMode();
+            return true;
+        }else if (id == R.id.action_subtitles) {
+            MediaViewerFragment fragment = getMediaFragment();
+            if (fragment != null) fragment.showSubtitleSheet();
             return true;
         }else if(id == R.id.action_share) {//add the function to perform here
             String mimeType = mDownloadEntity.getFileMimeType();

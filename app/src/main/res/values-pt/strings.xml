@@ -899,4 +899,12 @@
         <item quantity="one">%d com falha</item>
         <item quantity="other">%d com falha</item>
     </plurals>
+
+    <string name="player_subtitles">Legendas</string>
+    <string name="player_subtitles_off">Desativadas</string>
+    <string name="player_subtitles_in_video">No vídeo</string>
+    <string name="player_subtitles_add">Adicionar um arquivo de legendas</string>
+    <string name="player_subtitles_track">Faixa %1$d</string>
+    <string name="player_subtitles_unsupported">Este arquivo não é uma legenda que o player possa exibir</string>
+    <string name="player_subtitles_added">Legendas adicionadas</string>
 </resources>

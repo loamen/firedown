@@ -921,4 +921,12 @@
         <item quantity="many">%d с ошибкой</item>
         <item quantity="other">%d с ошибкой</item>
     </plurals>
+
+    <string name="player_subtitles">Субтитры</string>
+    <string name="player_subtitles_off">Выкл.</string>
+    <string name="player_subtitles_in_video">В видео</string>
+    <string name="player_subtitles_add">Добавить файл субтитров</string>
+    <string name="player_subtitles_track">Дорожка %1$d</string>
+    <string name="player_subtitles_unsupported">Этот файл не является субтитрами, которые может показать плеер</string>
+    <string name="player_subtitles_added">Субтитры добавлены</string>
 </resources>

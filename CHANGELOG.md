@@ -8,6 +8,7 @@
 - Fixed tiles and rows landing out of place when items are added or removed
 - Embedded tweets and other social posts now show on news sites
 - X videos are titled with the tweet's text, including embedded tweets on news sites
+- Player: downloaded subtitles play with their video, and a Subtitles button picks a track or adds a file
 
 ## [1.2.01] - 2026-10-12
 

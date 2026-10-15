@@ -834,4 +834,12 @@
         <item quantity="one">%d विफल</item>
         <item quantity="other">%d विफल</item>
     </plurals>
+
+    <string name="player_subtitles">सबटाइटल</string>
+    <string name="player_subtitles_off">बंद</string>
+    <string name="player_subtitles_in_video">वीडियो में</string>
+    <string name="player_subtitles_add">सबटाइटल फ़ाइल जोड़ें</string>
+    <string name="player_subtitles_track">ट्रैक %1$d</string>
+    <string name="player_subtitles_unsupported">यह फ़ाइल ऐसा सबटाइटल नहीं है जिसे प्लेयर दिखा सके</string>
+    <string name="player_subtitles_added">सबटाइटल जोड़ा गया</string>
 </resources>

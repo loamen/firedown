@@ -9079,6 +9079,88 @@ so both can notify at once). Invariants, each load-bearing:
   has its own player and is NOT covered — a backed-up stream still stops in
   background (candidate follow-up, same hub pattern would apply).
 
+### Subtitles in the local player — side-loaded downloads, one sheet, add a file
+
+The local player (`MediaViewerFragment`) shows subtitles: the downloaded
+subtitles that belong to the video are attached as side-loaded tracks, the
+toolbar's **Subtitles** button (`action_subtitles`, video only) opens
+`SubtitleSheetDialogFragment` (Off, every text track, "Add a subtitle file"),
+and tracks the video file itself carries (mkv/mp4 text streams, which
+`DefaultExtractorsFactory` already transcoded) are listed beside them as
+"In the video". Before it the player never attached a subtitle and had no
+subtitle UI at all: a YouTube video and its downloaded captions could not
+be played together (the report that started it). Rules:
+
+- **Matching is by PAGE, showing is by evidence.** Candidates are the
+  finished downloads with the video's `file_origin_url` (the YouTube watch
+  URL both the video and its caption tracks carry) or linked to it by
+  `file_parent_id` (set when a file is added from the player; the column
+  was unused for downloads) — `DownloadDao.findPlayerCompanions`, LIMIT 64,
+  same vault side only, encrypted rows never. Every subtitle candidate is
+  listed in the sheet, but one shows BY ITSELF (SubtitleConfiguration
+  `SELECTION_FLAG_DEFAULT`) only when it surely belongs to this video:
+  linked, or its name is the video's name plus a language tag ("Title
+  [en].srt" beside "Title.mp4" — `PlayerSubtitles.stem` folds the tag and
+  " (2)" counters), or no other video came from that page. A news page with
+  five embeds would otherwise put one clip's captions over another. Among
+  those, `pickDefault` takes the YouTube picker's order: the phone's
+  language written by a person, then its speech-recognition track, then any
+  written track, then the first — downloading a subtitle is asking to see
+  it, so another language still shows when it is all there is.
+- **The video waits for the lookup and is prepared ONCE.** `onViewCreated`
+  sets the player, then `loadMediaWithSubtitles` queries on a worker thread
+  and `setMediaWithSubtitles` hands over the item; preparing first and
+  re-setting the source after would restart the extractor under the first
+  frame. It prepares only while the fragment is STARTED (a lookup landing
+  after onStop must not start background playback); `onStart` prepares
+  otherwise and skips a player with no media yet
+  (`getMediaItemCount() > 0`). Audio files skip the lookup. A generation
+  counter drops a lookup overtaken by a newer one.
+- **One media path: `DefaultMediaSourceFactory(DefaultDataSource, extractors)`**
+  with the item's mime pinned to `application/octet-stream` so it always
+  takes the progressive source. It parses each subtitle file during
+  extraction (media3 1.11's default — the legacy in-renderer decoding is
+  disabled, so never hand-build a `SingleSampleMediaSource`) and merges it
+  with the video. `DefaultDataSource` reads a `file://` uri through the same
+  `FileDataSource` the player always used and also speaks `content://`,
+  which a restored subtitle needs next to an owned video.
+- **The sheet reads the PLAYER, not fragment state.** Options come from
+  `getCurrentTracks()`; a side-loaded track's id is `fdsub:<file name>`
+  (`MergingMediaPeriod` prefixes `n:`), which gives the sheet its detail
+  line and lets an ADOPTED player's new fragment (notification tap) list
+  the same tracks with no lookup. Picking a track is a
+  `TrackSelectionOverride`; "Off" disables the text type.
+- **"Off" is remembered** (`Preferences.PLAYER_SUBTITLES_ON`, default
+  true): on the next video the DEFAULT flag is ignored
+  (`setIgnoredTextSelectionFlags`), so nothing shows by itself while forced
+  subtitles and the system caption-language setting still apply. Picking a
+  track turns it back on.
+- **"Add a subtitle file"** pauses first (a playing player reads the picker
+  as leaving: PiP on the leave hint, background playback on onStop), opens
+  `OpenDocument` with a mime LIST (providers disagree on what a .srt is; a
+  picker that ignores the list shows everything), checks the file by name,
+  provider mime, then its first bytes (`PlayerSubtitles.sniffMime`), and
+  then: a file that is already a download (phone storage / Downloads
+  provider ids map to paths) is LINKED; anything else is copied next to the
+  video as "<video name> [lang].srt" (counter before the tag, so the tag
+  stays last) and inserted as a FINISHED row with `file_parent_id` = the
+  video, `file_url` = the file itself (the page URL belongs to the video's
+  capture, and Captured ties downloads to captures by URL), origin = the
+  video's. The worker waits for the row write before the reload, which
+  restarts at the current position and selects the new track
+  (`mPendingSubtitleId`, applied in `onTracksChanged`). Not offered for a
+  file opened from outside (no Downloads row to link to) or an encrypted
+  vault file. Capped at 8 MB.
+- The sheet is a plain `BottomSheetDialogFragment` in the fragment's child
+  manager (PlayerActivity is not a BaseActivity and has no NavHost), asks
+  its parent (`Host`) for options whenever its view is built, and is
+  dismissed on entering PiP.
+- Verify with `sh scripts/player-subtitles-harness/run.sh` (the REAL
+  `PlayerSubtitles`, JDK only, 40 checks; three mutants must fail: a
+  subtitle that always belongs, a pick blind to the phone's language, a
+  stem that keeps the tag). The media3 calls were type-checked against the
+  1.11.1 source; playback itself is on-device only.
+
 ## Thumbnails (native `thumbnailer.c`)
 
 `FFmpegThumbnailer.getBitmap(streamPos)` reads one frame; `streamPos` is a

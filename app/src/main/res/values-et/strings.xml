@@ -799,4 +799,12 @@
         <item quantity="one">%d ebaõnnestus</item>
         <item quantity="other">%d ebaõnnestus</item>
     </plurals>
+
+    <string name="player_subtitles">Subtiitrid</string>
+    <string name="player_subtitles_off">Väljas</string>
+    <string name="player_subtitles_in_video">Videos</string>
+    <string name="player_subtitles_add">Lisa subtiitrifail</string>
+    <string name="player_subtitles_track">Rada %1$d</string>
+    <string name="player_subtitles_unsupported">See fail ei ole subtiiter, mida pleier saab näidata</string>
+    <string name="player_subtitles_added">Subtiitrid lisatud</string>
 </resources>

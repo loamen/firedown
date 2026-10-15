@@ -865,4 +865,12 @@
         <item quantity="one">%d epäonnistui</item>
         <item quantity="other">%d epäonnistui</item>
     </plurals>
+
+    <string name="player_subtitles">Tekstitykset</string>
+    <string name="player_subtitles_off">Pois</string>
+    <string name="player_subtitles_in_video">Videossa</string>
+    <string name="player_subtitles_add">Lisää tekstitystiedosto</string>
+    <string name="player_subtitles_track">Raita %1$d</string>
+    <string name="player_subtitles_unsupported">Tämä tiedosto ei ole soittimen näyttämä tekstitys</string>
+    <string name="player_subtitles_added">Tekstitys lisätty</string>
 </resources>

@@ -37,6 +37,7 @@ public interface RepositoryEntryPoint {
     GeckoStateDataRepository getGeckoStateDataRepository();
     // Exposed for DownloadEngineStressTest (androidTest) — the same singleton
     // the download service writes into, so the test reads the real rows the
-    // real RunnableManager/DownloadEngine produced.
+    // real RunnableManager/DownloadEngine produced — and for the player, whose
+    // activity is not a Hilt entry point, to find a video's subtitles.
     DownloadDataRepository getDownloadDataRepository();
 }

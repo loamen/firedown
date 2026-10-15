@@ -897,4 +897,12 @@
         <item quantity="one">%d başarısız</item>
         <item quantity="other">%d başarısız</item>
     </plurals>
+
+    <string name="player_subtitles">Altyazılar</string>
+    <string name="player_subtitles_off">Kapalı</string>
+    <string name="player_subtitles_in_video">Videoda</string>
+    <string name="player_subtitles_add">Altyazı dosyası ekle</string>
+    <string name="player_subtitles_track">Parça %1$d</string>
+    <string name="player_subtitles_unsupported">Bu dosya, oynatıcının gösterebileceği bir altyazı değil</string>
+    <string name="player_subtitles_added">Altyazı eklendi</string>
 </resources>

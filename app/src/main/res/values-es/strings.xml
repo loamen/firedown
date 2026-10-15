@@ -993,4 +993,12 @@
         <item quantity="one">%d fallido</item>
         <item quantity="other">%d fallidos</item>
     </plurals>
+
+    <string name="player_subtitles">Subtítulos</string>
+    <string name="player_subtitles_off">Desactivados</string>
+    <string name="player_subtitles_in_video">En el vídeo</string>
+    <string name="player_subtitles_add">Añadir un archivo de subtítulos</string>
+    <string name="player_subtitles_track">Pista %1$d</string>
+    <string name="player_subtitles_unsupported">Este archivo no es un subtítulo que el reproductor pueda mostrar</string>
+    <string name="player_subtitles_added">Subtítulos añadidos</string>
 </resources>

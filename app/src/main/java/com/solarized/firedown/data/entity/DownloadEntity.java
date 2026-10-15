@@ -183,6 +183,11 @@ public class DownloadEntity implements Download, Parcelable {
         return fileParentId;
     }
 
+    /** The video a subtitle was added to from the player (0 = none). */
+    public void setParentId(int parentId) {
+        fileParentId = parentId;
+    }
+
 
     public void setId(int id){
         uid = id;

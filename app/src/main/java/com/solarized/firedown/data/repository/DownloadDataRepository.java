@@ -221,6 +221,46 @@ public class DownloadDataRepository {
         return mDatabase.downloadDao().findByIdSync(id);
     }
 
+    /**
+     * The player's subtitle lookup: finished downloads from the video's page,
+     * or linked to it. Off-main-thread only (same contract as
+     * {@link #findByNameSize}).
+     */
+    public List<DownloadEntity> findPlayerCompanionsSync(boolean safe, int videoId, String origin) {
+        return mDatabase.downloadDao().findPlayerCompanions(safe, videoId,
+                origin == null ? "" : origin);
+    }
+
+    /**
+     * Links a subtitle row to the video it was added from, on the disk lane.
+     * {@code onDone} runs on that lane once the write landed.
+     */
+    public void setParentId(int id, int videoId, Runnable onDone) {
+        mDiskExecutor.execute(() -> {
+            mDatabase.downloadDao().setParentId(id, videoId);
+            invalidateActivePagingSources();
+            if (onDone != null) {
+                onDone.run();
+            }
+        });
+    }
+
+    /**
+     * Inserts a row and runs {@code onDone} on the disk lane once it landed,
+     * for a caller that reads the row back right after (the player attaching a
+     * subtitle it just added).
+     */
+    public void add(DownloadEntity download, Runnable onDone) {
+        DownloadEntity snapshot = new DownloadEntity(download);
+        mDiskExecutor.execute(() -> {
+            mDatabase.downloadDao().insert(snapshot);
+            invalidateActivePagingSources();
+            if (onDone != null) {
+                onDone.run();
+            }
+        });
+    }
+
 
     /**
      * Persist a download row. The write is deferred onto the serial

@@ -130,6 +130,24 @@ public interface DownloadDao {
     @Query("SELECT * FROM download WHERE uid = :id LIMIT 1")
     DownloadEntity findById(int id);
 
+    /**
+     * The finished downloads that came from the same page as a video, or that
+     * were linked to it ({@code file_parent_id}, set when a subtitle is added
+     * from the player): the player's subtitle candidates, and the page's other
+     * videos it counts before letting one show by itself. Capped — a page is
+     * a handful of files, a feed origin is not worth more than this.
+     */
+    @Query("SELECT * FROM download WHERE file_safe = :safe AND file_status = 1 " +
+            "AND uid != :videoId " +
+            "AND ((:origin != '' AND file_origin_url = :origin) " +
+            "OR (:videoId != 0 AND file_parent_id = :videoId)) " +
+            "ORDER BY file_date DESC LIMIT 64")
+    List<DownloadEntity> findPlayerCompanions(boolean safe, int videoId, String origin);
+
+    /** Links a subtitle to the video it was added from (see findPlayerCompanions). */
+    @Query("UPDATE download SET file_parent_id = :videoId WHERE uid = :id")
+    void setParentId(int id, int videoId);
+
     @Query("SELECT uid FROM download")
     List<Integer> getAllIds();
 

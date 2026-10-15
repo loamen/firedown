@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The player's Subtitles sheet (SubtitleSheetDialogFragment): the Sort
+    sheet's shape. One group of radio cards, "Off" first and then every
+    subtitle track the player has (the downloaded subtitles it attached and
+    any the video file carries), each a label over a detail line, built in
+    code from item_player_subtitle.xml. A second group holds one row, "Add a
+    subtitle file", which opens the system file picker.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="8dp">
+
+    <include layout="@layout/dialog_drag_handle" />
+
+    <TextView
+        android:id="@+id/subtitles_title"
+        style="@style/TextAppearance.Material3.TitleMedium"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:text="@string/player_subtitles"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="18sp" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp">
+
+            <LinearLayout
+                android:id="@+id/subtitles_tracks"
+                style="@style/Firedown.Widget.SheetGroup"
+                android:layout_marginTop="0dp" />
+
+            <LinearLayout
+                android:id="@+id/subtitles_actions"
+                style="@style/Firedown.Widget.SheetGroup">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/subtitles_add_card"
+                    style="@style/Firedown.Widget.SheetRowCard">
+
+                    <TextView
+                        style="@style/Firedown.Widget.SheetRowText"
+                        android:drawableStart="@drawable/add_24"
+                        android:text="@string/player_subtitles_add" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

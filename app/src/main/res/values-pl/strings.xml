@@ -919,4 +919,12 @@
         <item quantity="many">%d nieudanych</item>
         <item quantity="other">%d nieudanych</item>
     </plurals>
+
+    <string name="player_subtitles">Napisy</string>
+    <string name="player_subtitles_off">Wyłączone</string>
+    <string name="player_subtitles_in_video">W filmie</string>
+    <string name="player_subtitles_add">Dodaj plik z napisami</string>
+    <string name="player_subtitles_track">Ścieżka %1$d</string>
+    <string name="player_subtitles_unsupported">Ten plik nie zawiera napisów, które odtwarzacz może wyświetlić</string>
+    <string name="player_subtitles_added">Dodano napisy</string>
 </resources>

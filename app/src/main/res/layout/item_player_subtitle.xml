@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One choice in the player's Subtitles sheet: a SheetRowCard holding the
+    track's label (its language) over a detail line (the subtitle's file
+    name, or "In the video" for a track the video file carries) and a
+    TRAILING non-clickable radio — the card is the touch, the fragment checks
+    the radio. "Off" uses it with the detail hidden.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Firedown.Widget.SheetRowCard">
+
+    <LinearLayout style="@style/Firedown.Widget.SheetRowRadioRow">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingVertical="8dp">
+
+            <TextView
+                android:id="@+id/subtitle_label"
+                style="@style/Firedown.Widget.SheetRowRadioLabel"
+                android:layout_width="match_parent"
+                android:layout_weight="0" />
+
+            <TextView
+                android:id="@+id/subtitle_detail"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:singleLine="true"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+        </LinearLayout>
+
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/subtitle_radio"
+            style="@style/Firedown.Widget.SheetRowRadioButton" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

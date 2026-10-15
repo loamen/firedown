@@ -897,4 +897,12 @@
         <item quantity="one">%d mislukt</item>
         <item quantity="other">%d mislukt</item>
     </plurals>
+
+    <string name="player_subtitles">Ondertiteling</string>
+    <string name="player_subtitles_off">Uit</string>
+    <string name="player_subtitles_in_video">In de video</string>
+    <string name="player_subtitles_add">Ondertitelbestand toevoegen</string>
+    <string name="player_subtitles_track">Spoor %1$d</string>
+    <string name="player_subtitles_unsupported">Dit bestand is geen ondertiteling die de speler kan tonen</string>
+    <string name="player_subtitles_added">Ondertiteling toegevoegd</string>
 </resources>

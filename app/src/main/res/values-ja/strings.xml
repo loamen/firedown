@@ -984,4 +984,12 @@
     <plurals name="capture_batch_failed">
         <item quantity="other">%d 件失敗</item>
     </plurals>
+
+    <string name="player_subtitles">字幕</string>
+    <string name="player_subtitles_off">オフ</string>
+    <string name="player_subtitles_in_video">動画内</string>
+    <string name="player_subtitles_add">字幕ファイルを追加</string>
+    <string name="player_subtitles_track">トラック %1$d</string>
+    <string name="player_subtitles_unsupported">このファイルはプレーヤーで表示できる字幕ではありません</string>
+    <string name="player_subtitles_added">字幕を追加しました</string>
 </resources>
