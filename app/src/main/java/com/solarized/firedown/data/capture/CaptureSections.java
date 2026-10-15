@@ -112,6 +112,15 @@ public final class CaptureSections {
                                           @NonNull Map<String, Integer> captionCounts) {
         List<CaptureItem> out = new ArrayList<>(shown.size() + 3);
         boolean multiSite = earlier.domains.size() > 1;
+        // The page's videos, counted in what is shown: the current group comes
+        // first and its videos lead it (typeRank), so a list limit cuts them
+        // only past the limit itself, never down to a misleading one.
+        int currentVideos = 0;
+        for (BrowserDownloadEntity e : shown) {
+            if (e != null && isCurrent.test(e) && isVideo(e)) {
+                currentVideos++;
+            }
+        }
         boolean foldAdded = false;
         int group = -1;
         boolean headerAdded = false;
@@ -141,7 +150,9 @@ public final class CaptureSections {
                 out.add(CaptureItem.square(e, g, !filtered, mark));
             } else {
                 boolean showDomain = g == CaptureItem.GROUP_EARLIER && multiSite;
-                out.add(CaptureItem.tile(e, g, !filtered, showDomain,
+                boolean onlyVideo = g == CaptureItem.GROUP_CURRENT && currentVideos == 1
+                        && isVideo(e);
+                out.add(CaptureItem.tile(e, g, !filtered, showDomain, onlyVideo,
                         captionCountFor(e, captionCounts), mark));
             }
         }

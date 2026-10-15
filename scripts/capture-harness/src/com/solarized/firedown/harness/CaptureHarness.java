@@ -19,7 +19,7 @@ public class CaptureHarness {
     StringBuilder b = new StringBuilder();
     for (CaptureItem i : items) {
       b.append(switch (i.type) {
-        case CaptureItem.TYPE_TILE -> "T" + i.uid() + (i.showType ? "t" : "") + (i.showDomain ? "d" : "") + (i.captionCount > 0 ? "c" + i.captionCount : "");
+        case CaptureItem.TYPE_TILE -> "T" + i.uid() + (i.showType ? "t" : "") + (i.showDomain ? "d" : "") + (i.captionCount > 0 ? "c" + i.captionCount : "") + (i.onlyVideo ? "w" : "");
         case CaptureItem.TYPE_SQUARE -> "S" + i.uid() + (i.showType ? "t" : "");
         case CaptureItem.TYPE_HEADER -> "H" + i.group + ":" + i.count;
         default -> "F" + i.count + (!i.collapsible ? "h" : i.open ? "o" : "c"); }).append(' ');
@@ -66,15 +66,15 @@ public class CaptureHarness {
     Set<Integer> current = Set.of(1,2,3,4,5,6);
     Map<String,Integer> cc = CaptureSections.captionCounts(shown);
     List<CaptureItem> items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, earlier(43, false, "firedown.app"), Map.of(), cc);
-    check("fold closed: " + shape(items), shape(items).equals("T1tc1 T2t T3t H0:3 S4t S5t S6t F43c"));
+    check("fold closed: " + shape(items), shape(items).equals("T1tc1w T2t T3t H0:3 S4t S5t S6t F43c"));
 
     // open, one earlier site: the fold names it, the tiles don't repeat it
     items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, earlier(43, true, "firedown.app"), Map.of(), cc);
-    check("fold open: " + shape(items), shape(items).equals("T1tc1 T2t T3t H0:3 S4t S5t S6t F43o T7t H1:40 S8t S9t"));
+    check("fold open: " + shape(items), shape(items).equals("T1tc1w T2t T3t H0:3 S4t S5t S6t F43o T7t H1:40 S8t S9t"));
 
     // open, several earlier sites: each earlier tile carries its own
     items = CaptureSections.build(shown, x -> current.contains(x.getUid()), false, 3, 40, earlier(43, true, "firedown.app", "a.example"), Map.of(), cc);
-    check("fold open, many sites: " + shape(items), shape(items).equals("T1tc1 T2t T3t H0:3 S4t S5t S6t F43o T7td H1:40 S8t S9t"));
+    check("fold open, many sites: " + shape(items), shape(items).equals("T1tc1w T2t T3t H0:3 S4t S5t S6t F43o T7td H1:40 S8t S9t"));
 
     // under a chip: no headers, no type labels, the fold stays
     List<BrowserDownloadEntity> imgs = List.of(e(5,"image/png","i1",P), e(6,"image/png","i2",P), e(8,"image/png","i3",Q));
@@ -107,16 +107,27 @@ public class CaptureHarness {
 
     // only the current page: no fold
     items = CaptureSections.build(shown.subList(0, 6), x -> true, false, 3, 0, CaptureSections.Earlier.NONE, Map.of(), Map.of());
-    check("current only: " + shape(items), shape(items).equals("T1t T2t T3t H0:3 S4t S5t S6t"));
+    check("current only: " + shape(items), shape(items).equals("T1tw T2t T3t H0:3 S4t S5t S6t"));
 
     // the limit cut the list before any earlier capture: the fold still ends it
     items = CaptureSections.build(shown.subList(0, 2), x -> true, false, 3, 0, earlier(5, false, "firedown.app"), Map.of(), Map.of());
-    check("limit before the fold: " + shape(items), shape(items).equals("T1t T2t F5c"));
+    check("limit before the fold: " + shape(items), shape(items).equals("T1tw T2t F5c"));
 
     // the CC count lands on the video only, never on the audio-flagged mp4
     BrowserDownloadEntity cm = e(11, "video/mp4", "m", P); cm.audio = true;
     items = CaptureSections.build(List.of(e(1,"video/mp4","v1",P), cm), x -> true, false, 0, 0, CaptureSections.Earlier.NONE, Map.of(), Map.of(P, 2));
-    check("cc on video only: " + shape(items), shape(items).equals("T1tc2 T11t"));
+    check("cc on video only: " + shape(items), shape(items).equals("T1tc2w T11t"));
+
+    // the page's only video spans the row; with two, neither does (no video
+    // is "the" one), and an earlier page's lone video never does
+    List<BrowserDownloadEntity> twoVids = List.of(e(1,"video/mp4","v1",P), e(12,"video/mp4","v4",P), e(3,"text/vtt","s1",P));
+    items = CaptureSections.build(twoVids, x -> true, false, 0, 0, CaptureSections.Earlier.NONE, Map.of(), Map.of());
+    check("two videos, none wide: " + shape(items), shape(items).equals("T1t T12t T3t"));
+    items = CaptureSections.build(List.of(e(7,"video/mp4","v2",Q)), x -> false, false, 0, 0, earlierOnly(1, "firedown.app"), Map.of(), Map.of());
+    check("earlier lone video, not wide: " + shape(items), shape(items).equals("F1h T7t"));
+    // under the Video chip, one video of the page still spans
+    items = CaptureSections.build(List.of(e(1,"video/mp4","v1",P), e(7,"video/mp4","v2",Q)), x -> x.getUid() == 1, true, 0, 0, earlier(1, true, "firedown.app"), Map.of(), Map.of());
+    check("chip, one video: " + shape(items), shape(items).equals("T1w F1o T7"));
 
     // the fold's thumbnails: pictures first, anything else only to fill
     List<BrowserDownloadEntity> early = List.of(e(3,"text/vtt","s",Q), e(8,"image/png","i",Q), e(7,"video/mp4","v",Q),
@@ -191,12 +202,15 @@ public class CaptureHarness {
     // diff: a mark-only change is a payload; a presentation change is not
     CaptureItemDiffCallback diff = new CaptureItemDiffCallback();
     BrowserDownloadEntity x = e(30, "video/mp4", "v", P);
-    CaptureItem a0 = CaptureItem.tile(x, 0, true, false, 0, null);
-    CaptureItem a1 = CaptureItem.tile(x, 0, true, false, 0, prog);
-    CaptureItem a2 = CaptureItem.tile(x, 0, false, false, 0, null);
+    CaptureItem a0 = CaptureItem.tile(x, 0, true, false, false, 0, null);
+    CaptureItem a1 = CaptureItem.tile(x, 0, true, false, false, 0, prog);
+    CaptureItem a2 = CaptureItem.tile(x, 0, false, false, false, 0, null);
     check("same item", diff.areItemsTheSame(a0, a1) && diff.areItemsTheSame(a0, a2));
     check("mark change differs", !diff.areContentsTheSame(a0, a1) && diff.getChangePayload(a0, a1) == CaptureItemDiffCallback.PAYLOAD_MARK);
     check("presentation change no payload", !diff.areContentsTheSame(a0, a2) && diff.getChangePayload(a0, a2) == null);
+    // a second video landing un-spans the first: a full rebind, not a mark payload
+    CaptureItem aw = CaptureItem.tile(x, 0, true, false, true, 0, null);
+    check("only-video change rebinds", diff.areItemsTheSame(a0, aw) && !diff.areContentsTheSame(a0, aw) && diff.getChangePayload(a0, aw) == null);
     check("headers by group", diff.areItemsTheSame(CaptureItem.header(0, 3), CaptureItem.header(0, 4))
         && !diff.areItemsTheSame(CaptureItem.header(0, 3), CaptureItem.header(1, 3))
         && !diff.areContentsTheSame(CaptureItem.header(0, 3), CaptureItem.header(0, 4)));

@@ -1964,6 +1964,31 @@ type, not a mode.
   `mPresentationDirty`), which existed so a chip tap couldn't paint the old
   list in the new presentation; that bug class is now structurally gone.
   Don't put presentation state back on the adapter.
+- **A page's ONLY video spans the row — on a two-column grid only**
+  (`CaptureItem.onlyVideo`, set by `CaptureSections.build` when the current
+  group, under the active chip, holds exactly one video; an audio-flagged
+  mp4 counts as audio; `BrowserOptionAdapter.spanSize` widens it only when
+  `capture_tile_columns` is 2). On-device a single-video page (Twitch,
+  YouTube, a clip or status page — the common case) showed its video in
+  one column with the other half of the row empty (canvas row "Portrait: a
+  page's only video spans the row", board H chosen). What it deliberately
+  does NOT do: widen the FIRST of several videos (on a feed or a live blog
+  no video is "the" one, and the first is just the most recent capture, so
+  the wide slot would move each time a capture lands); widen whatever is
+  left alone in a row (a lone subtitle at four times its size, and a tile
+  resizing as the count goes odd and even); widen in landscape or on a
+  tablet (3+ tile columns: height is the short side, and a full-width 16:10
+  tile would be taller than the visible sheet); widen an earlier page's
+  video or an audio-only page's tile (a wide audio tile is mostly an empty
+  placeholder). The one reflow it costs is a single-video page whose second
+  embed is captured later: the first shrinks back to a column, once. It is
+  still the Downloads tile, just spanning, decoded at 1024x640
+  (`WIDE_THUMB_*`, applied after GlideHelper's 512x320 so it wins) rather
+  than upscaled from the half-width size. The CLAUDE.md Downloads-grid
+  rule against a spanning lone tile ("reads as a hero") is about a file
+  list's date sections; here the hero reading is the point, which is why
+  it is limited to this one tile. No "Video" heading over it (board I):
+  the tiles group mixes types and each tile already says VIDEO.
 - **Order inside each group**: video, audio, subtitle, other, then images
   (`CaptureSections.typeRank`, for both groups), then most recent first.
   Ranks 0–3 are all tiles; the images must be contiguous for the header.
@@ -2051,12 +2076,13 @@ type, not a mode.
   directly.
 - Verify with `sh scripts/capture-harness/run.sh` (the REAL
   `CaptureSections` / `CaptureMark` / `CaptureItem` /
-  `CaptureItemDiffCallback`; 62 checks; mutants that ignore the fold's open
+  `CaptureItemDiffCallback`; 66 checks; mutants that ignore the fold's open
   state, show the domain with one site, drop the short-word filename rule,
   skip pictures-first in the preview, drop the fold when the limit cuts
   first, count an audio-flagged mp4 as a video, let an earlier "closed"
-  choice win over an empty page, or leave `collapsible` out of the diff
-  each fail it). On-device
+  choice win over an empty page, leave `collapsible` or `onlyVideo` out of
+  the diff, widen the first of several videos, or widen an earlier page's
+  video each fail it). On-device
   unverified at write time.
 - The bare "timedtext" subtitle that sat beside YouTube's titled caption
   tracks was the generic catcher capturing the player's own caption fetch;

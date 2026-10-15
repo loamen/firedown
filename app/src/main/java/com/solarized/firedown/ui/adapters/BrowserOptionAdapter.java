@@ -85,6 +85,16 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
      *  a section heading, not a card. A view type of its own, outside
      *  CaptureItem's types. */
     private static final int VIEW_EARLIER_HEADING = 100;
+    /** The only tile count at which a page's only video spans the row (a
+     *  phone in portrait). With three or more tile columns (landscape, a
+     *  tablet) height is the short side and a full-width 16:10 tile would be
+     *  taller than the sheet shows, so the video keeps its column. */
+    private static final int WIDE_TILE_COLUMNS = 2;
+    /** A spanning tile's decode size: GlideHelper decodes every capture
+     *  thumbnail at 512x320, a half-width tile's pixels on a phone; across
+     *  the row that would show at half its resolution. 16:10, twice over. */
+    private static final int WIDE_THUMB_WIDTH = 1024;
+    private static final int WIDE_THUMB_HEIGHT = 640;
     private static final int FOLD_THUMB_STEP_DP = 13;
 
     private final OnItemClickListener mOnItemClickListener;
@@ -96,6 +106,8 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
     private final int mIconInset;
     private final int mProgressTrack;
     private final float mDensity;
+    /** This screen's grid lets a page's only video span the row. */
+    private final boolean mWideVideo;
     private boolean mActionMode;
     @Nullable private Runnable mOnFoldClick;
     /** Resolved on the first bind (needs a themed Context). */
@@ -119,6 +131,8 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
         mProgressTrack = ColorUtils.setAlphaComponent(
                 MaterialColors.getColor(context, android.R.attr.colorPrimary, Color.BLACK), 0x33);
         mDensity = context.getResources().getDisplayMetrics().density;
+        mWideVideo = context.getResources().getInteger(R.integer.capture_tile_columns)
+                == WIDE_TILE_COLUMNS;
     }
 
     /** What a tap on the fold row does (the view model opens or closes it). */
@@ -133,10 +147,20 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
      */
     public int spanSize(int position, int spanCount, int squareColumns, int tileColumns) {
         if (position < 0 || position >= getItemCount()) return spanCount;
-        int type = getItem(position).type;
-        if (type == CaptureItem.TYPE_SQUARE) return spanCount / Math.max(1, squareColumns);
-        if (type == CaptureItem.TYPE_TILE) return spanCount / Math.max(1, tileColumns);
+        CaptureItem item = getItem(position);
+        if (item.type == CaptureItem.TYPE_SQUARE) return spanCount / Math.max(1, squareColumns);
+        if (item.type == CaptureItem.TYPE_TILE) {
+            if (item.onlyVideo && tileColumns == WIDE_TILE_COLUMNS) {
+                return spanCount;
+            }
+            return spanCount / Math.max(1, tileColumns);
+        }
         return spanCount;
+    }
+
+    /** The tile spans the row on this screen (see {@link #spanSize}). */
+    private boolean isWide(@NonNull CaptureItem item) {
+        return item.onlyVideo && mWideVideo;
     }
 
     @Nullable
@@ -300,7 +324,12 @@ public class BrowserOptionAdapter extends ListAdapter<CaptureItem, RecyclerView.
             bindTileFacts(holder, item);
             holder.photo = true;
             applyTileGround(holder);
-            GlideHelper.load(entity, optionsFor(entity, CaptureItem.TYPE_TILE), holder.image, fallback -> {
+            RequestOptions options = optionsFor(entity, CaptureItem.TYPE_TILE);
+            if (isWide(item)) {
+                // Applied after GlideHelper's own size, so it wins.
+                options = options.override(WIDE_THUMB_WIDTH, WIDE_THUMB_HEIGHT);
+            }
+            GlideHelper.load(entity, options, holder.image, fallback -> {
                 if (holder.boundUid == boundUid && !holder.downloading) {
                     holder.photo = !fallback;
                     applyTileGround(holder);

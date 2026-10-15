@@ -46,6 +46,12 @@ public final class CaptureItem {
      *  and only when they span more than one site (with one, the fold row
      *  names it). */
     public final boolean showDomain;
+    /** The page shown now caught this one video and no other: on a
+     *  two-column grid the tile spans the row (BrowserOptionAdapter#spanSize),
+     *  so a single-video page doesn't leave half a row empty beside it. False
+     *  for a page with several videos (none is "the" video), for an earlier
+     *  page's video, and for every other kind of tile. */
+    public final boolean onlyVideo;
     /** A header's count, or the fold's: the earlier group's captures. */
     public final int count;
     /** Subtitle tracks captured for this video's page ("CC 2"), counted over
@@ -66,7 +72,8 @@ public final class CaptureItem {
     @NonNull public final List<BrowserDownloadEntity> preview;
 
     private CaptureItem(int type, int group, @Nullable BrowserDownloadEntity entity,
-                        boolean showType, boolean showDomain, int count, int captionCount,
+                        boolean showType, boolean showDomain, boolean onlyVideo,
+                        int count, int captionCount,
                         @Nullable CaptureMark mark, boolean open, boolean collapsible,
                         @NonNull List<String> domains,
                         @NonNull List<BrowserDownloadEntity> preview) {
@@ -75,6 +82,7 @@ public final class CaptureItem {
         this.entity = entity;
         this.showType = showType;
         this.showDomain = showDomain;
+        this.onlyVideo = onlyVideo;
         this.count = count;
         this.captionCount = captionCount;
         this.mark = mark;
@@ -85,34 +93,35 @@ public final class CaptureItem {
     }
 
     private static CaptureItem capture(int type, @NonNull BrowserDownloadEntity entity, int group,
-                                       boolean showType, boolean showDomain, int captionCount,
-                                       @Nullable CaptureMark mark) {
-        return new CaptureItem(type, group, entity, showType, showDomain, 0, captionCount, mark,
-                false, false, Collections.emptyList(), Collections.emptyList());
+                                       boolean showType, boolean showDomain, boolean onlyVideo,
+                                       int captionCount, @Nullable CaptureMark mark) {
+        return new CaptureItem(type, group, entity, showType, showDomain, onlyVideo, 0,
+                captionCount, mark, false, false, Collections.emptyList(), Collections.emptyList());
     }
 
     /** Anything but an image: a video, its audio, a subtitle track, a file. */
     public static CaptureItem tile(@NonNull BrowserDownloadEntity entity, int group,
-                                   boolean showType, boolean showDomain, int captionCount,
-                                   @Nullable CaptureMark mark) {
-        return capture(TYPE_TILE, entity, group, showType, showDomain, captionCount, mark);
+                                   boolean showType, boolean showDomain, boolean onlyVideo,
+                                   int captionCount, @Nullable CaptureMark mark) {
+        return capture(TYPE_TILE, entity, group, showType, showDomain, onlyVideo,
+                captionCount, mark);
     }
 
     public static CaptureItem square(@NonNull BrowserDownloadEntity entity, int group,
                                      boolean showType, @Nullable CaptureMark mark) {
-        return capture(TYPE_SQUARE, entity, group, showType, false, 0, mark);
+        return capture(TYPE_SQUARE, entity, group, showType, false, false, 0, mark);
     }
 
     public static CaptureItem header(int group, int count) {
-        return new CaptureItem(TYPE_HEADER, group, null, false, false, count, 0, null,
+        return new CaptureItem(TYPE_HEADER, group, null, false, false, false, count, 0, null,
                 false, false, Collections.emptyList(), Collections.emptyList());
     }
 
     public static CaptureItem fold(int count, boolean open, boolean collapsible,
                                    @NonNull List<String> domains,
                                    @NonNull List<BrowserDownloadEntity> preview) {
-        return new CaptureItem(TYPE_FOLD, GROUP_EARLIER, null, false, false, count, 0, null,
-                open, collapsible, domains, preview);
+        return new CaptureItem(TYPE_FOLD, GROUP_EARLIER, null, false, false, false, count, 0,
+                null, open, collapsible, domains, preview);
     }
 
     public boolean isCapture() {
@@ -139,6 +148,7 @@ public final class CaptureItem {
     public boolean samePresentationAs(@NonNull CaptureItem other) {
         return showType == other.showType
                 && showDomain == other.showDomain
+                && onlyVideo == other.onlyVideo
                 && count == other.count
                 && captionCount == other.captionCount
                 && group == other.group
