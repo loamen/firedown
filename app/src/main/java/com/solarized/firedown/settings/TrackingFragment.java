@@ -172,18 +172,21 @@ public class TrackingFragment extends BasePreferenceFragment implements Preferen
             mDefaultPreference.toggleRadioButton();
             cb.setAntiTracking(ContentBlocking.AntiTracking.DEFAULT);
             cb.setEnhancedTrackingProtectionLevel(ContentBlocking.EtpLevel.DEFAULT);
+            cb.setStrictSocialTrackingProtection(false);
             cb.setQueryParameterStrippingEnabled(false);
             cb.setQueryParameterStrippingPrivateBrowsingEnabled(false);
         }else if(Preferences.SETTINGS_ANTI_TRACKING_STRICT.equals(preference.getKey())){
             mStrictPreference.toggleRadioButton();
             cb.setAntiTracking(ContentBlocking.AntiTracking.STRICT | ContentBlocking.AntiTracking.STP);
             cb.setEnhancedTrackingProtectionLevel(ContentBlocking.EtpLevel.STRICT);
+            cb.setStrictSocialTrackingProtection(true);
             cb.setQueryParameterStrippingEnabled(false);
             cb.setQueryParameterStrippingPrivateBrowsingEnabled(false);
         }else if(Preferences.SETTINGS_ANTI_TRACKING_CUSTOM.equals(preference.getKey())){
             mCustomPreference.toggleRadioButton();
             cb.setAntiTracking(ContentBlocking.AntiTracking.DEFAULT);
             cb.setEnhancedTrackingProtectionLevel(ContentBlocking.EtpLevel.DEFAULT);
+            cb.setStrictSocialTrackingProtection(false);
             cb.setQueryParameterStrippingEnabled(true);
             cb.setQueryParameterStrippingPrivateBrowsingEnabled(true);
             cb.setQueryParameterStrippingStripList(

@@ -7726,10 +7726,23 @@ maintainer call after sketches on the design canvas:
   bundled uBlock list blocks `platform.twitter.com/widgets.js`, so embedded
   tweets never rendered on any news site, with uBlock off for the site and
   no setting that could bring them back (HAR, elmundo.es 2026-10-15: seven
-  `widgets.js` requests cancelled before leaving the phone). Don't make
-  regular tabs block loads in Standard again, and don't re-add a per-site
-  ETP switch: with loads unblocked in Standard, uBlock's whitelist really
-  is the per-site door.
+  `widgets.js` requests cancelled before leaving the phone). **There are
+  TWO Gecko blockers and both follow Strict.** The per-tab flag gates only
+  the main tracker blocker (on Android `UrlClassifierFeatureTrackingProtection`
+  checks the load context's `UseTrackingProtection`). The SOCIAL-tracker
+  blocker (`UrlClassifierFeatureSocialTrackingProtection`, the
+  Facebook/LinkedIn/Twitter lists of
+  `urlclassifier.features.socialtracking.blacklistTables`) ignores the tab
+  and blocks every third-party load while
+  `privacy.trackingprotection.socialtracking.enabled` is on, which is
+  GeckoView's `strictSocialTrackingProtection`. Firedown set it `true` for
+  everyone at boot, so the first fix (the per-tab flag alone) changed
+  nothing on device; it now follows the level at boot and in
+  `TrackingFragment`, as Firefox's `stp`, which only its Strict feature set
+  carries. Don't make regular tabs block loads in Standard again, don't
+  turn the social blocker on outside Strict, and don't re-add a per-site
+  ETP switch: with loads unblocked in Standard, uBlock's whitelist really is
+  the per-site door.
 - **Migration leftovers that must stay:** the sessions file's `tracking_
   protection` key is tolerated in files BELOW v4 (its name lives only in the
   strict reader's `RETIRED_KEYS` map — not in `GeckoStateEntity.KEYS`, which

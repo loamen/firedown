@@ -154,7 +154,16 @@ public class GeckoRuntimeHelper {
                         // Stays on-device only (no telemetry) and is wiped by "Delete
                         // browsing data" (DeleteBrowsingDialogFragment → clearTrackingDb).
                         .contentBlockingDatabase(true)
-                        .strictSocialTrackingProtection(true)
+                        // Firefox turns the social-tracker blocker on in Strict
+                        // only. It is a separate Gecko feature from the per-tab
+                        // tracker blocking (blocksTrackingContent): it ignores
+                        // the tab's useTrackingProtection and blocks every
+                        // third-party load on the Facebook/LinkedIn/Twitter
+                        // lists while this pref is on, so it alone kept
+                        // embedded tweets from rendering in Standard.
+                        .strictSocialTrackingProtection(
+                                Preferences.getEnhancedTrackingProtectionLevel(sharedPreferences)
+                                        == ContentBlocking.EtpLevel.STRICT)
                         .cookieBehavior(Preferences.getCookieBehavior(sharedPreferences))
                         .queryParameterStrippingEnabled(Preferences.getQueryParameterStrippingEnabled(sharedPreferences))
                         .queryParameterStrippingPrivateBrowsingEnabled(Preferences.getQueryParameterStrippingEnabled(sharedPreferences))
