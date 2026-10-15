@@ -1938,6 +1938,14 @@ type, not a mode.
   pages span more than one site; with one, the fold names it. When the list
   limit cuts before any earlier capture, the fold still ends the list.
   Select-all selects what is shown — with the fold closed, the current page.
+  **A TAP that opens the fold scrolls it to the top** once the opened list
+  is committed (`BrowserOptionFragment.onFoldClick` → `revealFold`, a
+  SNAP_TO_START smooth scroll): the fold usually ends the list at the bottom
+  of the screen, so the earlier captures opened out of sight and the tap
+  read as doing nothing (on-device). Only the tap scrolls: the view model's
+  own auto-open must not move the list, and closing scrolls nothing. The
+  flag is set BEFORE `toggleEarlier()`, which publishes the rebuilt list
+  synchronously.
 - **The VIEW MODEL builds the items** (`CaptureSections.build` →
   `CaptureItem`): the sections, the header and fold facts, each item's
   type-label and domain flags, the CC count and the download mark all ride

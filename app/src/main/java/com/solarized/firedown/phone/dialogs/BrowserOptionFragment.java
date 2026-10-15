@@ -37,6 +37,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearSmoothScroller;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -100,6 +101,9 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
     private boolean mIsIncognito;
     private int mScrollLimit;
     private OnBackPressedCallback mClearFilterOnBack;
+    // Set by a tap that OPENS the fold, cleared by the first list that comes
+    // back with it open: that list's commit scrolls the fold to the top.
+    private boolean mRevealFoldOnCommit;
 
     // "Still scanning" indicator state. mBusyShown is the debounced, displayed
     // state; mListEmpty mirrors the latest list so a busy/empty change re-renders
@@ -220,7 +224,7 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
         // sheet inflates under the incognito overlay, and the adapter resolves
         // its inks from the context it is given.
         mAdapter = new BrowserOptionAdapter(view.getContext(), this);
-        mAdapter.setOnFoldClick(() -> mBrowserDownloadViewModel.toggleEarlier());
+        mAdapter.setOnFoldClick(this::onFoldClick);
         mLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
@@ -523,6 +527,16 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
             mAdapter.submitList(items);
             return;
         }
+        if (mRevealFoldOnCommit) {
+            int fold = foldPosition(items);
+            if (fold < 0) {
+                mRevealFoldOnCommit = false;
+            } else if (items.get(fold).open) {
+                mRevealFoldOnCommit = false;
+                mAdapter.submitList(items, () -> revealFold(fold));
+                return;
+            }
+        }
         int firstPos = mLayoutManager.findFirstVisibleItemPosition();
         List<CaptureItem> current = mAdapter.getCurrentList();
         if (firstPos <= 0 || firstPos >= current.size()) {
@@ -552,6 +566,52 @@ public class BrowserOptionFragment extends BaseFocusFragment implements OnItemCl
                 }
             }
         });
+    }
+
+    /**
+     * The fold's own tap (and the screen reader's expand / collapse). Opening
+     * it puts the earlier captures UNDER the fold, and the fold usually ends
+     * the list, at the bottom of the screen: the captures landed out of
+     * sight, the only visible change was the chevron, and the list read as
+     * having grown somewhere the user had to go and find (reported
+     * on-device). So a tap that opens it scrolls the fold to the top once the
+     * opened list is in, and the earlier captures fill the screen under it.
+     * Only the tap: the view model also opens the fold by itself on a page
+     * that has caught nothing yet, and that must not move the list. Closing
+     * scrolls nothing.
+     */
+    private void onFoldClick() {
+        if (mAdapter == null) return;
+        List<CaptureItem> current = mAdapter.getCurrentList();
+        int fold = foldPosition(current);
+        mRevealFoldOnCommit = fold >= 0 && !current.get(fold).open;
+        // The view model publishes the rebuilt list synchronously, so the
+        // flag has to be set before this call, not after.
+        mBrowserDownloadViewModel.toggleEarlier();
+    }
+
+    private static int foldPosition(@Nullable List<CaptureItem> items) {
+        if (items == null) return -1;
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).type == CaptureItem.TYPE_FOLD) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** Scrolls the fold to the top of the list, or as far as the list goes
+     *  when what it opened is shorter than the screen. */
+    private void revealFold(int position) {
+        if (mLayoutManager == null || mRecyclerView == null) return;
+        LinearSmoothScroller scroller = new LinearSmoothScroller(mRecyclerView.getContext()) {
+            @Override
+            protected int getVerticalSnapPreference() {
+                return SNAP_TO_START;
+            }
+        };
+        scroller.setTargetPosition(position);
+        mLayoutManager.startSmoothScroll(scroller);
     }
 
     /**
