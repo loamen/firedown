@@ -7,11 +7,16 @@
 # and DebugLog are stubs.
 #
 # What it pins: a YouTube Mix moving index=1 -> index=2 on the SAME video keeps
-# the visit (the 2026-10-15 report), while a position-only query, another
-# video, another list, a hub -> item navigation and a v=A -> v=B change still
-# move it, and the Instagram ?l=1 refinement still keeps it. Then two MUTANTS
-# prove the checks bite: with no position params the Mix checks fail; without
-# the "another parameter still names the item" guard the viewer check fails.
+# the visit (the 2026-10-15 report), and so do an Instagram carousel swiped
+# (img_index) and a Google Maps place panned, zoomed or browsed photo by photo
+# (the @camera and data= path segments), while a position-only query, another
+# video, another list, another post or place, a hub -> item navigation and a
+# v=A -> v=B change still move it, and the Instagram ?l=1 refinement still
+# keeps it. Then GeckoState.originNamesPage, the sheet's second test for "this
+# page": a capture made for the page on screen (a feed item, opened) belongs
+# to it. Five MUTANTS prove the checks bite: no position params, no img_index,
+# no "something still names the item" guard, no map-camera filter, and an
+# origin test that never matches must each fail.
 #
 # usage: sh scripts/visit-harness/run.sh [-v]
 set -e
@@ -38,7 +43,7 @@ echo "== real =="
 run_one real "$@"
 status=0
 
-for m in noposition noguard; do
+for m in noposition noimgindex noguard nomapcamera noorigin; do
     echo
     echo "== mutant: $m (must FAIL) =="
     if run_one "$m" > "$BUILD/$m.log" 2>&1; then

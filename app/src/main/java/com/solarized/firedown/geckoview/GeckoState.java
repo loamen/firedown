@@ -20,14 +20,16 @@ import org.mozilla.geckoview.GeckoSessionSettings;
 import org.mozilla.geckoview.TranslationsController;
 import org.mozilla.geckoview.WebResponse;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 public class GeckoState {
 
@@ -145,14 +147,28 @@ public class GeckoState {
 
     /**
      * Query parameters that carry a POSITION in a list the page belongs to,
-     * not the page itself: YouTube's {@code index=} in a playlist or Mix.
-     * Unlike {@link #NOISE_PARAMS} they stay in the identity key (two tabs
-     * at different playlist positions are not duplicates); they are only
-     * ignored by {@link #isQueryRefinement}, and only while another
-     * parameter still names the item. See {@link #withoutPosition}.
+     * not the page itself: YouTube's {@code index=} in a playlist or Mix,
+     * Instagram's {@code img_index=} as a carousel post is swiped. Unlike
+     * {@link #NOISE_PARAMS} they stay in the identity key (two tabs at
+     * different playlist positions are not duplicates); they are only
+     * ignored by {@link #isQueryRefinement}, and only while something else
+     * still names the item. See {@link #withoutPosition}.
      */
     private static final Set<String> POSITION_PARAMS = new HashSet<>(
-            Collections.singletonList("index"));
+            Arrays.asList("index", "img_index"));
+
+    /**
+     * A map's CAMERA in a path segment: Google Maps writes the view as
+     * {@code /@48.8583701,2.2944813,17z} and the panel state as
+     * {@code /data=!3m1!4b1!…}, and rewrites both on every pan, zoom and
+     * photo while the place ({@code /maps/place/<name>}) stays put. Left in
+     * the key, each of those moved the visit, so the place's photos fell
+     * behind "Earlier in this tab" one by one. Shape, not host: a segment
+     * that starts with {@code @<lat>,<lng>} or {@code data=!}. Handles like
+     * {@code /@user} do not match (no coordinate pair).
+     */
+    private static final Pattern MAP_CAMERA_SEGMENT = Pattern.compile(
+            "^(@-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?(,.*)?|data=!.*)$");
 
     /**
      * Original index in {@link GeckoStateDataRepository#mGeckoStates}
@@ -834,7 +850,7 @@ public class GeckoState {
         try {
             Uri u = Uri.parse(url);
             StringBuilder sb = new StringBuilder();
-            String path = u.getPath();
+            String path = withoutMapCamera(u.getPath());
             if (path != null) {
                 // `/p/X/` and `/p/X` are one page (Instagram spells the
                 // permalink both ways across its own navigations).
@@ -895,11 +911,13 @@ public class GeckoState {
      * rewrote itself to {@code …&index=2} on the same video, the changed
      * value allocated visit 2, and the video the user was watching sat
      * behind "Earlier in this tab" under the thumbnails captured after.
-     * Narrow on purpose: the relaxation applies only when, with the
-     * position stripped, BOTH sides still carry an identity parameter
-     * ({@code v=} here). Where the position is the only parameter
-     * ({@code viewer?index=1} → {@code ?index=2}) it IS the item, and the
-     * visit moves as before.
+     * Narrow on purpose: the relaxation applies only while something else
+     * still names the item — another identity parameter on both sides
+     * ({@code v=} here), or a path of at least two segments (Instagram's
+     * {@code /p/<code>?img_index=1} → {@code ?img_index=2}, the carousel
+     * swiped). Where the position is the only parameter of a one-segment
+     * path ({@code viewer?index=1} → {@code ?index=2}) it IS the item, and
+     * the visit moves as before.
      */
     static boolean isQueryRefinement(String a, String b) {
         int qa = a.indexOf('?');
@@ -913,7 +931,7 @@ public class GeckoState {
         Map<String, String> ia = withoutPosition(pa);
         Map<String, String> ib = withoutPosition(pb);
         if (ia.size() == pa.size() && ib.size() == pb.size()) return false;
-        if (ia.isEmpty() || ib.isEmpty()) return false;
+        if ((ia.isEmpty() || ib.isEmpty()) && pathSegments(baseA) < 2) return false;
         return refines(baseA, ia, ib);
     }
 
@@ -959,6 +977,19 @@ public class GeckoState {
         return n;
     }
 
+    /** {@code path} minus its {@link #MAP_CAMERA_SEGMENT}s; the same string
+     *  when it holds none (or is null). */
+    private static String withoutMapCamera(String path) {
+        if (path == null || (path.indexOf('@') < 0 && !path.contains("data=!"))) {
+            return path;
+        }
+        List<String> kept = new ArrayList<>();
+        for (String seg : path.split("/", -1)) {
+            if (!MAP_CAMERA_SEGMENT.matcher(seg).matches()) kept.add(seg);
+        }
+        return String.join("/", kept);
+    }
+
     /** Parses the {@code k=v&k=v} tail {@link #pageKeyTail} emits. */
     private static Map<String, String> keyParams(String query) {
         Map<String, String> out = new HashMap<>();
@@ -994,6 +1025,28 @@ public class GeckoState {
     @Nullable
     public String getPageIdentityKey() {
         return pageIdentityKey(getEntityUri());
+    }
+
+    /**
+     * True when a capture made FOR the page {@code origin} belongs to the
+     * page whose identity key is {@code pageKey} (a tab's
+     * {@link #getPageIdentityKey}): the same key, or one a query refinement
+     * of the other. The Captured sheet's second test for "this page", beside
+     * the visit id: a parser stamps each item with the URL of the item's own
+     * page (Instagram {@code /p/<code>}, TikTok {@code /@user/video/<id>},
+     * X {@code /<user>/status/<id>}), and a feed or profile captures its
+     * items BEFORE the user opens one. Opening it moved the visit, the item
+     * kept the feed's, and the page's own video sat behind "Earlier in this
+     * tab" — or hidden under the fold, when the new page had captured an
+     * avatar. A re-capture can't re-stamp it (the parser's sent-origin dedup
+     * and the repository's first-capture-wins both drop it), so the sheet
+     * asks the origin instead. Additive: it only adds captures to the page.
+     */
+    public static boolean originNamesPage(@Nullable String origin, @Nullable String pageKey) {
+        if (origin == null || origin.isEmpty() || pageKey == null) return false;
+        String key = pageIdentityKey(origin);
+        if (key == null) return false;
+        return key.equals(pageKey) || isQueryRefinement(key, pageKey);
     }
 
     /** Current navigation-visit id for this tab. See {@link #mVisitId}. */

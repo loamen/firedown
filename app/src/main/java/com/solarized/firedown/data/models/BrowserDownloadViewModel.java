@@ -29,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -195,14 +197,14 @@ public class BrowserDownloadViewModel extends ViewModel {
             mEarlierOpen = true;
         }
         Map<Integer, CaptureMark> marks = CaptureSections.marksByUid(snapshot.shown, mMarksByUrl);
-        final int visitId = snapshot.visitId;
+        final Set<BrowserDownloadEntity> current = snapshot.current;
         CaptureSections.Earlier earlier = snapshot.earlierTotal == 0
                 ? CaptureSections.Earlier.NONE
                 : new CaptureSections.Earlier(snapshot.earlierTotal, isEarlierOpen(snapshot),
                         snapshot.currentTotal > 0, snapshot.earlierDomains,
                         snapshot.earlierPreview);
         mItems.setValue(CaptureSections.build(snapshot.shown,
-                e -> isCurrentPage(e, visitId),
+                current::contains,
                 snapshot.filtered, snapshot.currentImages, snapshot.earlierImages,
                 earlier, marks, snapshot.captionCounts));
         updateBatchSummary();
@@ -243,7 +245,10 @@ public class BrowserDownloadViewModel extends ViewModel {
 
         // Note: Using the injected mGeckoRuntimeHelper instead of static call
         int currentTabId = mGeckoRuntimeHelper.getTabId();
-        final int currentVisitId = currentVisitId();
+        GeckoState state = mGeckoStateDataRepository.peekCurrentGeckoState();
+        boolean onPage = state != null && !state.isHome();
+        final int currentVisitId = onPage ? state.getVisitId() : 0;
+        final String currentPageKey = onPage ? state.getPageIdentityKey() : null;
 
         // Sort BEFORE limiting so the current page's media always floats to
         // the top (and never gets truncated by the limit). Order:
@@ -258,21 +263,24 @@ public class BrowserDownloadViewModel extends ViewModel {
         // visit id that was active when it was captured (GeckoState#getVisitId),
         // so "this page" is identified by a browser navigation boundary rather
         // than by matching origin URL strings — which different extensions
-        // spell inconsistently (m./www., feed vs deep-link).
+        // spell inconsistently (m./www., feed vs deep-link). The origin is a
+        // SECOND test on top, never the anchor: a capture whose own page is
+        // the page on screen counts too (currentPage, the feed-then-open
+        // case), compared by page identity key so m./www., a trailing slash
+        // and tracking params can't tell them apart.
         // Step 2 surfaces the actual video + captions above the page's
         // thumbnails (which are captured later, so recency alone would bury the
         // video). Since the mixed layout it applies to BOTH groups: the
         // section builder puts each group's images under one header, which
         // needs them contiguous.
-        Comparator<BrowserDownloadEntity> order = Comparator
-                .comparingInt((BrowserDownloadEntity e) ->
-                        isCurrentPage(e, currentVisitId) ? 0 : 1)
-                .thenComparingInt(CaptureSections::typeRank)
-                .thenComparing(Comparator.reverseOrder());
-
         List<BrowserDownloadEntity> tab = entities.stream()
                 .filter(entity -> entity != null && entity.getTabId() == currentTabId)
                 .collect(Collectors.toList());
+        final Set<BrowserDownloadEntity> current = currentPage(tab, currentVisitId, currentPageKey);
+        Comparator<BrowserDownloadEntity> order = Comparator
+                .comparingInt((BrowserDownloadEntity e) -> current.contains(e) ? 0 : 1)
+                .thenComparingInt(CaptureSections::typeRank)
+                .thenComparing(Comparator.reverseOrder());
         // Unfiltered, a subtitle whose video's ⋮ already offers it is left
         // out (CaptureSections.ridesWithVideo): the video counts it, the
         // Subtitle chip lists it. Dropped before anything is counted, so the
@@ -295,14 +303,14 @@ public class BrowserDownloadViewModel extends ViewModel {
         List<BrowserDownloadEntity> earlier = new ArrayList<>();
         Set<String> earlierOrigins = new LinkedHashSet<>();
         for (BrowserDownloadEntity e : all) {
-            boolean current = isCurrentPage(e, currentVisitId);
-            if (!current) {
+            boolean onCurrent = current.contains(e);
+            if (!onCurrent) {
                 earlier.add(e);
                 String origin = e.getFileOrigin();
                 earlierOrigins.add(origin == null || origin.isEmpty() ? e.getFileUrl() : origin);
             }
             if (CaptureSections.isSquare(e)) {
-                if (current) {
+                if (onCurrent) {
                     currentImages++;
                 } else {
                     earlierImages++;
@@ -325,8 +333,8 @@ public class BrowserDownloadViewModel extends ViewModel {
                 ? new ArrayList<>(all.subList(0, limit))
                 : all;
         boolean incognito = !shown.isEmpty() && shown.get(0).isIncognito();
-        logVisitTrace(currentTabId, currentVisitId, shown);
-        return new Snapshot(shown, currentVisitId, filtered,
+        logVisitTrace(currentTabId, currentVisitId, current, shown);
+        return new Snapshot(shown, current, filtered,
                 currentImages, earlierImages, all.size() - earlier.size(), earlier.size(),
                 new ArrayList<>(earlierDomains), CaptureSections.preview(earlier), incognito,
                 CaptureSections.captionCounts(tab));
@@ -344,34 +352,64 @@ public class BrowserDownloadViewModel extends ViewModel {
      * the truncate-user-text logging rule.
      */
     private static void logVisitTrace(int currentTabId, int currentVisitId,
+                                      Set<BrowserDownloadEntity> current,
                                       List<BrowserDownloadEntity> result) {
         if (!BuildConfig.DEBUG) {
             return; // skip the string-building work entirely in release
         }
         StringBuilder sb = new StringBuilder("sheet tab=").append(currentTabId)
                 .append(" anchor=").append(currentVisitId);
+        // " *" = this page by visit id, " o" = this page by origin (captured
+        // earlier, for this page), "  " = an earlier page.
         for (BrowserDownloadEntity e : result) {
-            sb.append("\n  v=").append(e.getVisitId())
-                    .append(e.getVisitId() == currentVisitId ? " *" : "  ")
+            String mark = e.getVisitId() == currentVisitId && currentVisitId > 0 ? " *"
+                    : current.contains(e) ? " o" : "  ";
+            sb.append("\n  v=").append(e.getVisitId()).append(mark)
                     .append(' ').append(DebugLog.preview(e.getFileName()));
         }
         DebugLog.d("VisitTrace", sb.toString());
     }
 
-    /** True when {@code e} belongs to the page currently shown in the active
-     *  tab. {@code currentVisitId == 0} means no anchor (home / unavailable),
-     *  in which case nothing is "this page" and the list is pure recency. */
-    private static boolean isCurrentPage(BrowserDownloadEntity e, int currentVisitId) {
-        return currentVisitId > 0 && e.getVisitId() == currentVisitId;
-    }
-
-    /** Navigation-visit id of the page currently shown in the active tab, or
-     *  0 when there's no active page (home / state unavailable). The session
-     *  anchor: entities stamped with this id are "this page". */
-    private int currentVisitId() {
-        GeckoState state = mGeckoStateDataRepository.peekCurrentGeckoState();
-        if (state == null || state.isHome()) return 0;
-        return state.getVisitId();
+    /**
+     * The captures of {@code tab} that belong to the page currently shown in
+     * the active tab: stamped with its visit id, or made FOR it — their
+     * origin names this page ({@link GeckoState#originNamesPage}). A feed or
+     * a profile captures its items before the user opens one; opening it
+     * moves the visit, and without the second test the page's own video sat
+     * behind "Earlier in this tab". {@code visitId == 0} means no anchor
+     * (home / unavailable): nothing is "this page" and the list is pure
+     * recency. An identity set, so the sections, the counts and the fold all
+     * read the same answer for the same snapshot.
+     */
+    private static Set<BrowserDownloadEntity> currentPage(List<BrowserDownloadEntity> tab,
+                                                          int visitId,
+                                                          @Nullable String pageKey) {
+        Set<BrowserDownloadEntity> current = Collections.newSetFromMap(new IdentityHashMap<>());
+        if (visitId <= 0) {
+            return current;
+        }
+        // Parsed once per distinct origin: a page's captures share it, and
+        // this runs on every emission.
+        Map<String, Boolean> named = new HashMap<>();
+        for (BrowserDownloadEntity e : tab) {
+            if (e.getVisitId() == visitId) {
+                current.add(e);
+                continue;
+            }
+            String origin = e.getFileOrigin();
+            if (pageKey == null || origin == null || origin.isEmpty()) {
+                continue;
+            }
+            Boolean hit = named.get(origin);
+            if (hit == null) {
+                hit = GeckoState.originNamesPage(origin, pageKey);
+                named.put(origin, hit);
+            }
+            if (hit) {
+                current.add(e);
+            }
+        }
+        return current;
     }
 
     /**
@@ -429,7 +467,8 @@ public class BrowserDownloadViewModel extends ViewModel {
      *  builder needs to know about it, taken together so they can't disagree. */
     private static final class Snapshot {
         final List<BrowserDownloadEntity> shown;
-        final int visitId;
+        /** The captures that are "this page" (see currentPage). */
+        final Set<BrowserDownloadEntity> current;
         final boolean filtered;
         final int currentImages;
         final int earlierImages;
@@ -440,12 +479,13 @@ public class BrowserDownloadViewModel extends ViewModel {
         final boolean incognito;
         final Map<String, Integer> captionCounts;
 
-        Snapshot(List<BrowserDownloadEntity> shown, int visitId, boolean filtered,
+        Snapshot(List<BrowserDownloadEntity> shown, Set<BrowserDownloadEntity> current,
+                 boolean filtered,
                  int currentImages, int earlierImages, int currentTotal, int earlierTotal,
                  List<String> earlierDomains, List<BrowserDownloadEntity> earlierPreview,
                  boolean incognito, Map<String, Integer> captionCounts) {
             this.shown = shown;
-            this.visitId = visitId;
+            this.current = current;
             this.filtered = filtered;
             this.currentImages = currentImages;
             this.earlierImages = earlierImages;

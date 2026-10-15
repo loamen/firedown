@@ -1846,17 +1846,62 @@ is a hub→item navigation, not a refinement** (`facebook.com/watch/` →
 the bare subset test accepted it because the empty set is a subset of
 everything, pinning the hub's captures over the item's). The two cases the
 rule exists for both survive: Instagram's `/p/<code>` has two segments, the
-Mix has params on both sides (`pathSegments` in `GeckoState`). Diagnose with
-`adb logcat -s VisitTrace:*` — the `stamp` line's `pendingLoad=`, the
-`visit new/re-anchor/alias` line, and the `resolve … restamped=N` line.
+Mix has params on both sides (`pathSegments` in `GeckoState`).
+**`img_index` is a position too** (Instagram rewrites it as a carousel post
+is swiped, `/p/<code>/?img_index=2` → `=3`), and a position may move with
+no other parameter when the PATH names the item (two segments or more,
+the same bound the empty→non-empty rule uses); a position-only query on a
+one-segment path (`viewer?index=1` → `=2`) still moves the visit.
+**A map's camera is not part of the page**: Google Maps writes the view as
+a path segment (`/@40.41,-3.69,17z`) and the panel state as another
+(`/data=!3m1!4b1…`) and rewrites both on every pan, zoom and photo while
+`/maps/place/<name>` stays, so each moved the visit and the place's photos
+fell behind the fold one by one. `pageKeyTail` drops segments matching
+`MAP_CAMERA_SEGMENT` (`@<lat>,<lng>…` or `data=!…` — a shape, never a
+host; `/@user` handles have no coordinate pair and stay).
+**The sheet has a SECOND test for "this page": the capture's origin**
+(`GeckoState.originNamesPage`, used by `BrowserDownloadViewModel
+.currentPage`). The visit stamp alone cannot handle the feed-then-open
+case, which is not URL churn at all: a feed or a profile captures its
+items before the user opens one (Instagram's profile grid, TikTok's
+item_list, X's timeline), opening it moves the visit, and the item keeps
+the feed's stamp — a re-capture cannot re-stamp it, because the parser's
+sent-origin dedup and the repository's first-capture-wins both drop it.
+So the page's own video sat behind "Earlier in this tab", or under a
+closed fold when the item page had captured an avatar. Parsers stamp
+each item with its OWN page (Instagram `/p/<code>`, TikTok
+`/@user/video/<id>`, X `/<user>/status/<id>`, Facebook
+`/watch/?v=<id>`), so a capture also counts as this page when its
+origin's identity key equals the tab's or is a query refinement of it.
+It is additive (it only adds captures to the page, the visit stays the
+anchor), compared by key so m./www., a trailing slash and tracking
+params can't split them, parsed once per distinct origin per snapshot,
+and decided ONCE into an identity set the sections, counts and fold all
+read. Generic-catcher captures carry the page URL they were taken on,
+which re-anchoring already covers, so for them it changes nothing.
+Known residuals, deliberately not built: a page whose URL is an ALIAS of
+the item's canonical one (Instagram's `/reel/<code>/` and
+`/reels/<code>/` viewers against the `/p/<code>` origin, Facebook's
+`/reel/<id>` against `/watch/?v=<id>`) — swiping reels still files the
+prefetched next reels under the reel on screen; and X's photo viewer
+(`/status/<id>/photo/1`) is another page until Back re-anchors. Matching
+those would need per-site alias rules or a content id beside the origin.
+Diagnose with `adb logcat -s VisitTrace:*` — the `stamp` line's
+`pendingLoad=`, the `visit new/re-anchor/alias` line, the
+`resolve … restamped=N` line, and the sheet dump, where `*` marks a
+capture on this page by visit and `o` one on it by origin.
 **Verify a visit-rule change with `sh scripts/visit-harness/run.sh`**: it
 splices the REAL `updateVisit` / `pageIdentityKey` / `isQueryRefinement`
-out of `GeckoState` (stubbed `android.net.Uri`, JDK + python3 only) and
-replays URL sequences: the Mix report, Mix entry from a plain watch page,
-autoplay to the next video, Back re-anchoring, the position-only viewer,
-another video or list at the same position, the Instagram `?l=1` and
-Facebook hub cases. 32 checks; a mutant with no position params fails 12,
-one without the item guard fails 2.
+/ `originNamesPage` out of `GeckoState` (stubbed `android.net.Uri`, JDK +
+python3 only) and replays URL sequences: the Mix report, Mix entry from a
+plain watch page, autoplay to the next video, Back re-anchoring, the
+position-only viewer, another video or list at the same position, the
+Instagram `?l=1` and carousel cases, the Facebook hub, a Maps place
+panned and browsed photo by photo, handles that look like cameras, and
+the origin test (post / TikTok / tweet / Facebook / Mix on their pages,
+the profile, hub, photo viewer and another item not). 60 checks; five
+mutants must fail: no position params (14), no `img_index` (2), no item
+guard (2), no map-camera filter (7), an origin test that never matches (6).
 
 ### History row ⋮ — the shared web-options sheet, not a bare delete
 

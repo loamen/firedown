@@ -130,5 +130,96 @@ public final class VisitHarness {
                         "youtube.com/shorts?index=2&v=X"), "");
         check("refinement: an upper-case Index counts as a position",
                 VisitModel.refinement("example.com/a/b?Index=1&id=7", "example.com/a/b?Index=2&id=7"), "");
+
+        // 7. Instagram carousel: swiping a post's slides rewrites img_index on
+        //    the SAME post. The path names the post, so the position alone may
+        //    move; another post still moves the visit.
+        VisitModel carousel = new VisitModel();
+        expectVisit("carousel: the post", carousel, "https://www.instagram.com/p/CAR0USEL1/", 1);
+        expectVisit("carousel: first swipe adds img_index", carousel,
+                "https://www.instagram.com/p/CAR0USEL1/?img_index=2", 1);
+        expectVisit("carousel: img_index 2 -> 3 keeps the visit", carousel,
+                "https://www.instagram.com/p/CAR0USEL1/?img_index=3", 1);
+        expectVisit("carousel: another post moves it", carousel,
+                "https://www.instagram.com/p/OTHERPOST/?img_index=1", 2);
+        check("carousel: img_index stays in the key (tabs at two slides differ)",
+                !VisitModel.key("https://www.instagram.com/p/X/?img_index=1")
+                        .equals(VisitModel.key("https://www.instagram.com/p/X/?img_index=2")), "");
+
+        // 8. Google Maps: every pan, zoom and photo rewrites the @camera and
+        //    data= segments while the place stays. Another place, or the
+        //    search list, is another page; Back re-anchors.
+        String place = "https://www.google.com/maps/place/Museo+del+Prado";
+        VisitModel maps = new VisitModel();
+        expectVisit("maps: a place", maps,
+                place + "/@40.4137818,-3.6921271,17z/data=!3m1!4b1!4m6!3m5!1s0xd42:0x6b!8m2", 1);
+        expectVisit("maps: pan and zoom keep the visit", maps,
+                place + "/@40.4152,-3.6899,15.5z/data=!4m6!3m5!1s0xd42:0x6b!8m2", 1);
+        expectVisit("maps: opening a photo keeps it", maps,
+                place + "/@40.4137818,-3.6921271,3a,75y,90t/data=!3m8!1e2!3m6!1sAF1QipN", 1);
+        expectVisit("maps: the next photo keeps it", maps,
+                place + "/@40.4137818,-3.6921271,3a,75y,90t/data=!3m8!1e2!3m6!1sAF1QipQ", 1);
+        expectVisit("maps: another place moves it", maps,
+                "https://www.google.com/maps/place/Retiro/@40.415,-3.684,16z/data=!4m2", 2);
+        expectVisit("maps: Back to the first place re-anchors", maps,
+                place + "/@40.41,-3.69,17z/data=!3m1!4b1", 1);
+        check("maps: the key is the place",
+                ("google.com/maps/place/Museo+del+Prado").equals(
+                        VisitModel.key(place + "/@40.41,-3.69,17z/data=!3m1!4b1")),
+                VisitModel.key(place + "/@40.41,-3.69,17z/data=!3m1!4b1"));
+        check("maps: a bare map view keys to /maps",
+                "google.com/maps".equals(VisitModel.key("https://www.google.com/maps/@40.4,-3.7,12z")),
+                VisitModel.key("https://www.google.com/maps/@40.4,-3.7,12z"));
+        check("handles: /@user is not a map camera",
+                "tiktok.com/@user/video/123".equals(
+                        VisitModel.key("https://www.tiktok.com/@user/video/123")),
+                VisitModel.key("https://www.tiktok.com/@user/video/123"));
+        check("handles: a numeric handle with no comma is kept",
+                "example.com/@2024".equals(VisitModel.key("https://example.com/@2024")),
+                VisitModel.key("https://example.com/@2024"));
+        check("data= without the ! is an ordinary segment",
+                "example.com/data=raw/file".equals(VisitModel.key("https://example.com/data=raw/file")),
+                VisitModel.key("https://example.com/data=raw/file"));
+
+        // 9. A capture made FOR a page belongs to it (GeckoState.originNamesPage):
+        //    a feed captures its items before the user opens one, and the item
+        //    must be on the item's page, not behind the fold.
+        check("origin: Instagram post opened from a profile",
+                VisitModel.belongs("https://www.instagram.com/p/CODE123",
+                        "https://www.instagram.com/p/CODE123/"), "");
+        check("origin: the post page after Continue on web (?l=1)",
+                VisitModel.belongs("https://www.instagram.com/p/CODE123",
+                        "https://www.instagram.com/p/CODE123/?l=1"), "");
+        check("origin: another post is not this page",
+                !VisitModel.belongs("https://www.instagram.com/p/CODE123",
+                        "https://www.instagram.com/p/CODE999/"), "");
+        check("origin: the profile is not the post's page",
+                !VisitModel.belongs("https://www.instagram.com/p/CODE123",
+                        "https://www.instagram.com/someone/"), "");
+        check("origin: TikTok video opened from a profile, share params on top",
+                VisitModel.belongs("https://www.tiktok.com/@user/video/7312",
+                        "https://www.tiktok.com/@user/video/7312?is_from_webapp=1&sender_device=pc"), "");
+        check("origin: X tweet opened from the timeline",
+                VisitModel.belongs("https://x.com/someone/status/1790",
+                        "https://x.com/someone/status/1790?s=20"), "");
+        check("origin: the tweet's photo viewer is another page",
+                !VisitModel.belongs("https://x.com/someone/status/1790",
+                        "https://x.com/someone/status/1790/photo/1"), "");
+        check("origin: Facebook canonical on the m. item page with ref noise",
+                VisitModel.belongs("https://www.facebook.com/watch/?v=123",
+                        "https://m.facebook.com/watch/?v=123&ref=sharing"), "");
+        check("origin: a Facebook item is not the Watch hub",
+                !VisitModel.belongs("https://www.facebook.com/watch/?v=123",
+                        "https://www.facebook.com/watch/"), "");
+        check("origin: a YouTube video inside its Mix",
+                VisitModel.belongs("https://www.youtube.com/watch?v=AAAAAAAAAAA",
+                        "https://m.youtube.com/watch?v=AAAAAAAAAAA&list=RDAAAAAAAAAAA&index=2"), "");
+        check("origin: another YouTube video is not this page",
+                !VisitModel.belongs("https://www.youtube.com/watch?v=AAAAAAAAAAA",
+                        "https://www.youtube.com/watch?v=BBBBBBBBBBB"), "");
+        check("origin: an empty or opaque origin never matches",
+                !VisitModel.belongs("", "https://example.com/a")
+                        && !VisitModel.belongs(null, "https://example.com/a")
+                        && !VisitModel.belongs("about:blank", "https://example.com/a"), "");
     }
 }
